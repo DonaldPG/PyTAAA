@@ -1,100 +1,100 @@
-  AAPL
-  ADBE
-  ADP
-  ADSK
-  AKAM
-  ALTR
-  ALXN
-  AMAT
-  AMGN
-  AMZN
-  APOL
-  ATVI
-  BBBY
-  BIDU
-  BIIB
-  BMC
-  BRCM
-   CA
-  CELG
-  CERN
-  CHKP
-  CHRW
- CMCSA
-  COST
-  CSCO
-  CTRP
-  CTSH
-  CTXS
-  DELL
-  DLTR
-  DTV
-  EBAY
-  EA
-  ESRX
-  EXPD
-  EXPE
-  FAST
-  FFIV
-  FISV
-  FLEX
-  FLIR
-  FSLR
-  GILD
-  GMCR
-  GOOG
-  GRMN
-  HSIC
-  ILMN
-  INFY
-  INTC
-  INTU
-  ISRG
-  JOY
-  KLAC
-  LIFE
- LINTA
-  LLTC
-  LRCX
-  MAT
-  MCHP
-  MRVL
-  MSFT
-   MU
-  MXIM
-  MYL
-  NFLX
-  NIHD
-  NTAP
-  NVDA
-  NWSA
-  ORCL
-  ORLY
-  PAYX
-  PCAR
-  PCLN
-  QCOM
-  QGEN
-  RIMM
-  ROST
-  SBUX
-  SHLD
-  SIAL
-  SIRI
-  SNDK
-  SPLS
-  SRCL
-  STX
-  SYMC
-  TEVA
-  URBN
-  VMED
-  VOD
-  VRSN
-  VRTX
-  WCRX
-  WFM
-  WYNN
-  XLNX
-  XRAY
-  YHOO
+AAPL  
+ADBE  
+ADI  
+ADP  
+ADSK  
+AKAM  
+ALTR  
+ALXN  
+AMAT  
+AMGN  
+AMZN  
+ATVI  
+AVGO  
+BBBY  
+BIDU  
+BIIB  
+BMC  
+BRCM  
+CA  
+CELG  
+CERN  
+CHKP  
+CHRW  
+CMCSA  
+COST  
+CSCO  
+CTRX  
+CTSH  
+CTXS  
+DELL  
+DISCA  
+DLTR  
+DTV  
+EBAY  
+EQIX  
+ESRX  
+EXPD  
+EXPE  
+FAST  
+FB  
+FFIV  
+FISV  
+FOSL  
+GILD  
+GOLD  
+GOOG  
+GRMN  
+HSIC  
+INTC  
+INTU  
+ISRG  
+KLAC  
+LBTYA  
+LIFE  
+LINTA  
+LLTC  
+MAT  
+MCHP  
+MDLZ  
+MNST  
+MSFT  
+MU  
+MXIM  
+MYL  
+NTAP  
+NUAN  
+NVDA  
+NWSA  
+ORCL  
+ORLY  
+PAYX  
+PCAR  
+PCLN  
+PRGO  
+QCOM  
+REGN  
+ROST  
+SBAC  
+SBUX  
+SHLD  
+SIAL  
+SIRI  
+SNDK  
+SPLS  
+SRCL  
+STRZA  
+STX  
+SYMC  
+TXN  
+VIAB  
+VMED  
+VOD  
+VRSK  
+VRTX  
+WDC  
+WFM  
+WYNN  
+XLNX  
+XRAY  
+YHOO  

@@ -14,8 +14,8 @@ Subject: """+message_subject+"""
 
 <h1>"""+headlinetext+"""</h1>
 <b>"""+boldtext+"""</b>
-
-"""+regulartext+"""
+<p> </p>
+<p>"""+regulartext+"""</p>
 
 """
 
