@@ -6,6 +6,7 @@ import time
 from functions.SendEmail import *
 from functions.GetParams import *
 from functions.UpdateSymbols_inHDF5 import *
+from functions.CheckMarketOpen import *
 
 # Get Credentials for sending email
 fromaddr, toaddrs, max_uptime, seconds_between_runs = GetParams()
@@ -32,15 +33,20 @@ def IntervalTask( ) :
     symbols_file = os.path.join( symbol_directory, symbol_file )
     start_time = time.time()
     UpdateHDF5( symbol_directory, symbols_file )
+    marketOpen, lastDayOfMonth = CheckMarketOpen()
     elapsed_time = time.time() - start_time
 
     # send an email with status and updates (tries up to 10 times for each call).
-    subjecttext = "eScheduled SMTP HTML e-mail test"
+    subjecttext = "aScheduled SMTP HTML e-mail test"
     headlinetext = "Regularly scheduled email"
     boldtext = "time is "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
     regulartext = "elapsed time was "+str(elapsed_time)
 
-    SendEmail(username,emailpassword,toaddrs,fromaddr,subjecttext,regulartext,boldtext,headlinetext)
+    if marketOpen:
+	    headlinetext = "Regularly scheduled email (market is open)"
+	else:
+		headlinetext = "Regularly scheduled email (market is closed)"
+	SendEmail(username,emailpassword,toaddrs,fromaddr,subjecttext,regulartext,boldtext,headlinetext)
 
 '''
 Main program
