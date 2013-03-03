@@ -43,10 +43,10 @@ def IntervalTask( ) :
     regulartext = "elapsed time was "+str(elapsed_time)
 
     if marketOpen:
-	    headlinetext = "Regularly scheduled email (market is open)"
-	else:
-		headlinetext = "Regularly scheduled email (market is closed)"
-	SendEmail(username,emailpassword,toaddrs,fromaddr,subjecttext,regulartext,boldtext,headlinetext)
+        headlinetext = "Regularly scheduled email (market is open)"
+    else:
+        headlinetext = "Regularly scheduled email (market is closed)"
+    SendEmail(username,emailpassword,toaddrs,fromaddr,subjecttext,regulartext,boldtext,headlinetext)
 
 '''
 Main program
