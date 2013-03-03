@@ -8,10 +8,10 @@ import datetime
 def CheckMarketOpen() :
 
     today = datetime.datetime.now()
-    hourOfDay = today.hour()
+    hourOfDay = today.hour
     dayOfWeek = today.weekday()
-    dayOfMonth = today.day()
-    monthOfYear = today.month()
+    dayOfMonth = today.day
+    monthOfYear = today.month
 
     # Use simple checks to suppress execcessive execution during closed markets
     marketOpen = False
@@ -20,13 +20,17 @@ def CheckMarketOpen() :
             marketOpen = True
 
     # Use simple checks to tell is this is the last trading day of month
-    if dayOfWeek < 5:
+    if dayOfWeek < 4:
         tomorrow = today + datetime.timedelta( days=1 )
-    elif dayOfWeek == 5:
+    elif dayOfWeek == 4:
         tomorrow = today + datetime.timedelta( days=3 )
+    elif dayOfWeek == 5:
+        tomorrow = today + datetime.timedelta( days=2 )
+    elif dayOfWeek == 6:
+        tomorrow = today + datetime.timedelta( days=1 )
 
     lastDayOfMonth = False
-    if monthOfYear != tomorrow.month() and hourOfDay > 13 :
+    if monthOfYear != tomorrow.month and hourOfDay > 13 :
         lastDayOfMonth = True
 
     return marketOpen, lastDayOfMonth

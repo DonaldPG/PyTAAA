@@ -37,7 +37,7 @@ def IntervalTask( ) :
     elapsed_time = time.time() - start_time
 
     # send an email with status and updates (tries up to 10 times for each call).
-    subjecttext = "aScheduled SMTP HTML e-mail test"
+    subjecttext = "bScheduled SMTP HTML e-mail test"
     headlinetext = "Regularly scheduled email"
     boldtext = "time is "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
     regulartext = "elapsed time was "+str(elapsed_time)
