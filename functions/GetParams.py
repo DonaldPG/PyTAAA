@@ -16,6 +16,7 @@ def GetParams():
 
     # set default values
     defaults = { "Runtime": ["2 days"], "Pausetime": ["1 hours"] }
+    params = {}
 
     # read the parameters form the configuration file
     #config = ConfigParser.ConfigParser()
@@ -77,4 +78,20 @@ def GetParams():
 
     seconds_between_runs = int(pausetime[0]) * factor
 
-    return str(fromaddr[0]), str(toaddrs[0]), max_uptime, seconds_between_runs
+    # put params in a dictionary
+    params['fromaddr'] = str(fromaddr[0])
+    params['toaddrs'] = str(toaddrs[0])
+    params['runtime'] = max_uptime
+    params['pausetime'] = seconds_between_runs
+    params['numberStocksTraded'] = int( config.get("Valuation", "numberStocksTraded") )
+    params['monthsToHold'] = int( config.get("Valuation", "monthsToHold") )
+    params['LongPeriod'] = int( config.get("Valuation", "LongPeriod") )
+    params['MA1'] = int( config.get("Valuation", "MA1") )
+    params['MA2'] = int( config.get("Valuation", "MA2") )
+    params['MA3'] = int( config.get("Valuation", "MA3") )
+    params['MA2factor'] = float( config.get("Valuation", "sma2factor") )
+    params['rankThresholdPct'] = float( config.get("Valuation", "rankThresholdPct") )
+    params['riskDownside_min'] = float( config.get("Valuation", "riskDownside_min") )
+    params['riskDownside_max'] = float( config.get("Valuation", "riskDownside_max") )
+    
+    return params

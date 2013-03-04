@@ -1,5 +1,6 @@
 def SendEmail( username, emailpassword, toperson, fromperson, subjecttext, regulartext, boldtext, headlinetext ) :
     import smtplib
+    import datetime
     # to, from, subject
     fromaddr = fromperson
     toaddrs  = toperson
@@ -28,7 +29,7 @@ Subject: """+message_subject+"""
         server.quit()
         #print "email message = "
         #print message
-        print "Successfully sent email"
+        print "Successfully sent email at ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
         print ""
     except :
         print "Error: unable to send email"

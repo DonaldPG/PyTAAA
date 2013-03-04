@@ -76,6 +76,10 @@ def loadQuotes_fromHDF( symbols_file ):
 
     return x, symbols, dates, quote, listname
 
+def getLastDateFromHDF5( symbol_directory, symbols_file ) :
+    filename = os.path.join(symbol_directory, symbols_file)
+    _, _, datearray, _, _ = loadQuotes_fromHDF( filename )
+    return datearray[-1]
 
 def UpdateHDF5( symbol_directory, symbols_file ):
 
@@ -176,7 +180,7 @@ def UpdateHDF5( symbol_directory, symbols_file ):
 
         newquotesfirstdate = (1991,1,1)
         newquoteslastdate = (datetime.now().year,datetime.now().month,datetime.now().day)
-        
+
         # print dates to be used
         print "dates for new symbol found = ", newquotesfirstdate, newquoteslastdate
 
@@ -205,10 +209,10 @@ def UpdateHDF5( symbol_directory, symbols_file ):
         CASHdatearray=array(date)
         CASHadjClose = np.ones( (1,len(CASHdatearray)), float ) * 100.
         for i in range(CASHadjClose.shape[0]):
-			if i%10 == 0:
-				CASHadjClose[i] = CASHadjClose[i-1] + .01
-			else:
-				CASHadjClose[i] = CASHadjClose[i-1]
+            if i%10 == 0:
+                CASHadjClose[i] = CASHadjClose[i-1] + .01
+            else:
+                CASHadjClose[i] = CASHadjClose[i-1]
 
         print " security values check: ",CASHadjClose[isnan(CASHadjClose)].shape
         print "CASHsymbols = ", CASHsymbols
