@@ -51,5 +51,34 @@ def arrayFromQuotesForList(symbolsFile, beginDate, endDate):
     #return x[:,0,:], symbols, datearray
     return x[:,0,:], quote.getlabel(0), datearray
 
+def LastQuotesForList(symbolList, endDate):
+    '''
+    read in quotes and process to 'clean' ndarray plus date array
+    - prices in array with dimensions [num stocks : num days ]
+    - process stock quotes to show closing prices adjusted for splits, dividends
+    - single ndarray with dates common to all stocks [num days]
+    - clean up stocks by:
+       - infilling empty values with linear interpolated value
+       - repeat first quote to beginning of series
+    '''
+
+    # read symbols list
+    symbols = readSymbolList(symbolsFile,verbose=True)
+
+    # get quotes for each symbol in list (adjusted close)
+    quote = downloadQuotes(symbols,date1=endDate,date2=endDate,adjust=False,Verbose=True)
+
+    # clean up quotes for missing values and varying starting date
+    x=quote.copyx()
+
+    # Clean up input quotes
+    #  - infill interior NaN values using nearest good values to linearly interpolate
+    #  - copy first valid quote to from valid date to all earlier positions
+    quotelist = []
+    for ii in range(x.shape[0]):
+        quotelist.append(x[ii,0,-1])
+
+    return quotelist
+
 
 

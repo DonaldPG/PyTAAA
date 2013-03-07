@@ -95,3 +95,27 @@ def GetParams():
     params['riskDownside_max'] = float( config.get("Valuation", "riskDownside_max") )
     
     return params
+
+def GetHoldings():
+    ######################
+    ### Input current holdings and cash
+    ######################
+
+    # set default values
+    holdings = {}
+
+    # read the parameters form the configuration file
+    config_filename = "C:\\Users\\Don\\PyTAAA\\PyTAAA_holdings.params"
+
+    config = ConfigParser.ConfigParser()
+    configfile = open(config_filename, "r")
+    config.readfp(configfile)
+
+    # put params in a dictionary
+    holdings['stocks'] = config.get("Holdings", "stocks").split()
+    holdings['shares'] = config.get("Holdings", "shares").split()
+    holdings['buyprice'] = config.get("Holdings", "buyprice").split()
+   
+    return holdings
+
+
