@@ -54,12 +54,16 @@ def IntervalTask( ) :
     # Re-compute stock ranks and weightings
     lastdate, last_symbols_text, last_symbols_weight, last_symbols_price = PortfolioPerformanceCalcs( symbol_directory, symbol_file, params )
 
+    print "you are here 0"
+    
     # put holding data in lists
     holdings_symbols = holdings['stocks']
     holdings_shares = np.array(holdings['shares']).astype('float')
-    date2 = datetime.date.today() + datetime.timedelta(+10)
-    holdings_currentPrice = LastQuotesForList( holdings_symbols, date2 )
+    #date2 = datetime.date.today() + datetime.timedelta(+10)
+    holdings_currentPrice = LastQuotesForList( holdings_symbols )
 
+    print "you are here 1"
+    
     # calculate holdings value
     currentHoldingsValue = 0.
     for i in range(len(holdings_symbols)):
@@ -78,6 +82,8 @@ def IntervalTask( ) :
                                    +"</td><td>"+format(last_symbols_price[i]*holdings_shares[i],'6.2f') \
                                    +"</td></tr>"
     print ""
+    
+    print "you are here 2"
 
     # Notify with buys/sells on trade dates
     month = datetime.datetime.now().month

@@ -118,7 +118,7 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
     if Verbose:
         print "Load data"
     i=0
-    for ticker in tickers:
+    for itick, ticker in enumerate(tickers):
         if Verbose:
             print "\t" + ticker + "  ",
 
@@ -138,7 +138,8 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
                 lar = lar.merge(qlar)
             i += 1
         except:
-            print "could not get quotes for ", ticker
+            print "could not get quotes for ", ticker, "         will try again."
+            tickers[itick+1:itick+1] = [ticker]
 
     print "number of tickers successfully processed = ", i
     if i > 0 :
