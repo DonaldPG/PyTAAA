@@ -52,6 +52,7 @@ def arrayFromQuotesForList(symbolsFile, beginDate, endDate):
     return x[:,0,:], quote.getlabel(0), datearray
 
 def LastQuotesForList(symbolList, endDate):
+    from matplotlib.finance import quotes_historical_yahoo
     '''
     read in quotes and process to 'clean' ndarray plus date array
     - prices in array with dimensions [num stocks : num days ]
@@ -61,13 +62,25 @@ def LastQuotesForList(symbolList, endDate):
        - infilling empty values with linear interpolated value
        - repeat first quote to beginning of series
     '''
-
-    # read symbols list
-    symbols = readSymbolList(symbolsFile,verbose=True)
-
+    year = datetime.datetime.now().year
+    month = datetime.datetime.now().month
+    day = datetime.datetime.now().day
+    date2 = (int(year), int(month), int(day))
+    date2 = datetime.date.today() + datetime.timedelta(-1)
     # get quotes for each symbol in list (adjusted close)
-    quote = downloadQuotes(symbols,date1=endDate,date2=endDate,adjust=False,Verbose=True)
+    quotelist = []
+    for i in range(len(symbolList)):
+        ticker = symbolList[i]
+        #print "ticker = ", ticker,date2
+        if ticker == 'CASH':
+            quotelist.append(1.0)
+        else:
+            data = quotes_historical_yahoo(ticker, date2, endDate, asobject ="None")
+            #print "data = ", data
+            quotelist.append(data[0][6])
+    #quote = downloadQuotes(symbolList,date1=(year,month,day),date2=(year,month,day),adjust=False,Verbose=True)
 
+    """
     # clean up quotes for missing values and varying starting date
     x=quote.copyx()
 
@@ -77,7 +90,9 @@ def LastQuotesForList(symbolList, endDate):
     quotelist = []
     for ii in range(x.shape[0]):
         quotelist.append(x[ii,0,-1])
-
+    """
+    #print "quotelist =",quotelist
+    #return quotelist
     return quotelist
 
 

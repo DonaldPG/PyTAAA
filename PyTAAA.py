@@ -8,6 +8,7 @@ from functions.GetParams import *
 from functions.UpdateSymbols_inHDF5 import *
 from functions.CheckMarketOpen import *
 from functions.PortfolioPerformanceCalcs import *
+from functions.calculateTrades import *
 
 # Get Credentials for sending email
 params = GetParams()
@@ -40,7 +41,7 @@ def IntervalTask( ) :
     print "shares: ", holdings['shares']
     print "buyprice: ", holdings['buyprice']
     print ""
-    
+
     # Update prices in HDF5 file for symbols in list
     symbol_directory = os.getcwd() + "\\symbols"
     symbol_file = "Naz100_symbols.txt"
@@ -53,25 +54,40 @@ def IntervalTask( ) :
     # Re-compute stock ranks and weightings
     lastdate, last_symbols_text, last_symbols_weight, last_symbols_price = PortfolioPerformanceCalcs( symbol_directory, symbol_file, params )
 
+    # put holding data in lists
+    holdings_symbols = holdings['stocks']
+    holdings_shares = np.array(holdings['shares']).astype('float')
+    date2 = datetime.date.today() + datetime.timedelta(+10)
+    holdings_currentPrice = LastQuotesForList( holdings_symbols, date2 )
+
+    # calculate holdings value
+    currentHoldingsValue = 0.
+    for i in range(len(holdings_symbols)):
+        print "holdings_shares, holdings_currentPrice[i] = ", i, holdings_shares[i],holdings_currentPrice[i]
+        #print "type of above = ",type(holdings_shares[i]),type(holdings_currentPrice[i])
+        currentHoldingsValue += float(holdings_shares[i]) * float(holdings_currentPrice[i])
+
     print ""
-    message_text = "<br>"+"<p>Current stocks and weights are :</p><br><font face='courier new' size=4><table border='1'><tr><td>symbol</td><td>weight</td><td>price</td></tr>"
+    message_text = "<br>"+"<p>Current stocks and weights are :</p><br><font face='courier new' size=4><table border='1'><tr><td>symbol</td><td>weight</td><td>shares</td><td>price</td><td>Value ($)</td></tr>"
     for i in range(len(last_symbols_text)):
         print "i, symbol, weight = ", i, format(last_symbols_text[i],'5s'), format(last_symbols_weight[i],'5.3f')
         message_text = message_text+"<p><tr><td>"+format(last_symbols_text[i],'5s') \
                                    +"</td><td>"+format(last_symbols_weight[i],'5.3f') \
+                                   +"</td><td>"+format(holdings_shares[i],'6.0f') \
                                    +"</td><td>"+format(last_symbols_price[i],'6.2f') \
+                                   +"</td><td>"+format(last_symbols_price[i]*holdings_shares[i],'6.2f') \
                                    +"</td></tr>"
     print ""
-    
+
     # Notify with buys/sells on trade dates
     month = datetime.datetime.now().month
     monthsToHold = params['monthsToHold']
     trade_message = "<br>"
     #if lastDayOfMonth and ( (month-1)%monthsToHold == 0 ):
     if 0 == 0 :
-		trade_message = calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symbols_price )
-		message_text = message_text + trade_message
-    
+        trade_message = calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symbols_price )
+        message_text = message_text + trade_message
+
     # send an email with status and updates (tries up to 10 times for each call).
     boldtext = "time is "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
     regulartext = message_text+"</table><br><"+"/font><p>elapsed time was "+str(elapsed_time)+"</p>"
