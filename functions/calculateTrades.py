@@ -18,8 +18,8 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
     holdings_symbols = holdings['stocks']
     holdings_shares = np.array(holdings['shares']).astype('float')
     holdings_buyprice = holdings['buyprice']
-    date2 = datetime.date.today() + datetime.timedelta(+10)
-    holdings_currentPrice = LastQuotesForList( holdings_symbols, date2 )
+    #date2 = datetime.date.today() + datetime.timedelta(+10)
+    holdings_currentPrice = LastQuotesForList( holdings_symbols )
 
     # calculate holdings value
     currentHoldingsValue = 0.

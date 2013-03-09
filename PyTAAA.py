@@ -47,7 +47,7 @@ def IntervalTask( ) :
     symbol_file = "Naz100_symbols.txt"
     symbols_file = os.path.join( symbol_directory, symbol_file )
     start_time = time.time()
-    UpdateHDF5( symbol_directory, symbols_file )
+    #UpdateHDF5( symbol_directory, symbols_file )
     marketOpen, lastDayOfMonth = CheckMarketOpen()
     elapsed_time = time.time() - start_time
 
