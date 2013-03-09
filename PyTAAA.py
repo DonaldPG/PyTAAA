@@ -54,37 +54,58 @@ def IntervalTask( ) :
     # Re-compute stock ranks and weightings
     lastdate, last_symbols_text, last_symbols_weight, last_symbols_price = PortfolioPerformanceCalcs( symbol_directory, symbol_file, params )
 
-    print "you are here 0"
-    
     # put holding data in lists
     holdings_symbols = holdings['stocks']
     holdings_shares = np.array(holdings['shares']).astype('float')
+    holdings_buyprice = np.array(holdings['buyprice']).astype('float')
     #date2 = datetime.date.today() + datetime.timedelta(+10)
     holdings_currentPrice = LastQuotesForList( holdings_symbols )
-
-    print "you are here 1"
-    
+   
     # calculate holdings value
     currentHoldingsValue = 0.
     for i in range(len(holdings_symbols)):
-        print "holdings_shares, holdings_currentPrice[i] = ", i, holdings_shares[i],holdings_currentPrice[i]
+        #print "holdings_shares, holdings_currentPrice[i] = ", i, holdings_shares[i],holdings_currentPrice[i]
         #print "type of above = ",type(holdings_shares[i]),type(holdings_currentPrice[i])
         currentHoldingsValue += float(holdings_shares[i]) * float(holdings_currentPrice[i])
 
     print ""
-    message_text = "<br>"+"<p>Current stocks and weights are :</p><br><font face='courier new' size=4><table border='1'><tr><td>symbol</td><td>weight</td><td>shares</td><td>price</td><td>Value ($)</td></tr>"
+    
+    print "you are here 1"
+    
+    message_text = "<br>"+"<p>Current stocks and weights are :</p><br><font face='courier new' size=3><table border='1'> \
+                   <tr><td>symbol  \
+                   </td><td>weight  \
+                   </td><td>shares  \
+                   </td><td>purch price  \
+                   </td><td>purch cost  \
+                   </td><td>cumu purch  \
+                   </td><td>last price  \
+                   </td><td>Value ($)  \
+                   </td><td>cumu Value ($)  \
+                   </td></tr>"
+    cumu_purchase_price = 0.
+    cumu_value = 0.
     for i in range(len(last_symbols_text)):
         print "i, symbol, weight = ", i, format(last_symbols_text[i],'5s'), format(last_symbols_weight[i],'5.3f')
+        purchase_price = holdings_buyprice[i]*holdings_shares[i]
+        cumu_purchase_price += purchase_price
+        value = last_symbols_price[i]*holdings_shares[i]
+        cumu_value += value
         message_text = message_text+"<p><tr><td>"+format(last_symbols_text[i],'5s') \
                                    +"</td><td>"+format(last_symbols_weight[i],'5.3f') \
                                    +"</td><td>"+format(holdings_shares[i],'6.0f') \
+                                   +"</td><td>"+format(holdings_buyprice[i],'6.2f') \
+                                   +"</td><td>"+format(purchase_price,'6.2f') \
+                                   +"</td><td>"+format(cumu_purchase_price,'6.2f') \
                                    +"</td><td>"+format(last_symbols_price[i],'6.2f') \
-                                   +"</td><td>"+format(last_symbols_price[i]*holdings_shares[i],'6.2f') \
+                                   +"</td><td>"+format(value,'6.2f') \
+                                   +"</td><td>"+format(cumu_value,'6.2f') \
                                    +"</td></tr>"
     print ""
-    
-    print "you are here 2"
 
+    print "you are here 2"
+    #print "message_text = ", message_text
+    
     # Notify with buys/sells on trade dates
     month = datetime.datetime.now().month
     monthsToHold = params['monthsToHold']
@@ -98,6 +119,8 @@ def IntervalTask( ) :
     boldtext = "time is "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
     regulartext = message_text+"</table><br><"+"/font><p>elapsed time was "+str(elapsed_time)+"</p>"
 
+    print "you are here 3"
+    
     # Customize and send email
     # - based on day of month and whether market is open or closed
     if lastDayOfMonth:

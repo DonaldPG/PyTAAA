@@ -24,7 +24,7 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
     # calculate holdings value
     currentHoldingsValue = 0.
     for i in range(len(holdings_symbols)):
-        print "holdings_shares, holdings_currentPrice[i] = ", i, holdings_shares[i],holdings_currentPrice[i]
+        #print "holdings_shares, holdings_currentPrice[i] = ", i, holdings_shares[i],holdings_currentPrice[i]
         #print "type of above = ",type(holdings_shares[i]),type(holdings_currentPrice[i])
         currentHoldingsValue += float(holdings_shares[i]) * float(holdings_currentPrice[i])
 

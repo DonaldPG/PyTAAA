@@ -40,7 +40,7 @@ def arrayFromQuotesForList(symbolsFile, beginDate, endDate):
     date = quote.getlabel(2)
     datearray=array(date)
 
-    print " x check: ",x[:,0,:][isnan(x[:,0,:])].shape
+    #print " x check: ",x[:,0,:][isnan(x[:,0,:])].shape
 
     # Clean up input quotes
     #  - infill interior NaN values using nearest good values to linearly interpolate
@@ -105,8 +105,6 @@ def LastQuotesForList( symbols_list ):
         
     stocks = StockRetriever()
     
-    print "inside LastQuotesForList 0"
-    
     # remove 'CASH' from symbols_list, if present. Keep track of position in list to re-insert
     cash_index = None
     try:
@@ -121,10 +119,9 @@ def LastQuotesForList( symbols_list ):
     while NeedQuotes:
         try:
             a=stocks.get_current_info( symbols_list )
-            print "inside LastQuotesForList 1, symbols_list = ", symbols_list
-            print "inside LastQuotesForList 1, attempt = ", attempt
-            print "inside LastQuotesForList 1, len(a) = ", len(a)
-            #print "inside LastQuotesForList 1, a['LastTradePriceOnly'] = ", a['LastTradePriceOnly']
+            #print "inside LastQuotesForList 1, symbols_list = ", symbols_list
+            #print "inside LastQuotesForList 1, attempt = ", attempt
+            #print "inside LastQuotesForList 1, len(a) = ", len(a)
             # convert from strings to numbers and put in a list
             quotelist = []
             for i in range(len(a)):
@@ -139,7 +136,7 @@ def LastQuotesForList( symbols_list ):
     
     # re-insert CASH in original position and also add curent price of 1.0 to quotelist
     if cash_index != None:
-        print "inside LastQuotesForList... re-inserting...", cash_index, symbols_list, quotelist
+        #print "inside LastQuotesForList... re-inserting...", cash_index, symbols_list, quotelist
         if cash_index < len(symbols_list):
             symbols_list[cash_index:cash_index] = 'CASH'
             quotelist[cash_index:cash_index] = 1.0
@@ -147,5 +144,5 @@ def LastQuotesForList( symbols_list ):
             symbols_list.append('CASH')
             quotelist.append(1.0)
             
-    print "attempts, sysmbols_list,quotelist =", attempt, symbols_list, quotelist
+    #print "attempts, sysmbols_list,quotelist =", attempt, symbols_list, quotelist
     return quotelist
