@@ -118,7 +118,7 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
     ### 2. sharpe ratio computed from daily gains over "LongPeriod_random"
     ########################################################################
 
-    monthgainlossweight = sharpeWeightedRank_2D(datearray,adjClose,signal2D,LongPeriod,numberStocksTraded,riskDownside_min,riskDownside_max,rankThresholdPct)
+    monthgainlossweight = sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,numberStocksTraded,riskDownside_min,riskDownside_max,rankThresholdPct)
 
     #print "here I am........"
     
@@ -361,6 +361,6 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
             print datearray[-1], format(symbols[ii],'5s'), format(monthgainlossweight[ii,-1],'5.3f')
             last_symbols_text.append( symbols[ii] )
             last_symbols_weight.append( monthgainlossweight[ii,-1] )
-            last_symbols_price.append( adjClose[ii,-1] )
+            last_symbols_price.append( round(adjClose[ii,-1],2) )
 
     return datearray[-1], last_symbols_text, last_symbols_weight, last_symbols_price

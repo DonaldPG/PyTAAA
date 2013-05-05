@@ -103,6 +103,7 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
 
     """
 
+    from time import sleep
     from matplotlib.finance import *
     from la.external.matplotlib import quotes_historical_yahoo
     import la
@@ -138,7 +139,8 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
                 lar = lar.merge(qlar)
             i += 1
         except:
-            print "could not get quotes for ", ticker, "         will try again."
+            print "could not get quotes for ", ticker, "         will try again and again."
+            sleep(3)
             tickers[itick+1:itick+1] = [ticker]
 
     print "number of tickers successfully processed = ", i

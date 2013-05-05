@@ -78,9 +78,29 @@ def loadQuotes_fromHDF( symbols_file ):
 
 def getLastDateFromHDF5( symbol_directory, symbols_file ) :
     filename = os.path.join(symbol_directory, symbols_file)
+    adjClose, symbols, datearray, quote, _ = loadQuotes_fromHDF( filename )
+    import numpy as np 
+    symbols2 = quote.getlabel(0)
+    for i in range(len(symbols)):
+        numisnans = adjClose[i,:].copy()
+        print "...inside getLastDateFromHDF5...  i, numisnans = ", i, numisnans
+        print "...inside getLastDateFromHDF5...  i, symbols[i], symbols2[i] = ", i, symbols[i],symbols2[i], numisnans[np.isnan(numisnans)].shape
+    numdates = adjClose.shape[1]
+    print "...inside getLastDateFromHDF5...  numdates, quote.shape = ", numdates, adjClose.shape
+    for i in range(adjClose.shape[0]):
+        for j in range(adjClose.shape[1]):
+            if isnan(adjClose[i,numdates-j-1])  :
+                print "...inside getLastDateFromHDF5...  i, j, numdates, numdates-j, quote[i,numdates-j] = ", i, j, numdates, numdates-j-1, adjClose[i,numdates-j-1]
+                lastindex = numdates-j-1
+    return datearray[lastindex]
+
+
+def getLastDateFromHDF5( symbol_directory, symbols_file ) :
+    filename = os.path.join(symbol_directory, symbols_file)
     _, _, datearray, _, _ = loadQuotes_fromHDF( filename )
     return datearray[-1]
-
+    
+    
 def UpdateHDF5( symbol_directory, symbols_file ):
 
     ##
@@ -154,6 +174,10 @@ def UpdateHDF5( symbol_directory, symbols_file ):
 
     date = quote.getlabel(1)
     lastdate = datetime.strptime(date[-1], '%Y-%m-%d')
+    lastdatetuple = (lastdate.year,lastdate.month,lastdate.day)
+    print "lastdatetuple = ", lastdatetuple
+    
+    lastdate = getLastDateFromHDF5( symbol_directory, symbols_file )
     lastdatetuple = (lastdate.year,lastdate.month,lastdate.day)
     print "lastdatetuple = ", lastdatetuple
 

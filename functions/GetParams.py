@@ -40,7 +40,7 @@ def GetParams():
     if len(runtime) == 1:
         runtime.join('days')
     if len(pausetime) == 1:
-        paustime.join('housrs')
+        paustime.join('hours')
 
     if runtime[1] == 'seconds':
         factor = 1

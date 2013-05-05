@@ -36,31 +36,59 @@ def IntervalTask( ) :
     # Get Holdings from file
     holdings = GetHoldings()
     print ""
-    print "current Holdings ="
+    print "current Holdings :"
     print "stocks: ", holdings['stocks']
     print "shares: ", holdings['shares']
     print "buyprice: ", holdings['buyprice']
     print ""
 
     # Update prices in HDF5 file for symbols in list
+    # - limit updates to HDF5 to once per day after market close (using daily_update_done as toggle)
     symbol_directory = os.getcwd() + "\\symbols"
     symbol_file = "Naz100_symbols.txt"
     symbols_file = os.path.join( symbol_directory, symbol_file )
     start_time = time.time()
-    #UpdateHDF5( symbol_directory, symbols_file )
+    today = datetime.datetime.now()
+    hourOfDay = today.hour
+    try:
+        daily_update_done in locals()
+        if hourOfDay <= 15:
+            daily_update_done = False
+    except:
+        daily_update_done = False
+    print "hourOfDay, daily_update_done =", hourOfDay, daily_update_done
+    if not daily_update_done :
+        UpdateHDF5( symbol_directory, symbols_file )
+        if hourOfDay > 15:
+            daily_update_done = True
     marketOpen, lastDayOfMonth = CheckMarketOpen()
     elapsed_time = time.time() - start_time
 
     # Re-compute stock ranks and weightings
-    lastdate, last_symbols_text, last_symbols_weight, last_symbols_price = PortfolioPerformanceCalcs( symbol_directory, symbol_file, params )
+    try:
+        last_symbols_text in locals()
+    except:
+        CalcsUpdateCount = 0
+        not_Calculated = True
+    if (daily_update_done and CalcsUpdateCount == 0) or not_Calculated:
+        lastdate, last_symbols_text, last_symbols_weight, last_symbols_price = PortfolioPerformanceCalcs( symbol_directory, symbol_file, params )
+        CalcsUpdateCount += 1
+
+    print datetime.datetime.now(), "you are here 0"
 
     # put holding data in lists
     holdings_symbols = holdings['stocks']
     holdings_shares = np.array(holdings['shares']).astype('float')
     holdings_buyprice = np.array(holdings['buyprice']).astype('float')
     #date2 = datetime.date.today() + datetime.timedelta(+10)
-    holdings_currentPrice = LastQuotesForList( holdings_symbols )
-   
+    print datetime.datetime.now(), "you are here 0.1"
+
+    #holdings_currentPrice = LastQuotesForList( holdings_symbols )
+    holdings_currentPrice = LastQuotesForSymbolList( holdings_symbols )
+    print "holdings_symbols = ", holdings_symbols
+    print "holdings_shares = ", holdings_shares
+    print "holdings_currentPrice = ", holdings_currentPrice
+
     # calculate holdings value
     currentHoldingsValue = 0.
     for i in range(len(holdings_symbols)):
@@ -69,9 +97,10 @@ def IntervalTask( ) :
         currentHoldingsValue += float(holdings_shares[i]) * float(holdings_currentPrice[i])
 
     print ""
-    
-    print "you are here 1"
-    
+
+    print datetime.datetime.now(), "you are here 1"
+
+    """
     message_text = "<br>"+"<p>Current stocks and weights are :</p><br><font face='courier new' size=3><table border='1'> \
                    <tr><td>symbol  \
                    </td><td>weight  \
@@ -83,29 +112,79 @@ def IntervalTask( ) :
                    </td><td>Value ($)  \
                    </td><td>cumu Value ($)  \
                    </td></tr>"
-    cumu_purchase_price = 0.
+    """
+    message_text = "<br>"+"<p>Current stocks and weights are :</p><br><font face='courier new' size=3><table border='1'> \
+                   <tr><td>symbol  \
+                   </td><td>shares  \
+                   </td><td>purch price  \
+                   </td><td>purch cost  \
+                   </td><td>cumu purch  \
+                   </td><td>last price  \
+                   </td><td>Value ($)  \
+                   </td><td>cumu Value ($)  \
+                   </td></tr>"    
+    cumu_purchase_value = 0.
     cumu_value = 0.
-    for i in range(len(last_symbols_text)):
-        print "i, symbol, weight = ", i, format(last_symbols_text[i],'5s'), format(last_symbols_weight[i],'5.3f')
-        purchase_price = holdings_buyprice[i]*holdings_shares[i]
-        cumu_purchase_price += purchase_price
-        value = last_symbols_price[i]*holdings_shares[i]
+    print "holdings_shares = ", holdings_shares
+    print "holdings_buyprice = ", holdings_buyprice 
+    print "last_symbols_text = ", last_symbols_text
+    print "last_symbols_weight = ", last_symbols_weight
+    print "last_symbols_price = ", last_symbols_price
+
+    """
+    # Sync last_symbols_text with holdings (might not match due to thresholds applied)
+    updated_last_symbols_weight = []
+    updated_last_symbols_price = []
+    matches = [item for item in holdings_symbols if item in last_symbols_text]
+    for i, symbol in enumerate( holdings_symbols ):
+        if symbol != "CASH":
+            last_symbols_index = last_symbols_text.index( holdings_symbols[i] )
+            updated_last_symbols_weight.append( last_symbols_weight[last_symbols_index] )
+            updated_last_symbols_price.append( last_symbols_price[last_symbols_index] )
+        else:
+            updated_last_symbols_weight.append( 0 )
+            updated_last_symbols_price.append( 1.0 )
+    """
+
+    for i in range(len(holdings_shares)):
+        #print "i, symbol, weight = ", i, format(last_symbols_text[i],'5s'), format(last_symbols_weight[i],'5.3f')   
+        purchase_value = holdings_buyprice[i]*holdings_shares[i]
+        cumu_purchase_value += purchase_value
+        value = float(holdings_currentPrice[i]) * float(holdings_shares[i])
         cumu_value += value
-        message_text = message_text+"<p><tr><td>"+format(last_symbols_text[i],'5s') \
-                                   +"</td><td>"+format(last_symbols_weight[i],'5.3f') \
+        """
+        print "holdings_shares[i] = ", i, format(holdings_shares[i],'6.0f')
+        print "holdings_buyprice[i] = ", i, format(holdings_buyprice[i],'6.2f')
+        print "purchase_value = ", i, format(purchase_value,'6.2f')
+        print "cumu_purchase_value = ", i, format(cumu_purchase_value,'6.2f')
+        print "holdings_currentPrice[i] = ", i, format(float(holdings_currentPrice[i]),'6.2f')
+        print "value = ", i, format(value,'6.2f')
+        print "cumu_value = ", i, format(cumu_value,'6.2f')
+        message_text = message_text+"<p><tr><td>"+format(holdings_symbols[i],'5s') \
+                                   +"</td><td>"+format(updated_last_symbols_weight[i],'5.3f') \
                                    +"</td><td>"+format(holdings_shares[i],'6.0f') \
                                    +"</td><td>"+format(holdings_buyprice[i],'6.2f') \
-                                   +"</td><td>"+format(purchase_price,'6.2f') \
-                                   +"</td><td>"+format(cumu_purchase_price,'6.2f') \
-                                   +"</td><td>"+format(last_symbols_price[i],'6.2f') \
+                                   +"</td><td>"+format(purchase_value,'6.2f') \
+                                   +"</td><td>"+format(cumu_purchase_value,'6.2f') \
+                                   +"</td><td>"+format(holdings_currentPrice[i],'6.2f') \
+                                   +"</td><td>"+format(value,'6.2f') \
+                                   +"</td><td>"+format(cumu_value,'6.2f') \
+                                   +"</td></tr>"
+        """
+        message_text = message_text+"<p><tr><td>"+format(holdings_symbols[i],'5s') \
+                                   +"</td><td>"+format(holdings_shares[i],'6.0f') \
+                                   +"</td><td>"+format(holdings_buyprice[i],'6.2f') \
+                                   +"</td><td>"+format(purchase_value,'6.2f') \
+                                   +"</td><td>"+format(cumu_purchase_value,'6.2f') \
+                                   +"</td><td>"+format(float(holdings_currentPrice[i]),'6.2f') \
                                    +"</td><td>"+format(value,'6.2f') \
                                    +"</td><td>"+format(cumu_value,'6.2f') \
                                    +"</td></tr>"
     print ""
 
-    print "you are here 2"
+    print datetime.datetime.now(), "you are here 2"
     #print "message_text = ", message_text
-    
+
     # Notify with buys/sells on trade dates
     month = datetime.datetime.now().month
     monthsToHold = params['monthsToHold']
@@ -119,8 +198,8 @@ def IntervalTask( ) :
     boldtext = "time is "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
     regulartext = message_text+"</table><br><"+"/font><p>elapsed time was "+str(elapsed_time)+"</p>"
 
-    print "you are here 3"
-    
+    print datetime.datetime.now(), "you are here 3"
+
     # Customize and send email
     # - based on day of month and whether market is open or closed
     if lastDayOfMonth:
@@ -128,14 +207,17 @@ def IntervalTask( ) :
     else:
         subjecttext = "PyTAAA status update"
     if marketOpen:
-        headlinetext = "Regularly scheduled email (market is open)"
+        headlinetext = "Regularly scheduled email (market is open) " + get_MarketOpenOrClosed()
         SendEmail(username,emailpassword,params['toaddrs'],params['fromaddr'],subjecttext,regulartext,boldtext,headlinetext)
     else:
-        headlinetext = "Regularly scheduled email (market is closed)"
+        headlinetext = "Regularly scheduled email (market is closed) " + get_MarketOpenOrClosed()
         SendEmail(username,emailpassword,params['toaddrs'],params['fromaddr'],subjecttext,regulartext,boldtext,headlinetext)
-
+        
+    # print market status to terminal window
+    get_MarketOpenOrClosed()
 
 '''
+
 Main program
 '''
 if __name__ == '__main__':

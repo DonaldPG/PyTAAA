@@ -10,6 +10,7 @@ import nose
 import bottleneck as bn
 import la
 
+import functions.quotes_adjCloseVol
 from functions.quotes_adjCloseVol import *
 from functions.TAfunctions import *
 from functions.readSymbols import *
@@ -53,7 +54,7 @@ def arrayFromQuotesForList(symbolsFile, beginDate, endDate):
     return x[:,0,:], quote.getlabel(0), datearray
 
 '''
-def LastQuotesForList(symbolList, endDate):
+def LastQuotesForSymbolList(symbolList):
     from matplotlib.finance import quotes_historical_yahoo
     """
     read in quotes and process to 'clean' ndarray plus date array
@@ -68,7 +69,7 @@ def LastQuotesForList(symbolList, endDate):
     month = datetime.datetime.now().month
     day = datetime.datetime.now().day
     date2 = (int(year), int(month), int(day))
-    date2 = datetime.date.today() + datetime.timedelta(-1)
+    date2 = datetime.date.today() + datetime.timedelta(0)
     # get quotes for each symbol in list (adjusted close)
     quotelist = []
     for i in range(len(symbolList)):
@@ -77,7 +78,7 @@ def LastQuotesForList(symbolList, endDate):
         if ticker == 'CASH':
             quotelist.append(1.0)
         else:
-            data = quotes_historical_yahoo(ticker, date2, endDate, asobject ="None")
+            data = quotes_historical_yahoo(ticker, date2, date2, asobject ="None")
             #print "data = ", data
             quotelist.append(data[0][6])
     #quote = downloadQuotes(symbolList,date1=(year,month,day),date2=(year,month,day),adjust=False,Verbose=True)
@@ -98,13 +99,62 @@ def LastQuotesForList(symbolList, endDate):
     return quotelist
 '''
 
+
+def get_quote_google( symbol ):
+    import urllib
+    import re
+    #print " get_quote_google.....  symbol = ", symbol
+    base_url = 'http://finance.google.com/finance?q='
+    content = urllib.urlopen(base_url + symbol).read()
+    #ref_34649_l
+    #m = re.search('id="ref_34649_l".*?>(.*?)<', content)
+    #n = re.search('id="ref_694653_l".*?>(.*?)<', content)
+    m = re.search('class="pr".*?>*(?s)(.*?)<.*?>.*?<', content).group(0).split(">")[-1].split("<")[0]
+    #print "content = ", content
+    #print "m : ",content
+    #print "m = ", m
+    #from time import sleep
+    #sleep(20)
+    if m :
+        quote = m
+        #print "quote for symbol ", symbol, " = ", m
+    else:
+        quote = 'no quote available for: ' + symbol
+    return quote
+
+
+def LastQuotesForSymbolList( symbolList ):
+    """
+    read in latest (15-minute delayed) quote for each symbol in list.
+    Use google for each symbol's quote.
+    """
+    from time import sleep
+    quotelist = []
+    for itick, ticker in enumerate( symbolList ):
+        if ticker == 'CASH':
+            print "ticker, quote = CASH 1.0"
+            quotelist.append(1.0)
+        else:
+            try:
+                data = get_quote_google( ticker )
+                print "ticker, quote = ", ticker, data
+                quotelist.append( data )
+            except:
+                print "could not get quote for ", ticker, "         will try again and again."
+                sleep(3)
+                symbolList[itick+1:itick+1] = [ticker]
+    return quotelist
+
+
 def LastQuotesForList( symbols_list ):
 
     from time import sleep
     from functions.StockRetriever import *
-        
+
     stocks = StockRetriever()
-    
+
+    print "inside LastQuotesForList... location  0"
+
     # remove 'CASH' from symbols_list, if present. Keep track of position in list to re-insert
     cash_index = None
     try:
@@ -113,14 +163,16 @@ def LastQuotesForList( symbols_list ):
             symbols_list.remove('CASH')
     except:
         pass
-    
+
+    print "inside LastQuotesForList... location  1"
+
     attempt = 1
     NeedQuotes = True
     while NeedQuotes:
         try:
             a=stocks.get_current_info( symbols_list )
-            #print "inside LastQuotesForList 1, symbols_list = ", symbols_list
-            #print "inside LastQuotesForList 1, attempt = ", attempt
+            print "inside LastQuotesForList 1, symbols_list = ", symbols_list
+            print "inside LastQuotesForList 1, attempt = ", attempt
             #print "inside LastQuotesForList 1, len(a) = ", len(a)
             # convert from strings to numbers and put in a list
             quotelist = []
@@ -132,8 +184,10 @@ def LastQuotesForList( symbols_list ):
             NeedQuotes = False
         except:
             attempt += 1
-            sleep(1)
-    
+            sleep(attempt)
+
+    print "inside LastQuotesForList... location  2"
+
     # re-insert CASH in original position and also add curent price of 1.0 to quotelist
     if cash_index != None:
         #print "inside LastQuotesForList... re-inserting...", cash_index, symbols_list, quotelist
@@ -143,6 +197,6 @@ def LastQuotesForList( symbols_list ):
         else:
             symbols_list.append('CASH')
             quotelist.append(1.0)
-            
-    #print "attempts, sysmbols_list,quotelist =", attempt, symbols_list, quotelist
+
+    print "attempts, sysmbols_list,quotelist =", attempt, symbols_list, quotelist
     return quotelist

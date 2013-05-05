@@ -147,7 +147,7 @@ def move_sharpe_2D(adjClose,dailygainloss,period):
     return sharpe
 
 #----------------------------------------------
-def sharpeWeightedRank_2D(datearray,adjClose,signal2D,LongPeriod,rankthreshold,riskDownside_min,riskDownside_max,rankThresholdPct):
+def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthreshold,riskDownside_min,riskDownside_max,rankThresholdPct):
 
     # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
     # rankthreshold --     # select this many funds with best recent performance
@@ -158,6 +158,15 @@ def sharpeWeightedRank_2D(datearray,adjClose,signal2D,LongPeriod,rankthreshold,r
     import nose
     import bottleneck as bn
 
+    """
+    for ii in range(adjClose.shape[0]):
+        if isnan(adjClose[ii,-1])  :
+            numisnans = adjClose[ii,:]
+            #print "symbol, last 100 values = ", symbols[ii], numisnans[-100:]
+            # NaN in last value usually means the stock is removed from the index so is not updated, but history is still in HDF file 
+            print "*******setting delta (Rank) low... Stock has NaN for last value... ",ii, symbols[ii], numisnans[np.isnan(numisnans)].shape 
+    """
+    
     gainloss = np.ones((adjClose.shape[0],adjClose.shape[1]),dtype=float)
     gainloss[:,1:] = adjClose[:,1:] / adjClose[:,:-1]
     gainloss[isnan(gainloss)]=1.
@@ -219,10 +228,12 @@ def sharpeWeightedRank_2D(datearray,adjClose,signal2D,LongPeriod,rankthreshold,r
     #  - remember that low ranks are biggest gainers
     rankThreshold = (1. - rankThresholdPct) * ( monthgainlossRank.max() - monthgainlossRank.min() )
     for ii in range(monthgainloss.shape[0]):
-		if isnan(adjClose[ii,-1])  :
-			delta[ii,:] = -monthgainloss.shape[0]/2
-			print "*******setting delta (Rank) low...",ii
-
+        if isnan(adjClose[ii,-1])  :
+            delta[ii,:] = -monthgainloss.shape[0]/2
+            numisnans = adjClose[ii,:]
+            # NaN in last value usually means the stock is removed from the index so is not updated, but history is still in HDF file 
+            print "*******setting delta (Rank) low... Stock has NaN for last value... ",ii, symbols[ii], numisnans[np.isnan(numisnans)].shape 
+            
     deltaRank = bn.rankdata(delta,axis=0)
     # reverse the ranks (low deltaRank have the fastest improving rank)
     maxrank = np.max(deltaRank)
@@ -536,3 +547,72 @@ def UnWeightedRank_2D(datearray,adjClose,signal2D,LongPeriod,rankthreshold,riskD
     monthgainlossweight[isnan(monthgainlossweight)] = 0.  # changed result from 1 to 0
 
     return monthgainlossweight
+    
+    
+    
+    
+
+
+
+
+def hurst(X):
+    """ Compute the Hurst exponent of X. If the output H=0.5,the behavior
+    of the time-series is similar to random walk. If H<0.5, the time-series
+    cover less "distance" than a random walk, vice verse. 
+
+    Parameters
+    ----------
+    X
+        list    
+        a time series
+
+    Returns
+    -------
+    H
+        float    
+        Hurst exponent
+
+    Examples
+    --------
+    >>> import pyeeg
+    >>> from numpy.random import randn
+    >>> a = randn(4096)
+    >>> pyeeg.hurst(a)
+    >>> 0.5057444
+    
+    ######################## Function contributed by Xin Liu #################
+    https://code.google.com/p/pyeeg/source/browse/pyeeg.py
+    Copyleft 2010 Forrest Sheng Bao http://fsbao.net
+    PyEEG, a Python module to extract EEG features, v 0.02_r2
+    Project homepage: http://pyeeg.org
+    
+    **Naming convention**
+    
+    Constants: UPPER_CASE_WITH_UNDERSCORES, e.g., SAMPLING_RATE, LENGTH_SIGNAL.
+    Function names: lower_case_with_underscores, e.g., spectrum_entropy.
+    Variables (global and local): CapitalizedWords or CapWords, e.g., Power.
+    If a variable name consists of one letter, I may use lower case, e.g., x, y.
+    
+    """
+
+    from numpy import zeros, log, array, cumsum, std
+    from numpy.linalg import lstsq
+    
+    N = len(X)
+
+    T = array([float(i) for i in xrange(1,N+1)])
+    Y = cumsum(X)
+    Ave_T = Y/T
+    
+    S_T = zeros((N))
+    R_T = zeros((N))
+    for i in xrange(N):
+        S_T[i] = std(X[:i+1])
+        X_T = Y - T * Ave_T[i]
+        R_T[i] = max(X_T[:i + 1]) - min(X_T[:i + 1])
+
+    R_S = R_T / S_T
+    R_S = log(R_S)
+    n = log(T).reshape(N, 1)
+    H = lstsq(n[1:], R_S[1:])[0]
+    return H[0]
