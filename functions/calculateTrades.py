@@ -50,11 +50,34 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
     today = datetime.datetime.now()
 
     # put holding data in lists
-    holdings_symbols = holdings['stocks']
-    holdings_shares = np.array(holdings['shares']).astype('float')
-    holdings_buyprice = holdings['buyprice']
-    #date2 = datetime.date.today() + datetime.timedelta(+10)
+    holdingsParams_symbols = holdings['stocks']
+    holdingsParams_shares = np.array(holdings['shares']).astype('float')
+    holdingsParams_buyprice = np.array(holdings['buyprice']).astype('float')
+    
+    # get current prices for holdings
+    holdingsParams_currentPrice = LastQuotesForSymbolList( holdingsParams_symbols )
 
+    # check for duplicate holdings. Combine duplicates if they exist.
+    holdings_symbols = []
+    holdings_shares = []
+    holdings_buyprice = []
+    holdings_currentPrice = []
+    
+    for i,val in enumerate(holdingsParams_symbols):
+        if holdingsParams_symbols.index(val) == i:
+            index = holdingsParams_symbols.index(val)
+            holdings_symbols.append( val )
+            holdings_shares.append( holdingsParams_shares[index] )
+            holdings_buyprice.append( holdingsParams_buyprice[index] )
+            holdings_currentPrice.append( holdingsParams_currentPrice[index] )
+        else:
+            indexToAdjust = holdings_symbols.index(val)
+            holdings_shares[indexToAdjust] += holdingsParams_shares[i]
+            holdings_buyprice[indexToAdjust] =   \
+                      ( holdingsParams_buyprice[indexToAdjust] * holdingsParams_shares[indexToAdjust] +   \
+                      holdingsParams_buyprice[i] * holdingsParams_shares[i] ) /   \
+                      holdings_shares[indexToAdjust]
+    
     # parse symbols in current holdings and new selections into buys, sells, and stocks in both lists
     sells = [item for item in holdings_symbols if item not in last_symbols_text]
     buys = [item for item in last_symbols_text if item not in holdings_symbols]
@@ -63,7 +86,7 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
     print "you are here in calculateTrades... 0"
 
     #holdings_currentPrice = LastQuotesForList( holdings_symbols )
-    holdings_currentPrice = LastQuotesForSymbolList( holdings_symbols )
+    
     print " holdings_symbols      = ", holdings_symbols
     print " holdings_shares       = ", holdings_shares
     print " holdings_buyprice     = ", holdings_buyprice
@@ -163,7 +186,7 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
     for i, isymbol in enumerate( matches ):
         thresholdingResidual += DeltaValue[i] - DeltaValueThresholded[i]
 
-    print " thresholdingResidual = ", thresholdingResidual
+    #print " thresholdingResidual = ", thresholdingResidual
 
     # get percent of total abs deltavalue after thresholding and normalize (so it sums to 100%)
     absDeltaPct = []
@@ -175,7 +198,7 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
     for i, isymbol in enumerate( matches ):
         absDeltaPctNormed.append( absDeltaPct[i] / cumuAbsDeltaPct )
 
-    print " absDeltaPctNormed = ", absDeltaPctNormed
+    #print " absDeltaPctNormed = ", absDeltaPctNormed
 
     # Re-normalize deltaValue to have same total change for all held stocks. Convert to shares.
     for i, symbol in enumerate( matches ):
@@ -184,7 +207,7 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
             holdings_index = holdings_symbols.index( matches[i] )
             last_symbols_index = last_symbols_text.index( matches[i] )
             numDeltaShares = DeltaValueThresholdedNormed[i]/last_symbols_price[last_symbols_index]
-            last_symbols_deltashares_normed = int( abs(numDeltaShares) ) * sign( numDeltaShares )
+            last_symbols_deltashares_normed = int( abs(numDeltaShares) ) * np.sign( numDeltaShares )
             cumuValueAfterExchanges += float( last_symbols_deltashares_normed + holdings_shares[holdings_index] ) * last_symbols_price[last_symbols_index]
             print " symbol, numDeltaShares = ", last_symbols_text[last_symbols_index], numDeltaShares
             print " cumValueAfterExchanges parts = ", last_symbols_deltashares_normed, holdings_shares[holdings_index], last_symbols_price[last_symbols_index]
@@ -207,8 +230,8 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
             new_shares.append( holdings_shares[i] )
             new_buyprice.append( holdings_buyprice[i] )
 
-    print " DeltaValueThresholdedNormed = ", DeltaValueThresholdedNormed
-    print " cumuValueAfterExchanges = ", cumuValueAfterExchanges
+    #print " DeltaValueThresholdedNormed = ", DeltaValueThresholdedNormed
+    #print " cumuValueAfterExchanges = ", cumuValueAfterExchanges
 
     ####################################################################
     ### check for sells -- stocks that were in last period and out now
@@ -274,6 +297,7 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
         trade_symbols.append( "CASH" )
         trade_shares.append( round( cash_bal - holdings_cash_bal, 2 ) )
 
+    """
     ####################################################################
     ###
     ### QC checkpoint 1
@@ -296,6 +320,7 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
     print " ... end of QC checkpoint in calculateTrades.py "
     print ""
     print ""
+    """
 
 
     ####################################################################
@@ -359,7 +384,7 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
     print "holdings_shares = ", holdings_shares
     print "last_symbols_text = ", last_symbols_text
     print "last_symbols_price = ", last_symbols_price
-    print "trade_symbols = ",trade_symbols
-    print "trade_shares = ", trade_shares
+    #print "trade_symbols = ",trade_symbols
+    #print "trade_shares = ", trade_shares
 
     return trade_message

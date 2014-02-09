@@ -11,6 +11,9 @@ from numpy import std
 from numpy import isnan
 from functions.readSymbols import *
 from functions.UpdateSymbols_inHDF5 import *
+from functions.allstats import *
+from functions.dailyBacktest import *
+from functions.TAfunctions import *
 
 def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
 
@@ -26,8 +29,13 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
 
     numberSharesCalc = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
     gainloss[:,1:] = adjClose[:,1:] / adjClose[:,:-1]
-    gainloss[isnan(gainloss)]=1.
+    gainloss[np.isnan(gainloss)]=1.
+    gainloss[np.isinf(gainloss)]=1.
     value = 10000. * np.cumprod(gainloss,axis=1)
+
+    print " ... inside PortfolioPerformanceCalcs, number of NaN's in gainloss on line 30 = ", gainloss[isnan(gainloss)].shape
+    print " ... inside PortfolioPerformanceCalcs, number of NaN's in value on line 30 = ", value[isnan(value)].shape
+
     BuyHoldFinalValue = np.average(value,axis=0)[-1]
 
     #print " gainloss check: ",gainloss[isnan(gainloss)].shape
@@ -40,6 +48,12 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
         #print "fist valid price and date = ",symbols[ii]," ",index," ",datearray[index]
         lastEmptyPriceIndex[ii] = index
         activeCount[lastEmptyPriceIndex[ii]+1:] += 1
+
+    # remove NaN's from count for each day
+    for ii in range(adjClose.shape[1]):
+        numNaNs = ( np.isnan( adjClose[:,ii] ) )
+        numNaNs = numNaNs[ numNaNs == True ].shape[0]
+        activeCount[ii] = activeCount[ii] - np.clip(numNaNs,0.,99999)
 
     monthsToHold = params['monthsToHold']
     numberStocksTraded = params['numberStocksTraded']
@@ -79,7 +93,9 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
             lastEmptyPriceIndex[ii] = index
         """
         signal2D[ii,0:index] = 0
-    
+
+    dailyNumberUptrendingStocks = np.sum(signal2D,axis = 0)
+
     # hold signal constant for each month
     for jj in np.arange(1,adjClose.shape[1]):
         #if not ((datearray[jj].month != datearray[jj-1].month) and (datearray[jj].month ==1 or datearray[jj].month == 5 or datearray[jj].month == 9)):
@@ -90,6 +106,199 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
                 print "date, signal2D changed",datearray[jj]
 
     numberStocks = np.sum(signal2D,axis = 0)
+
+    ##########################################
+    # Write daily backtest portfolio and even-weighted B&H values to file for web page
+    ##########################################
+    #try:
+    computeDailyBacktest( datearray, \
+                     symbols, \
+                     adjClose, \
+                     numberStocksTraded = numberStocksTraded, \
+                     monthsToHold = monthsToHold, \
+                     LongPeriod = LongPeriod, \
+                     MA1 = MA1, \
+                     MA2 = MA2, \
+                     MA2offset = MA2offset, \
+                     sma2factor = sma2factor, \
+                     rankThresholdPct = rankThresholdPct, \
+                     riskDownside_min = riskDownside_min, \
+                     riskDownside_max = riskDownside_max )
+                     
+    print "\n\n Successfully updated daily backtest at in 'pyTAAAweb_backtestPortfolioValue.params'. Completed on ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
+    print ""
+    '''
+    except :
+        print " Error: unable to update pyTAAAweb_backtestPortfolioValue.params"
+        print ""
+    '''
+
+
+    ##########################################
+    # Write date and Percent of up-trending stocks to file for web page
+    ##########################################
+    try:
+        filepath = os.path.join( os.getcwd(), "pyTAAAweb_numberUptrendingStocks_status.params" )
+        #print "filepath in writeWebPage = ", filepath
+        textmessage = ""
+        for jj in range(dailyNumberUptrendingStocks.shape[0]):
+            textmessage = textmessage + str(datearray[jj])+"  "+str(dailyNumberUptrendingStocks[jj])+"  "+str(activeCount[jj])+"\n"
+        with open( filepath, "w" ) as f:
+            f.write(textmessage)
+        print " Successfully updated to pyTAAAweb_numberUptrendingStocks_status.params at ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
+        print ""
+    except :
+        print " Error: unable to update pyTAAAweb_numberUptrendingStocks_status.params"
+        print ""
+
+    """
+    ##########################################
+    # Write date and Sharpe signal/indicator to file for web page
+    ##########################################
+    # TODO: make this work with stored data instead of re-computing entire plot every time
+    try:
+        # calculate signal from median Sharpe ratio at multiple time-scales
+        periods = range(int(252/4.),253,int(252/4.))
+        dates, medianSharpe, signal = multiSharpe( datearray, adjClose, periods )
+        
+        # save signal to file
+        filepath = os.path.join( os.getcwd(), "pyTAAAweb_multiSharpeIndicator_status.params" )
+        textmessage = ""
+        for jj in range(medianSharpe.shape[0]):
+            textmessage = textmessage + str(dates[jj])+"  "+str(medianSharpe[jj])+"  "+str(signal[jj])+"\n"
+        with open( filepath, "w" ) as f:
+            f.write(textmessage)
+        print " Successfully updated to pyTAAAweb_multiSharpeIndicator_status.params at ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
+        print ""
+    except :
+        print " Error: unable to update pyTAAAweb_multiSharpeIndicator_status.params"
+        print ""
+        
+    """
+
+    ##########################################
+    # Write date and trend dispersion value to file for web page
+    ##########################################
+    ### this version will be deleted after it works successfully once
+
+    '''
+    try:
+        for jj in range( 20, adjClose.shape[1] ):
+            if jj%250 == 0:
+                print " working on dispersion for ", datearray[jj]
+            dailyTrendDispersionMeans = []
+            dailyTrendDispersionMedians = []
+            for ii in range(adjClose.shape[0]):
+                dailyTrendDispersionMeans.append( np.mean( np.abs(allstats( adjClose[ii,jj-20:jj] ).z_score() )) )
+                #dailyTrendDispersionMedians.append( np.mean( np.abs(allstats( adjClose[ii,jj-20:jj] ).med_score() )) )
+                dailyTrendDispersionMedians.append( np.mean( np.abs(allstats( adjClose[ii,jj-20:jj] ).sharpe() )) )
+        
+            dailyTrendDispersionMeans = np.array( dailyTrendDispersionMeans )
+            dailyTrendDispersionMeans = dailyTrendDispersionMeans[ dailyTrendDispersionMeans > 0. ]
+        
+            dailyTrendDispersionMedians = np.array( dailyTrendDispersionMedians )
+            dailyTrendDispersionMedians = dailyTrendDispersionMedians[ np.isfinite( dailyTrendDispersionMedians ) ]
+            
+            filepath = os.path.join( os.getcwd(), "pyTAAAweb_MeanTrendDispersion_status.params" )
+            #print "filepath in writeWebPage = ", filepath
+            textmessage = ""
+            textmessage = textmessage + str(datearray[jj])+"  "+str( dailyTrendDispersionMeans.mean() )+"  "+str( dailyTrendDispersionMedians.mean() )+"\n"
+            with open( filepath, "a" ) as f:
+                f.write(textmessage)
+        print " Successfully updated to pyTAAAweb_MeanTrendDispersion_status.params at ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
+        print ""
+    except :
+        print " Error: unable to update pyTAAAweb_MeanTrendDispersion_status.params"
+        print ""
+    '''
+
+    try:
+        print "\n\n diagnostics for updating pyTAAAweb_MeanTrendDispersion_status.params....."
+        dailyTrendDispersionMeans = []
+        dailyTrendDispersionMedians = []
+
+        print " ... step 0..... "
+        
+        for ii in range(adjClose.shape[0]):
+            try:
+                ii_zscore = np.mean( np.abs(allstats( adjClose[ii,-20:] ).z_score() ))
+            except:
+                ii_zscore = np.nan
+            try:
+                ii_sharpe = np.mean( allstats( adjClose[ii,-20:].sharpe() ))
+            except:
+                ii_sharpe = np.nan
+            
+            #print " ... step 0.....  ii,sharpe = ", ii,ii_zscore,ii_sharpe
+            dailyTrendDispersionMeans.append( ii_zscore )
+            #dailyTrendDispersionMedians.append( np.mean( np.abs(allstats( adjClose[ii,-20:] ).med_score() )) )
+            dailyTrendDispersionMedians.append( ii_sharpe )
+    
+        print " ... step 1....."
+        
+        dailyTrendDispersionMeans = np.array( dailyTrendDispersionMeans )
+        dailyTrendDispersionMeans = dailyTrendDispersionMeans[ dailyTrendDispersionMeans > 0. ]
+    
+        print " ... step 2....."
+        
+        dailyTrendDispersionMedians = np.array( dailyTrendDispersionMedians )
+        #dailyTrendDispersionMedians = dailyTrendDispersionMedians[ dailyTrendDispersionMedians > 0. ]
+        dailyTrendDispersionMedians = dailyTrendDispersionMedians[ np.isfinite( dailyTrendDispersionMedians ) ]
+        
+        print " ... step 3....."
+        
+        filepath = os.path.join( os.getcwd(), "pyTAAAweb_MeanTrendDispersion_status.params" )
+        print "filepath in writeWebPage = ", filepath
+        textmessage = ""
+        textmessage = textmessage + str(datearray[-1])+"  "+str( dailyTrendDispersionMeans.mean() )+"  "+str( dailyTrendDispersionMedians.mean() )+"\n"
+
+        print " ... step 4....., textmessage = ", textmessage
+        
+        with open( filepath, "a" ) as f:
+            f.write(textmessage)
+        print " Successfully updated to pyTAAAweb_MeanTrendDispersion_status.params at ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
+        print ""
+    except :
+        print " Error: unable to update pyTAAAweb_MeanTrendDispersion_status.params"
+        print ""
+
+
+
+
+    """
+    ####################################################################################3
+    # print list of stocks and trending direction
+    print "shape of signal2D = ", signal2D.shape
+    print "number of uptrending stocks today is ", numberStocks[-1]
+    """
+    import matplotlib
+    matplotlib.use('Agg')
+    from matplotlib import pylab as plt
+    #plt.ion()
+    #plt.plot(signal2D[50,:])
+    filepath = os.path.join( os.getcwd(), "pyTAAA_web" )
+
+    today = datetime.datetime.now()
+    hourOfDay = today.hour
+
+    if  hourOfDay >= 22 :
+        for i in range( len(symbols) ) :
+            plt.clf()
+            plt.grid(True)
+            plt.plot(datearray,adjClose[i,:])
+            plt.plot(datearray,signal2D[i,:]*adjClose[i,-1])
+            #plt.plot(datearray,signal2D[i,:],'b.')
+            plot_text = str(adjClose[i,-7:])
+            plt.text(datearray[50],0,plot_text)
+            plt.title(symbols[i])
+            plotfilepath = os.path.join( filepath, "0_"+symbols[i]+".png" )
+            plt.savefig( plotfilepath )
+            #print "Rank diagnostics  ", symbols[i], signal2D[i,-6:]
+    ####################################################################################3
+
+
+
+
 
     """
     # make signals sum to 1.0
@@ -121,10 +330,10 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
     monthgainlossweight = sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,numberStocksTraded,riskDownside_min,riskDownside_max,rankThresholdPct)
 
     #print "here I am........"
-    
+
     '''# plot if it is NFLX
     for ii in range(len(symbols)):
-        if symbols[ii] == 'NFLX':    
+        if symbols[ii] == 'NFLX':
             print "********** uptrending symbols found: symbol, lastprice = ", symbols[ii], adjClose[ii,-1]
             plt.title(symbols[ii])
             plt.grid()
@@ -132,10 +341,10 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
             plt.plot( datearray, adjClose[ii,:])
             plt.show()
             for jj in range(-25,0):
-				print ii,jj,adjClose.shape[1]+jj,len(datearray), adjClose[ii,jj]
-				print "NFLX price: date, adjClose = ",jj, datearray[len(datearray)+jj], adjClose[ii,adjClose.shape[1]+jj], monthgainlossweight[ii,adjClose.shape[1]+jj]
+                print ii,jj,adjClose.shape[1]+jj,len(datearray), adjClose[ii,jj]
+                print "NFLX price: date, adjClose = ",jj, datearray[len(datearray)+jj], adjClose[ii,adjClose.shape[1]+jj], monthgainlossweight[ii,adjClose.shape[1]+jj]
     '''
-    
+
     ########################################################################
     ### compute traded value of stock for each month
     ########################################################################

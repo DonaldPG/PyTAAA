@@ -3,7 +3,9 @@ import datetime
 import getpass
 import os
 import time
+import urllib
 from functions.SendEmail import *
+from functions.WriteWebPage_pi import *
 from functions.GetParams import *
 from functions.UpdateSymbols_inHDF5 import *
 from functions.CheckMarketOpen import *
@@ -16,6 +18,11 @@ print ""
 print "params = ", params
 print ""
 username = str(params['fromaddr']).split("@")[0]
+emailpassword = str(params['PW'])
+#print "emailpassword is ", emailpassword
+#ip = str(params['ip'])
+ip = GetIP()
+print "Current ip address is ", ip
 
 #print "params['fromaddr'], params['toaddrs'], runtime, params['pausetime'], username = ", params['fromaddr'], params['toaddrs'], runtime, params['pausetime'], username
 print ""
@@ -27,11 +34,18 @@ print params['pausetime'], " seconds is ", format(params['pausetime']/60/60.,'2.
                                             format(params['pausetime']/60/60/24.,'3.1f'), " days."
 print ""
 
-emailpassword = getpass.getpass("Enter a password for : " + str(params['fromaddr']) + "\n")
+#emailpassword = getpass.getpass("Enter a password for : " + str(params['fromaddr']) + "\n")
 print "you entered your email password"
 print ""
 
+
 def IntervalTask( ) :
+
+    # keep track of total time to update everything
+    start_time_total = time.time()
+        
+    # set value to compare with cumu_value as test of info content
+    cumu_value_prior = GetStatus()
 
     # Get Holdings from file
     holdings = GetHoldings()
@@ -40,11 +54,20 @@ def IntervalTask( ) :
     print "stocks: ", holdings['stocks']
     print "shares: ", holdings['shares']
     print "buyprice: ", holdings['buyprice']
+    print "cumulativecashin: ", holdings['cumulativecashin'][0]
     print ""
 
     # Update prices in HDF5 file for symbols in list
+    # - check web for current stocks in Naz100, update files if changes needed
+    start_time_updateNaz100List = time.time()
+    #_,_,_ = get_Naz100List( verbose = True )
+    _, removedTickers, addedTickers = get_Naz100List( verbose = True )
+    elapsed_time_updateNaz100List = time.time() - start_time_updateNaz100List
+    #_,_,_,indexChanges_message = get_Naz100List( verbose = True )
     # - limit updates to HDF5 to once per day after market close (using daily_update_done as toggle)
-    symbol_directory = os.getcwd() + "\\symbols"
+    #symbol_directory = os.getcwd() + "\\symbols"
+    symbol_directory = os.path.join( os.getcwd(), "symbols" )
+
     symbol_file = "Naz100_symbols.txt"
     symbols_file = os.path.join( symbol_directory, symbol_file )
     start_time = time.time()
@@ -92,9 +115,14 @@ def IntervalTask( ) :
     # calculate holdings value
     currentHoldingsValue = 0.
     for i in range(len(holdings_symbols)):
-        #print "holdings_shares, holdings_currentPrice[i] = ", i, holdings_shares[i],holdings_currentPrice[i]
-        #print "type of above = ",type(holdings_shares[i]),type(holdings_currentPrice[i])
+        print "holdings_shares, holdings_currentPrice[i] = ", i, holdings_shares[i],holdings_currentPrice[i]
+        print "type of above = ",type(holdings_shares[i]),type(holdings_currentPrice[i])
         currentHoldingsValue += float(holdings_shares[i]) * float(holdings_currentPrice[i])
+
+    # calculate lifetime profit
+    print "holdings['cumulativecashin'] = ", holdings['cumulativecashin'][0]
+    lifetimeProfit = currentHoldingsValue - float(holdings['cumulativecashin'][0])
+    print "Lifetime profit = ", lifetimeProfit
 
     print ""
 
@@ -113,7 +141,7 @@ def IntervalTask( ) :
                    </td><td>cumu Value ($)  \
                    </td></tr>"
     """
-    message_text = "<br>"+"<p>Current stocks and weights are :</p><br><font face='courier new' size=3><table border='1'> \
+    message_text = "<h3>Current stocks and weights are :</h3><font face='courier new' size=3><table border='1'> \
                    <tr><td>symbol  \
                    </td><td>shares  \
                    </td><td>purch price  \
@@ -122,11 +150,11 @@ def IntervalTask( ) :
                    </td><td>last price  \
                    </td><td>Value ($)  \
                    </td><td>cumu Value ($)  \
-                   </td></tr>"    
+                   </td></tr>\n"
     cumu_purchase_value = 0.
     cumu_value = 0.
     print "holdings_shares = ", holdings_shares
-    print "holdings_buyprice = ", holdings_buyprice 
+    print "holdings_buyprice = ", holdings_buyprice
     print "last_symbols_text = ", last_symbols_text
     print "last_symbols_weight = ", last_symbols_weight
     print "last_symbols_price = ", last_symbols_price
@@ -147,7 +175,7 @@ def IntervalTask( ) :
     """
 
     for i in range(len(holdings_shares)):
-        #print "i, symbol, weight = ", i, format(last_symbols_text[i],'5s'), format(last_symbols_weight[i],'5.3f')   
+        #print "i, symbol, weight = ", i, format(last_symbols_text[i],'5s'), format(last_symbols_weight[i],'5.3f')
         purchase_value = holdings_buyprice[i]*holdings_shares[i]
         cumu_purchase_value += purchase_value
         value = float(holdings_currentPrice[i]) * float(holdings_shares[i])
@@ -179,7 +207,7 @@ def IntervalTask( ) :
                                    +"</td><td>"+format(float(holdings_currentPrice[i]),'6.2f') \
                                    +"</td><td>"+format(value,'6.2f') \
                                    +"</td><td>"+format(cumu_value,'6.2f') \
-                                   +"</td></tr>"
+                                   +"</td></tr>\n"
     print ""
 
     print datetime.datetime.now(), "you are here 2"
@@ -192,11 +220,35 @@ def IntervalTask( ) :
     #if lastDayOfMonth and ( (month-1)%monthsToHold == 0 ):
     if 0 == 0 :
         trade_message = calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symbols_price )
+        #print "trade_message =", trade_message,"_"
+        #print trade_message != "<br><br>"
         message_text = message_text + trade_message
+
+    edition = GetEdition()
+    message_text = message_text+"</table><br><"+"/font><p>Lifetime profit = $"+str(lifetimeProfit)+"   = "+format(lifetimeProfit/float(holdings['cumulativecashin'][0]),'6.1%')+"</p>"
+    
+    # Update message for changes in  tickers removed from or added to the Nasdaq100 index
+    if removedTickers != [] or addedTickers != []:
+        message_text = message_text+"<br><p>There are changes in the stock list<p>"
+        for i, ticker in enumerate( removedTickers ):
+            message_text = message_text+"<p> ...Ticker "+ticker+" has been removed from the Nasdaq100 index"
+        message_text = message_text+"<p>"
+        for i, ticker in enumerate( addedTickers ):
+            message_text = message_text+"<p> ...Ticker "+ticker+" has been added to the Nasdaq100 index"
+
+    message_text = message_text+"<br><p>"+edition+" ediition software running at "+str(ip)
+
+    elapsed_time_total = time.time() - start_time_total
 
     # send an email with status and updates (tries up to 10 times for each call).
     boldtext = "time is "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
-    regulartext = message_text+"</table><br><"+"/font><p>elapsed time was "+str(elapsed_time)+"</p>"
+    regulartext = message_text+"<br>elapsed time to update Nasdaq 100 companies from web "+format(elapsed_time_updateNaz100List,'6.2f')+" seconds"
+    regulartext = regulartext+"<br>elapsed time to update Nasdaq 100 stock prices from web "+format(elapsed_time,'6.2f')+" seconds"
+    if elapsed_time_total < 60 :
+        regulartext = regulartext+"<br>elapsed time for web updates, computations, updating web page "+format(elapsed_time_total,'6.2f')+" seconds</p>"
+    else:
+        regulartext = regulartext+"<br>elapsed time for web updates, computations, updating web page "+format(elapsed_time_total/60.,'6.2f')+" minutes</p>"
+        ##regulartext = regulartext + "<br>" + indexChanges_message
 
     print datetime.datetime.now(), "you are here 3"
 
@@ -206,13 +258,35 @@ def IntervalTask( ) :
         subjecttext = "PyTAAA holdings update and trade suggestions"
     else:
         subjecttext = "PyTAAA status update"
-    if marketOpen:
-        headlinetext = "Regularly scheduled email (market is open) " + get_MarketOpenOrClosed()
+    #if marketOpen:
+    print "trade message = ", trade_message
+    print cumu_value_prior, cumu_value
+    print type(float(cumu_value_prior)), type(cumu_value)
+    print np.round(float(cumu_value_prior),2) != np.round(cumu_value,2)
+    if np.round(float(cumu_value_prior),2) != np.round(cumu_value,2) or trade_message != "<br><br>":
+        headlinetext = "Regularly scheduled update (market is open) " + get_MarketOpenOrClosed()
         SendEmail(username,emailpassword,params['toaddrs'],params['fromaddr'],subjecttext,regulartext,boldtext,headlinetext)
+        ##writeWebPage( regulartext,boldtext,headlinetext,lastdate, last_symbols_text, last_symbols_weight, last_symbols_price )
+        # set value to compare with cumu_value as test of info content
+        ##PutStatus( cumu_value )
     else:
-        headlinetext = "Regularly scheduled email (market is closed) " + get_MarketOpenOrClosed()
-        SendEmail(username,emailpassword,params['toaddrs'],params['fromaddr'],subjecttext,regulartext,boldtext,headlinetext)
-        
+        headlinetext = "Regularly scheduled update (market is closed) " + get_MarketOpenOrClosed()
+        print " No email required or sent -- no new information since last email..."
+        #SendEmail(username,emailpassword,params['toaddrs'],params['fromaddr'],subjecttext,regulartext,boldtext,headlinetext)
+        ##writeWebPage( regulartext,boldtext,headlinetext,lastdate, last_symbols_text, last_symbols_weight, last_symbols_price )
+        cumu_value_prior = cumu_value
+        # set value to compare with cumu_value as test of info content
+        ##PutStatus( cumu_value )
+
+    # If there are changes to Nasdaq100 stock list, add message
+
+    # build the updated web page
+    writeWebPage( regulartext,boldtext,headlinetext,lastdate, last_symbols_text, last_symbols_weight, last_symbols_price )
+    # set value to compare with cumu_value as test of info content
+    PutStatus( cumu_value )
+    
+    
+    
     # print market status to terminal window
     get_MarketOpenOrClosed()
 

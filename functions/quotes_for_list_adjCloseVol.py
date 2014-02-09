@@ -1,6 +1,6 @@
 import numpy as np
 import datetime
-from matplotlib.pylab import *
+#from matplotlib.pylab import *
 
 import datetime
 from scipy import random
@@ -14,6 +14,262 @@ import functions.quotes_adjCloseVol
 from functions.quotes_adjCloseVol import *
 from functions.TAfunctions import *
 from functions.readSymbols import *
+
+def get_Naz100List( verbose=True ):
+    ###
+    ### Query nasdaq.com for updated list of stocks in Nasdaq 100 index.
+    ### Return list with stock tickers.
+    ###
+    import urllib
+    import re
+    import os
+    import datetime
+
+    ###
+    ### get symbol list from previous period
+    ###
+    #symbol_directory = os.getcwd() + "\\symbols"
+    symbol_directory = os.path.join( os.getcwd(), "symbols" )
+
+    symbol_file = "Naz100_symbols.txt"
+    symbols_file = os.path.join( symbol_directory, symbol_file )
+    with open(symbols_file, "r+") as f:
+        old_symbolList = f.readlines()
+    for i in range( len(old_symbolList) ) :
+        old_symbolList[i] = old_symbolList[i].replace("\n","")
+
+    ###
+    ### get current symbol list from nasdaq website
+    ###
+    try:
+        base_url = 'http://www.nasdaq.com/quotes/nasdaq-100-stocks.aspx'
+        content = urllib.urlopen(base_url).read()
+    
+        #print "\n\n\n"
+        #print "content = ", content
+    
+    
+        m = re.search('var table_body.*?>*(?s)(.*?)<.*?>.*?<', content).group(0).split("],[")
+        # handle exceptions in format for first and last entries in list
+        m = m[0].split(",\r\n")
+        m[0] = m[0].split("[")[2]
+        m[-1] = m[-1].split("];")[0]
+        print "****************"
+        print m
+        print "len of m = ",len(m)
+        print "****************"
+        # parse list items for symbol name
+        symbolList = []
+        companyNamesList = []
+        for i in range( len(m) ):
+            symbolList.append( m[i].split(",")[0].split('"')[1] )
+            companyNamesList.append( m[i].split(",")[1].split('"')[1] )
+    
+        companyName_file = os.path.join( symbol_directory, "companyNames.txt" )
+        with open( companyName_file, "w" ) as f:
+            for i in range( len(symbolList) ) :
+                f.write( symbolList[i] + ";" + companyNamesList[i] + "\n" )
+    
+        '''
+        print "len of symbolList = ",len(symbolList)
+        for i in range( len(m) ):
+            print symbolList[i], companyNamesList[i]
+        print "****************"
+        print old_symbolList
+        print "****************"
+        '''
+    
+        ###
+        ### compare old list with new list and print changes, if any
+        ###
+        
+        # file for index changes history
+        symbol_change_file = "Naz100_symbolsChanges.txt"
+        symbols_changes_file = os.path.join( symbol_directory, symbol_change_file )
+        with open(symbols_changes_file, "r+") as f:
+            old_symbol_changesList = f.readlines() 
+        old_symbol_changesListText = ''
+        for i in range( len(old_symbol_changesList) ):
+            old_symbol_changesListText = old_symbol_changesListText + old_symbol_changesList[i]
+                
+        # parse date
+        year = datetime.datetime.now().year
+        month = datetime.datetime.now().month
+        day = datetime.datetime.now().day
+        dateToday = str(year)+"-"+str(month)+"-"+str(day)
+                
+        # compare lists to check for tickers removed from the index
+        # - printing will be suppressed if "verbose = False"
+        removedTickers = []
+        print ""
+        for i, ticker in enumerate( old_symbolList ):
+            if i == 0:
+                removedTickersText = ''
+            if ticker not in symbolList:
+                removedTickers.append( ticker )
+                if verbose:
+                    print " Ticker ", ticker, " has been removed from the Nasdaq100 index"
+                removedTickersText = removedTickersText + "\n" + dateToday + " Remove " + ticker
+        
+        # compare lists to check for tickers added to the index
+        # - printing will be suppressed if "verbose = False"
+        addedTickers = []
+        print ""
+        for i, ticker in enumerate( symbolList ):
+            if i == 0:
+                addedTickersText = ''
+            if ticker not in old_symbolList:
+                addedTickers.append( ticker )
+                if verbose:
+                    print " Ticker ", ticker, " has been added to the Nasdaq100 index"
+                addedTickersText = addedTickersText + "\n" + dateToday + " Add    " + ticker
+            
+        print ""
+        with open(symbols_changes_file, "w") as f:
+            f.write(addedTickersText)
+            f.write(removedTickersText)
+            f.write("\n")
+            f.write(old_symbol_changesListText)  
+    
+        print "****************"
+        print "addedTickers = ", addedTickers
+        print "removedTickers = ", removedTickers
+        print "****************"
+        ###
+        ### update symbols file with current list. Keep copy of of list.
+        ###
+    
+        if removedTickers != [] or addedTickers != []:
+            
+            # make copy of previous symbols list file
+            #symbol_directory = os.getcwd() + "\\symbols"
+            symbol_directory = os.path.join( os.getcwd(), "symbols" )
+            symbol_file = "Naz100_symbols.txt"
+            archive_symbol_file = "Naz100_symbols__" + str(datetime.date.today()) + ".txt"
+            symbols_file = os.path.join( symbol_directory, symbol_file )
+            archive_symbols_file = os.path.join( symbol_directory, archive_symbol_file )
+            #import shutil
+            #shutil.copy2(symbols_file, archive_symbol_file)
+    
+            with open( archive_symbols_file, "w" ) as f:
+                for i in range( len(old_symbolList) ) :
+                    f.write( old_symbolList[i] + "\n" )
+    
+            # make new symbols list file
+            with open( symbols_file, "w" ) as f:
+                for i in range( len(symbolList) ) :
+                    f.write( symbolList[i] + "\n" )
+    except:
+        ###
+        ### something didn't wor. print message and return old list.
+        ###
+        print "\n\n\n"
+        print "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! "
+        print " Nasdaq sysmbols list did not get updated from web."
+        print " ... check quotes_for_list_adjCloseVol.py in function 'get_Naz100List' "
+        print " ... also check web at http://www.nasdaq.com/quotes/nasdaq-100-stocks.aspx"
+        print "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! "
+        print "\n\n\n"
+        
+        symbolList = old_symbolList
+        removedTickers = []
+        addedTickers = []
+        
+        
+    return symbolList, removedTickers, addedTickers
+
+
+def get_Naz100PlusETFsList( verbose=True ):
+    ###
+    ### Query nasdaq.com for updated list of stocks in Nasdaq 100 index.
+    ### Return list with stock tickers.
+    ###
+    import urllib
+    import re
+    import os
+    import datetime
+
+    ###
+    ### get symbol list from previous period
+    ###
+    #symbol_directory = os.getcwd() + "\\symbols"
+    symbol_directory = os.path.join( os.getcwd(), "symbols" )
+    symbol_file = "Naz100PlusETFs_symbols.txt"
+    symbols_file = os.path.join( symbol_directory, symbol_file )
+    with open(symbols_file, "r+") as f:
+        old_symbolList = f.readlines()
+    for i in range( len(old_symbolList) ) :
+        old_symbolList[i] = old_symbolList[i].replace("\n","")
+
+    ###
+    ### get current symbol list from nasdaq website
+    ###
+    base_url = 'http://www.nasdaq.com/quotes/nasdaq-100-stocks.aspx'
+    content = urllib.urlopen(base_url).read()
+    m = re.search('var table_body.*?>*(?s)(.*?)<.*?>.*?<', content).group(0).split("],[")
+    # handle exceptions in format for first and last entries in list
+    m[0] = m[0].split("[")[2]
+    m[-1] = m[-1].split("]")[0].split("[")[0]
+    # parse list items for symbol name
+    symbolList = []
+    for i in range( len(m) ):
+        symbolList.append( m[i].split(",")[0].split('"')[1] )
+
+    ###
+    ### compare old list with new list and print changes, if any
+    ###
+
+    # compare lists to check for tickers removed from the index
+    # - printing will be suppressed if "verbose = False"
+    removedTickers = []
+    print ""
+    for i, ticker in enumerate( symbolList ):
+        if ticker not in old_symbolList:
+            removedTickers.append( ticker )
+            if verbose:
+                print " Ticker ", ticker, " has been removed from the Nasdaq100 index"
+
+    # add GTAA asset classes to Naz100 tickers for extra diversity
+    ETF_List = ['AGG', 'CEW', 'DBC', 'EEM', 'EMB', 'FXE', 'GLD', 'HYG', 'IVV', 'LQD', 'TIP', 'TLT', 'USO', 'VNQ', 'XLF', 'XWD.TO' ]
+    for i in range( len(ETF_List) ) :
+        symbolList.append( ETF_List[i] )
+
+    # compare lists to check for tickers added to the index
+    # - printing will be suppressed if "verbose = False"
+    addedTickers = []
+    print ""
+    for i, ticker in enumerate( old_symbolList ):
+        if ticker not in symbolList:
+            addedTickers.append( ticker )
+            if verbose:
+                print " Ticker ", ticker, " has been added to the Nasdaq100 index"
+
+    print ""
+    ###
+    ### update symbols file with current list. Keep copy of of list.
+    ###
+
+    if removedTickers != [] or addedTickers != []:
+        # make copy of previous symbols list file
+        #symbol_directory = os.getcwd() + "\\symbols"
+        symbol_directory = os.path.join( os.getcwd(), "symbols" )
+        symbol_file = "Naz100_symbols.txt"
+        archive_symbol_file = "Naz100_symbols__" + str(datetime.date.today()) + ".txt"
+        symbols_file = os.path.join( symbol_directory, symbol_file )
+        archive_symbols_file = os.path.join( symbol_directory, archive_symbol_file )
+        #import shutil
+        #shutil.copy2(symbols_file, archive_symbol_file)
+
+        with open( archive_symbols_file, "w" ) as f:
+            for i in range( len(old_symbolList) ) :
+                f.write( old_symbolList[i] + "\n" )
+
+        # make new symbols list file
+        with open( symbols_file, "w" ) as f:
+            for i in range( len(symbolList) ) :
+                f.write( symbolList[i] + "\n" )
+
+    return symbolList, removedTickers, addedTickers
 
 
 def arrayFromQuotesForList(symbolsFile, beginDate, endDate):
@@ -39,7 +295,7 @@ def arrayFromQuotesForList(symbolsFile, beginDate, endDate):
     #print "larry getlabel 1 = ", quote.getlabel(1) ### dpg diagnostic
     #print "larry getlabel 2 = ", quote.getlabel(2) ### dpg diagnostic
     date = quote.getlabel(2)
-    datearray=array(date)
+    datearray = np.array(date)
 
     #print " x check: ",x[:,0,:][isnan(x[:,0,:])].shape
 
@@ -52,6 +308,43 @@ def arrayFromQuotesForList(symbolsFile, beginDate, endDate):
 
     #return x[:,0,:], symbols, datearray
     return x[:,0,:], quote.getlabel(0), datearray
+
+def arrayFromQuotesForListWithVol(symbolsFile, beginDate, endDate):
+    '''
+    read in quotes and process to 'clean' ndarray plus date array
+    - prices in array with dimensions [num stocks : num days ]
+    - process stock quotes to show closing prices adjusted for splits, dividends
+    - single ndarray with dates common to all stocks [num days]
+    - clean up stocks by:
+       - infilling empty values with linear interpolated value
+       - repeat first quote to beginning of series
+    '''
+
+    # read symbols list
+    symbols = readSymbolList(symbolsFile,verbose=True)
+
+    # get quotes for each symbol in list (adjusted close)
+    quote = downloadQuotes(symbols,date1=beginDate,date2=endDate,adjust=True,Verbose=True)
+
+    # clean up quotes for missing values and varying starting date
+    x=quote.copyx()
+    #print "larry getlabel 0 = ", quote.getlabel(0) ### dpg diagnostic
+    #print "larry getlabel 1 = ", quote.getlabel(1) ### dpg diagnostic
+    #print "larry getlabel 2 = ", quote.getlabel(2) ### dpg diagnostic
+    date = quote.getlabel(2)
+    datearray = np.array(date)
+
+    #print " x check: ",x[:,0,:][isnan(x[:,0,:])].shape
+
+    # Clean up input quotes
+    #  - infill interior NaN values using nearest good values to linearly interpolate
+    #  - copy first valid quote to from valid date to all earlier positions
+    for ii in range(x.shape[0]):
+        x[ii,0,:] = interpolate(x[ii,0,:])
+        x[ii,0,:] = cleantobeginning(x[ii,0,:])
+
+    #return x[:,0,:], symbols, datearray
+    return x[:,0,:], x[:,1,:], quote.getlabel(0), datearray
 
 '''
 def LastQuotesForSymbolList(symbolList):
@@ -138,6 +431,8 @@ def LastQuotesForSymbolList( symbolList ):
             try:
                 data = get_quote_google( ticker )
                 print "ticker, quote = ", ticker, data
+                # Remove comma from data
+                data = data.replace(",", "")
                 quotelist.append( data )
             except:
                 print "could not get quote for ", ticker, "         will try again and again."

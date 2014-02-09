@@ -40,8 +40,9 @@ def PortfolioStatsOnDate( directory_name, file_name, params, StatDate ):
     else :
         listname = shortname
 
-    hdf5_directory = os.getcwd()+"\\symbols"
-    hdf5filename = os.path.join(hdf5_directory, listname + "_.hdf5")
+    #hdf5_directory = os.getcwd()+"\\symbols"
+    hdf5_directory = os.path.join( os.getcwd(), "symbols" )
+    hdf5filename = os.path.join( hdf5_directory, listname + "_.hdf5" )
 
     # get current list of symbols
     filename = os.path.join( directory_name, file_name )
