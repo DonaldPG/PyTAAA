@@ -1,0 +1,100 @@
+ATVI;Activision Blizzard
+ADBE;Adobe Systems Incorporated
+AKAM;Akamai Technologies
+ALXN;Alexion Pharmaceuticals
+ALTR;Altera Corporation
+AMZN;Amazon.com
+AMGN;Amgen Inc.
+ADI;Analog Devices
+AAPL;Apple Inc.
+AMAT;Applied Materials
+ADSK;Autodesk
+ADP;Automatic Data Processing
+AVGO;Avago Technologies Limited
+BIDU;Baidu
+BBBY;Bed Bath &amp; Beyond Inc.
+BIIB;Biogen Idec Inc.
+BRCM;Broadcom Corporation
+CHRW;C.H. Robinson Worldwide
+CA;CA Inc.
+CTRX;Catamaran Corporation
+CELG;Celgene Corporation
+CERN;Cerner Corporation
+CHTR;Charter Communications
+CHKP;Check Point Software Technologies Ltd.
+CSCO;Cisco Systems
+CTXS;Citrix Systems
+CTSH;Cognizant Technology Solutions Corporation
+CMCSA;Comcast Corporation
+COST;Costco Wholesale Corporation
+DTV;DIRECTV
+DISCA;Discovery Communications
+DISH;DISH Network Corporation
+DLTR;Dollar Tree
+EBAY;eBay Inc.
+EQIX;Equinix
+EXPE;Expedia
+EXPD;Expeditors International of Washington
+ESRX;Express Scripts Holding Company
+FFIV;F5 Networks
+FB;Facebook
+FAST;Fastenal Company
+FISV;Fiserv
+GRMN;Garmin Ltd.
+GILD;Gilead Sciences
+GOOG;Google Inc.
+GMCR;Green Mountain Coffee Roasters
+HSIC;Henry Schein
+ILMN;Illumina
+INTC;Intel Corporation
+INTU;Intuit Inc.
+ISRG;Intuitive Surgical
+KLAC;KLA-Tencor Corporation
+KRFT;Kraft Foods Group
+LBTYA;Liberty Global plc
+LINTA;Liberty Interactive Corporation
+LMCA;Liberty Media Corporation
+LLTC;Linear Technology Corporation
+MAR;Marriott International
+MAT;Mattel
+MXIM;Maxim Integrated Products
+MU;Micron Technology
+MSFT;Microsoft Corporation
+MDLZ;Mondelez International
+MNST;Monster Beverage Corporation
+MYL;Mylan Inc.
+NTAP;NetApp
+NFLX;Netflix
+NVDA;NVIDIA Corporation
+NXPI;NXP Semiconductors N.V.
+ORLY;O'Reilly Automotive
+PCAR;PACCAR Inc.
+PAYX;Paychex
+PCLN;priceline.com Incorporated
+QCOM;QUALCOMM Incorporated
+REGN;Regeneron Pharmaceuticals
+ROST;Ross Stores
+SNDK;SanDisk Corporation
+SBAC;SBA Communications Corporation
+STX;Seagate Technology.
+SIAL;Sigma-Aldrich Corporation
+SIRI;Sirius XM Holdings Inc.
+SPLS;Staples
+SBUX;Starbucks Corporation
+SRCL;Stericycle
+SYMC;Symantec Corporation
+TSLA;Tesla Motors
+TXN;Texas Instruments Incorporated
+TSCO;Tractor Supply Company
+TRIP;TripAdvisor
+FOXA;Twenty-First Century Fox
+VRSK;Verisk Analytics
+VRTX;Vertex Pharmaceuticals Incorporated
+VIAB;Viacom Inc.
+VIP;VimpelCom Ltd.
+VOD;Vodafone Group Plc
+WDC;Western Digital Corporation
+WFM;Whole Foods Market
+WYNN;Wynn Resorts
+XLNX;Xilinx
+YHOO;Yahoo! Inc.
