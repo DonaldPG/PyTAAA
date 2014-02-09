@@ -1,0 +1,27 @@
+[Email]
+From: me@gmail.com
+To:   me@yahoo.com
+PW:   myPasswordGmail
+IPaddress:  444.333.222.111
+
+[FTP]
+hostname: myWebHost
+username: myWebUID
+password: myWebPW
+remotepath: /var/www/mysite/pyTAAApi
+
+[Setup]
+runtime: 15 days
+pausetime: 2 hours
+
+[Valuation]
+numberStocksTraded: 7
+monthsToHold:       1
+LongPeriod:       104
+MA1:              207
+MA2:               26
+MA3:               29
+sma2factor:          .911
+rankThresholdPct:    .02
+riskDownside_min:    .272
+riskDownside_max:   4.386
