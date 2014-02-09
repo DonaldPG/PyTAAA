@@ -4,3 +4,4 @@ scipy
 larry
 nose
 bottleneck
+paramiko
