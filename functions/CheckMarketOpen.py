@@ -12,7 +12,7 @@ def get_MarketOpenOrClosed( ):
     import re
     base_url = 'http://finance.yahoo.com'
     content = urllib.urlopen( base_url ).read()
-    m = re.search('span id="yfs_market_time"(.*?)<',content).group(0).split("Markets ")[1].split("<")[0]
+    m = re.search('yfs_market_time(.*?)<',content).group(0).split("Markets ")[1].split("<")[0]
     if m :
         status = m
         print ""

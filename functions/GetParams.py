@@ -20,7 +20,8 @@ def GetParams():
 
     # read the parameters form the configuration file
     #config = ConfigParser.ConfigParser()
-    config_filename = "C:\\Users\\Don\\PyTAAA\\PyTAAA.params"
+    #config_filename = "C:\\Users\\Don\\PyTAAA\\PyTAAA.params"
+    config_filename = "PyTAAA.params"
     #print "config_filename = ", config_filename
 
     #params = from_config_file(config_filename)
@@ -31,9 +32,11 @@ def GetParams():
 
     toaddrs = config.get("Email", "To").split()
     fromaddr = config.get("Email", "From").split()
+    pw = config.get("Email", "PW")
+    #ip = config.get("Email", "IPaddress")
     runtime = config.get("Setup", "Runtime").split()
     pausetime = config.get("Setup", "Pausetime").split()
-    
+
     #print "debug runtime = ", runtime
     #print "debug pausetime = ", pausetime
 
@@ -81,6 +84,8 @@ def GetParams():
     # put params in a dictionary
     params['fromaddr'] = str(fromaddr[0])
     params['toaddrs'] = str(toaddrs[0])
+    params['PW'] = str(pw)
+    #params['ip'] = str(ip)
     params['runtime'] = max_uptime
     params['pausetime'] = seconds_between_runs
     params['numberStocksTraded'] = int( config.get("Valuation", "numberStocksTraded") )
@@ -93,8 +98,41 @@ def GetParams():
     params['rankThresholdPct'] = float( config.get("Valuation", "rankThresholdPct") )
     params['riskDownside_min'] = float( config.get("Valuation", "riskDownside_min") )
     params['riskDownside_max'] = float( config.get("Valuation", "riskDownside_max") )
-    
+
     return params
+
+
+def GetFTPParams():
+    ######################
+    ### Input FTP parameters
+    ######################
+
+    # set default values
+    ftpparams = {}
+
+    # read the parameters form the configuration file
+    config_filename = "PyTAAA.params"
+    #print "config_filename = ", config_filename
+
+    config = ConfigParser.ConfigParser()
+    configfile = open(config_filename, "r")
+    config.readfp(configfile)
+
+    ftpHostname = config.get("FTP", "hostname")
+    ftpUsername = config.get("FTP", "username")
+    ftpPassword = config.get("FTP", "password")
+    ftpRemotePath = config.get("FTP", "remotepath")
+    
+    # put params in a dictionary
+    ftpparams['ftpHostname'] = str( ftpHostname )
+    ftpparams['ftpUsername'] = str( ftpUsername )
+    ftpparams['ftpPassword'] = str( ftpPassword )
+    ftpparams['remotepath'] = str( ftpRemotePath )
+
+    #print " ...ftpparams = ", ftpparams
+    
+    return ftpparams
+
 
 def GetHoldings():
     ######################
@@ -105,7 +143,8 @@ def GetHoldings():
     holdings = {}
 
     # read the parameters form the configuration file
-    config_filename = "C:\\Users\\Don\\PyTAAA\\PyTAAA_holdings.params"
+    #config_filename = "C:\\Users\\Don\\PyTAAA\\PyTAAA_holdings.params"
+    config_filename = "PyTAAA_holdings.params"
 
     config = ConfigParser.ConfigParser()
     configfile = open(config_filename, "r")
@@ -115,7 +154,82 @@ def GetHoldings():
     holdings['stocks'] = config.get("Holdings", "stocks").split()
     holdings['shares'] = config.get("Holdings", "shares").split()
     holdings['buyprice'] = config.get("Holdings", "buyprice").split()
-   
+    holdings['cumulativecashin'] = config.get("Holdings", "cumulativecashin").split()
+
     return holdings
 
 
+def GetStatus():
+    ######################
+    ### Input current cumulative value
+    ######################
+
+    # read the parameters form the configuration file
+    #status_filename = "C:\\Users\\Don\\PyTAAA\\PyTAAA_status.params"
+    status_filename = "PyTAAA_status.params"
+
+    config = ConfigParser.ConfigParser()
+    configfile = open(status_filename, "r")
+    config.readfp(configfile)
+
+    # put params in a dictionary
+    status = config.get("Status", "cumu_value").split()[-1]
+
+    return status
+
+def PutStatus( cumu_status ):
+    ######################
+    ### Input current cumulative value
+    ######################
+
+    import datetime
+
+    # read the parameters form the configuration file
+    #status_filename = "C:\\Users\\Don\\PyTAAA\\PyTAAA_status.params"
+    status_filename = "PyTAAA_status.params"
+
+    # check last value written to file for comparison with current cumu_status. Update if different.
+    with open(status_filename, 'r') as f:
+        old_cumu_status = f.read()
+    old_cumu_status = old_cumu_status.split("\n")[-2]
+    old_cumu_status = old_cumu_status.split(" ")[-1]
+
+    #print "old_cumu_value = ", old_cumu_status, type(old_cumu_status)
+    #print "cumu_value = ", cumu_status, type(cumu_status)
+
+    if str(cumu_status) != old_cumu_status:
+        with open(status_filename, 'a') as f:
+            f.write( "cumu_value: "+str(datetime.datetime.now())+" "+str(cumu_status)+"\n" )
+
+    return
+
+
+def GetIP( ):
+    ######################
+    ### Input current cumulative value
+    ######################
+
+    import urllib
+    import re
+    f = urllib.urlopen("http://www.canyouseeme.org/")
+    html_doc = f.read()
+    f.close()
+    m = re.search('(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)',html_doc)
+    return m.group(0)
+
+def GetEdition( ):
+    ######################
+    ### Input current cumulative value
+    ######################
+
+    import platform
+
+    # get edition from where software is running
+    if platform.uname()[4] == 'armv6l' :
+        edition = 'pi'
+    elif platform.uname()[1] == 'Don-XPS1530' :
+        edition = 'DonXPS'
+    else:
+        edition = 'none'
+
+    return edition

@@ -52,7 +52,7 @@ def loadQuotes_fromHDF( symbols_file ):
     else :
         listname = shortname
 
-    hdf5_directory = os.getcwd()+"\\symbols"
+    hdf5_directory = os.path.join( os.getcwd(), "symbols" )
     hdf5filename = os.path.join(hdf5_directory, listname + "_.hdf5")
 
     print ""
@@ -63,23 +63,36 @@ def loadQuotes_fromHDF( symbols_file ):
     print "hdf5filename = ",hdf5filename
 
 
-    io = la.IO(hdf5filename)
-    quote = io[listname][:]
-    x=quote.copyx()
-    date = quote.getlabel(1)
-    symbols = quote.getlabel(0)
-    dates=[]
-    for i in range(len(date)):
-        datestr = date[i]
-        date_newformat = datetime.date(*[int(val) for val in datestr.split('-')])
-        dates.append(date_newformat)
+    try:
+        io = la.IO(hdf5filename)
+        quote = io[listname][:]
+        x=quote.copyx()
+        date = quote.getlabel(1)
+        symbols = quote.getlabel(0)
+        dates=[]
+        for i in range(len(date)):
+            datestr = date[i]
+            date_newformat = datetime.date(*[int(val) for val in datestr.split('-')])
+            dates.append(date_newformat)
+    except:
+        createHDF( hdf5_directory, symbols_file, listname )
+        io = la.IO(hdf5filename)
+        quote = io[listname][:]
+        x=quote.copyx()
+        date = quote.getlabel(1)
+        symbols = quote.getlabel(0)
+        dates=[]
+        for i in range(len(date)):
+            datestr = date[i]
+            date_newformat = datetime.date(*[int(val) for val in datestr.split('-')])
+            dates.append(date_newformat)
 
     return x, symbols, dates, quote, listname
 
 def getLastDateFromHDF5( symbol_directory, symbols_file ) :
     filename = os.path.join(symbol_directory, symbols_file)
     adjClose, symbols, datearray, quote, _ = loadQuotes_fromHDF( filename )
-    import numpy as np 
+    import numpy as np
     symbols2 = quote.getlabel(0)
     for i in range(len(symbols)):
         numisnans = adjClose[i,:].copy()
@@ -98,9 +111,33 @@ def getLastDateFromHDF5( symbol_directory, symbols_file ) :
 def getLastDateFromHDF5( symbol_directory, symbols_file ) :
     filename = os.path.join(symbol_directory, symbols_file)
     _, _, datearray, _, _ = loadQuotes_fromHDF( filename )
-    return datearray[-1]
-    
-    
+
+    import datetime
+    today = datetime.datetime.now()
+    hourOfDay = today.hour
+    dayOfWeek = today.weekday()
+    dayOfMonth = today.day
+    tomorrow = today + datetime.timedelta( days=1 )
+    tomorrowDayOfMonth = tomorrow.day
+
+    # set up to return current day's quotes.
+    # - Except late Friday nights and at end of month, when quotes are updated for entire history.
+    # - This logic ensures dividends and splits are accounted for.
+    # TODO: check if there's a split or deividend and only get entire history if 'yes'.
+    """
+    if (dayOfWeek == 4 and hourOfDay >= 22) or (dayOfMonth > tomorrowDayOfMonth and hourOfDay >= 22):
+        return datearray[0]
+    else:
+        return datearray[-1]
+        #return datearray[-500]
+    #return datearray[-5500]
+    """
+    if  hourOfDay >= 22 :
+        return datearray[0]
+    else:
+        return datearray[-1]
+
+
 def UpdateHDF5( symbol_directory, symbols_file ):
 
     ##
@@ -142,7 +179,7 @@ def UpdateHDF5( symbol_directory, symbols_file ):
     else :
         listname = "Favs-Symbols"
 
-    hdf5_directory = r'C:\users\don\Naz100_stats\quotes_data'
+    hdf5_directory = r'/home/pi/PyTAAA/symbols'
     hdf5filename = os.path.join(hdf5_directory, listname + "_.hdf5")
 
     print ""
@@ -176,7 +213,7 @@ def UpdateHDF5( symbol_directory, symbols_file ):
     lastdate = datetime.strptime(date[-1], '%Y-%m-%d')
     lastdatetuple = (lastdate.year,lastdate.month,lastdate.day)
     print "lastdatetuple = ", lastdatetuple
-    
+
     lastdate = getLastDateFromHDF5( symbol_directory, symbols_file )
     lastdatetuple = (lastdate.year,lastdate.month,lastdate.day)
     print "lastdatetuple = ", lastdatetuple
@@ -230,7 +267,7 @@ def UpdateHDF5( symbol_directory, symbols_file ):
             OUTFILE.write(str(isymbol) + "\n")
 
         date = quote.getlabel(1)
-        CASHdatearray=array(date)
+        CASHdatearray = np.array( date )
         CASHadjClose = np.ones( (1,len(CASHdatearray)), float ) * 100.
         for i in range(CASHadjClose.shape[0]):
             if i%10 == 0:
@@ -256,6 +293,7 @@ def UpdateHDF5( symbol_directory, symbols_file ):
 
     newquotesfirstdate =lastdate
     newquoteslastdate = (datetime.now().year,datetime.now().month,datetime.now().day)
+    print " newquotesfirstdate, newquoteslastdate = ", lastdate, newquoteslastdate
 
     newadjClose, symbols, newdatearray = arrayFromQuotesForList(filename, newquotesfirstdate, newquoteslastdate)
 
@@ -266,14 +304,15 @@ def UpdateHDF5( symbol_directory, symbols_file ):
         newdates.append(str(newdatearray[i]))
     quoteupdate = la.larry(newadjClose, [symbols,newdates], dtype=float)
 
-    updatedquotes = quoteupdate.merge(quote, update=True)
+    #updatedquotes = quoteupdate.merge(quote, update=True)
+    updatedquotes = quote.merge(quoteupdate, update=True)
     if len(new_symbols) > 0:
         updatedquotes = updatedquotes.merge(quotes_NewSymbols, update=True)
     if len(CASHsymbols) > 0:
         updatedquotes = updatedquotes.merge(quotes_CASHSymbols, update=True)
 
     # set up to write quotes to disk.
-    dirname = os.getcwd()+"\\symbols"
+    dirname = os.path.join( os.getcwd(), "symbols" )
 
     #hdf5filename = dirname + listname + "_.hdf5"
     hdf5filename = os.path.join( dirname, listname + "_.hdf5" )
@@ -283,3 +322,89 @@ def UpdateHDF5( symbol_directory, symbols_file ):
 
     return
 
+def createHDF( hdf5_directory, symbol_file, listname ):
+
+    import os
+    import numpy as np
+    from matplotlib.pylab import *
+    import matplotlib.gridspec as gridspec
+
+    from datetime import datetime
+
+    import nose
+    import bottleneck as bn
+    import la
+    import h5py
+
+    from la.external.matplotlib import quotes_historical_yahoo
+
+    ## local imports
+    from functions.quotes_for_list_adjCloseVol import *
+    from functions.TAfunctions import *
+
+    hdf5filename = os.path.join(hdf5_directory, listname + "_.hdf5")
+    (shortname, extension) = os.path.splitext( symbol_file )
+    symbol_directory = hdf5_directory
+
+    if shortname == "symbols" :
+        listname = "TAA-Symbols"
+    elif shortname == "cmg_symbols" :
+        listname = "CMG-Symbols"
+    elif shortname == "Naz100_symbols" :
+        listname = "Naz100-Symbols"
+    elif shortname == "biglist" :
+        listname = "biglist-Symbols"
+    elif shortname == "ETF_symbols" :
+        listname = "ETF-Symbols"
+    elif shortname == "ProvidentFundSymbols" :
+        listname = "ProvidentFund-Symbols"
+    elif shortname == "sp500_symbols" :
+        listname = "SP500-Symbols"
+    else :
+        listname = shortname
+
+    print "symbol_directory = ",symbol_directory
+    print "symbol_file = ",symbol_file
+    print "shortname, extension = ",shortname, extension
+    print "hdf5filename = ",hdf5filename
+
+    ##
+    ## Get quotes for each symbol in list
+    ## process dates.
+    ## Clean up quotes.
+    ## Make a plot showing all symbols in list
+    ##
+
+    firstdate=(1991,1,1)
+    #firstdate=(2003,1,1)
+    lastdate=(2011,11,30)
+    lastdate=(2013,6,1)
+    import datetime
+    today = datetime.datetime.now()
+    lastdate = ( today.year, today.month, today.day )
+
+    filename = os.path.join( symbol_directory, symbol_file )
+    print "filename with list of symbols = ", filename
+
+    adjClose, symbols, datearray = arrayFromQuotesForList(filename, firstdate, lastdate)
+    Close = adjClose
+    print " security values check (adjClose): ",adjClose[isnan(adjClose)].shape
+    print " security values check (Close): ",Close[isnan(Close)].shape
+
+    dates = []
+    for i in range(datearray.shape[0]):
+        dates.append(str(datearray[i]))
+    quotetype = []
+    quotetype.append('adjClose')
+    quotetype.append('Volume')
+    quotetype.append('Close')
+
+    quotesarray = np.zeros( (adjClose.shape[0], 3, adjClose.shape[1] ), float )
+    quotesarray[:,0,:] = adjClose
+    quotesarray[:,2,:] = Close
+    quoteupdate = la.larry(quotesarray, [symbols,quotetype,dates], dtype=float)
+
+    io = la.IO(hdf5filename)
+    io[listname] = quoteupdate
+
+    return

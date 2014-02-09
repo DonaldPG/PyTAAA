@@ -112,7 +112,6 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
         date1 = datetime.date(1900, 1, 1)
     if date2 is None:
         date2 = datetime.date.today() + datetime.timedelta(+10)
-    print 'date1, date2:' , date1,date2   ## FIXME: remove
     lar = None
     #items = ['open', 'close', 'high', 'low', 'volume', 'adjclose']
     items = ['close', 'volume']
@@ -120,11 +119,16 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
         print "Load data"
     i=0
     for itick, ticker in enumerate(tickers):
+        #print 'ticker, date1, date2:' , ticker, date1,date2   ## FIXME: remove
         if Verbose:
             print "\t" + ticker + "  ",
 
         data = []
         dates = []
+        
+        #date23 = datetime.date(2020, 1, 1) # TODO - remove this line
+        #data, dates = quotes_historical_yahoo(ticker, date23, date23)  # TODO - remove this line
+        number_tries = 0
         try:
             data, dates = quotes_historical_yahoo(ticker, date1, date2)
             data = np.array(data).T
@@ -141,7 +145,9 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
         except:
             print "could not get quotes for ", ticker, "         will try again and again."
             sleep(3)
-            tickers[itick+1:itick+1] = [ticker]
+            number_tries += 1
+            if number_tries < 11:
+                tickers[itick+1:itick+1] = [ticker]
 
     print "number of tickers successfully processed = ", i
     if i > 0 :
