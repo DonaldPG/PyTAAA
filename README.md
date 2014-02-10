@@ -24,3 +24,10 @@ paramiko
 4. It's up to the user to decide if they want to do anything with the recommendations. This is designed and provided for entertainment only. The author does not accept and responsibility for anything done by others with the recommendations.
 
 5. To let the code know how to track a portfolio for you, manually update the stock holdings in "PyTAAA_holdings.params".
+
+6. A web page is created in the 'pyTAAA_web' directory. In Windows, you can double-click pyTAAAweb.html to see the latest status and holdings, as recommended by PyTAAA.
+
+
+##### Notes:
+
+Backtest plots that start ca. 1991 contain different stocks for historical testing than those created by 're-generateHDF5.py'. Therefore backtest plots will not match those created by PyTAAA.py and shown on the created web page. This is due to changes in the Nasdaq 100 index over time.
