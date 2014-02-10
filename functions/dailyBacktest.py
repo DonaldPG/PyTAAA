@@ -35,7 +35,7 @@ def computeDailyBacktest( datearray, \
     MaxBuyHoldPortfolioValue = np.zeros(adjClose.shape[1],dtype=float)
     numberStocksUpTrendingNearHigh = np.zeros( adjClose.shape[1], dtype=float)
     numberStocksUpTrendingBeatBuyHold = np.zeros( adjClose.shape[1], dtype=float)
-    
+
     gainloss = np.ones((adjClose.shape[0],adjClose.shape[1]),dtype=float)
     activeCount = np.zeros(adjClose.shape[1],dtype=float)
 
@@ -111,19 +111,13 @@ def computeDailyBacktest( datearray, \
     ########################################################################
 
     monthvalue = value.copy()
-    print " 1 - monthvalue check: ",monthvalue[isnan(monthvalue)].shape
-    #print '1 - monthvalue',monthvalue[:,-50]   #### diagnostic
+
     for ii in np.arange(1,monthgainloss.shape[1]):
-        #if datearray[ii].month <> datearray[ii-1].month:
-        #if iter==0:
-        #   print " date,test = ", datearray[ii], (datearray[ii].month != datearray[ii-1].month) and (datearray[ii].month ==1 or datearray[ii].month == 5 or datearray[ii].month == 9)
+
         if (datearray[ii].month != datearray[ii-1].month) and ( (datearray[ii].month - 1)%monthsToHold == 0):
             valuesum=np.sum(monthvalue[:,ii-1])
-            #print " re-balancing ",datearray[ii],valuesum
             for jj in range(value.shape[0]):
-                #monthvalue[jj,ii] = signal2D[jj,ii]*valuesum*gainloss[jj,ii]   # re-balance using weights (that sum to 1.0)
                 monthvalue[jj,ii] = monthgainlossweight[jj,ii]*valuesum*gainloss[jj,ii]   # re-balance using weights (that sum to 1.0)
-                ###if ii>0 and ii<30:print "      ",jj,ii," previous value, new value:  ",monthvalue[jj,ii-1],monthvalue[jj,ii],valuesum,monthgainlossweight[jj,ii],valuesum,gainloss[jj,ii],monthgainlossweight[jj,ii]
         else:
             for jj in range(value.shape[0]):
                 monthvalue[jj,ii] = monthvalue[jj,ii-1]*gainloss[jj,ii]
