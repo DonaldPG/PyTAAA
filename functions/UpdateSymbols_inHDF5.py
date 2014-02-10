@@ -1,15 +1,6 @@
 
-#import time, threading
-
-#import numpy as np
-#from matplotlib.pylab import *
-#import matplotlib.gridspec as gridspec
 
 import datetime
-#from scipy import random
-#from random import choice
-#from scipy.stats import rankdata
-#import scipy as sp
 
 import nose
 import bottleneck as bn
@@ -124,14 +115,6 @@ def getLastDateFromHDF5( symbol_directory, symbols_file ) :
     # - Except late Friday nights and at end of month, when quotes are updated for entire history.
     # - This logic ensures dividends and splits are accounted for.
     # TODO: check if there's a split or deividend and only get entire history if 'yes'.
-    """
-    if (dayOfWeek == 4 and hourOfDay >= 22) or (dayOfMonth > tomorrowDayOfMonth and hourOfDay >= 22):
-        return datearray[0]
-    else:
-        return datearray[-1]
-        #return datearray[-500]
-    #return datearray[-5500]
-    """
     if  hourOfDay >= 22 :
         return datearray[0]
     else:
@@ -144,67 +127,9 @@ def UpdateHDF5( symbol_directory, symbols_file ):
     ##  Update symbols in 'symbols_file' with quotes more recent than last update.
     ##
 
-    """# create list of symbols files on disk.
-    symbols_file = []
-    symbols_file.append("RDSA_symbols.txt")
-    symbols_file.append("cmg_symbols.txt")
-    symbols_file.append("sp500_symbols.txt")
-    symbols_file.append("Naz100_symbols.txt")                     # plotmax = 1.e10, runnum = 902
-    symbols_file.append("symbols.txt")                            # plotmax = 1.e5, runnum = 901
-    symbols_file.append("biglist.txt")                            # plotmax = 1.e10, runnum = 903
-    symbols_file.append("ETF_symbols.txt")                        # plotmax = 1.e6, runnum = 904
-    """
-
     filename = os.path.join(symbol_directory, symbols_file)
 
-    """
-    (shortname, extension) = os.path.splitext(symbols_file)
-
-    # set up to write quotes to disk.
-
-    if shortname == "symbols" :
-        listname = "TAA-Symbols"
-    if shortname == "cmg_symbols" :
-        listname = "CMG-Symbols"
-    elif shortname == "Naz100_symbols" :
-        listname = "Naz100-Symbols"
-    elif shortname == "biglist" :
-        listname = "biglist-Symbols"
-    elif shortname == "ETF_symbols" :
-        listname = "ETF-Symbols"
-    elif shortname == "ProvidentFundSymbols" :
-        listname = "ProvidentFund-Symbols"
-    elif shortname == "sp500_symbols" :
-        listname = "SP500-Symbols"
-    else :
-        listname = "Favs-Symbols"
-
-    hdf5_directory = r'/home/pi/PyTAAA/symbols'
-    hdf5filename = os.path.join(hdf5_directory, listname + "_.hdf5")
-
-    print ""
-    print ""
-    print "symbol_directory = ",symbol_directory
-    print "symbols_file = ",symbols_file
-    print "shortname, extension = ",shortname, extension
-    print "hdf5filename = ",hdf5filename
-
-
-    io = la.IO(hdf5filename)
-    quote = io[listname][:]
-    x=quote.copyx()
-    date = quote.getlabel(1)
-    datearray=array(date)
-    """
-
-    #x, symbols, datearray, quote, listname = loadQuotes_fromHDF( symbols_file )
     x, symbols, datearray, quote, listname = loadQuotes_fromHDF( filename )
-
-    '''
-    ## local imports
-    from functions.quotes_for_list_adjCloseVol import *
-    from functions.TAfunctions import *
-    '''
 
     # get last date in hdf5 archive
     from datetime import datetime
@@ -254,8 +179,6 @@ def UpdateHDF5( symbol_directory, symbols_file ):
             newdates.append(str(newdatearray[i]))
         quotes_NewSymbols = la.larry(newadjClose, [symbols,newdates], dtype=float)
 
-        #updatedquotes = quotes_new-symbols.merge(quote, update=True)
-
     # add CASH as symbol (with value of 1.0 for all dates)
     CASHsymbols = ['CASH']
     if len(CASHsymbols) > 0:
@@ -304,7 +227,6 @@ def UpdateHDF5( symbol_directory, symbols_file ):
         newdates.append(str(newdatearray[i]))
     quoteupdate = la.larry(newadjClose, [symbols,newdates], dtype=float)
 
-    #updatedquotes = quoteupdate.merge(quote, update=True)
     updatedquotes = quote.merge(quoteupdate, update=True)
     if len(new_symbols) > 0:
         updatedquotes = updatedquotes.merge(quotes_NewSymbols, update=True)
@@ -314,7 +236,6 @@ def UpdateHDF5( symbol_directory, symbols_file ):
     # set up to write quotes to disk.
     dirname = os.path.join( os.getcwd(), "symbols" )
 
-    #hdf5filename = dirname + listname + "_.hdf5"
     hdf5filename = os.path.join( dirname, listname + "_.hdf5" )
     print "hdf5 filename = ",hdf5filename
     io = la.IO(hdf5filename)
@@ -376,7 +297,6 @@ def createHDF( hdf5_directory, symbol_file, listname ):
     ##
 
     firstdate=(1991,1,1)
-    #firstdate=(2003,1,1)
     lastdate=(2011,11,30)
     lastdate=(2013,6,1)
     import datetime
