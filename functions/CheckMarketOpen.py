@@ -37,12 +37,7 @@ def CheckMarketOpen() :
         marketOpen = True
     else:
         marketOpen = False
-    """
-    marketOpen = False
-    if dayOfWeek < 5:
-        if hourOfDay > 8 and hourOfDay < 18 :
-            marketOpen = True
-    """
+
 
     # Use simple checks to tell is this is the last trading day of month
     if dayOfWeek < 4:
