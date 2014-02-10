@@ -18,9 +18,6 @@ from functions.TAfunctions import *
 def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
 
     ## update quotes from list of symbols
-    #(symbols_directory, symbols_file) = os.path.split(filename)
-    #print "symbols_directory, symbols.file = ", symbols_directory, symbols_file
-    ###############################################################################################      UpdateHDF5( symbols_directory, symbols_file )
     filename = os.path.join(symbol_directory, symbol_file)
     adjClose, symbols, datearray, _, _ = loadQuotes_fromHDF( symbol_file )
 
@@ -33,19 +30,13 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
     gainloss[np.isinf(gainloss)]=1.
     value = 10000. * np.cumprod(gainloss,axis=1)
 
-    print " ... inside PortfolioPerformanceCalcs, number of NaN's in gainloss on line 30 = ", gainloss[isnan(gainloss)].shape
-    print " ... inside PortfolioPerformanceCalcs, number of NaN's in value on line 30 = ", value[isnan(value)].shape
-
     BuyHoldFinalValue = np.average(value,axis=0)[-1]
 
-    #print " gainloss check: ",gainloss[isnan(gainloss)].shape
-    #print " value check: ",value[isnan(value)].shape
     lastEmptyPriceIndex = np.zeros(adjClose.shape[0],dtype=int)
 
     for ii in range(adjClose.shape[0]):
         # take care of special case where constant share price is inserted at beginning of series
         index = np.argmax(np.clip(np.abs(gainloss[ii,:]-1),0,1e-8)) - 1
-        #print "fist valid price and date = ",symbols[ii]," ",index," ",datearray[index]
         lastEmptyPriceIndex[ii] = index
         activeCount[lastEmptyPriceIndex[ii]+1:] += 1
 
@@ -87,11 +78,7 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
                     signal2D[ii,jj] = 0                #### added to avoid choosing stocks no longer in index
         # take care of special case where constant share price is inserted at beginning of series
         index = np.argmax(np.clip(np.abs(gainloss[ii,:]-1),0,1e-8)) - 1
-        """
-        if iter == 0 :
-            print "fist valid price and date = ",symbols[ii]," ",index," ",datearray[index]
-            lastEmptyPriceIndex[ii] = index
-        """
+
         signal2D[ii,0:index] = 0
 
     dailyNumberUptrendingStocks = np.sum(signal2D,axis = 0)
@@ -110,7 +97,7 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
     ##########################################
     # Write daily backtest portfolio and even-weighted B&H values to file for web page
     ##########################################
-    #try:
+
     computeDailyBacktest( datearray, \
                      symbols, \
                      adjClose, \
@@ -127,11 +114,6 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
                      
     print "\n\n Successfully updated daily backtest at in 'pyTAAAweb_backtestPortfolioValue.params'. Completed on ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
     print ""
-    '''
-    except :
-        print " Error: unable to update pyTAAAweb_backtestPortfolioValue.params"
-        print ""
-    '''
 
 
     ##########################################
@@ -139,7 +121,6 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
     ##########################################
     try:
         filepath = os.path.join( os.getcwd(), "pyTAAAweb_numberUptrendingStocks_status.params" )
-        #print "filepath in writeWebPage = ", filepath
         textmessage = ""
         for jj in range(dailyNumberUptrendingStocks.shape[0]):
             textmessage = textmessage + str(datearray[jj])+"  "+str(dailyNumberUptrendingStocks[jj])+"  "+str(activeCount[jj])+"\n"
@@ -151,73 +132,18 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
         print " Error: unable to update pyTAAAweb_numberUptrendingStocks_status.params"
         print ""
 
-    """
-    ##########################################
-    # Write date and Sharpe signal/indicator to file for web page
-    ##########################################
-    # TODO: make this work with stored data instead of re-computing entire plot every time
-    try:
-        # calculate signal from median Sharpe ratio at multiple time-scales
-        periods = range(int(252/4.),253,int(252/4.))
-        dates, medianSharpe, signal = multiSharpe( datearray, adjClose, periods )
-        
-        # save signal to file
-        filepath = os.path.join( os.getcwd(), "pyTAAAweb_multiSharpeIndicator_status.params" )
-        textmessage = ""
-        for jj in range(medianSharpe.shape[0]):
-            textmessage = textmessage + str(dates[jj])+"  "+str(medianSharpe[jj])+"  "+str(signal[jj])+"\n"
-        with open( filepath, "w" ) as f:
-            f.write(textmessage)
-        print " Successfully updated to pyTAAAweb_multiSharpeIndicator_status.params at ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
-        print ""
-    except :
-        print " Error: unable to update pyTAAAweb_multiSharpeIndicator_status.params"
-        print ""
-        
-    """
 
+
+    '''
     ##########################################
     # Write date and trend dispersion value to file for web page
     ##########################################
     ### this version will be deleted after it works successfully once
 
-    '''
-    try:
-        for jj in range( 20, adjClose.shape[1] ):
-            if jj%250 == 0:
-                print " working on dispersion for ", datearray[jj]
-            dailyTrendDispersionMeans = []
-            dailyTrendDispersionMedians = []
-            for ii in range(adjClose.shape[0]):
-                dailyTrendDispersionMeans.append( np.mean( np.abs(allstats( adjClose[ii,jj-20:jj] ).z_score() )) )
-                #dailyTrendDispersionMedians.append( np.mean( np.abs(allstats( adjClose[ii,jj-20:jj] ).med_score() )) )
-                dailyTrendDispersionMedians.append( np.mean( np.abs(allstats( adjClose[ii,jj-20:jj] ).sharpe() )) )
-        
-            dailyTrendDispersionMeans = np.array( dailyTrendDispersionMeans )
-            dailyTrendDispersionMeans = dailyTrendDispersionMeans[ dailyTrendDispersionMeans > 0. ]
-        
-            dailyTrendDispersionMedians = np.array( dailyTrendDispersionMedians )
-            dailyTrendDispersionMedians = dailyTrendDispersionMedians[ np.isfinite( dailyTrendDispersionMedians ) ]
-            
-            filepath = os.path.join( os.getcwd(), "pyTAAAweb_MeanTrendDispersion_status.params" )
-            #print "filepath in writeWebPage = ", filepath
-            textmessage = ""
-            textmessage = textmessage + str(datearray[jj])+"  "+str( dailyTrendDispersionMeans.mean() )+"  "+str( dailyTrendDispersionMedians.mean() )+"\n"
-            with open( filepath, "a" ) as f:
-                f.write(textmessage)
-        print " Successfully updated to pyTAAAweb_MeanTrendDispersion_status.params at ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
-        print ""
-    except :
-        print " Error: unable to update pyTAAAweb_MeanTrendDispersion_status.params"
-        print ""
-    '''
-
     try:
         print "\n\n diagnostics for updating pyTAAAweb_MeanTrendDispersion_status.params....."
         dailyTrendDispersionMeans = []
         dailyTrendDispersionMedians = []
-
-        print " ... step 0..... "
         
         for ii in range(adjClose.shape[0]):
             try:
@@ -229,30 +155,20 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
             except:
                 ii_sharpe = np.nan
             
-            #print " ... step 0.....  ii,sharpe = ", ii,ii_zscore,ii_sharpe
             dailyTrendDispersionMeans.append( ii_zscore )
-            #dailyTrendDispersionMedians.append( np.mean( np.abs(allstats( adjClose[ii,-20:] ).med_score() )) )
             dailyTrendDispersionMedians.append( ii_sharpe )
-    
-        print " ... step 1....."
         
         dailyTrendDispersionMeans = np.array( dailyTrendDispersionMeans )
         dailyTrendDispersionMeans = dailyTrendDispersionMeans[ dailyTrendDispersionMeans > 0. ]
-    
-        print " ... step 2....."
         
         dailyTrendDispersionMedians = np.array( dailyTrendDispersionMedians )
-        #dailyTrendDispersionMedians = dailyTrendDispersionMedians[ dailyTrendDispersionMedians > 0. ]
         dailyTrendDispersionMedians = dailyTrendDispersionMedians[ np.isfinite( dailyTrendDispersionMedians ) ]
-        
-        print " ... step 3....."
+
         
         filepath = os.path.join( os.getcwd(), "pyTAAAweb_MeanTrendDispersion_status.params" )
         print "filepath in writeWebPage = ", filepath
         textmessage = ""
         textmessage = textmessage + str(datearray[-1])+"  "+str( dailyTrendDispersionMeans.mean() )+"  "+str( dailyTrendDispersionMedians.mean() )+"\n"
-
-        print " ... step 4....., textmessage = ", textmessage
         
         with open( filepath, "a" ) as f:
             f.write(textmessage)
@@ -261,21 +177,15 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
     except :
         print " Error: unable to update pyTAAAweb_MeanTrendDispersion_status.params"
         print ""
+    '''
 
+    ########################################################################
+    ### 1. make plots for all stocks of adjusted price history
+    ########################################################################
 
-
-
-    """
-    ####################################################################################3
-    # print list of stocks and trending direction
-    print "shape of signal2D = ", signal2D.shape
-    print "number of uptrending stocks today is ", numberStocks[-1]
-    """
     import matplotlib
     matplotlib.use('Agg')
     from matplotlib import pylab as plt
-    #plt.ion()
-    #plt.plot(signal2D[50,:])
     filepath = os.path.join( os.getcwd(), "pyTAAA_web" )
 
     today = datetime.datetime.now()
@@ -287,38 +197,15 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
             plt.grid(True)
             plt.plot(datearray,adjClose[i,:])
             plt.plot(datearray,signal2D[i,:]*adjClose[i,-1])
-            #plt.plot(datearray,signal2D[i,:],'b.')
             plot_text = str(adjClose[i,-7:])
             plt.text(datearray[50],0,plot_text)
             plt.title(symbols[i])
             plotfilepath = os.path.join( filepath, "0_"+symbols[i]+".png" )
             plt.savefig( plotfilepath )
-            #print "Rank diagnostics  ", symbols[i], signal2D[i,-6:]
+
     ####################################################################################3
 
 
-
-
-
-    """
-    # make signals sum to 1.0
-    for jj in np.arange(1,adjClose.shape[1]):
-        signal2D[:,jj] = signal2D[:,jj] / np.sum(signal2D[:,jj],axis=0)
-    """
-
-    """
-    if iter == 0:
-        from time import sleep
-        for i in range(len(symbols)):
-            clf()
-            grid()
-            plot(datearray,signal2D[i,:]*np.mean(adjClose[i,:])*numberStocksTraded)
-            plot(datearray,adjClose[i,:])
-            draw()
-            #time.sleep(5)
-    """
-
-    #print " signal2D check: ",signal2D[isnan(signal2D)].shape
 
     ########################################################################
     ### compute weights for each stock based on:
@@ -329,40 +216,17 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
 
     monthgainlossweight = sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,numberStocksTraded,riskDownside_min,riskDownside_max,rankThresholdPct)
 
-    #print "here I am........"
-
-    '''# plot if it is NFLX
-    for ii in range(len(symbols)):
-        if symbols[ii] == 'NFLX':
-            print "********** uptrending symbols found: symbol, lastprice = ", symbols[ii], adjClose[ii,-1]
-            plt.title(symbols[ii])
-            plt.grid()
-            plt.text(datearray[10],1,"price has NaN")
-            plt.plot( datearray, adjClose[ii,:])
-            plt.show()
-            for jj in range(-25,0):
-                print ii,jj,adjClose.shape[1]+jj,len(datearray), adjClose[ii,jj]
-                print "NFLX price: date, adjClose = ",jj, datearray[len(datearray)+jj], adjClose[ii,adjClose.shape[1]+jj], monthgainlossweight[ii,adjClose.shape[1]+jj]
-    '''
 
     ########################################################################
     ### compute traded value of stock for each month
     ########################################################################
 
     monthvalue = value.copy()
-    #print " 1 - monthvalue check: ",monthvalue[isnan(monthvalue)].shape
-    #print '1 - monthvalue',monthvalue[:,-50]   #### diagnostic
     for ii in np.arange(1,monthgainloss.shape[1]):
-        #if datearray[ii].month <> datearray[ii-1].month:
-        #if iter==0:
-        #   print " date,test = ", datearray[ii], (datearray[ii].month != datearray[ii-1].month) and (datearray[ii].month ==1 or datearray[ii].month == 5 or datearray[ii].month == 9)
         if (datearray[ii].month != datearray[ii-1].month) and ( (datearray[ii].month - 1)%monthsToHold == 0):
             valuesum=np.sum(monthvalue[:,ii-1])
-            #print " re-balancing ",datearray[ii],valuesum
             for jj in range(value.shape[0]):
-                #monthvalue[jj,ii] = signal2D[jj,ii]*valuesum*gainloss[jj,ii]   # re-balance using weights (that sum to 1.0)
                 monthvalue[jj,ii] = monthgainlossweight[jj,ii]*valuesum*gainloss[jj,ii]   # re-balance using weights (that sum to 1.0)
-                ###if ii>0 and ii<30:print "      ",jj,ii," previous value, new value:  ",monthvalue[jj,ii-1],monthvalue[jj,ii],valuesum,monthgainlossweight[jj,ii],valuesum,gainloss[jj,ii],monthgainlossweight[jj,ii]
         else:
             for jj in range(value.shape[0]):
                 monthvalue[jj,ii] = monthvalue[jj,ii-1]*gainloss[jj,ii]
@@ -371,188 +235,6 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
     numberSharesCalc = monthvalue / adjClose    # for info only
 
 
-    """
-    # adjust numberSharesCalc to zero if activeCount is zero or len(symbols)
-    for jj in range(value.shape[1]):
-        #activeCount[jj] = monthgainlossweight[:,jj][monthgainlossweight[:,jj] > 0].shape[0]
-        if activeCount[jj] == 0 :
-            numberSharesCalc[:,jj] *= 0
-    """
-
-    """
-    #print 'montvalue',monthvalue[:,-50]   #### diagnostic
-    #print 'montvalue # zeros',monthvalue[monthvalue==0].shape   #### diagnostic
-    #print 'montvalue # NaNs ',monthvalue[isnan(monthvalue)].shape   #### diagnostic
-
-    ########################################################################
-    ### gather statistics on number of uptrending stocks
-    ########################################################################
-
-    numberStocksUpTrending[iter,:] = numberStocks
-    numberStocksUpTrendingMedian = np.median(numberStocksUpTrending[:iter,:],axis=0)
-    numberStocksUpTrendingMean   = np.mean(numberStocksUpTrending[:iter,:],axis=0)
-
-    index = 3780
-    if monthvalue.shape[1] < 3780: index = monthvalue.shape[1]
-
-    PortfolioValue = np.average(monthvalue,axis=0)
-    PortfolioDailyGains = PortfolioValue[1:] / PortfolioValue[:-1]
-    Sharpe15Yr = ( gmean(PortfolioDailyGains[-index:])**252 -1. ) / ( np.std(PortfolioDailyGains[-index:])*sqrt(252) )
-    Sharpe10Yr = ( gmean(PortfolioDailyGains[-2520:])**252 -1. ) / ( np.std(PortfolioDailyGains[-2520:])*sqrt(252) )
-    Sharpe5Yr = ( gmean(PortfolioDailyGains[-1260:])**252 -1. ) / ( np.std(PortfolioDailyGains[-1260:])*sqrt(252) )
-    Sharpe3Yr = ( gmean(PortfolioDailyGains[-756:])**252 -1. ) / ( np.std(PortfolioDailyGains[-756:])*sqrt(252) )
-    Sharpe2Yr = ( gmean(PortfolioDailyGains[-504:])**252 -1. ) / ( np.std(PortfolioDailyGains[-504:])*sqrt(252) )
-    Sharpe1Yr = ( gmean(PortfolioDailyGains[-252:])**252 -1. ) / ( np.std(PortfolioDailyGains[-252:])*sqrt(252) )
-    PortfolioSharpe[iter] = ( gmean(PortfolioDailyGains)**252 -1. ) / ( np.std(PortfolioDailyGains)*sqrt(252) )
-
-    print "15 year : ",index,PortfolioValue[-1], PortfolioValue[-index],datearray[-index]
-
-    Return15Yr = (PortfolioValue[-1] / PortfolioValue[-index])**(252./index)
-    Return10Yr = (PortfolioValue[-1] / PortfolioValue[-2520])**(1/10.)
-    Return5Yr = (PortfolioValue[-1] / PortfolioValue[-1260])**(1/5.)
-    Return3Yr = (PortfolioValue[-1] / PortfolioValue[-756])**(1/3.)
-    Return2Yr = (PortfolioValue[-1] / PortfolioValue[-504])**(1/2.)
-    Return1Yr = (PortfolioValue[-1] / PortfolioValue[-252])
-    PortfolioReturn[iter] = gmean(PortfolioDailyGains)**252 -1.
-
-    MaxPortfolioValue *= 0.
-    for jj in range(PortfolioValue.shape[0]):
-        MaxPortfolioValue[jj] = max(MaxPortfolioValue[jj-1],PortfolioValue[jj])
-    PortfolioDrawdown = PortfolioValue / MaxPortfolioValue - 1.
-    Drawdown15Yr = np.mean(PortfolioDrawdown[-index:])
-    Drawdown10Yr = np.mean(PortfolioDrawdown[-2520:])
-    Drawdown5Yr = np.mean(PortfolioDrawdown[-1260:])
-    Drawdown3Yr = np.mean(PortfolioDrawdown[-756:])
-    Drawdown2Yr = np.mean(PortfolioDrawdown[-504:])
-    Drawdown1Yr = np.mean(PortfolioDrawdown[-252:])
-
-    if iter == 0:
-        BuyHoldPortfolioValue = np.mean(value,axis=0)
-        BuyHoldDailyGains = BuyHoldPortfolioValue[1:] / BuyHoldPortfolioValue[:-1]
-        BuyHoldSharpe15Yr = ( gmean(BuyHoldDailyGains[-index:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-index:])*sqrt(252) )
-        BuyHoldSharpe10Yr = ( gmean(BuyHoldDailyGains[-2520:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-2520:])*sqrt(252) )
-        BuyHoldSharpe5Yr  = ( gmean(BuyHoldDailyGains[-1126:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-1260:])*sqrt(252) )
-        BuyHoldSharpe3Yr  = ( gmean(BuyHoldDailyGains[-756:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-756:])*sqrt(252) )
-        BuyHoldSharpe2Yr  = ( gmean(BuyHoldDailyGains[-504:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-504:])*sqrt(252) )
-        BuyHoldSharpe1Yr  = ( gmean(BuyHoldDailyGains[-252:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-252:])*sqrt(252) )
-        BuyHoldReturn15Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-index])**(252./index)
-        BuyHoldReturn10Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-2520])**(1/10.)
-        BuyHoldReturn5Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-1260])**(1/5.)
-        BuyHoldReturn3Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-756])**(1/3.)
-        BuyHoldReturn2Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-504])**(1/2.)
-        BuyHoldReturn1Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-252])
-        for jj in range(BuyHoldPortfolioValue.shape[0]):
-            MaxBuyHoldPortfolioValue[jj] = max(MaxBuyHoldPortfolioValue[jj-1],BuyHoldPortfolioValue[jj])
-
-        BuyHoldPortfolioDrawdown = BuyHoldPortfolioValue / MaxBuyHoldPortfolioValue - 1.
-        BuyHoldDrawdown15Yr = np.mean(BuyHoldPortfolioDrawdown[-index:])
-        BuyHoldDrawdown10Yr = np.mean(BuyHoldPortfolioDrawdown[-2520:])
-        BuyHoldDrawdown5Yr = np.mean(BuyHoldPortfolioDrawdown[-1260:])
-        BuyHoldDrawdown3Yr = np.mean(BuyHoldPortfolioDrawdown[-756:])
-        BuyHoldDrawdown2Yr = np.mean(BuyHoldPortfolioDrawdown[-504:])
-        BuyHoldDrawdown1Yr = np.mean(BuyHoldPortfolioDrawdown[-252:])
-
-    """
-    """
-    # drawdown diagnostic plots
-    clf()
-    subplot(111)
-    grid()
-    plot(datearray,MaxBuyHoldPortfolioValue)
-    plot(datearray,BuyHoldPortfolioValue)
-    plot(datearray,MaxPortfolioValue)
-    plot(datearray,PortfolioValue)
-    savefig("pngs\Naz100-tripleMAs_montecarlo_"+str(dateForFilename)+runnum+"_"+str(iter)+"MaxValueForDrawdownQC1.png", format='png')
-    clf()
-    subplot(211)
-    grid()
-    plot(datearray,PortfolioDrawdown)
-    plot(datearray,BuyHoldPortfolioDrawdown)
-    subplot(212)
-    grid()
-    plot(datearray,PortfolioValue)
-    plot(datearray,BuyHoldPortfolioValue)
-    savefig("pngs\Naz100-tripleMAs_montecarlo_"+str(dateForFilename)+runnum+"_"+str(iter)+"MaxValueForDrawdownQC2.png", format='png')
-    """
-
-    """
-    print ""
-    print ""
-    print "Sharpe15Yr, BuyHoldSharpe15Yr = ", Sharpe15Yr, BuyHoldSharpe15Yr
-    print "Sharpe10Yr, BuyHoldSharpe10Yr = ", Sharpe10Yr, BuyHoldSharpe10Yr
-    print "Sharpe5Yr, BuyHoldSharpe5Yr =   ", Sharpe5Yr, BuyHoldSharpe5Yr
-    print "Sharpe3Yr, BuyHoldSharpe3Yr =   ", Sharpe3Yr, BuyHoldSharpe3Yr
-    print "Sharpe2Yr, BuyHoldSharpe2Yr =   ", Sharpe2Yr, BuyHoldSharpe2Yr
-    print "Sharpe1Yr, BuyHoldSharpe1Yr =   ", Sharpe1Yr, BuyHoldSharpe1Yr
-    print "Return15Yr, BuyHoldReturn15Yr = ", Return15Yr, BuyHoldReturn15Yr
-    print "Return10Yr, BuyHoldReturn10Yr = ", Return10Yr, BuyHoldReturn10Yr
-    print "Return5Yr, BuyHoldReturn5Yr =   ", Return5Yr, BuyHoldReturn5Yr
-    print "Return3Yr, BuyHoldReturn3Yr =   ", Return3Yr, BuyHoldReturn3Yr
-    print "Return2Yr, BuyHoldReturn2Yr =   ", Return2Yr, BuyHoldReturn2Yr
-    print "Return1Yr, BuyHoldReturn1Yr =   ", Return1Yr, BuyHoldReturn1Yr
-    print "Drawdown15Yr, BuyHoldDrawdown15Yr = ", Drawdown15Yr, BuyHoldDrawdown15Yr
-    print "Drawdown10Yr, BuyHoldDrawdown10Yr = ", Drawdown10Yr, BuyHoldDrawdown10Yr
-    print "Drawdown5Yr, BuyHoldDrawdown5Yr =   ", Drawdown5Yr, BuyHoldDrawdown5Yr
-    print "Drawdown3Yr, BuyHoldDrawdown3Yr =   ", Drawdown3Yr, BuyHoldDrawdown3Yr
-    print "Drawdown2Yr, BuyHoldDrawdown2Yr =   ", Drawdown2Yr, BuyHoldDrawdown2Yr
-    print "Drawdown1Yr, BuyHoldDrawdown1Yr =   ", Drawdown1Yr, BuyHoldDrawdown1Yr
-
-    if iter == 0:
-        beatBuyHoldCount = 0
-        beatBuyHold2Count = 0
-    beatBuyHoldTest = ( (Sharpe15Yr-BuyHoldSharpe15Yr)/15. + \
-                        (Sharpe10Yr-BuyHoldSharpe10Yr)/10. + \
-                        (Sharpe5Yr-BuyHoldSharpe5Yr)/5. + \
-                        (Sharpe3Yr-BuyHoldSharpe3Yr)/3. + \
-                        (Sharpe2Yr-BuyHoldSharpe2Yr)/2. + \
-                        (Sharpe1Yr-BuyHoldSharpe1Yr)/1. ) / (1/15. + 1/10.+1/5.+1/3.+1/2.+1)
-    if beatBuyHoldTest > 0. :
-        #print "found monte carlo trial that beats BuyHold..."
-        #print "shape of numberStocksUpTrendingBeatBuyHold = ",numberStocksUpTrendingBeatBuyHold.shape
-        #print "mean of numberStocksUpTrendingBeatBuyHold values = ",np.mean(numberStocksUpTrendingBeatBuyHold)
-        beatBuyHoldCount += 1
-        #numberStocksUpTrendingBeatBuyHold = (numberStocksUpTrendingBeatBuyHold * (beatBuyHoldCount -1) + numberStocks) / beatBuyHoldCount
-
-    beatBuyHoldTest2 = 0
-    if Return15Yr > BuyHoldReturn15Yr: beatBuyHoldTest2 += 1
-    if Return10Yr > BuyHoldReturn10Yr: beatBuyHoldTest2 += 1
-    if Return5Yr  > BuyHoldReturn5Yr:  beatBuyHoldTest2 += 1
-    if Return3Yr  > BuyHoldReturn3Yr:  beatBuyHoldTest2 += 1.5
-    if Return2Yr  > BuyHoldReturn2Yr:  beatBuyHoldTest2 += 2
-    if Return1Yr  > BuyHoldReturn1Yr:  beatBuyHoldTest2 += 2.5
-    if Return15Yr > 0: beatBuyHoldTest2 += 1
-    if Return10Yr > 0: beatBuyHoldTest2 += 1
-    if Return5Yr  > 0: beatBuyHoldTest2 += 1
-    if Return3Yr  > 0: beatBuyHoldTest2 += 1.5
-    if Return2Yr  > 0: beatBuyHoldTest2 += 2
-    if Return1Yr  > 0: beatBuyHoldTest2 += 2.5
-    if Drawdown15Yr > BuyHoldDrawdown15Yr: beatBuyHoldTest2 += 1
-    if Drawdown10Yr > BuyHoldDrawdown10Yr: beatBuyHoldTest2 += 1
-    if Drawdown5Yr  > BuyHoldDrawdown5Yr:  beatBuyHoldTest2 += 1
-    if Drawdown3Yr  > BuyHoldDrawdown3Yr:  beatBuyHoldTest2 += 1.5
-    if Drawdown2Yr  > BuyHoldDrawdown2Yr:  beatBuyHoldTest2 += 2
-    if Drawdown1Yr  > BuyHoldDrawdown1Yr:  beatBuyHoldTest2 += 2.5
-    # make it a ratio ranging from 0 to 1
-    beatBuyHoldTest2 /= 27
-
-    if beatBuyHoldTest2 > .60 :
-        print "found monte carlo trial that beats BuyHold (test2)..."
-        print "shape of numberStocksUpTrendingBeatBuyHold = ",numberStocksUpTrendingBeatBuyHold.shape
-        print "mean of numberStocksUpTrendingBeatBuyHold values = ",np.mean(numberStocksUpTrendingBeatBuyHold)
-        beatBuyHold2Count += 1
-        numberStocksUpTrendingBeatBuyHold = (numberStocksUpTrendingBeatBuyHold * (beatBuyHold2Count -1) + numberStocks) / beatBuyHold2Count
-
-    print "beatBuyHoldTest = ", beatBuyHoldTest, beatBuyHoldTest2
-    print "countof trials that BeatBuyHold  = ", beatBuyHoldCount
-    print "countof trials that BeatBuyHold2 = ", beatBuyHold2Count
-    print ""
-    print ""
-
-    from scipy.stats import scoreatpercentile
-    if iter > 1:
-        for jj in range(adjClose.shape[1]):
-            numberStocksUpTrendingNearHigh[jj]   = scoreatpercentile(numberStocksUpTrending[:iter,jj], 90)
-    """
 
     print " "
     print "The B&H portfolio final value is: ","{:,}".format(int(BuyHoldFinalValue))
