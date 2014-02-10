@@ -1,6 +1,4 @@
-#import sys
-#import string
-#import re
+
 import ConfigParser
 
 def from_config_file(config_filename):
@@ -19,26 +17,19 @@ def GetParams():
     params = {}
 
     # read the parameters form the configuration file
-    #config = ConfigParser.ConfigParser()
-    #config_filename = "C:\\Users\\Don\\PyTAAA\\PyTAAA.params"
     config_filename = "PyTAAA.params"
-    #print "config_filename = ", config_filename
 
     #params = from_config_file(config_filename)
     config = ConfigParser.ConfigParser(defaults=defaults)
-    #config = ConfigParser.ConfigParser()
     configfile = open(config_filename, "r")
     config.readfp(configfile)
 
     toaddrs = config.get("Email", "To").split()
     fromaddr = config.get("Email", "From").split()
     pw = config.get("Email", "PW")
-    #ip = config.get("Email", "IPaddress")
     runtime = config.get("Setup", "Runtime").split()
     pausetime = config.get("Setup", "Pausetime").split()
 
-    #print "debug runtime = ", runtime
-    #print "debug pausetime = ", pausetime
 
     if len(runtime) == 1:
         runtime.join('days')
@@ -85,7 +76,6 @@ def GetParams():
     params['fromaddr'] = str(fromaddr[0])
     params['toaddrs'] = str(toaddrs[0])
     params['PW'] = str(pw)
-    #params['ip'] = str(ip)
     params['runtime'] = max_uptime
     params['pausetime'] = seconds_between_runs
     params['numberStocksTraded'] = int( config.get("Valuation", "numberStocksTraded") )
@@ -112,7 +102,6 @@ def GetFTPParams():
 
     # read the parameters form the configuration file
     config_filename = "PyTAAA.params"
-    #print "config_filename = ", config_filename
 
     config = ConfigParser.ConfigParser()
     configfile = open(config_filename, "r")
@@ -128,8 +117,6 @@ def GetFTPParams():
     ftpparams['ftpUsername'] = str( ftpUsername )
     ftpparams['ftpPassword'] = str( ftpPassword )
     ftpparams['remotepath'] = str( ftpRemotePath )
-
-    #print " ...ftpparams = ", ftpparams
     
     return ftpparams
 
@@ -143,7 +130,6 @@ def GetHoldings():
     holdings = {}
 
     # read the parameters form the configuration file
-    #config_filename = "C:\\Users\\Don\\PyTAAA\\PyTAAA_holdings.params"
     config_filename = "PyTAAA_holdings.params"
 
     config = ConfigParser.ConfigParser()
@@ -165,7 +151,6 @@ def GetStatus():
     ######################
 
     # read the parameters form the configuration file
-    #status_filename = "C:\\Users\\Don\\PyTAAA\\PyTAAA_status.params"
     status_filename = "PyTAAA_status.params"
 
     config = ConfigParser.ConfigParser()
@@ -185,7 +170,6 @@ def PutStatus( cumu_status ):
     import datetime
 
     # read the parameters form the configuration file
-    #status_filename = "C:\\Users\\Don\\PyTAAA\\PyTAAA_status.params"
     status_filename = "PyTAAA_status.params"
 
     # check last value written to file for comparison with current cumu_status. Update if different.
@@ -193,9 +177,6 @@ def PutStatus( cumu_status ):
         old_cumu_status = f.read()
     old_cumu_status = old_cumu_status.split("\n")[-2]
     old_cumu_status = old_cumu_status.split(" ")[-1]
-
-    #print "old_cumu_value = ", old_cumu_status, type(old_cumu_status)
-    #print "cumu_value = ", cumu_status, type(cumu_status)
 
     if str(cumu_status) != old_cumu_status:
         with open(status_filename, 'a') as f:
@@ -225,10 +206,10 @@ def GetEdition( ):
     import platform
 
     # get edition from where software is running
-    if platform.uname()[4] == 'armv6l' :
+    if 'armv6l' in platform.uname()[4] :
         edition = 'pi'
-    elif platform.uname()[1] == 'Don-XPS1530' :
-        edition = 'DonXPS'
+    elif 'XPS' in platform.uname()[1] :
+        edition = 'XPS'
     else:
         edition = 'none'
 
