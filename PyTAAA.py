@@ -19,23 +19,11 @@ print "params = ", params
 print ""
 username = str(params['fromaddr']).split("@")[0]
 emailpassword = str(params['PW'])
-#print "emailpassword is ", emailpassword
-#ip = str(params['ip'])
 ip = GetIP()
 print "Current ip address is ", ip
-
-#print "params['fromaddr'], params['toaddrs'], runtime, params['pausetime'], username = ", params['fromaddr'], params['toaddrs'], runtime, params['pausetime'], username
-print ""
-#pausetime = params['pausetime']
-#toaddrs = params['toaddrs']
-#fromaddr = params['fromaddr']
 print "An email with updated analysis will be sent to ", params['toaddrs'], " every ", params['pausetime'], " seconds"
 print params['pausetime'], " seconds is ", format(params['pausetime']/60/60.,'2.1f'), " hours, or ",  \
                                             format(params['pausetime']/60/60/24.,'3.1f'), " days."
-print ""
-
-#emailpassword = getpass.getpass("Enter a password for : " + str(params['fromaddr']) + "\n")
-print "you entered your email password"
 print ""
 
 
@@ -43,7 +31,7 @@ def IntervalTask( ) :
 
     # keep track of total time to update everything
     start_time_total = time.time()
-        
+
     # set value to compare with cumu_value as test of info content
     cumu_value_prior = GetStatus()
 
@@ -60,12 +48,9 @@ def IntervalTask( ) :
     # Update prices in HDF5 file for symbols in list
     # - check web for current stocks in Naz100, update files if changes needed
     start_time_updateNaz100List = time.time()
-    #_,_,_ = get_Naz100List( verbose = True )
     _, removedTickers, addedTickers = get_Naz100List( verbose = True )
     elapsed_time_updateNaz100List = time.time() - start_time_updateNaz100List
-    #_,_,_,indexChanges_message = get_Naz100List( verbose = True )
-    # - limit updates to HDF5 to once per day after market close (using daily_update_done as toggle)
-    #symbol_directory = os.getcwd() + "\\symbols"
+
     symbol_directory = os.path.join( os.getcwd(), "symbols" )
 
     symbol_file = "Naz100_symbols.txt"
@@ -97,14 +82,10 @@ def IntervalTask( ) :
         lastdate, last_symbols_text, last_symbols_weight, last_symbols_price = PortfolioPerformanceCalcs( symbol_directory, symbol_file, params )
         CalcsUpdateCount += 1
 
-    print datetime.datetime.now(), "you are here 0"
-
     # put holding data in lists
     holdings_symbols = holdings['stocks']
     holdings_shares = np.array(holdings['shares']).astype('float')
     holdings_buyprice = np.array(holdings['buyprice']).astype('float')
-    #date2 = datetime.date.today() + datetime.timedelta(+10)
-    print datetime.datetime.now(), "you are here 0.1"
 
     #holdings_currentPrice = LastQuotesForList( holdings_symbols )
     holdings_currentPrice = LastQuotesForSymbolList( holdings_symbols )
@@ -124,23 +105,6 @@ def IntervalTask( ) :
     lifetimeProfit = currentHoldingsValue - float(holdings['cumulativecashin'][0])
     print "Lifetime profit = ", lifetimeProfit
 
-    print ""
-
-    print datetime.datetime.now(), "you are here 1"
-
-    """
-    message_text = "<br>"+"<p>Current stocks and weights are :</p><br><font face='courier new' size=3><table border='1'> \
-                   <tr><td>symbol  \
-                   </td><td>weight  \
-                   </td><td>shares  \
-                   </td><td>purch price  \
-                   </td><td>purch cost  \
-                   </td><td>cumu purch  \
-                   </td><td>last price  \
-                   </td><td>Value ($)  \
-                   </td><td>cumu Value ($)  \
-                   </td></tr>"
-    """
     message_text = "<h3>Current stocks and weights are :</h3><font face='courier new' size=3><table border='1'> \
                    <tr><td>symbol  \
                    </td><td>shares  \
@@ -159,46 +123,13 @@ def IntervalTask( ) :
     print "last_symbols_weight = ", last_symbols_weight
     print "last_symbols_price = ", last_symbols_price
 
-    """
-    # Sync last_symbols_text with holdings (might not match due to thresholds applied)
-    updated_last_symbols_weight = []
-    updated_last_symbols_price = []
-    matches = [item for item in holdings_symbols if item in last_symbols_text]
-    for i, symbol in enumerate( holdings_symbols ):
-        if symbol != "CASH":
-            last_symbols_index = last_symbols_text.index( holdings_symbols[i] )
-            updated_last_symbols_weight.append( last_symbols_weight[last_symbols_index] )
-            updated_last_symbols_price.append( last_symbols_price[last_symbols_index] )
-        else:
-            updated_last_symbols_weight.append( 0 )
-            updated_last_symbols_price.append( 1.0 )
-    """
-
     for i in range(len(holdings_shares)):
         #print "i, symbol, weight = ", i, format(last_symbols_text[i],'5s'), format(last_symbols_weight[i],'5.3f')
         purchase_value = holdings_buyprice[i]*holdings_shares[i]
         cumu_purchase_value += purchase_value
         value = float(holdings_currentPrice[i]) * float(holdings_shares[i])
         cumu_value += value
-        """
-        print "holdings_shares[i] = ", i, format(holdings_shares[i],'6.0f')
-        print "holdings_buyprice[i] = ", i, format(holdings_buyprice[i],'6.2f')
-        print "purchase_value = ", i, format(purchase_value,'6.2f')
-        print "cumu_purchase_value = ", i, format(cumu_purchase_value,'6.2f')
-        print "holdings_currentPrice[i] = ", i, format(float(holdings_currentPrice[i]),'6.2f')
-        print "value = ", i, format(value,'6.2f')
-        print "cumu_value = ", i, format(cumu_value,'6.2f')
-        message_text = message_text+"<p><tr><td>"+format(holdings_symbols[i],'5s') \
-                                   +"</td><td>"+format(updated_last_symbols_weight[i],'5.3f') \
-                                   +"</td><td>"+format(holdings_shares[i],'6.0f') \
-                                   +"</td><td>"+format(holdings_buyprice[i],'6.2f') \
-                                   +"</td><td>"+format(purchase_value,'6.2f') \
-                                   +"</td><td>"+format(cumu_purchase_value,'6.2f') \
-                                   +"</td><td>"+format(holdings_currentPrice[i],'6.2f') \
-                                   +"</td><td>"+format(value,'6.2f') \
-                                   +"</td><td>"+format(cumu_value,'6.2f') \
-                                   +"</td></tr>"
-        """
+
         message_text = message_text+"<p><tr><td>"+format(holdings_symbols[i],'5s') \
                                    +"</td><td>"+format(holdings_shares[i],'6.0f') \
                                    +"</td><td>"+format(holdings_buyprice[i],'6.2f') \
@@ -210,23 +141,18 @@ def IntervalTask( ) :
                                    +"</td></tr>\n"
     print ""
 
-    print datetime.datetime.now(), "you are here 2"
-    #print "message_text = ", message_text
 
     # Notify with buys/sells on trade dates
     month = datetime.datetime.now().month
     monthsToHold = params['monthsToHold']
     trade_message = "<br>"
-    #if lastDayOfMonth and ( (month-1)%monthsToHold == 0 ):
     if 0 == 0 :
         trade_message = calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symbols_price )
-        #print "trade_message =", trade_message,"_"
-        #print trade_message != "<br><br>"
         message_text = message_text + trade_message
 
     edition = GetEdition()
     message_text = message_text+"</table><br><"+"/font><p>Lifetime profit = $"+str(lifetimeProfit)+"   = "+format(lifetimeProfit/float(holdings['cumulativecashin'][0]),'6.1%')+"</p>"
-    
+
     # Update message for changes in  tickers removed from or added to the Nasdaq100 index
     if removedTickers != [] or addedTickers != []:
         message_text = message_text+"<br><p>There are changes in the stock list<p>"
@@ -248,9 +174,7 @@ def IntervalTask( ) :
         regulartext = regulartext+"<br>elapsed time for web updates, computations, updating web page "+format(elapsed_time_total,'6.2f')+" seconds</p>"
     else:
         regulartext = regulartext+"<br>elapsed time for web updates, computations, updating web page "+format(elapsed_time_total/60.,'6.2f')+" minutes</p>"
-        ##regulartext = regulartext + "<br>" + indexChanges_message
 
-    print datetime.datetime.now(), "you are here 3"
 
     # Customize and send email
     # - based on day of month and whether market is open or closed
@@ -258,7 +182,7 @@ def IntervalTask( ) :
         subjecttext = "PyTAAA holdings update and trade suggestions"
     else:
         subjecttext = "PyTAAA status update"
-    #if marketOpen:
+
     print "trade message = ", trade_message
     print cumu_value_prior, cumu_value
     print type(float(cumu_value_prior)), type(cumu_value)
@@ -284,9 +208,7 @@ def IntervalTask( ) :
     writeWebPage( regulartext,boldtext,headlinetext,lastdate, last_symbols_text, last_symbols_weight, last_symbols_price )
     # set value to compare with cumu_value as test of info content
     PutStatus( cumu_value )
-    
-    
-    
+
     # print market status to terminal window
     get_MarketOpenOrClosed()
 
@@ -295,10 +217,6 @@ def IntervalTask( ) :
 Main program
 '''
 if __name__ == '__main__':
-
-    # Run scheduled tasks
-    #runtime = 60 * 10
-    #pausetime = 180
 
     # Create a scheduler
     my_scheduler = scheduler.Scheduler()
@@ -316,13 +234,8 @@ if __name__ == '__main__':
 
     # Stop the scheduler after runtime
     from time import sleep
-    #runtime = 60 * 10
     sleep(params['runtime'])
     my_scheduler.halt()
 
     # Give it a timeout to halt any running tasks and stop gracefully
     my_scheduler.join(100)
-
-
-
-
