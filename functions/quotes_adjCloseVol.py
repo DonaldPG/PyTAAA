@@ -113,21 +113,17 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
     if date2 is None:
         date2 = datetime.date.today() + datetime.timedelta(+10)
     lar = None
-    #items = ['open', 'close', 'high', 'low', 'volume', 'adjclose']
     items = ['close', 'volume']
     if Verbose:
         print "Load data"
     i=0
     for itick, ticker in enumerate(tickers):
-        #print 'ticker, date1, date2:' , ticker, date1,date2   ## FIXME: remove
         if Verbose:
             print "\t" + ticker + "  ",
 
         data = []
         dates = []
-        
-        #date23 = datetime.date(2020, 1, 1) # TODO - remove this line
-        #data, dates = quotes_historical_yahoo(ticker, date23, date23)  # TODO - remove this line
+
         number_tries = 0
         try:
             data, dates = quotes_historical_yahoo(ticker, date1, date2)
@@ -136,7 +132,6 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
                 print i," of ",len(tickers)," ticker ",ticker," has ",data.shape[1]," quotes"
             qlar = la.larry(data[4:,:], [items, dates])
             qlar = qlar.insertaxis(0, ticker)
-            #print "qlar = ",qlar ### dpg diagnostic
             if lar is None:
                 lar = qlar
             else:
@@ -159,16 +154,6 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
         lar = la.larry([0, 0],[items,date2])
         return lar
 
-    #print "lar = ",lar ### dpg diagnostic
-    '''
-    if adjust:
-        scale = lar.x[:,-1] / lar.x[:,1]
-        lar.x[:,0] *= scale
-        lar.x[:,1] = lar.x[:,-1]
-        lar.x[:,2] *= scale
-        lar.x[:,3] *= scale
-        lar = lar[:,:-1]
-    '''
     return lar
 
 
