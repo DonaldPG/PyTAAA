@@ -17,7 +17,6 @@ def interpolate(self, method='linear'):
     edited to keep only 'linear' method
     Usage: infill NaN values with linear interpolated values
     """
-    #import numpy as np
     inds = np.arange(len(self))
     values = self.copy()
     invalid = isnan(values)
@@ -36,7 +35,6 @@ def cleantobeginning(self):
 
     Usage: infill NaN values at beginning with copy of first valid value
     """
-    #import numpy as np
     inds = np.arange(len(self))
     values = self.copy()
     invalid = isnan(values)
@@ -47,7 +45,6 @@ def cleantobeginning(self):
     return values
 #----------------------------------------------
 def dpgchannel(x,minperiod,maxperiod,incperiod):
-    #import numpy as np
     periods = np.arange(minperiod,maxperiod,incperiod)
     minchannel = np.zeros(len(x),dtype=float)
     maxchannel = np.zeros(len(x),dtype=float)
@@ -55,9 +52,7 @@ def dpgchannel(x,minperiod,maxperiod,incperiod):
         divisor = 0
         for j in range(len(periods)):
             minx = max(1,i-periods[j])
-            #print "i,j,periods[j],minx,x[minx:i]   :",i,j,periods[j],minx,x[i],x[minx:i]
             if len(x[minx:i]) < 1:
-                #print "short   ",i,j,x[i]
                 minchannel[i] = minchannel[i] + x[i]
                 maxchannel[i] = maxchannel[i] + x[i]
                 divisor += 1
@@ -70,7 +65,6 @@ def dpgchannel(x,minperiod,maxperiod,incperiod):
     return minchannel,maxchannel
 #----------------------------------------------
 def dpgchannel_2D(x,minperiod,maxperiod,incperiod):
-    #import numpy as np
     periods = np.arange(minperiod,maxperiod,incperiod)
     minchannel = np.zeros( (x.shape[0],x.shape[1]), dtype=float)
     maxchannel = np.zeros( (x.shape[0],x.shape[1]), dtype=float)
@@ -78,9 +72,7 @@ def dpgchannel_2D(x,minperiod,maxperiod,incperiod):
         divisor = 0
         for j in range(len(periods)):
             minx = max(1,i-periods[j])
-            #print "i,j,periods[j],minx,x[minx:i]   :",i,j,periods[j],minx,x[i],x[minx:i]
             if len(x[0,minx:i]) < 1:
-                #print "short   ",i,j,x[i]
                 minchannel[:,i] = minchannel[:,i] + x[:,i]
                 maxchannel[:,i] = maxchannel[:,i] + x[:,i]
                 divisor += 1
@@ -96,7 +88,6 @@ def dpgchannel_2D(x,minperiod,maxperiod,incperiod):
 #----------------------------------------------
 
 def SMA_2D(x,periods):
-    #import numpy as np
     SMA = np.zeros( (x.shape[0],x.shape[1]), dtype=float)
     for i in range( x.shape[1] ):
         minx = max(0,i-periods)
@@ -107,7 +98,6 @@ def SMA_2D(x,periods):
 #----------------------------------------------
 
 def SMA(x,periods):
-    #import numpy as np
     SMA = np.zeros( (x.shape[0]), dtype=float)
     for i in range( x.shape[0] ):
         minx = max(0,i-periods)
@@ -118,7 +108,6 @@ def SMA(x,periods):
 #----------------------------------------------
 
 def MoveMax_2D(x,periods):
-    #import numpy as np
     MMax = np.zeros( (x.shape[0],x.shape[1]), dtype=float)
     for i in range( x.shape[1] ):
         minx = max(0,i-periods)
@@ -129,7 +118,6 @@ def MoveMax_2D(x,periods):
 #----------------------------------------------
 
 def MoveMax(x,periods):
-    #import numpy as np
     MMax = np.zeros( (x.shape[0]), dtype=float)
     for i in range( x.shape[0] ):
         minx = max(0,i-periods)
@@ -157,8 +145,6 @@ def move_sharpe_2D(adjClose,dailygainloss,period):
     from math import sqrt
     from numpy import std
     #
-    print "period,adjClose.shape  :",period,adjClose.shape
-    #
     sharpe = np.zeros( (adjClose.shape[0],adjClose.shape[1]), dtype=float)
     for i in range( dailygainloss.shape[1] ):
         minindex = max( i-period, 0 )
@@ -179,27 +165,27 @@ def move_sharpe_2D(adjClose,dailygainloss,period):
 def nanrms(x, axis=None):
     from bottleneck import nanmean
     return sqrt(nanmean(x**2, axis=axis))
-    
+
 def move_informationRatio(dailygainloss_portfolio,dailygainloss_index,period):
     """
     Compute the moving information ratio
-      
+
       returns for stock (annualized) = Rs
         -- assuming 252 days per year this is gmean(dailyGains)**252 -1
-        -- Rs denotes stock's return 
+        -- Rs denotes stock's return
 
       excess return compared to bendmark = Expectation(Rp - Ri)
         -- assuming 252 days per year this is sum(Rp - Ri)/252, or just mean(Rp - Ri)
         -- Rp denotes active portfolio return
-        -- Ri denotes index return 
+        -- Ri denotes index return
 
       tracking error compared to bendmark = sqrt(Expectation((Rp - Ri)**2))
         -- assuming 252 days per year this is sqrt(Sum((Rp - Ri)**2)/252), or just sqrt(mean(((Rp - Ri)**2)))
         -- Rp denotes active portfolio return
         -- Ri denotes index return
-      
+
       information_ratio = ExcessReturn / TrackingError
-      
+
       formula assume 252 trading days per year
 
     Geometric mean is simplified as follows:
@@ -214,34 +200,8 @@ def move_informationRatio(dailygainloss_portfolio,dailygainloss_index,period):
     from numpy import std
     from bottleneck import nanmean
     #
-    print "period,adjClose.shape  :",period,dailygainloss_portfolio.shape
-    #
     infoRatio = np.zeros( (dailygainloss_portfolio.shape[0],dailygainloss_portfolio.shape[1]), dtype=float)
-    '''
-    for i in range( dailygainloss_portfolio.shape[1] ):
 
-        minindex = max( i-period, 0 )
-
-        if i > minindex :
-            returns_portfolio = ( gmean(dailygainloss_portfolio[:,minindex:i+1],axis=-1)**252 -1. )
-            returns_index = ( gmean(dailygainloss_index[minindex:i+1])**252 -1. )
-            excessReturn = returns_portfolio - returns_index
-            trackingError = nanrms( dailygainloss_portfolio[:,minindex:i+1] - dailygainloss_index[minindex:i+1], axis = -1 )
-            
-            infoRatio[:,i] = excessReturn / trackingError 
-
-            if i == dailygainloss_portfolio.shape[1]-1:
-                print " returns_portfolio = ", returns_portfolio
-                print " returns_index = ", returns_index
-                print " excessReturn = ", excessReturn
-                print " infoRatio[:,i] = ", infoRatio[:,i]
-
-        else :
-            infoRatio[:,i] *= 0.
-
-    infoRatio = np.zeros( (dailygainloss_portfolio.shape[0],dailygainloss_portfolio.shape[1]), dtype=float)
-    '''
-    
     for i in range( dailygainloss_portfolio.shape[1] ):
 
         minindex = max( i-period, 0 )
@@ -251,8 +211,8 @@ def move_informationRatio(dailygainloss_portfolio,dailygainloss_index,period):
             returns_index =  dailygainloss_index[minindex:i+1] -1.
             excessReturn = nanmean( returns_portfolio - returns_index, axis = -1 )
             trackingError = nanrms( dailygainloss_portfolio[:,minindex:i+1] - dailygainloss_index[minindex:i+1], axis = -1 )
-            
-            infoRatio[:,i] = excessReturn / trackingError 
+
+            infoRatio[:,i] = excessReturn / trackingError
 
             if i == dailygainloss_portfolio.shape[1]-1:
                 print " returns_portfolio = ", returns_portfolio
@@ -262,24 +222,24 @@ def move_informationRatio(dailygainloss_portfolio,dailygainloss_index,period):
 
         else :
             infoRatio[:,i] *= 0.
-            
+
     infoRatio[infoRatio==0]=.0
     infoRatio[isnan(infoRatio)] =.0
-    #print '# zero values inside move_informationRatio  ',sharpe[sharpe==0.].shape[0]   #### diagnostic
+
     return infoRatio
 
 #----------------------------------------------
 
 def multiSharpe( datearray, adjClose, periods ):
-    
+
     from functions.allstats import *
 
     maxPeriod = np.max( periods )
-    
+
     dates = datearray[maxPeriod:]
     sharpesPeriod = np.zeros( (len(periods),len(dates)), 'float' )
     adjCloseSubset = adjClose[:,-len(dates):]
-        
+
     for iperiod,period in enumerate(periods) :
         lenSharpe = period
         for idate in range( maxPeriod,adjClose.shape[1] ):
@@ -295,22 +255,22 @@ def multiSharpe( datearray, adjClose, periods ):
             else:
                 sharpesAvg = 0.
             sharpesPeriod[iperiod,idate-maxPeriod] = sharpesAvg
-            
+
     plotSharpe = sharpesPeriod[:,-len(dates):].copy()
     plotSharpe += .3
     plotSharpe /= 1.25
     signal = np.median(plotSharpe,axis=0)
     for i in range( plotSharpe.shape[0] ):
         signal += (np.clip( plotSharpe[i,:], -1., 2.) - signal)
-    
+
     medianSharpe = np.median(plotSharpe,axis=0)
     signal = np.median(plotSharpe,axis=0) + 1.5 * (np.mean(plotSharpe,axis=0) - np.median(plotSharpe,axis=0))
-    
-    medianSharpe = np.clip( medianSharpe, -.1, 1.1 )
-    signal = np.clip( signal, -.05, 1.05 )  
 
-    return dates, medianSharpe, signal     
-      
+    medianSharpe = np.clip( medianSharpe, -.1, 1.1 )
+    signal = np.clip( signal, -.05, 1.05 )
+
+    return dates, medianSharpe, signal
+
 
 #----------------------------------------------
 
@@ -338,8 +298,6 @@ def move_martin_2D(adjClose,period):
     from math import sqrt
     from numpy import std
     #
-    print "period,adjClose.shape  :",period,adjClose.shape
-    #
     MoveMax = MoveMax_2D( adjClose, period )
     pctDrawDown = adjClose / MoveMax - 1.
     pctDrawDown = pctDrawDown ** 2
@@ -358,8 +316,6 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
     # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
     # rankthreshold --     # select this many funds with best recent performance
 
-    print "starting function sharpeWeightedRank_2D..."
-
     import numpy as np
     import nose
     import os
@@ -370,32 +326,9 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
     except:
         import scipy.stats.mstats as bn
 
-    """
-    for ii in range(adjClose.shape[0]):
-        if isnan(adjClose[ii,-1])  :
-            numisnans = adjClose[ii,:]
-            #print "symbol, last 100 values = ", symbols[ii], numisnans[-100:]
-            # NaN in last value usually means the stock is removed from the index so is not updated, but history is still in HDF file
-            print "*******setting delta (Rank) low... Stock has NaN for last value... ",ii, symbols[ii], numisnans[np.isnan(numisnans)].shape
-    """
-
     gainloss = np.ones((adjClose.shape[0],adjClose.shape[1]),dtype=float)
     gainloss[:,1:] = adjClose[:,1:] / adjClose[:,:-1]
     gainloss[isnan(gainloss)]=1.
-
-    """# print list of stocks and trending direction
-    from matplotlib import pylab as plt
-    import os
-    plt.ion()
-    plt.plot(signal2D[50,:])
-    filepath = os.getcwd() + "\\pyTAAA_web"
-    for i in range( len(symbols) ) :
-        plt.plot(signal2D[i,:])
-        plt.title(symbols[i])
-        filepath = os.getcwd() + "\\pyTAAA_web\\"+symbols[i]+".png"
-        plt.savefig(filepath)
-        print "Rank diagnostics  ", symbols[i], signal2D[i,-1]
-    """
 
     # convert signal2D to contain either 1 or 0 for weights
     signal2D -= signal2D.min()
@@ -446,7 +379,6 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
     #  - remember that low ranks are biggest gainers
     rankThreshold = (1. - rankThresholdPct) * ( monthgainlossRank.max() - monthgainlossRank.min() )
     for ii in range(monthgainloss.shape[0]):
-        #print "*******checking ranks... ", ii, symbols[ii], monthgainloss[ii,-1]
         for jj in range(monthgainloss.shape[1]):
             if monthgainloss[ii,jj] > rankThreshold :
                 delta[ii,jj] = -monthgainloss.shape[0]/2
@@ -474,12 +406,8 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
     for ii in range(monthgainloss.shape[1]):
         if deltaRank[:,ii].min() == deltaRank[:,ii].max():
             deltaRank[:,ii] = 0.
-            
-    """
-    for ii in range(monthgainloss.shape[0]):
-        print "*******2  daily ranks... ,ii, monthgainloss,monthgainRank, deltaRank", ii, symbols[ii], monthgainloss[ii,-1],monthgainlossRank[ii,-1],delta[ii,-1], deltaRank[ii,-1]
-    """
-    
+
+
     ########################################################################
     ## Hold values constant for calendar month (gains, ranks, deltaRanks)
     ########################################################################
@@ -490,12 +418,7 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
             delta[:,ii] = delta[:,ii-1]
             deltaRank[:,ii] = deltaRank[:,ii-1]
 
-    """
-    print ""
-    for ii in range(monthgainloss.shape[0]):
-        print "*******3  monthly ranks... ,ii, monthgainloss,monthgainRank, deltaRank", ii, symbols[ii], monthgainloss[ii,-1],monthgainlossRank[ii,-1],monthgainlossPreviousRank[ii,-1],delta[ii,-1], deltaRank[ii,-1]
-    """
-    
+
     ########################################################################
     ## Calculate number of active stocks each day
     ########################################################################
@@ -510,14 +433,7 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
     minrank = np.min(deltaRank,axis=0)
     maxrank = np.max(deltaRank,axis=0)
     # convert rank threshold to equivalent percent of rank range
-    """
-    print "rankthreshold = ",rankthreshold
-    print "activeCount = ",activeCount
-    print "minrank = ",minrank
-    print "adjClose.shape[0] = ",adjClose.shape[0]
-    print "formula =",float(rankthreshold)*(activeCount-minrank+1)/adjClose.shape[0]
-    #rankthresholdpercentequiv = rint(float(rankthreshold)*(activeCount-minrank+1)/adjClose.shape[0])
-    """
+
     rankthresholdpercentequiv = np.round(float(rankthreshold)*(activeCount-minrank+1)/adjClose.shape[0])
     ranktest = deltaRank <= rankthresholdpercentequiv
 
@@ -528,11 +444,7 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
     ########################################################################
 
     riskDownside = 1. / move_sharpe_2D(adjClose,gainloss,LongPeriod)
-    #riskDownside = np.clip( riskDownside, .1, 2.5)
     riskDownside = np.clip( riskDownside, riskDownside_min, riskDownside_max)
-
-    #print 'riskDownside [:,-50]',riskDownside[:,-50]   #### diagnostic
-    #print 'riskDownside [:,-1]  ',riskDownside[:,-1]   #### diagnostic
 
     riskDownside[isnan(riskDownside)] = np.max(riskDownside[~isnan(riskDownside)])
     for ii in range(riskDownside.shape[0]) :
@@ -561,27 +473,8 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
             elsecount += 1
             monthgainlossweight[:,ii]  = 1./activeCount[ii]
 
-    """
-    import pylab as plt
-    plt.figure(2)
-    plt.clf()
-    plt.title('rankthresholdpercentequiv')
-    plt.plot(datearray,rankthresholdpercentequiv,'bo')
-    plt.plot(datearray,rankthresholdpercentequiv,'b-')
-    plt.plot(datearray,activeCount,'r.')
-    plt.plot(datearray,activeCount,'r-')
-    for iii in range(monthgainlossweight.shape[0]):
-        plt.plot(datearray,monthgainlossweight[iii,:])
-    plt.show()
-    from time import sleep
-    sleep(10)
-    plt.close(2)
-    """
-
-
-    print " 3 - monthgainlossweight ontains NaN's???",monthgainlossweight[isnan(monthgainlossweight)].shape
     aaa = np.sum(monthgainlossweight,axis=0)
-    print " 3 - monthgainlossweight sums to zero ???",aaa[aaa == 0].shape
+
 
     allzerotest = np.sum(monthgainlossweight,axis=0)
     sumallzerotest = allzerotest[allzerotest == 0].shape
@@ -601,18 +494,11 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
     monthgainlossweight = monthgainlossweight / np.sum(monthgainlossweight,axis=0)
     monthgainlossweight[isnan(monthgainlossweight)] = 0.  # changed result from 1 to 0
 
-
-    """
-    print ""
-    for ii in range(monthgainloss.shape[0]):
-        print "*******4  monthly ranks... ,ii, monthgainloss,monthgainRank, deltaRank", ii, symbols[ii], monthgainloss[ii,-1],monthgainlossRank[ii,-1],monthgainlossPreviousRank[ii,-1],delta[ii,-1], deltaRank[ii,-1],-(monthgainlossRank[ii,-1]-monthgainlossPreviousRank[ii,-1])/(monthgainlossRank[ii,-1]+rankoffsetchoice)
-    """
     # input symbols and company names from text file
     companyName_file = os.path.join( os.getcwd(), "symbols",  "companyNames.txt" )
     with open( companyName_file, "r" ) as f:
         companyNames = f.read()
-    #print "\n\n\n    ..... company names ....."
-    #print companyNames
+
     print "\n\n\n"
     companyNames = companyNames.split("\n")
     ii = companyNames.index("")
@@ -624,7 +510,7 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
         testsymbol, testcompanyName = name.split(";")
         companySymbolList.append(testsymbol)
         companyNameList.append(testcompanyName)
-    
+
     # print list showing current rankings and weights
     # - symbol
     # - rank
@@ -642,20 +528,18 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
     for i, isymbol in enumerate(symbols):
         for j in range(len(symbols)):
             if int( deltaRank[j,-1] ) == i :
-                #print deltaRank[i,-1],isymbol, monthgainlossweight[i,-1], adjClose[i,-1]
-                #print format(deltaRank[i,-1],'6.1f'), format(isymbol,'5s'), format(monthgainlossweight[i,-1],'5.03f'), format(adjClose[i,-1],'6.2f')
                 if signal2D[j,-1] == 1.:
                     trend = 'up'
                 else:
                     trend = 'down'
-                
+
                 # search for company name
                 try:
                     symbolIndex = companySymbolList.index(symbols[j])
                     companyName = companyNameList[symbolIndex]
                 except:
                     companyName = ""
-                        
+
                 rank_text = rank_text + \
                        "<tr><td>" + format(deltaRank[j,-1],'6.0f')  + \
                        "<td>" + format(symbols[j],'5s')  + \
@@ -665,9 +549,8 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
                        "<td>" + trend  + \
                        "</td></tr>  \n"
     rank_text = rank_text + "</table></div>\n"
-    #filepath = os.getcwd() + "/pyTAAA_web/pyTAAAweb_RankList.txt"
+
     filepath = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_RankList.txt" )
-    #print "filepath in weiteWebPage = ", filepath
     with open( filepath, "w" ) as f:
         f.write(rank_text)
 
@@ -781,14 +664,7 @@ def UnWeightedRank_2D(datearray,adjClose,signal2D,LongPeriod,rankthreshold,riskD
     minrank = np.min(deltaRank,axis=0)
     maxrank = np.max(deltaRank,axis=0)
     # convert rank threshold to equivalent percent of rank range
-    """
-    print "rankthreshold = ",rankthreshold
-    print "activeCount = ",activeCount
-    print "minrank = ",minrank
-    print "adjClose.shape[0] = ",adjClose.shape[0]
-    print "formula =",float(rankthreshold)*(activeCount-minrank+1)/adjClose.shape[0]
-    #rankthresholdpercentequiv = rint(float(rankthreshold)*(activeCount-minrank+1)/adjClose.shape[0])
-    """
+
     rankthresholdpercentequiv = np.round(float(rankthreshold)*(activeCount-minrank+1)/adjClose.shape[0])
     ranktest = deltaRank <= rankthresholdpercentequiv
 
@@ -814,9 +690,7 @@ def UnWeightedRank_2D(datearray,adjClose,signal2D,LongPeriod,rankthreshold,riskD
             elsecount += 1
             monthgainlossweight[:,ii]  = 1./activeCount[ii]
 
-    print " 3 - monthgainlossweight ontains NaN's???",monthgainlossweight[isnan(monthgainlossweight)].shape
     aaa = np.sum(monthgainlossweight,axis=0)
-    print " 3 - monthgainlossweight sums to zero ???",aaa[aaa == 0].shape
 
     print ""
     print " invoking correction to monthgainlossweight....."
@@ -828,32 +702,10 @@ def UnWeightedRank_2D(datearray,adjClose,signal2D,LongPeriod,rankthreshold,riskD
     for ii in np.arange(firstTradeDate,monthgainloss.shape[1]) :
         if np.sum(monthgainlossweight[:,ii]) == 0:
             for kk in range(rankthreshold):
-                #print "invoking correction to monthgainlosswight  ----- ii, kk, np.argmin(deltaRank[:,ii]) ", ii, kk, np.argmin(deltaRank[:,ii]) , 1./rankthreshold
                 indexHighDeltaRank = np.argmin(deltaRank[:,ii]) # remember that best performance is lowest deltaRank
-                #print "             before: ", monthgainlossweight[:,ii]
                 monthgainlossweight[indexHighDeltaRank,ii]  = 1./rankthreshold
-                #print "             after : ", monthgainlossweight[:,ii]
                 deltaRank[indexHighDeltaRank,ii] = 1000.
 
-    '''import pylab as plt
-    plt.figure(2)
-    plt.clf()
-    plt.title('rankthresholdpercentequiv')
-    plt.plot(datearray,rankthresholdpercentequiv,'bo')
-    plt.plot(datearray,rankthresholdpercentequiv,'b-')
-    plt.plot(datearray,activeCount,'r.')
-    plt.plot(datearray,activeCount,'r-')
-    plt.plot(datearray,aaa,'r-',lw=7)
-    plt.plot(datearray,np.sum(monthgainlossweight,axis=0),'g-',lw=4)
-    for iii in range(monthgainlossweight.shape[0]):
-        plt.plot(datearray,monthgainlossweight[iii,:])
-        #print "deltaRank min and max = ", iii, deltaRank.min(),deltaRank.max()
-        #plt.plot(datearray,deltaRank[iii,:])
-    plt.show()
-    from time import sleep
-    sleep(10)
-    plt.close(2)
-    '''
 
     print " weights calculation else clause encountered :",elsecount," times. last date encountered is ",elsedate
     rankweightsum = np.sum(monthgainlossweight,axis=0)
