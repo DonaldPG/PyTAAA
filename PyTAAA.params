@@ -17,11 +17,11 @@ pausetime: 2 hours
 [Valuation]
 numberStocksTraded: 7
 monthsToHold:       1
-LongPeriod:       104
-MA1:              207
-MA2:               26
-MA3:               29
-sma2factor:          .911
-rankThresholdPct:    .02
-riskDownside_min:    .272
-riskDownside_max:   4.386
+LongPeriod:       244
+MA1:              249
+MA2:               18
+MA3:               20
+sma2factor:          .961
+rankThresholdPct:    .20
+riskDownside_min:    .234
+riskDownside_max:   4.694

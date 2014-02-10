@@ -50,7 +50,7 @@ print "hdf5filename = ",hdf5filename
 ## Make a plot showing all symbols in list
 ##
 
-firstdate=(2014,1,1)
+firstdate=(2000,1,1)
 #firstdate=(2003,1,1)
 import datetime
 today = datetime.datetime.now()
