@@ -34,4 +34,8 @@ Backtest plots that start ca. 1991 contain different stocks for historical testi
 
 The backtest plots show only an approximation to "Buy & Hold" investing. This is particularly true for the Daily backtest that is created every time the PyTAAA code runs. Buy & Hold is approximated on the plot by the red value curves. The calculations assume that equal dollar investments are made in all the current stocks in the Nasdaq 100 index. For example, note that the current Nasdaq 100 stocks as of February 2014 did not have the same performance during 2000-2003 as the stocks in the index during 2000-2003. Whereas the Nasdaq Index lost more than 50% of its peak value, the stocks that are in the index as of February 2014 AND were also in the index in 2000, maintained nearly constant value over the period. Similar cautions need to be made about the historical backtest performance of PyTAAA trading recommendations. Therefore, hypothetical performance as portrayed by PyTAAA backtests should be viewed as untested and unverified. Actual investment performance under real market conditions will almost certainly be lower.
 
+<<<<<<< HEAD
 PyTAAA will reflect changes in the Nasdaq 100 index over time automatically. It checks a web page each time it runs to ensure that current stocks it can choose match the index.
+=======
+PyTAAA will reflect changes in the Nasdaq 100 index over time automatically. It checks a web page each time it runs to ensure that current stocks it can choose match the index.
+>>>>>>> 364f76a08c2e7197d08d7b2a12d476f86ca4a765
