@@ -1,7 +1,6 @@
 
 
 def ftpMoveDirectory(  ):
-    #!/usr/bin/env python
 
     # based on a demo in ptyhon package paramiko.
     #
@@ -17,9 +16,6 @@ def ftpMoveDirectory(  ):
     from functions.GetParams import *
 
     import paramiko
-
-    # setup logging
-    #paramiko.util.log_to_file('demo_sftp.log')
 
     # get hostname and credentials
     ftpparams = GetFTPParams()
@@ -43,7 +39,6 @@ def ftpMoveDirectory(  ):
         username = raw_input('Username [%s]: ' % default_username)
         if len(username) == 0:
             username = default_username
-    #password = getpass.getpass('Password for %s@%s: ' % (username, hostname))
 
     # get host key, if we know one
     hostkeytype = None
@@ -71,7 +66,6 @@ def ftpMoveDirectory(  ):
 
         # dirlist on remote host
         dirlist = sftp.listdir('.')
-        #print "Dirlist:", dirlist
 
         # copy this demo onto the server
         remote_path = "/var/www/mysite/pyTAAA_web/"
@@ -111,7 +105,6 @@ def ftpMoveDirectory(  ):
 
 
 def piMoveDirectory(  ):
-    #!/usr/bin/env python
 
     import shutil
     import os
@@ -129,7 +122,6 @@ def piMoveDirectory(  ):
         remote_path = ftpparams['remotepath']
         
         # create a target directory if it does not exist already
-        #remote_path = "/var/www/mysite/pyTAAA_piweb/"
         try:
             os.mkdirs( remote_path )
         except:
@@ -161,7 +153,6 @@ def piMoveDirectory(  ):
         for f in transfer_list:
             local_file = os.path.join( source_directory, f )
             remote_file = os.path.join( remote_path, f )
-            #os.system ("cp"+ "-p -u  " + local_file + " " + remote_file)
             shutil.copyfile( local_file, remote_file )
             print '  ...created '+remote_file+' on piDonaldPG web server'
 
@@ -176,10 +167,8 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
     import datetime
     import os
     import numpy as np
-    #from matplotlib import pylab as plt
     # Local imports
     from functions.MakeValuePlot import *
-    #from datetime import datetime
 
     # message body preliminaries
     message = """<!DOCTYPE html>
@@ -286,14 +275,10 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
     # add current rankings table to message
     ##########################################
 
-    #filepath = os.getcwd() + "/pyTAAA_web/pyTAAAweb_RankList.txt"
     filepath = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_RankList.txt" )
-    #print "filepath in writeWebPage = ", filepath
     try:
         with open( filepath, "r" ) as f:
             rankingMessage = f.read()
-        #print "rankingMessage -----"
-        #print rankingMessage
     except:
         print " Error: unable to read updates from pyTAAAweb_RankList.txt"
         print ""
@@ -303,33 +288,22 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
     # add table with Nasdaq100 index exchanges to message
     ##########################################
 
-    #filepath = os.getcwd() + "/symbols/Naz100_symbolsChanges.txt"
     filepath = os.path.join( os.getcwd(), "symbols", "Naz100_symbolsChanges.txt" )
-    #print "filepath in writeWebPage = ", filepath
     try:
         with open( filepath, "r" ) as f:
             input = f.read()
-        #print "rankingMessage -----"
-        #print rankingMessage
     except:
         print " Error: unable to read updates from pyTAAAweb_RankList.txt"
         print ""
 
-    # print filepath
-    #print " ...inside WriteWebPage_pi.pi...  filepath = ", filepath
-    #print " ...inside WriteWebPage_pi.pi...  input = ", input
-
-
     # separate and remove empty lines
     inputList0 = input.split("\n")
-    ##print " ...inside WriteWebPage_pi.pi...  inputList = ", inputList0
 
     # remove lines with just "\r"
     inputList = []
     for item in inputList0:
         if item != "\r":
             inputList.append(item)
-    ##print " ...inside WriteWebPage_pi.pi...  inputList = ", inputList
 
     # remove "\r" at end of each item in list
     for i,item in enumerate(inputList):
@@ -361,9 +335,7 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
     # Create an updated html page
     ##########################################
     try:
-        #filepath = os.getcwd() + "/pyTAAA_web/pyTAAAweb.html"
         filepath = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb.html" )
-        #print "filepath in writeWebPage = ", filepath
         with open( filepath, "w" ) as f:
             f.write(message)
             f.write(figure_htmlText)
@@ -394,8 +366,6 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
     if operatingSystem == 'Linux' and architecture == 'armv6l' :
         print "  ...using piMoveDirectory"
         try:
-            #FromDirectory = os.getcwd() + "/pyTAAA_web/pyTAAAweb.html"
-            #FromDirectory = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb.html" )
             piMoveDirectory(  )
         except:
             print "Could not ftp web files..."
@@ -403,8 +373,6 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
     elif operatingSystem == 'Windows' and computerName == 'Don-XPS1530' :
         print "  ...using ftpMoveDirectory"
         try:
-            ###FromDirectory = os.getcwd() + "\\pyTAAA_web\\pyTAAAweb.html"
-            #FromDirectory = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb.html" )
             ftpMoveDirectory(  )
         except:
             print "Could not ftp web files..."

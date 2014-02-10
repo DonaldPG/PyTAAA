@@ -236,7 +236,7 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
         weightBuysNormed = last_symbols_weight[last_symbols_index] * cumuNewValueThresholded / cumuNewValue
         new_valueNormed = currentHoldingsValue * weightBuysNormed
         if new_value > 800. and symbol != "CASH":
-            print " inside Buys .... symbol, new_value, new_valueNormed, shares = ", symbol, new_value, new_valueNormed, int( new_valueNormed / last_symbols_price[last_symbols_index] )
+            #print " inside Buys .... symbol, new_value, new_valueNormed, shares = ", symbol, new_value, new_valueNormed, int( new_valueNormed / last_symbols_price[last_symbols_index] )
             trade_symbols.append( symbol )
             trade_shares.append( int( new_valueNormed / last_symbols_price[last_symbols_index] ) )
             cumuValueAfterExchanges += ( trade_shares[-1] * last_symbols_price[last_symbols_index] )

@@ -96,8 +96,8 @@ def IntervalTask( ) :
     # calculate holdings value
     currentHoldingsValue = 0.
     for i in range(len(holdings_symbols)):
-        print "holdings_shares, holdings_currentPrice[i] = ", i, holdings_shares[i],holdings_currentPrice[i]
-        print "type of above = ",type(holdings_shares[i]),type(holdings_currentPrice[i])
+        #print "holdings_shares, holdings_currentPrice[i] = ", i, holdings_shares[i],holdings_currentPrice[i]
+        #print "type of above = ",type(holdings_shares[i]),type(holdings_currentPrice[i])
         currentHoldingsValue += float(holdings_shares[i]) * float(holdings_currentPrice[i])
 
     # calculate lifetime profit
@@ -124,7 +124,6 @@ def IntervalTask( ) :
     print "last_symbols_price = ", last_symbols_price
 
     for i in range(len(holdings_shares)):
-        #print "i, symbol, weight = ", i, format(last_symbols_text[i],'5s'), format(last_symbols_weight[i],'5.3f')
         purchase_value = holdings_buyprice[i]*holdings_shares[i]
         cumu_purchase_value += purchase_value
         value = float(holdings_currentPrice[i]) * float(holdings_shares[i])
@@ -183,24 +182,16 @@ def IntervalTask( ) :
     else:
         subjecttext = "PyTAAA status update"
 
-    print "trade message = ", trade_message
     print cumu_value_prior, cumu_value
-    print type(float(cumu_value_prior)), type(cumu_value)
     print np.round(float(cumu_value_prior),2) != np.round(cumu_value,2)
     if np.round(float(cumu_value_prior),2) != np.round(cumu_value,2) or trade_message != "<br><br>":
         headlinetext = "Regularly scheduled update (market is open) " + get_MarketOpenOrClosed()
         SendEmail(username,emailpassword,params['toaddrs'],params['fromaddr'],subjecttext,regulartext,boldtext,headlinetext)
-        ##writeWebPage( regulartext,boldtext,headlinetext,lastdate, last_symbols_text, last_symbols_weight, last_symbols_price )
-        # set value to compare with cumu_value as test of info content
-        ##PutStatus( cumu_value )
     else:
         headlinetext = "Regularly scheduled update (market is closed) " + get_MarketOpenOrClosed()
         print " No email required or sent -- no new information since last email..."
-        #SendEmail(username,emailpassword,params['toaddrs'],params['fromaddr'],subjecttext,regulartext,boldtext,headlinetext)
-        ##writeWebPage( regulartext,boldtext,headlinetext,lastdate, last_symbols_text, last_symbols_weight, last_symbols_price )
         cumu_value_prior = cumu_value
-        # set value to compare with cumu_value as test of info content
-        ##PutStatus( cumu_value )
+
 
     # If there are changes to Nasdaq100 stock list, add message
 
