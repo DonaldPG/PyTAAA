@@ -310,7 +310,7 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
         inputList[i] = item.split("\r")[0]
 
     # final filtering of each item in list
-        inputListFiltered = []
+    inputListFiltered = []
     for item in inputList:
         if item:
             inputListFiltered.append(str(item))
