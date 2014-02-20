@@ -299,7 +299,7 @@ def makeTrendDispersionPlot( ):
     plt.subplot(subplotsize[0])
     plt.grid(True)
     plt.yscale('log')
-    plotmax = 1.e8
+    plotmax = 1.e9
     plt.ylim([1000,max(10000,plotmax)])
     numDaysToPlot = 252*10
     numDaysToPlot = len( backtestBHvalue )
