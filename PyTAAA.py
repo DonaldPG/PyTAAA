@@ -104,6 +104,9 @@ def IntervalTask( ) :
     print "holdings['cumulativecashin'] = ", holdings['cumulativecashin'][0]
     lifetimeProfit = currentHoldingsValue - float(holdings['cumulativecashin'][0])
     print "Lifetime profit = ", lifetimeProfit
+    # calculate elapsed time period -- starting 1/1/13 and ending today
+    elapsedYears = ( (datetime.date( today.year, today.month, today.day ) - datetime.date( 2013,1,1)).days ) / 365.25
+    lifetimeProfitAnnualized = (( 1. + lifetimeProfit ) ** 1./elapsedYears ) - 1.
 
     message_text = "<h3>Current stocks and weights are :</h3><font face='courier new' size=3><table border='1'> \
                    <tr><td>symbol  \
@@ -150,7 +153,9 @@ def IntervalTask( ) :
         message_text = message_text + trade_message
 
     edition = GetEdition()
-    message_text = message_text+"</table><br><"+"/font><p>Lifetime profit = $"+str(lifetimeProfit)+"   = "+format(lifetimeProfit/float(holdings['cumulativecashin'][0]),'6.1%')+"</p>"
+    message_text = message_text+"</table><br></font><p>Lifetime profit = $"+str(lifetimeProfit)+"   = "+format(lifetimeProfit/float(holdings['cumulativecashin'][0]),'6.1%')+"</p>"
+    message_text = message_text+"</font><p>Lifetime profit (annualized rate of return) = "+format(lifetimeProfitAnnualized/float(holdings['cumulativecashin'][0]),'6.1%')+"</p>"
+
 
     # Update message for changes in  tickers removed from or added to the Nasdaq100 index
     if removedTickers != [] or addedTickers != []:
