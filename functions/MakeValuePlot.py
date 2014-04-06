@@ -1,5 +1,3 @@
-
-
 import os
 import numpy as np
 import datetime
@@ -55,7 +53,6 @@ def makeValuePlot(  ):
     plt.figure(1,figsize=(9,7))
     plt.clf()
     plt.grid(True)
-    #plt.yscale('log')
     plt.plot( date, value )
     plt.xlim((date[0],date[-1]+datetime.timedelta(1) ))
     plt.title("pyTAAA Value History Plot ("+edition+" edition)")
@@ -98,20 +95,16 @@ def makeUptrendingPlot( ):
             # get number of lines in file
             lines = f.read().split("\n")
             numlines = len (lines)
-            #print "numlines = ", numlines
             for i in range(numlines):
                 try:
                     statusline = lines[i]
                     statusline_list = statusline.split(" ")
-                    #print "statusline_list = ", statusline_list
                     if len( statusline_list ) == 5:
                         date.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                         value.append( float(statusline_list[2]) )
                         active.append( float(statusline_list[4]) )
                 except:
                     break
-            #print "rankingMessage -----"
-            #print rankingMessage
     except:
         print " Error: unable to read updates from pyTAAAweb_numberUptrendingStocks_status.params"
         print ""
@@ -130,20 +123,16 @@ def makeUptrendingPlot( ):
             # get number of lines in file
             lines = f.read().split("\n")
             numlines = len (lines)
-            #print "numlines = ", numlines
             for i in range(numlines):
                 try:
                     statusline = lines[i]
                     statusline_list = statusline.split(" ")
-                    #print "statusline_list = ", statusline_list
                     if len( statusline_list ) == 5:
                         dates.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                         medianSharpe.append( float(statusline_list[2]) )
                         signalSharpe.append( float(statusline_list[4]) )
                 except:
                     break
-            #print "rankingMessage -----"
-            #print rankingMessage
     except:
         print " Error: unable to read updates from pyTAAAweb_multiSharpeIndicator_status.params"
         print ""
@@ -165,7 +154,6 @@ def makeUptrendingPlot( ):
 
     plt.figure(2,figsize=(9,7))
     plt.clf()
-    #plt.subplot(2,1,1)
     plt.grid(True)
     numDaysToPlot = 252*10
     plt.plot( date[-numDaysToPlot:], .97 * valueSMA[-numDaysToPlot:], 'r-', lw=1, label='pct in uptrend - short trend 1')
@@ -179,15 +167,6 @@ def makeUptrendingPlot( ):
     plt.ylim( 0.0, 1.25 )
     plt.legend(loc=3,prop={'size':9})
     plt.title("pyTAAA History Plot\nPercent Uptrending Stocks ")
-    '''
-    plt.subplot(2,1,2)
-    plt.grid(True)
-    plt.plot( dates[-numDaysToPlot:], medianSharpe[-numDaysToPlot:], 'k-', lw=.35, label='medianSharpe (4 lengths)')
-    plt.plot( dates[-numDaysToPlot:], signalSharpe[-numDaysToPlot:], 'g-', lw=.5, label='Percent to Invest (medianSharpe)')
-    plt.ylim( 0.0, 1.25 )
-    plt.legend(loc=3,prop={'size':9})
-    plt.title("pyTAAA History Plot\nmulti-Sharpe Indicator")
-    '''
     plt.savefig(figure3path)
     figure3path = 'PyTAAA_numberUptrendingStocks.png'  # re-set to name without full path
     figure3_htmlText = "\n<br><h3>Percentage of stocks uptrending</h3>\n"
@@ -206,8 +185,6 @@ def makeTrendDispersionPlot( ):
     ##########################################
     # read uptrending stocks status file and make plot
     ##########################################
-    ###file2path = os.getcwd() + "/pyTAAAweb_numberUptrendingStocks_status.params"
-    ###figure3path = os.getcwd() + "/pyTAAA_web/PyTAAA_numberUptrendingStocks.png"
     file4path = os.path.join( os.getcwd(), "pyTAAAweb_MeanTrendDispersion_status.params" )
     figure4path = os.path.join( os.getcwd(), "pyTAAA_web", "PyTAAA_MeanTrendDispersion.png" )
 
@@ -219,29 +196,19 @@ def makeTrendDispersionPlot( ):
             # get number of lines in file
             lines = f.read().split("\n")
             numlines = len (lines)
-            #print "numlines = ", numlines
             for i in range(numlines):
                 try:
                     statusline = lines[i]
                     statusline_list = statusline.split(" ")
-                    #print "statusline_list = ", statusline_list
                     if len( statusline_list ) == 5:
                         dateMedians.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                         valueMeans.append( float(statusline_list[2]) )
                         valueMedians.append( float(statusline_list[4]) )
                 except:
                     break
-            #print "rankingMessage -----"
-                #print rankingMessage
     except:
         print " Error: unable to read updates from pyTAAAweb_MeanTrendDispersion_status.params"
         print ""
-
-    """
-    for i in range( 0,len(value),1000 ):
-        print i, date[i], value[i]
-    """
-
 
     valueMeans = np.array( valueMeans ).astype('float')
     valueMeansSMA = SMA( valueMeans, 100 )
@@ -253,8 +220,6 @@ def makeTrendDispersionPlot( ):
     plt.grid(True)
     numDaysToPlot = 252*10
     numDaysToPlot = len( valueMeans )
-    #plt.plot( date[-numDaysToPlot:], valueMeansSMA[-numDaysToPlot:], 'k-', lw=1)
-    #plt.plot( date[-numDaysToPlot:], valueMeans[-numDaysToPlot:], 'k-', lw=.25)
     plt.plot( dateMedians[-numDaysToPlot:], valueMediansSMA[-numDaysToPlot:], 'r-', lw=1)
     plt.plot( dateMedians[-numDaysToPlot:], valueMedians[-numDaysToPlot:], 'r-', lw=.25)
     plt.title("pyTAAA History Plot\n Average Trend Dispersion")
@@ -278,28 +243,19 @@ def makeTrendDispersionPlot( ):
             # get number of lines in file
             lines = f.read().split("\n")
             numlines = len (lines)
-            #print "numlines = ", numlines
             for i in range(numlines):
                 try:
                     statusline = lines[i]
                     statusline_list = statusline.split(" ")
-                    #print "statusline_list = ", statusline_list
                     if len( statusline_list ) == 5:
                         date.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                         value.append( float(statusline_list[2]) )
                         active.append( float(statusline_list[4]) )
                 except:
                     break
-            #print "rankingMessage -----"
-            #print rankingMessage
     except:
         print " Error: unable to read updates from pyTAAAweb_numberUptrendingStocks_status.params"
         print ""
-
-    """
-    for i in range( 0,len(value),1000 ):
-        print i, date[i], value[i]
-    """
 
     value = np.array( value ).astype('float') / np.array( active ).astype('float')
     valueSMA = SMA( value, 100 )
@@ -322,20 +278,16 @@ def makeTrendDispersionPlot( ):
             # get number of lines in file
             lines = f.read().split("\n")
             numlines = len (lines)
-            #print "numlines = ", numlines
             for i in range(numlines):
                 try:
                     statusline = lines[i]
                     statusline_list = statusline.split(" ")
-                    #print "statusline_list = ", statusline_list
                     if len( statusline_list ) == 5:
                         backtestDate.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                         backtestBHvalue.append( float(statusline_list[2]) )
                         backtestSystemvalue.append( float(statusline_list[4]) )
                 except:
                     break
-            #print "rankingMessage -----"
-            #print rankingMessage
     except:
         print " Error: unable to read updates from pyTAAAweb_backtestPortfolioValue.params"
         print ""
@@ -352,16 +304,14 @@ def makeTrendDispersionPlot( ):
     plt.subplot(subplotsize[0])
     plt.grid(True)
     plt.yscale('log')
-    plotmax = 1.e8
+    plotmax = 1.e9
     plt.ylim([1000,max(10000,plotmax)])
-    #ymin, ymax = emath.log10(1e3), emath.log10(max(10000,plotmax))
     numDaysToPlot = 252*10
     numDaysToPlot = len( backtestBHvalue )
     plt.plot( backtestDate[-numDaysToPlot:], backtestBHvalue[-numDaysToPlot:], 'r-', lw=1.25, label='Buy & Hold')
     plt.plot( backtestDate[-numDaysToPlot:], backtestSystemvalue[-numDaysToPlot:], 'k-', lw=1.25, label='Trading System')
     plt.legend(loc=2,prop={'size':9})
     plt.title("pyTAAA History Plot\n Portfolio Value")
-    #plt.text( 50, 1500, filename, fontsize=8 )
     plt.text( backtestDate[-numDaysToPlot+50], 2500, "Backtest updated "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"), fontsize=7.5 )
     plt.subplot(subplotsize[1])
     plt.grid(True)
@@ -371,9 +321,6 @@ def makeTrendDispersionPlot( ):
     plt.plot( date[-numDaysToPlot:], value[-numDaysToPlot:], 'k-', lw=.25, label='Percent Uptrending')
     plt.plot( date[-numDaysToPlot:], np.clip(PctInvested[-numDaysToPlot:],0.,1.2), 'g-', alpha=.65, lw=.5, label='Percent to Invest')
     numDaysToPlot = len( valueMedians )
-    #plt.plot( dateMedians[-numDaysToPlot:], valueMedians[-numDaysToPlot:], 'r-', lw=.5, label='Median_score')
-    ##plt.plot( dateMedians[-numDaysToPlot:], valueMediansSMA65[-numDaysToPlot:], 'g-', lw=.25, label='Median_score SMA35')
-    ##plt.plot( dateMedians[-numDaysToPlot:], valueMediansSMA100[-numDaysToPlot:], 'r-', lw=.25, label='Median_score SMA100')
     plt.legend(loc=3,prop={'size':6})
     plt.savefig(figure5path)
     figure5path = 'PyTAAA_backtestWithTrend.png'  # re-set to name without full path
@@ -381,5 +328,4 @@ def makeTrendDispersionPlot( ):
     figure5_htmlText = figure5_htmlText + "\nCombined backtest with Trend indicators.\n"
     figure5_htmlText = figure5_htmlText + '''<br><img src="'''+figure5path+'''" alt="PyTAAA by DonaldPG" width="850" height="500"><br>\n'''
 
-    #return figure4_htmlText + figure5_htmlText
     return figure5_htmlText
