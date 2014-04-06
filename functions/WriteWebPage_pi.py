@@ -84,7 +84,7 @@ def ftpMoveDirectory(  ):
         if hourOfDay < 22 :
             for i in range( len(transfer_list)-1,-1,-1 ):
                 name, extension = os.path.splitext( transfer_list[i] )
-                if extension == ".png":
+                if extension == ".png" and name != "PyTAAA_value" :
                     transfer_list.pop(i)
 
         for i, local_file in enumerate(transfer_list):
@@ -147,7 +147,7 @@ def piMoveDirectory(  ):
         if hourOfDay < 22 :
             for i in range( len(transfer_list)-1,-1,-1 ):
                 name, extension = os.path.splitext( transfer_list[i] )
-                if extension == ".png":
+                if extension == ".png" and name != "PyTAAA_value" :
                     transfer_list.pop(i)
                     
         for f in transfer_list:
