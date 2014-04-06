@@ -115,6 +115,7 @@ def IntervalTask( ) :
                    </td><td>purch cost  \
                    </td><td>cumu purch  \
                    </td><td>last price  \
+                   </td><td>% change  \
                    </td><td>Value ($)  \
                    </td><td>cumu Value ($)  \
                    </td></tr>\n"
@@ -131,13 +132,14 @@ def IntervalTask( ) :
         cumu_purchase_value += purchase_value
         value = float(holdings_currentPrice[i]) * float(holdings_shares[i])
         cumu_value += value
-
+        profitPct = float(holdings_currentPrice[i]) / float(holdings_buyprice[i]) - 1.
         message_text = message_text+"<p><tr><td>"+format(holdings_symbols[i],'5s') \
                                    +"</td><td>"+format(holdings_shares[i],'6.0f') \
                                    +"</td><td>"+format(holdings_buyprice[i],'6.2f') \
                                    +"</td><td>"+format(purchase_value,'6.2f') \
                                    +"</td><td>"+format(cumu_purchase_value,'6.2f') \
                                    +"</td><td>"+format(float(holdings_currentPrice[i]),'6.2f') \
+                                   +"</td><td>"+format(float(profitPct),'6.2%') \
                                    +"</td><td>"+format(value,'6.2f') \
                                    +"</td><td>"+format(cumu_value,'6.2f') \
                                    +"</td></tr>\n"
