@@ -1,9 +1,9 @@
 import numpy as np
 import os
 import nose
-import bottleneck as bn
-import la
-import h5py
+#import bottleneck as bn
+#import la
+#import h5py
 import datetime
 from scipy.stats import gmean
 from math import sqrt

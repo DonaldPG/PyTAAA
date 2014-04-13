@@ -111,12 +111,14 @@ def GetFTPParams():
     ftpUsername = config.get("FTP", "username")
     ftpPassword = config.get("FTP", "password")
     ftpRemotePath = config.get("FTP", "remotepath")
+    ftpRemoteIP   = config.get("FTP", "remoteIP")
     
     # put params in a dictionary
     ftpparams['ftpHostname'] = str( ftpHostname )
     ftpparams['ftpUsername'] = str( ftpUsername )
     ftpparams['ftpPassword'] = str( ftpPassword )
     ftpparams['remotepath'] = str( ftpRemotePath )
+    ftpparams['remoteIP'] = str( ftpRemoteIP )
     
     return ftpparams
 
@@ -210,6 +212,8 @@ def GetEdition( ):
         edition = 'pi'
     elif 'XPS' in platform.uname()[1] :
         edition = 'XPS'
+    elif 'AMD64' in platform.uname()[4] :
+        edition = 'Windows64'
     else:
         edition = 'none'
 

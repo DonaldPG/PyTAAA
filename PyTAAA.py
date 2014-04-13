@@ -19,7 +19,10 @@ print "params = ", params
 print ""
 username = str(params['fromaddr']).split("@")[0]
 emailpassword = str(params['PW'])
-ip = GetIP()
+try:
+    ip = GetIP()
+except:
+    ip ='0.0.0.0'
 print "Current ip address is ", ip
 print "An email with updated analysis will be sent to ", params['toaddrs'], " every ", params['pausetime'], " seconds"
 print params['pausetime'], " seconds is ", format(params['pausetime']/60/60.,'2.1f'), " hours, or ",  \
@@ -53,7 +56,7 @@ def IntervalTask( ) :
 
     symbol_directory = os.path.join( os.getcwd(), "symbols" )
 
-    symbol_file = "Naz100_symbols.txt"
+    symbol_file = "Naz100_Symbols.txt"
     symbols_file = os.path.join( symbol_directory, symbol_file )
     start_time = time.time()
     today = datetime.datetime.now()

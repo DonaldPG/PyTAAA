@@ -6,14 +6,15 @@ import os
 import datetime
 from scipy.stats import rankdata
 import nose
-import bottleneck as bn
-import la
+#import bottleneck as bn
+#import la
 from scipy.stats import gmean
-from la.external.matplotlib import quotes_historical_yahoo
+#from la.external.matplotlib import quotes_historical_yahoo
 from math import sqrt
 
 ## local imports
-from functions.quotes_for_list_adjCloseVol import *
+#from functions.quotes_for_list_adjCloseVol import *
+from functions.quotes_for_list_adjClose import *
 from functions.TAfunctions import *
 from functions.UpdateSymbols_inHDF5 import UpdateHDF5, loadQuotes_fromHDF
 
@@ -52,10 +53,22 @@ def computeDailyBacktest( datearray, \
     print " value check: ",value[isnan(value)].shape
     lastEmptyPriceIndex = np.zeros(adjClose.shape[0],dtype=int)
 
+    '''
+    from matplotlib import pylab as plt
+    print " dimensions = ", len(datearray), adjClose.shape
+    for ii in range(adjClose.shape[0]):
+        plt.clf()
+        plt.plot( datearray, adjClose[ii,:] )
+        plt.title( symbols[ii] )
+        plt.savefig( symbols[ii]+'.png', dpi=100, format='png' )
+    #plt.show()
+    import pdb
+    pdb.set_trace()
+    '''
     for ii in range(adjClose.shape[0]):
         # take care of special case where constant share price is inserted at beginning of series
         index = np.argmax(np.clip(np.abs(gainloss[ii,:]-1),0,1e-8)) - 1
-        print "fist valid price and date = ",symbols[ii]," ",index," ",datearray[index]
+        print "first valid price and date = ",symbols[ii]," ",index," ",datearray[index]
         lastEmptyPriceIndex[ii] = index
         activeCount[lastEmptyPriceIndex[ii]+1:] += 1
 

@@ -1,5 +1,6 @@
 import datetime
-from functions.quotes_for_list_adjCloseVol import *
+#from functions.quotes_for_list_adjCloseVol import *
+from functions.quotes_for_list_adjClose import *
 from functions.CheckMarketOpen import *
 
 ###

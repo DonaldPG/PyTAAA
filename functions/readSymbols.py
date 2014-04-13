@@ -18,6 +18,12 @@ def readSymbolList(filename,verbose=False):
         else:
             break
 
+    # ensure that there are no duplicate tickers
+    symbols = list( set( symbols ) )
+
+    # sort list of symbols
+    symbols.sort()
+    
     # print list of symbols
     if verbose:
         print "number of symbols is ",len(symbols)

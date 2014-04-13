@@ -19,7 +19,9 @@ def ftpMoveDirectory(  ):
 
     # get hostname and credentials
     ftpparams = GetFTPParams()
+    print ftpparams
     hostname = ftpparams['ftpHostname']
+    hostIP   = ftpparams['remoteIP']
     username = ftpparams['ftpUsername']
     password = ftpparams['ftpPassword']
 
@@ -40,6 +42,7 @@ def ftpMoveDirectory(  ):
         if len(username) == 0:
             username = default_username
 
+    '''
     # get host key, if we know one
     hostkeytype = None
     hostkey = None
@@ -56,12 +59,17 @@ def ftpMoveDirectory(  ):
         hostkeytype = host_keys[hostname].keys()[0]
         hostkey = host_keys[hostname][hostkeytype]
         print 'Using host key of type %s' % hostkeytype
-
+    '''
 
     # now, connect and use paramiko Transport to negotiate SSH2 across the connection
     try:
+        print ' connecting to remote server'
+        '''
         t = paramiko.Transport((hostname, port))
         t.connect(username=username, password=password, hostkey=hostkey)
+        '''
+        t = paramiko.Transport((hostIP, port))
+        t.connect(username=username, password=password)
         sftp = paramiko.SFTPClient.from_transport(t)
 
         # dirlist on remote host
@@ -84,7 +92,7 @@ def ftpMoveDirectory(  ):
         if hourOfDay < 22 :
             for i in range( len(transfer_list)-1,-1,-1 ):
                 name, extension = os.path.splitext( transfer_list[i] )
-                if extension == ".png" and name != "PyTAAA_value" :
+                if extension == ".png" and name != "PyTAAA_value" or extension == '.db':
                     transfer_list.pop(i)
 
         for i, local_file in enumerate(transfer_list):
@@ -371,6 +379,13 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
             print "Could not ftp web files..."
 
     elif operatingSystem == 'Windows' and computerName == 'Don-XPS1530' :
+        print "  ...using ftpMoveDirectory"
+        try:
+            ftpMoveDirectory(  )
+        except:
+            print "Could not ftp web files..."
+
+    elif operatingSystem == 'Windows' and computerName == 'DonEnvy' :
         print "  ...using ftpMoveDirectory"
         try:
             ftpMoveDirectory(  )
