@@ -210,8 +210,8 @@ def GetEdition( ):
     # get edition from where software is running
     if 'armv6l' in platform.uname()[4] :
         edition = 'pi'
-    elif 'XPS' in platform.uname()[1] :
-        edition = 'XPS'
+    elif 'x86' in platform.uname()[4] :
+        edition = 'Windows32'
     elif 'AMD64' in platform.uname()[4] :
         edition = 'Windows64'
     else:
