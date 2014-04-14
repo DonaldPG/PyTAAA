@@ -329,3 +329,33 @@ def makeTrendDispersionPlot( ):
     figure5_htmlText = figure5_htmlText + '''<br><img src="'''+figure5path+'''" alt="PyTAAA by DonaldPG" width="850" height="500"><br>\n'''
 
     return figure5_htmlText
+
+
+def makeDailyMonteCarloBacktest( ):
+
+    import datetime
+    from functions.dailyBacktest_pctLong import *
+
+    ##########################################
+    # make plot with daily monte carlo backtest
+    ##########################################
+    figure6path = os.path.join( os.getcwd(), 'pyTAAA_web', 'PyTAAA_monteCarloBacktest.png' )
+    
+    ###
+    ### make a combined plot
+    ### - only update between midnight and 2 a.m.
+    ### - make plot showing trend below B&H and trade-system Value
+    ###
+    
+    today = datetime.datetime.now()
+    hourOfDay = today.hour
+    
+    if hourOfDay < 3:
+		dailyBacktest_pctLong()
+    
+    figure6path = 'PyTAAA_monteCarloBacktest.png'  # re-set to name without full path
+    figure6_htmlText = "\n<br><h3>Daily backtest with trend indicators and measure of invested percent</h3>\n"
+    figure6_htmlText = figure6_htmlText + "\nCombined backtest with Trend indicators.\n"
+    figure6_htmlText = figure6_htmlText + '''<br><img src="'''+figure6path+'''" alt="PyTAAA by DonaldPG" width="850" height="500"><br>\n'''
+
+    return figure6_htmlText

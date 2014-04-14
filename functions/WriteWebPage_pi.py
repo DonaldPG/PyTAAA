@@ -256,6 +256,13 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
 
 
     ##########################################
+    # make plot showing monte carlo backtest using variable percent Long trades
+    ##########################################
+
+    figure6_htmlText = makeDailyMonteCarloBacktest( )
+
+
+    ##########################################
     # add current rankings table to message
     ##########################################
 
@@ -325,6 +332,7 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
             f.write(figure_htmlText)
             f.write(figure4_htmlText)
             f.write(figure5_htmlText)
+            f.write(figure6_htmlText)
             f.write(rankingMessage)
             f.write(indexExchangesMessage)
         print " Successfully wrote updates to pyTAAAweb html ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")

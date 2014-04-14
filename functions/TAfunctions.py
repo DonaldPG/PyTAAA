@@ -44,6 +44,17 @@ def cleantobeginning(self):
         values[i]=values[firstIndex]
     return values
 #----------------------------------------------
+def cleantoend(self):
+    """
+    Copy missing values (to all dates after the last valid value)
+
+    Usage: infill NaN values at end with copy of last valid value
+    """
+    # reverse input 1D array and use cleantobeginning
+    reverse = self[::-1]
+    reverse = cleantobeginning(reverse)
+    return reverse[::-1]
+#----------------------------------------------
 def dpgchannel(x,minperiod,maxperiod,incperiod):
     periods = np.arange(minperiod,maxperiod,incperiod)
     minchannel = np.zeros(len(x),dtype=float)
