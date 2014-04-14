@@ -1,9 +1,6 @@
 import numpy as np
 import os
 import nose
-#import bottleneck as bn
-#import la
-#import h5py
 import datetime
 from scipy.stats import gmean
 from math import sqrt
@@ -248,7 +245,6 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
     last_symbols_price = []
     for ii in range(len(symbols)):
         if monthgainlossweight[ii,-1] > 0:
-            # print symbols[ii]
             print datearray[-1], format(symbols[ii],'5s'), format(monthgainlossweight[ii,-1],'5.3f')
             last_symbols_text.append( symbols[ii] )
             last_symbols_weight.append( monthgainlossweight[ii,-1] )
