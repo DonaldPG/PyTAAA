@@ -23,7 +23,7 @@ def readSymbolList(filename,verbose=False):
 
     # sort list of symbols
     symbols.sort()
-    
+
     # print list of symbols
     if verbose:
         print "number of symbols is ",len(symbols)
