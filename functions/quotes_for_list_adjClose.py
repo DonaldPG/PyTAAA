@@ -5,12 +5,6 @@ import datetime
 from scipy import random
 from scipy.stats import rankdata
 
-'''
-import nose
-import bottleneck as bn
-import la
-'''
-
 import functions.quotes_adjClose
 from functions.quotes_adjClose import *
 from functions.TAfunctions import *
@@ -271,42 +265,24 @@ def arrayFromQuotesForList(symbolsFile, beginDate, endDate):
 
     # read symbols list
     symbols = readSymbolList(symbolsFile,verbose=True)
-    #print 'symbols = ', symbols
 
     # get quotes for each symbol in list (adjusted close)
-    print "inside arrayFromQuotesForList ... above 'downloadQuotes'"
     quote = downloadQuotes(symbols,date1=beginDate,date2=endDate,adjust=True,Verbose=True)
 
     # clean up quotes for missing values and varying starting date
-    #x=quote.copyx()
-    #date = quote.getlabel(2)
     x = quote.as_matrix().swapaxes(0,1)
     date = quote.index
-    print "\n\n ...inside arrayFromQuotesForList   last date = ", date[-1]
-    #import pdb
-    #pdb.set_trace() 
-    #date = [d.to_datetime().date() for d in date]
-    #date = [d.to_datetime().date().isoformat() for d in date]
     date = [d.date().isoformat() for d in date]
     datearray = np.array(date)
-    #datearray = date
     symbolList = list(quote.columns.values)
 
     # Clean up input quotes
     #  - infill interior NaN values using nearest good values to linearly interpolate
     #  - copy first valid quote to from valid date to all earlier positions
-    '''
-    for ii in range(x.shape[0]):
-        x[ii,0,:] = interpolate(x[ii,0,:])
-        x[ii,0,:] = cleantobeginning(x[ii,0,:])
-
-    return x[:,0,:], quote.getlabel(0), datearray
-    '''
     for ii in range(x.shape[0]):
         x[ii,:] = interpolate(x[ii,:])
         x[ii,:] = cleantobeginning(x[ii,:])
 
-    print " ... last date to return from arrayFromQuotesForList = ", datearray[-1]
     return x, symbolList, datearray
 
 def arrayFromQuotesForListWithVol(symbolsFile, beginDate, endDate):
@@ -339,7 +315,6 @@ def arrayFromQuotesForListWithVol(symbolsFile, beginDate, endDate):
         x[ii,0,:] = interpolate(x[ii,0,:])
         x[ii,0,:] = cleantobeginning(x[ii,0,:])
 
-    #return x[:,0,:], x[:,1,:], quote.getlabel(0), datearray
     return x, symbolList, datearray
 
 
