@@ -19,7 +19,6 @@ def ftpMoveDirectory(  ):
 
     # get hostname and credentials
     ftpparams = GetFTPParams()
-    print ftpparams
     hostname = ftpparams['ftpHostname']
     hostIP   = ftpparams['remoteIP']
     username = ftpparams['ftpUsername']
@@ -42,32 +41,9 @@ def ftpMoveDirectory(  ):
         if len(username) == 0:
             username = default_username
 
-    '''
-    # get host key, if we know one
-    hostkeytype = None
-    hostkey = None
-    try:
-        host_keys = paramiko.util.load_host_keys(os.path.expanduser('~/.ssh/known_hosts'))
-    except IOError:
-        try:
-            host_keys = paramiko.util.load_host_keys(os.path.expanduser('~/ssh/known_hosts'))
-        except IOError:
-            print '*** Unable to open host keys file'
-            host_keys = {}
-
-    if host_keys.has_key(hostname):
-        hostkeytype = host_keys[hostname].keys()[0]
-        hostkey = host_keys[hostname][hostkeytype]
-        print 'Using host key of type %s' % hostkeytype
-    '''
-
     # now, connect and use paramiko Transport to negotiate SSH2 across the connection
     try:
         print ' connecting to remote server'
-        '''
-        t = paramiko.Transport((hostname, port))
-        t.connect(username=username, password=password, hostkey=hostkey)
-        '''
         t = paramiko.Transport((hostIP, port))
         t.connect(username=username, password=password)
         sftp = paramiko.SFTPClient.from_transport(t)
