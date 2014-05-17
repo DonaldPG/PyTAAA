@@ -196,6 +196,12 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
             plt.plot(datearray,signal2D[i,:]*adjClose[i,-1])
             plot_text = str(adjClose[i,-7:])
             plt.text(datearray[50],0,plot_text)
+            # put text line with most recent date at bottom of plot
+            # - get 7.5% of x-scale and y-scale for text location
+            x_range = datearray[-1] - datearray[0]
+            text_x = datearray[0] + datetime.timedelta( x_range.days / 20. )
+            text_y = ( np.max(adjClose[i,:]) - np.min(adjClose[i,:]) )* .075 + np.min(adjClose[i,:])
+            plt.text( text_x,text_y, "most recent value from "+str(datearray[-1])+"\nplotted at "+today.strftime("%A, %d. %B %Y %I:%M%p"), fontsize=8 )
             plt.title(symbols[i])
             plotfilepath = os.path.join( filepath, "0_"+symbols[i]+".png" )
             plt.savefig( plotfilepath )
