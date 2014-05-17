@@ -9,6 +9,7 @@ matplotlib.use('Agg')
 from matplotlib import pylab as plt
 import matplotlib.gridspec as gridspec
 from functions.GetParams import GetEdition
+from functions.TAfunctions import dpgchannel, SMA
 
 def makeValuePlot(  ):
 
@@ -47,6 +48,35 @@ def makeValuePlot(  ):
 
     value = np.array( value ).astype('float')
 
+    # calculate mid-channel and compare to MA
+    dailyValue = [ value[-1] ]
+    dailyDate = [ date[-1] ]
+    for ii in range( len(value)-2, 0, -1 ):
+        if date[ii] != date[ii+1]:
+            dailyValue.append( value[ii] )
+            dailyDate.append( date[ii] )
+    sortindices = (np.array( dailyDate )).argsort()
+    sortedDailyValue = (np.array( dailyValue ))[ sortindices ]
+    sortedDailyDate = (np.array( dailyDate ))[ sortindices ]
+    
+    minchannel, maxchannel = dpgchannel( sortedDailyValue, 5, 18, 4 )
+    midchannel = ( minchannel + maxchannel )/2.
+    MA_midchannel = SMA( midchannel, 5 )
+    
+    # create signal 11,000 for 'long' and 10,001 for 'cash'
+    signal = np.ones_like( sortedDailyValue ) * 11000.
+    signal[ MA_midchannel > midchannel ] = 10001
+    signal[0] = 11000.
+    
+    # calculate value only when signal is 11,000
+    valueSignal = np.zeros_like( signal )
+    valueSignal[:5] = sortedDailyValue[:5]
+    for ii in range( 4, len(signal) ):
+        if signal[ii] == 11000.:
+            valueSignal[ii] = sortedDailyValue[ii]/sortedDailyValue[ii-1]*valueSignal[ii-1]
+        else:
+            valueSignal[ii] = valueSignal[ii-1]
+    
     for i in range(0,len(value),500 ):
         print "   ...inside makeValuePlot - i, date[i], value[i] = ", i, date[i], value[i]
 
@@ -54,6 +84,10 @@ def makeValuePlot(  ):
     plt.clf()
     plt.grid(True)
     plt.plot( date, value )
+    plt.plot( sortedDailyDate, midchannel )
+    plt.plot( sortedDailyDate, MA_midchannel )
+    plt.plot( sortedDailyDate, signal )
+    plt.plot( sortedDailyDate, valueSignal, 'k-', lw=2 )
     plt.xlim((date[0],date[-1]+datetime.timedelta(1) ))
     plt.title("pyTAAA Value History Plot ("+edition+" edition)")
     # put text line with most recent date at bottom of plot
@@ -61,7 +95,7 @@ def makeValuePlot(  ):
     x_range = date[-1] - date[0]
     text_x = date[0] + datetime.timedelta( x_range.days / 20. )
     text_y = ( np.max(value) - np.min(value) )* .05 + np.min(value)
-    plt.text( text_x,text_y, "most recent value from "+str(date[-1].date())+"\nplotted at "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"), fontsize=8 )
+    plt.text( text_x,text_y, "most recent value from "+str(date[-1].date())+"\nplotted at "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")+"\nCurrent signal = "+format(int(valueSignal[-1]/11000.),'-2d'), fontsize=8 )
     plt.savefig(figurepath)
     try:
         plt.close(1)
@@ -351,7 +385,7 @@ def makeDailyMonteCarloBacktest( ):
     hourOfDay = today.hour
     
     if hourOfDay < 3:
-		dailyBacktest_pctLong()
+        dailyBacktest_pctLong()
     
     figure6path = 'PyTAAA_monteCarloBacktest.png'  # re-set to name without full path
     figure6_htmlText = "\n<br><h3>Daily backtest with trend indicators and measure of invested percent</h3>\n"
