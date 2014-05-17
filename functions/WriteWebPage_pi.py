@@ -105,12 +105,16 @@ def piMoveDirectory(  ):
         ftpparams = GetFTPParams()
         remote_path = ftpparams['remotepath']
         
+        print "\n\n ... diagnostic:  ftpparams = ", ftpparams
+              
         # create a target directory if it does not exist already
         try:
             os.mkdirs( remote_path )
         except:
             print '  ...'+remote_path+' already exists)'
 
+        print "\n\n ... diagnostic:  remote_path = ", remote_path
+        
         # create README in target directory
         try:
             with open( os.path.join(remote_path, 'README'), 'w') as f:
@@ -120,10 +124,11 @@ def piMoveDirectory(  ):
             #pass
             print '  ...'+os.path.join(remote_path, 'README')+' could not be created. Maybe already exists?'
 
-
         # create a list of files to be copied
         source_directory = "./pyTAAA_web"
         transfer_list = os.listdir( source_directory )
+        
+        print "\n\n ... diagnostic:  transfer_list = ", transfer_list
 
         # remove png files from transfer_list except after 10pm
         today = datetime.datetime.now()
@@ -134,9 +139,12 @@ def piMoveDirectory(  ):
                 if extension == ".png" and name != "PyTAAA_value" :
                     transfer_list.pop(i)
                     
+        print "\n\n ... updated diagnostic:  transfer_list = ", transfer_list
+        
         for f in transfer_list:
             local_file = os.path.join( source_directory, f )
             remote_file = os.path.join( remote_path, f )
+            print "\n ... diagnostic:  local_file, remote_file = ", local_file, remote_file
             shutil.copyfile( local_file, remote_file )
             print '  ...created '+remote_file+' on piDonaldPG web server'
 
@@ -357,6 +365,7 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
 
     if operatingSystem == 'Linux' and architecture == 'armv6l' :
         print "  ...using piMoveDirectory"
+        piMoveDirectory(  )
         try:
             piMoveDirectory(  )
         except:

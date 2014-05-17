@@ -229,7 +229,10 @@ def UpdateHDF5( symbol_directory, symbols_file ):
     if len(new_symbols) > 0:
         updatedquotes = updatedquotes.join( quotes_NewSymbols, how='outer' )
     if len(CASHsymbols) > 0:
-         del updatedquotes['CASH']
+         try:
+             del updatedquotes['CASH']
+         except:
+             pass
          updatedquotes = updatedquotes.join( quotes_CASHSymbols, how='outer' )
 
     # set up to write quotes to disk.

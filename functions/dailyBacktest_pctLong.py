@@ -1,27 +1,30 @@
-
-
+# Force matplotlib to not use any Xwindows backend.
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import pylab as plt
 
 def dailyBacktest_pctLong():
 
     import time, threading
-    
+
     import numpy as np
     from matplotlib.pylab import *
     import matplotlib.gridspec as gridspec
     import os
-    
+
     import datetime
     from scipy import random
     from scipy import ndimage
     from random import choice
     from scipy.stats import rankdata
-    
-    
+
+
     import pandas as pd
-    
+
     from scipy.stats import gmean
-    
+
     ## local imports
+    from functions.GetParams import *
     from functions.quotes_for_list_adjClose import *
     from functions.TAfunctions import *
     from functions.UpdateSymbols_inHDF5 import UpdateHDF5, loadQuotes_fromHDF
@@ -268,6 +271,7 @@ def dailyBacktest_pctLong():
         if iter == randomtrials-1 :
             print "\n\n\n"
             print "*********************************\nUsing pyTAAApi linux edition parameters .....\n"
+            '''
             numberStocksTraded = 7
             monthsToHold = 4
             monthsToHold = 1
@@ -290,6 +294,21 @@ def dailyBacktest_pctLong():
             rankThresholdPct=    .20
             riskDownside_min=    .234
             riskDownside_max=   4.694
+            '''
+            params = GetParams()
+            monthsToHold = params['monthsToHold']
+            numberStocksTraded = params['numberStocksTraded']
+            LongPeriod = params['LongPeriod']
+            MA1 = params['MA1']
+            MA2 = params['MA2']
+            MA3 = params['MA3']
+            MA2offset = params['MA3'] - params['MA2']
+            sma2factor = params['MA2factor']
+            rankThresholdPct = params['rankThresholdPct']
+            riskDownside_min = params['riskDownside_min']
+            riskDownside_max = params['riskDownside_max']
+
+
 
         monthgainloss = np.ones((adjClose.shape[0],adjClose.shape[1]),dtype=float)
         monthgainloss[:,LongPeriod:] = adjClose[:,LongPeriod:] / adjClose[:,:-LongPeriod]
