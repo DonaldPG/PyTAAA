@@ -61,18 +61,20 @@ def ftpMoveDirectory(  ):
         sftp.open( os.path.join(remote_path, 'README'), 'w').write('This was created by pyTAAA/WriteWebPage.py on DonXPS\n')
 
         transfer_list = os.listdir("./pyTAAA_web")
+        transfer_list.append( '../PyTAAA_holdings.params' )
 
-        # remove png files from transfer_list except after 10pm
+        # remove png files from transfer_list except when market is open 10pm or before 8am
         today = datetime.datetime.now()
         hourOfDay = today.hour
-        if hourOfDay < 22 :
+        if 8 < hourOfDay < 15 :
             for i in range( len(transfer_list)-1,-1,-1 ):
                 name, extension = os.path.splitext( transfer_list[i] )
-                if extension == ".png" and name != "PyTAAA_value" or extension == '.db':
+                if (extension == ".png" and "PyTAAA" not in name) or extension == '.db':
                     transfer_list.pop(i)
 
         for i, local_file in enumerate(transfer_list):
-            remote_file = os.path.join( remote_path, local_file )
+            _, local_file_noPath = os.path.split( local_file )
+            remote_file = os.path.join( remote_path, local_file_noPath )
             sftp.put( os.path.join("./pyTAAA_web/",local_file), remote_file )
             print '  ...created '+remote_file+' on piDonaldPG'
 
@@ -104,9 +106,9 @@ def piMoveDirectory(  ):
         # get remote path location
         ftpparams = GetFTPParams()
         remote_path = ftpparams['remotepath']
-        
+
         print "\n\n ... diagnostic:  ftpparams = ", ftpparams
-              
+
         # create a target directory if it does not exist already
         try:
             os.mkdirs( remote_path )
@@ -114,7 +116,7 @@ def piMoveDirectory(  ):
             print '  ...'+remote_path+' already exists)'
 
         print "\n\n ... diagnostic:  remote_path = ", remote_path
-        
+
         # create README in target directory
         try:
             with open( os.path.join(remote_path, 'README'), 'w') as f:
@@ -127,23 +129,26 @@ def piMoveDirectory(  ):
         # create a list of files to be copied
         source_directory = "./pyTAAA_web"
         transfer_list = os.listdir( source_directory )
-        
+        transfer_list.append( os.path.join( '..', 'PyTAAA_holdings.params' ) )
+
         print "\n\n ... diagnostic:  transfer_list = ", transfer_list
 
-        # remove png files from transfer_list except after 10pm
+        # remove png files from transfer_list except when market is open 10pm or before 8am
         today = datetime.datetime.now()
         hourOfDay = today.hour
-        if hourOfDay < 22 :
+        if 8 < hourOfDay < 15 :
             for i in range( len(transfer_list)-1,-1,-1 ):
                 name, extension = os.path.splitext( transfer_list[i] )
                 if extension == ".png" and name != "PyTAAA_value" :
                     transfer_list.pop(i)
-                    
+
         print "\n\n ... updated diagnostic:  transfer_list = ", transfer_list
-        
+
         for f in transfer_list:
             local_file = os.path.join( source_directory, f )
-            remote_file = os.path.join( remote_path, f )
+            _, local_file_noPath = os.path.split( local_file )
+            remote_file = os.path.join( remote_path, local_file_noPath )
+            #remote_file = os.path.join( remote_path, f )
             print "\n ... diagnostic:  local_file, remote_file = ", local_file, remote_file
             shutil.copyfile( local_file, remote_file )
             print '  ...created '+remote_file+' on piDonaldPG web server'
@@ -264,11 +269,26 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
 
 
     ##########################################
+    # compute stock value compared to offset trend and make plot
+    ##########################################
+
+    figure5a_htmlText = makeDailyChannelOffsetSignal( )
+
+
+    ##########################################
     # make plot showing monte carlo backtest using variable percent Long trades
     ##########################################
 
     figure6_htmlText = makeDailyMonteCarloBacktest( )
 
+    ##########################################
+    # make plot showing how stock performance clusters
+    ##########################################
+
+    try:
+        figure7_htmlText = makeStockCluster( )
+    except:
+        pass
 
     ##########################################
     # add current rankings table to message
@@ -341,6 +361,10 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
             f.write(figure4_htmlText)
             f.write(figure5_htmlText)
             f.write(figure6_htmlText)
+            try:
+                f.write(figure7_htmlText)
+            except:
+                pass
             f.write(rankingMessage)
             f.write(indexExchangesMessage)
         print " Successfully wrote updates to pyTAAAweb html ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
