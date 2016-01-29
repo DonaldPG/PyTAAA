@@ -78,7 +78,7 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
     #from la.external.matplotlib import quotes_historical_yahoo
     import pandas as pd
     from pandas.io.data import DataReader
-    from pandas.io.data import get_data_yahoo
+    from pandas.io.data import get_data_yahoo, get_data_google
     #import la
 
     if date1 is None:
@@ -88,10 +88,13 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
     #quotes_df = None
     #lar = None
     items = ['Adj Close']
+    google_items = ['Close']
     if Verbose:
         print "Load data"
 
     i=0
+    number_tries = 0
+    re_tries = 0
     for itick, ticker in enumerate(tickers):
         if Verbose:
             print "\t" + ticker + "  ",
@@ -99,26 +102,50 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
         data = []
         dates = []
 
-        number_tries = 0
+        #number_tries = 0
         try:
             # read in dataframe containing adjusted close quotes for a ticker in the list
-            data = get_data_yahoo(ticker, start = date1, end = date2)[items]
+            #print "number_tries = ", number_tries
+            if number_tries < 11:
+                #print "number_tries = ", number_tries, " trying with yahoo"
+                try:
+                    data = get_data_yahoo(ticker, start = date1, end = date2)[items]
+                    number_tries = 0
+                except:
+                    pass
+            else:
+                #print "number_tries = ", number_tries, " trying with google"
+                print "   ...retrieving quotes using google"
+                try:
+                    data = get_data_google(ticker, start = date1, end = date2)[google_items]
+                    number_tries = 0
+                except:
+                    pass
+            #print ' data = ', data
             dates = data.index
+            #print ' dates = ', dates
             dates = [d.to_datetime() for d in dates]
+            
             data.columns = [ticker]
+            #print ' ticker = ', [ticker]
+            #print ' data.columns = ', data.columns
             if Verbose:
                 print i," of ",len(tickers)," ticker ",ticker," has ",data.shape[0]," quotes"
 
-            if itick == 0:
+            if itick-re_tries == 0:
+                #print " creating dataframe..."
                 quotes_df = data
             else:
+                #print " joining to dataframe..."
                 quotes_df = quotes_df.join( data, how='outer' )
+                #print " joined to dataframe..."
             i += 1
         except:
-            print "could not get quotes for ", ticker, "         will try again and again."
+            print "could not get quotes for ", ticker, "         will try again and again.", number_tries
             sleep(3)
             number_tries += 1
-            if number_tries < 11:
+            re_tries += 1
+            if number_tries < 20:
                 tickers[itick+1:itick+1] = [ticker]
 
     print "number of tickers successfully processed = ", i
