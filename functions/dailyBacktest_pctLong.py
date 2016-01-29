@@ -2,6 +2,433 @@
 import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pylab as plt
+from functions.GetParams import *
+from functions.quotes_for_list_adjClose import *
+from functions.TAfunctions import *
+
+def plotRecentPerfomance( datearray, symbols, value, monthvalue,
+                          ValueOnDate, AllStocksHistogram,
+                          MonteCarloPortfolioValues,
+                          FinalTradedPortfolioValue,
+                          numberStocksUpTrending,
+                          last_symbols_text,
+                          activeCount,
+                          numberStocks,
+                          numberStocksUpTrendingNearHigh,
+                          numberStocksUpTrendingBeatBuyHold ):
+
+    import time, threading
+
+    import numpy as np
+    from matplotlib.pylab import *
+    import matplotlib.gridspec as gridspec
+    import os
+
+    import datetime
+    from scipy import random
+    from scipy import ndimage
+    from random import choice
+    from scipy.stats import rankdata
+
+
+    import pandas as pd
+
+    from scipy.stats import gmean
+
+    ## local imports
+
+    from functions.UpdateSymbols_inHDF5 import UpdateHDF5, loadQuotes_fromHDF
+
+    print "*************************************************************"
+    print "*************************************************************"
+    print "***                                                       ***"
+    print "***                                                       ***"
+    print "***  daily montecarlo backtest                            ***"
+    print "***  recent performance update                            ***"
+    print "***                                                       ***"
+    print "***                                                       ***"
+    print "*************************************************************"
+    print "*************************************************************"
+    from time import sleep
+    sleep(5)
+
+    params = GetParams()
+    trade_cost = params['trade_cost']
+    monthsToHold = params['monthsToHold']
+    numberStocksTraded = params['numberStocksTraded']
+    LongPeriod = params['LongPeriod']
+    stddevThreshold = params['stddevThreshold']
+    MA1 = params['MA1']
+    MA2 = params['MA2']
+    MA3 = params['MA3']
+    MA2offset = params['MA3'] - params['MA2']
+    sma2factor = params['MA2factor']
+    rankThresholdPct = params['rankThresholdPct']
+    riskDownside_min = params['riskDownside_min']
+    riskDownside_max = params['riskDownside_max']
+
+
+    # read list of symbols from disk.
+    filename = os.path.join( os.getcwd(), 'symbols', 'Naz100_Symbols.txt' )
+
+    ########################################################################
+    ### clean up data for plotting
+    ########################################################################
+
+    import pdb
+    #pdb.set_trace()
+
+    print " number of nans in value = ", value[np.isnan(value)].shape
+    print " number of nans in monthvalue = ", monthvalue[np.isnan(monthvalue)].shape
+
+    print " number of infs in value = ", value[np.isinf(value)].shape
+    print " number of infs in monthvalue = ", monthvalue[np.isinf(monthvalue)].shape
+
+    '''
+    value[value==0.] = np.nan
+    value[np.isinf(value)] = np.nan
+    monthvalue[monthvalue==0.] = np.nan
+    monthvalue[np.isinf(monthvalue)] = np.nan
+    '''
+
+    ########################################################################
+    ### normalize to starting value of $10,000
+    ########################################################################
+
+    for ii in range( MonteCarloPortfolioValues.shape[0] ):
+
+        #print "ii, ",ii,
+        aa = MonteCarloPortfolioValues[ii,:].copy()
+        aa[aa==0.] = np.nan
+        MonteCarloPortfolioValues[ii,:] = cleantobeginning( aa )
+        Factor = 10000. / MonteCarloPortfolioValues[ii,0]
+        #print Factor,
+        MonteCarloPortfolioValues[ii,:] *= Factor
+        FinalTradedPortfolioValue[ii] *= Factor
+
+    for ii in range( value.shape[0] ):
+
+        #print "ii, symbols[ii], value[ii,0] = ",ii,symbols[ii], value[ii,0],
+        #value[ii,:] = interpolate( value[ii,:] )
+        if value[ii,0] == 0.:
+            aa = value[ii,:].copy()
+            aa[aa==0.] = np.nan
+            value[ii,:] = cleantobeginning( aa )
+        #value[ii,:] = cleantobeginning( value[ii,:] )
+        value[ii,:] = cleantoend( value[ii,:] )
+        Factor = 10000. / value[ii,0]
+        #print 'Factor =', Factor
+        value[ii,:] *= Factor
+
+        monthvalue[ii,:] = interpolate( monthvalue[ii,:] )
+        monthvalue[ii,:] = cleantobeginning( monthvalue[ii,:] )
+        monthvalue[ii,:] = cleantoend( monthvalue[ii,:] )
+    Factor = 10000. / np.average( monthvalue[:,0] )
+    #print Factor
+    monthvalue *= Factor
+
+    plotmax = 10. ** np.around( np.log10( value.max() ))
+    MonteCarloPortfolioValues_NoNaNs = MonteCarloPortfolioValues[~np.isnan(MonteCarloPortfolioValues)]
+    plotmax = np.around( 1.2 * MonteCarloPortfolioValues_NoNaNs.max(), decimals=-2 )
+    #print "\n\n ... plotmax = ", plotmax
+
+    ########################################################################
+    ### gather statistics for recent performance
+    ########################################################################
+
+    numberStocksUpTrendingMedian = np.median(numberStocksUpTrending,axis=0)
+    numberStocksUpTrendingMean   = np.mean(numberStocksUpTrending,axis=0)
+
+    index = monthvalue.shape[1]-1
+    minindex = -np.min([756,len(datearray)-1])
+    print "index = ", index, monthvalue.shape, len(datearray),minindex
+
+    PortfolioValue = np.nanmean(monthvalue,axis=0)
+    PortfolioDailyGains = PortfolioValue[1:] / PortfolioValue[:-1]
+    SharpeLife = ( gmean(PortfolioDailyGains[-index:])**252 -1. ) / ( np.std(PortfolioDailyGains[-index:])*sqrt(252) )
+    Sharpe3Yr = ( gmean(PortfolioDailyGains[minindex:])**252 -1. ) / ( np.std(PortfolioDailyGains[minindex:])*sqrt(252) )
+    Sharpe1Yr = ( gmean(PortfolioDailyGains[-252:])**252 -1. ) / ( np.std(PortfolioDailyGains[-252:])*sqrt(252) )
+    Sharpe6Mo = ( gmean(PortfolioDailyGains[-126:])**252 -1. ) / ( np.std(PortfolioDailyGains[-126:])*sqrt(252) )
+    Sharpe3Mo = ( gmean(PortfolioDailyGains[-63:])**252 -1. ) / ( np.std(PortfolioDailyGains[-63:])*sqrt(252) )
+    Sharpe1Mo = ( gmean(PortfolioDailyGains[-21:])**252 -1. ) / ( np.std(PortfolioDailyGains[-21:])*sqrt(252) )
+    PortfolioSharpe = ( gmean(PortfolioDailyGains)**252 -1. ) / ( np.std(PortfolioDailyGains)*sqrt(252) )
+
+    print "Lifetime : ",index,PortfolioValue[-1], PortfolioValue[-index],datearray[-index]
+
+    ReturnLife = (PortfolioValue[-1] / PortfolioValue[-index])**(252./index)
+    Return3Yr = (PortfolioValue[-1] / PortfolioValue[minindex])**(1/3.)
+    Return1Yr = (PortfolioValue[-1] / PortfolioValue[-252])
+    Return6Mo = (PortfolioValue[-1] / PortfolioValue[-126])**(1/.5)
+    Return3Mo = (PortfolioValue[-1] / PortfolioValue[-63])**(1/.25)
+    Return1Mo = (PortfolioValue[-1] / PortfolioValue[-21])**(1/(1./12.))
+    PortfolioReturn = gmean(PortfolioDailyGains)**252 -1.
+
+    MaxPortfolioValue = np.zeros( PortfolioValue.shape[0], 'float' )
+    for jj in range(PortfolioValue.shape[0]):
+        MaxPortfolioValue[jj] = max(MaxPortfolioValue[jj-1],PortfolioValue[jj])
+    PortfolioDrawdown = PortfolioValue / MaxPortfolioValue - 1.
+    DrawdownLife = np.mean(PortfolioDrawdown[-index:])
+    Drawdown3Yr = np.mean(PortfolioDrawdown[minindex:])
+    Drawdown1Yr = np.mean(PortfolioDrawdown[-252:])
+    Drawdown6Mo = np.mean(PortfolioDrawdown[-126:])
+    Drawdown3Mo = np.mean(PortfolioDrawdown[-63:])
+    Drawdown1Mo = np.mean(PortfolioDrawdown[-21:])
+
+    BuyHoldPortfolioValue = np.nanmean(value,axis=0)
+    BuyHoldDailyGains = BuyHoldPortfolioValue[1:] / BuyHoldPortfolioValue[:-1]
+    BuyHoldSharpeLife = ( gmean(BuyHoldDailyGains[-index:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-index:])*sqrt(252) )
+    BuyHoldSharpe3Yr = ( gmean(BuyHoldDailyGains[minindex:])**252 -1. ) / ( np.std(BuyHoldDailyGains[minindex:])*sqrt(252) )
+    BuyHoldSharpe1Yr  = ( gmean(BuyHoldDailyGains[-252:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-252:])*sqrt(252) )
+    BuyHoldSharpe6Mo  = ( gmean(BuyHoldDailyGains[-126:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-126:])*sqrt(252) )
+    BuyHoldSharpe3Mo  = ( gmean(BuyHoldDailyGains[-63:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-63:])*sqrt(252) )
+    BuyHoldSharpe1Mo  = ( gmean(BuyHoldDailyGains[-21:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-21:])*sqrt(252) )
+    BuyHoldReturnLife = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-index])**(252./index)
+    BuyHoldReturn3Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[minindex:])**(1/13.)
+    BuyHoldReturn1Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-252])
+    BuyHoldReturn6Mo = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-126])**(1/.5)
+    BuyHoldReturn3Mo = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-63])**(1/.25)
+    BuyHoldReturn1Mo = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-21])**(1/(1./12.))
+    MaxBuyHoldPortfolioValue = np.zeros( BuyHoldPortfolioValue.shape, 'float' )
+    for jj in range(BuyHoldPortfolioValue.shape[0]):
+        MaxBuyHoldPortfolioValue[jj] = max(MaxBuyHoldPortfolioValue[jj-1],BuyHoldPortfolioValue[jj])
+
+    BuyHoldPortfolioDrawdown = BuyHoldPortfolioValue / MaxBuyHoldPortfolioValue - 1.
+    BuyHoldDrawdownLife = np.mean(BuyHoldPortfolioDrawdown[-index:])
+    BuyHoldDrawdown3Yr = np.mean(BuyHoldPortfolioDrawdown[minindex:])
+    BuyHoldDrawdown1Yr = np.mean(BuyHoldPortfolioDrawdown[-252:])
+    BuyHoldDrawdown6Mo = np.mean(BuyHoldPortfolioDrawdown[-126:])
+    BuyHoldDrawdown3Mo = np.mean(BuyHoldPortfolioDrawdown[-63:])
+    BuyHoldDrawdown1Mo = np.mean(BuyHoldPortfolioDrawdown[-21:])
+
+    ########################################################################
+    ### plot recent results
+    ########################################################################
+
+    matplotlib.rcParams['figure.edgecolor'] = 'grey'
+    rc('savefig',edgecolor = 'grey')
+    fig = figure(1)
+    clf()
+    subplotsize = gridspec.GridSpec(2,1,height_ratios=[5,1])
+    subplot(subplotsize[0])
+    grid()
+    ##
+    ## make plot of all stocks' individual prices
+    ##
+    #yscale('log')
+    #ylim([1000,max(100000,plotmax)])
+    ylim([7000,plotmax])
+    #ymin, ymax = emath.log10(1e3), emath.log10(max(10000,plotmax))
+    ymin, ymax = 7000,plotmax
+    bin_width = (ymax - ymin) / 50
+    y_bins = np.arange(ymin, ymax+.0000001, bin_width)
+    AllStocksHistogram = np.ones((len(y_bins)-1, len(datearray),3))
+    HH = np.zeros((len(y_bins)-1, len(datearray)))
+    mm = np.zeros(len(datearray))
+    xlocs = []
+    xlabels = []
+    for i in xrange(1,len(datearray)):
+        ValueOnDate = value[:,i]
+        '''
+        if ValueOnDate[ValueOnDate == 10000].shape[0] > 1:
+            ValueOnDate[ValueOnDate == 10000] = 0.
+            ValueOnDate[np.argmin(ValueOnDate)] = 10000.
+        '''
+        #h, _ = np.histogram(np.log10(ValueOnDate), bins=y_bins, density=True)
+        h, _ = np.histogram(ValueOnDate, bins=y_bins, density=True)
+        # reverse so big numbers become small(and print out black)
+        h = 1. - h
+        # set range to [.5,1.]
+        h /= 2.
+        h += .5
+        #print "idatearray[i],h min,mean,max = ", h.min(),h.mean(),h.max()
+        HH[:,i] = h
+        mm[i] = np.median(value[-1,:])
+        if datearray[i].year != datearray[i-1].year:
+            print " inside histogram evaluation for date = ", datearray[i]
+            xlocs.append(i)
+            xlabels.append(str(datearray[i].year))
+    HH -= np.percentile(HH.flatten(),2)
+    HH /= HH.max()
+    HH = np.clip( HH, 0., 1. )
+    #print "HH min,mean,max = ", HH.min(),HH.mean(),HH.max()
+    AllStocksHistogram[:,:,2] = HH
+    AllStocksHistogram[:,:,1] = AllStocksHistogram[:,:,2]
+    AllStocksHistogram = np.clip(AllStocksHistogram,AllStocksHistogram.max()*.05,1)
+    AllStocksHistogram /= AllStocksHistogram.max()
+
+    #plt.imshow(AllStocksHistogram, cmap='Reds_r', aspect='auto', origin='lower', extent=(0, len(datearray), 10**ymin, 10**ymax))
+    plt.imshow(AllStocksHistogram, cmap='Reds_r', aspect='auto', origin='lower', extent=(0, len(datearray), ymin, ymax))
+    plt.grid()
+    ##
+    ## cumulate final values for grayscale histogram overlay
+    ##
+    '''
+    if iter == 0:
+        MonteCarloPortfolioValues = np.zeros( (randomtrials, len(datearray) ), float )
+    MonteCarloPortfolioValues[iter,:] = np.average(monthvalue,axis=0)
+    '''
+
+    ##
+    ## cumulate final values for grayscale histogram overlay
+    ##
+
+    #yscale('log')
+    #ylim([1000,max(10000,plotmax)])
+    ylim([7000,plotmax])
+    #ymin, ymax = emath.log10(1e3), emath.log10(max(10000,plotmax))
+    ymin, ymax = 7000,plotmax
+    bin_width = (ymax - ymin) / 50
+    y_bins = np.arange(ymin, ymax+.0000001, bin_width)
+    H = np.zeros((len(y_bins)-1, len(datearray)))
+    m = np.zeros(len(datearray))
+    hb = np.zeros((len(y_bins)-1, len(datearray),3))
+    for i in xrange(1,len(datearray)):
+        #h, _ = np.histogram(np.log10(MonteCarloPortfolioValues[:,i]), bins=y_bins, density=True)
+        h, _ = np.histogram(MonteCarloPortfolioValues[:,i], bins=y_bins, density=True)
+        # reverse so big numbers become small(and print out black)
+        h = 1. - h
+        # set range to [.5,1.]
+        h = np.clip( h, .05, 1. )
+        h /= 2.
+        h += .5
+        H[:,i] = h
+        m[i] = np.median(value[-1,:])
+        if datearray[i].year != datearray[i-1].year:
+            print " inside histogram evaluation for date = ", datearray[i]
+    H -= np.percentile(H.flatten(),2)
+    H /= H.max()
+    H = np.clip( H, 0., 1. )
+    hb[:,:,0] = H
+    hb[:,:,1] = H
+    hb[:,:,2] = H
+    hb = .5 * AllStocksHistogram + .5 * hb
+
+    #yscale('log')
+    #plt.imshow(hb, cmap='gray', aspect='auto', origin='lower', extent=(0, len(datearray), 10**ymin, 10**ymax))
+    plt.imshow(hb, cmap='gray', aspect='auto', origin='lower', extent=(0, len(datearray), ymin, ymax))
+
+    #yscale('log')
+    plot( np.average(monthvalue,axis=0), lw=3, c='k' )
+    grid()
+    draw()
+
+    ##
+    ## continue
+    ##
+    #FinalTradedPortfolioValue[iter] = np.average(monthvalue[:,-1])
+    fFinalTradedPortfolioValue = "{:,}".format(int(FinalTradedPortfolioValue[-1]))
+    PortfolioDailyGains = np.average(monthvalue,axis=0)[1:] / np.average(monthvalue,axis=0)[:-1]
+    PortfolioSharpe = ( gmean(PortfolioDailyGains)**252 -1. ) / ( np.std(PortfolioDailyGains)*sqrt(252) )
+    fPortfolioSharpe = format(PortfolioSharpe,'5.2f')
+
+    print ""
+    print " value 3 months yrs ago, 1 month ago, last = ",np.average(monthvalue[:,-63]),np.average(monthvalue[:,-21]),np.average(monthvalue[:,-1])
+    print " one month gain, daily geom mean, stdev = ",np.average(monthvalue,axis=0)[-1] / np.average(monthvalue,axis=0)[-21],gmean(PortfolioDailyGains[-21:])**252 -1.,np.std(PortfolioDailyGains[-252:])*sqrt(252)
+    print " three month gain, daily geom mean, stdev = ",np.average(monthvalue,axis=0)[-1] / np.average(monthvalue,axis=0)[-63],gmean(PortfolioDailyGains[-63:])**252 -1.,np.std(PortfolioDailyGains[-504:])*sqrt(252)
+
+    title_text = str(0)+":  "+ \
+                  str(int(numberStocksTraded))+"__"+   \
+                  str(int(monthsToHold))+"__"+   \
+                  str(int(LongPeriod))+"-"+   \
+                  format(stddevThreshold,'4.2f')+"-"+   \
+                  str(int(MA1))+"-"+   \
+                  str(int(MA2))+"-"+   \
+                  str(int(MA2+MA2offset))+"-"+   \
+                  format(sma2factor,'5.3f')+"_"+   \
+                  format(rankThresholdPct,'.1%')+"__"+   \
+                  format(riskDownside_min,'6.3f')+"-"+  \
+                  format(riskDownside_max,'6.3f')+"__"+   \
+                  fFinalTradedPortfolioValue+'__'+   \
+                  fPortfolioSharpe
+
+    title( title_text, fontsize = 9 )
+    fSharpeLife = format(SharpeLife,'5.2f')
+    fSharpe3Yr = format(Sharpe3Yr,'5.2f')
+    fSharpe1Yr = format(Sharpe1Yr,'5.2f')
+    fSharpe6Mo = format(Sharpe6Mo,'5.2f')
+    fSharpe3Mo = format(Sharpe3Mo,'5.2f')
+    fSharpe1Mo = format(Sharpe1Mo,'5.2f')
+    fReturnLife = format(ReturnLife,'5.2f')
+    fReturn3Yr = format(Return3Yr,'5.2f')
+    fReturn1Yr = format(Return1Yr,'5.2f')
+    fReturn6Mo = format(Return6Mo,'5.2f')
+    fReturn3Mo = format(Return3Mo,'5.2f')
+    fReturn1Mo = format(Return1Mo,'5.2f')
+    fDrawdownLife = format(DrawdownLife,'.1%')
+    fDrawdown3Yr = format(Drawdown3Yr,'.1%')
+    fDrawdown1Yr = format(Drawdown1Yr,'.1%')
+    fDrawdown6Mo = format(Drawdown6Mo,'.1%')
+    fDrawdown3Mo = format(Drawdown3Mo,'.1%')
+    fDrawdown1Mo = format(Drawdown1Mo,'.1%')
+    print " one year sharpe = ",fSharpe1Mo
+    print ""
+    #plotrange = log10(plotmax / 1000.)
+    plotrange = (plotmax -7000.)
+    text( 50, 7050, filename, fontsize=8 )
+    text( 50, 8000, "Backtested on "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"), fontsize=7.5 )
+    '''
+    text(50,1000*10**(.95*plotrange),'Period Sharpe AvgProfit  Avg DD',fontsize=7.5)
+    text(50,1000*10**(.91*plotrange),' Life  '+fSharpeLife+'  '+fReturnLife+'  '+fDrawdownLife,fontsize=8)
+    text(50,1000*10**(.87*plotrange),' 3 Yr  '+fSharpe3Yr+'  '+fReturn3Yr+'  '+fDrawdown3Yr,fontsize=8)
+    text(50,1000*10**(.83*plotrange),' 1 Yr  '+fSharpe1Yr+'  '+fReturn1Yr+'  '+fDrawdown1Yr,fontsize=8)
+    text(50,1000*10**(.79*plotrange),' 6 Mo  '+fSharpe6Mo+'  '+fReturn6Mo+'  '+fDrawdown6Mo,fontsize=8)
+    text(50,1000*10**(.75*plotrange),' 3 Mo  '+fSharpe3Mo+'  '+fReturn3Mo+'  '+fDrawdown3Mo,fontsize=8)
+    text(50,1000*10**(.71*plotrange),' 1 Mo  '+fSharpe1Mo+'  '+fReturn1Mo+'  '+fDrawdown1Mo,fontsize=8)
+
+    text(50,1000*10**(.54*plotrange),last_symbols_text,fontsize=8)
+    '''
+    text(50,7000+(.95*plotrange),'Period Sharpe AvgProfit  Avg DD',fontsize=7.5)
+    text(50,7000+(.91*plotrange),' Life  '+fSharpeLife+'  '+fReturnLife+'  '+fDrawdownLife,fontsize=8)
+    text(50,7000+(.87*plotrange),' 3 Yr  '+fSharpe3Yr+'  '+fReturn3Yr+'  '+fDrawdown3Yr,fontsize=8)
+    text(50,7000+(.83*plotrange),' 1 Yr  '+fSharpe1Yr+'  '+fReturn1Yr+'  '+fDrawdown1Yr,fontsize=8)
+    text(50,7000+(.79*plotrange),' 6 Mo  '+fSharpe6Mo+'  '+fReturn6Mo+'  '+fDrawdown6Mo,fontsize=8)
+    text(50,7000+(.75*plotrange),' 3 Mo  '+fSharpe3Mo+'  '+fReturn3Mo+'  '+fDrawdown3Mo,fontsize=8)
+    text(50,7000+(.71*plotrange),' 1 Mo  '+fSharpe1Mo+'  '+fReturn1Mo+'  '+fDrawdown1Mo,fontsize=8)
+
+    text(50,7000+(.54*plotrange),last_symbols_text,fontsize=8)
+    plot(BuyHoldPortfolioValue,lw=3,c='r')
+    plot(np.average(monthvalue,axis=0),lw=4,c='k')
+    # set up to use dates for labels
+    xlocs = []
+    xlabels = []
+    for i in xrange(1,len(datearray)):
+        if datearray[i].year != datearray[i-1].year:
+            xlocs.append(i)
+            xlabels.append(str(datearray[i].year))
+    print "xlocs,xlabels = ", xlocs, xlabels
+    if len(xlocs) < 12 :
+        xticks(xlocs, xlabels)
+    else:
+        xticks(xlocs[::2], xlabels[::2])
+    xlim(0,len(datearray))
+
+    for ii in range( MonteCarloPortfolioValues.shape[0] ):
+        plot( datearray, MonteCarloPortfolioValues[ii,:], c=(.1,.1,.1), lw=.1 )
+    for ii in range( value.shape[0] ):
+        plot( datearray, value[ii,:], c=(.1,0.,0.), lw=.1 )
+
+    '''
+    import pdb
+    pdb.set_trace()
+    '''
+
+    subplot(subplotsize[1])
+    grid()
+    ##ylim(0, value.shape[0])
+    ylim(0, 1.2)
+    plot(datearray,numberStocksUpTrendingMedian / activeCount,'g-',lw=1)
+    plot(datearray,numberStocksUpTrendingNearHigh / activeCount,'b-',lw=1)
+    plot(datearray,numberStocksUpTrendingBeatBuyHold / activeCount,'k-',lw=2)
+    plot(datearray,numberStocks  / activeCount,'r-')
+
+
+    draw()
+    # save figure to disk
+    outputplotname = os.path.join( os.getcwd(), 'pyTAAA_web', 'PyTAAA_monteCarloBacktestRecent.png' )
+    savefig(outputplotname, format='png', edgecolor='gray' )
+
+    return
+
 
 def dailyBacktest_pctLong():
 
@@ -28,11 +455,32 @@ def dailyBacktest_pctLong():
     from functions.quotes_for_list_adjClose import *
     from functions.TAfunctions import *
     from functions.UpdateSymbols_inHDF5 import UpdateHDF5, loadQuotes_fromHDF
-
     #---------------------------------------------
+
+    print "*************************************************************"
+    print "*************************************************************"
+    print "***                                                       ***"
+    print "***                                                       ***"
+    print "***  daily montecarlo backtest                            ***"
+    print "***                                                       ***"
+    print "***                                                       ***"
+    print "*************************************************************"
+    print "*************************************************************"
+    from time import sleep
+    sleep(5)
 
     # number of monte carlo scenarios
     randomtrials = 31
+    randomtrials = 12
+    randomtrials = 4
+    edition = GetEdition()
+    if edition == 'pi':
+        randomtrials = 12
+    elif edition == 'Windows32':
+        randomtrials = 25
+    elif edition == 'Windows64':
+        randomtrials = 51
+        randomtrials = 21
 
     ##
     ##  Import list of symbols to process.
@@ -68,7 +516,7 @@ def dailyBacktest_pctLong():
         holdMonths = [1,2,3,4,6,12]
     elif basename == "Naz100_Symbols.txt" :
         runnum = 'run2502'
-        plotmax = 1.e9     # maximum value for plot (figure 3)
+        plotmax = 1.e10     # maximum value for plot (figure 3)
         holdMonths = [1,1,1,2,2,3,4,6,12]
     elif basename == "biglist.txt" :
         runnum = 'run2503'
@@ -175,6 +623,9 @@ def dailyBacktest_pctLong():
     sma2factor_montecarlo = np.zeros(randomtrials,dtype=float)
     rankThresholdPct_montecarlo = np.zeros(randomtrials,dtype=float)
 
+    params = GetParams()
+    trade_cost = params['trade_cost']
+
     for iter in range(randomtrials):
 
         if iter%1==0:
@@ -184,14 +635,12 @@ def dailyBacktest_pctLong():
 
         LongPeriod_random = int(random.uniform(149,180)+.5)
         LongPeriod_random = int(random.uniform(55,280)+.5)
+        stddevThreshold = random.uniform(3.0,7.)
         MA1 = int(random.uniform(15,250)+.5)
         MA2 = int(random.uniform(7,30)+.5)
         MA2offset = int(random.uniform(.6,5)+.5)
         numberStocksTraded = int(random.uniform(1.9,8.9)+.5)
         monthsToHold = choice(holdMonths)
-        print ""
-        print "months to hold = ",holdMonths,monthsToHold
-        print ""
         riskDownside_min = random.triangular(.2,.25,.3)
         riskDownside_max = random.triangular(3.5,4.25,5)
         sma2factor = .99
@@ -209,134 +658,228 @@ def dailyBacktest_pctLong():
 
         LongPeriod = LongPeriod_random
 
-        if iter >= randomtrials/2 :
-            print "\n\n\n"
-            print "*********************************\nUsing pyTAAA parameters .....\n"
-            ### original values
-
-            numberStocksTraded = 9
-            monthsToHold = 1
-            LongPeriod = 256
-            MA1 = 120
-            MA2 = 16
-            MA3 = 18
-            sma2factor = .909
-            rankThresholdPct = .03
-            riskDownside_min = .288
-            riskDownside_max = 4.449
-
-            paramNumberToVary = choice([0,1,2,3,4,5,6,7,8,9])
-
-            if paramNumberToVary == 0 :
-                numberStocksTraded += choice([-1,0,1])
-            if paramNumberToVary == 1 :
-                for kk in range(15):
-                    temp = choice(holdMonths)
-                    if temp != monthsToHold:
-                        monthsToHold = temp
-                        break
-            if paramNumberToVary == 2 :
-                LongPeriod = LongPeriod * np.around(random.uniform(-.01*LongPeriod, .01*LongPeriod))
-            if paramNumberToVary == 3 :
-                MA1 = MA1 * np.around(random.uniform(-.01*MA1, .01*MA1))
-            if paramNumberToVary == 4 :
-                MA2 = MA2 * np.around(random.uniform(-.01*MA2, .01*MA2))
-            if paramNumberToVary == 5 :
-                MA3 = MA3 * np.around(random.uniform(-.01*MA3, .01*MA3))
-            if paramNumberToVary == 6 :
-                sma2factor = sma2factor * np.around(random.uniform(-.01*sma2factor, .01*sma2factor),-3)
-            if paramNumberToVary == 7 :
-                rankThresholdPct = rankThresholdPct * np.around(random.uniform(-.01*rankThresholdPct, .01*rankThresholdPct),-2)
-            if paramNumberToVary == 8 :
-                riskDownside_min = riskDownside_min * np.around(random.uniform(-.01*riskDownside_min, .01*riskDownside_min),-3)
-            if paramNumberToVary == 9 :
-                riskDownside_max = riskDownside_max * np.around(random.uniform(-.01*riskDownside_max, .01*riskDownside_max),-3)
-
-
-        if iter < randomtrials/2 :
-            paramNumberToVary = -999
-            print "\n\n\n"
-            print "*********************************\nUsing pyTAAA parameters .....\n"
-            numberStocksTraded = choice([5,6,7,8])
-            monthsToHold = choice([1,2])
-            LongPeriod = int( 251 * random.uniform(.8,1.2) )
-            MA1 = int( 116 * random.uniform(.8,1.2) )
-            MA2 = int( 18 * random.uniform(.8,1.2) )
-            MA3 = int( 21 * random.uniform(.8,1.2) )
-            sma2factor = .882 * random.uniform(.9,1.1)
-            rankThresholdPct = .08 * random.uniform(.9,1.1)
-            riskDownside_min = .27903 * random.uniform(.9,1.1)
-            riskDownside_max = 4.30217 * random.uniform(.9,1.1)
-
-        if iter == randomtrials-1 :
+        if iter == 0 or iter == randomtrials-1:
             print "\n\n\n"
             print "*********************************\nUsing pyTAAApi linux edition parameters .....\n"
-            '''
-            numberStocksTraded = 7
-            monthsToHold = 4
-            monthsToHold = 1
-            LongPeriod = 104
-            MA1 = 207
-            MA2 = 26
-            MA3 = 29
-            sma2factor = .911
-            rankThresholdPct = .02
-            riskDownside_min = .272
-            riskDownside_max = 4.386
-
-            numberStocksTraded= 7
-            monthsToHold=       1
-            LongPeriod=       244
-            MA1=              249
-            MA2=               18
-            MA3=               20
-            sma2factor=          .961
-            rankThresholdPct=    .20
-            riskDownside_min=    .234
-            riskDownside_max=   4.694
-            '''
             params = GetParams()
             monthsToHold = params['monthsToHold']
             numberStocksTraded = params['numberStocksTraded']
             LongPeriod = params['LongPeriod']
-            MA1 = params['MA1']
-            MA2 = params['MA2']
-            MA3 = params['MA3']
-            MA2offset = params['MA3'] - params['MA2']
+            stddevThreshold = params['stddevThreshold']
+            MA1 = int(params['MA1'])
+            MA2 = int(params['MA2'])
+            MA3 = int(params['MA3'])
+            MA2offset = int(params['MA3']) - MA2
             sma2factor = params['MA2factor']
             rankThresholdPct = params['rankThresholdPct']
             riskDownside_min = params['riskDownside_min']
             riskDownside_max = params['riskDownside_max']
 
+            narrowDays = params['narrowDays']
+            mediumDays = params['mediumDays']
+            wideDays = params['wideDays']
+
+            lowPct = float(params['lowPct'])
+            hiPct = float(params['hiPct'])
+            uptrendSignalMethod = params['uptrendSignalMethod']
+            paramNumberToVary = ""
 
 
+        # 2 random trial use the parameters from GetParams(), namely indices 0 and randomtrials-1.
+        # for iter==0, results are saved to compare against and determine if random params provide better recent results.
+        # for iter==randomtrials-1, results are used for backtest plots on webpage.
+        if 0 < iter < randomtrials-1 :
+            print "\n\n\n"
+            print "*********************************\nUsing pyTAAApi parameters +/- 20% .....\n"
+            params = GetParams()
+            monthsToHold = params['monthsToHold']
+            numberStocksTraded = params['numberStocksTraded']
+            LongPeriod = params['LongPeriod']
+            stddevThreshold = params['stddevThreshold']
+            MA1 = int(params['MA1'])
+            MA2 = int(params['MA2'])
+            MA3 = int(params['MA3'])
+            MA2offset = params['MA3'] - params['MA2']
+            sma2factor = params['MA2factor']
+            rankThresholdPct = params['rankThresholdPct']
+            riskDownside_min = params['riskDownside_min']
+            riskDownside_max = params['riskDownside_max']
+            uptrendSignalMethod = params['uptrendSignalMethod']
+
+            paramNumberToVary = choice([0,1,2,3,4,5,6,7,8,9])
+
+            numberStocksTraded += choice([-1,0,1])
+            for kk in range(15):
+                temp = choice(holdMonths)
+                if temp != monthsToHold:
+                    monthsToHold = temp
+                    break
+            monthsToHold = choice(holdMonths)
+            LongPeriod = LongPeriod + np.around(random.uniform(-.20*LongPeriod, .20*LongPeriod))
+            stddevThreshold = stddevThreshold * random.uniform(.80, 1.20)
+            MA1 = MA1 + np.around(random.uniform(-.20*MA1, .20*MA1))
+            MA2 = MA2 + np.around(random.uniform(-.20*MA2, .20*MA2))
+            if MA2< MA1:
+                MAtemp = [MA2,MA1]
+                MA1 = MAtemp[0]
+                MA2 = MAtemp[1]
+            MA3 = MA3 + np.around(random.uniform(-.20*MA3, .20*MA3))
+            MA2offset = params['MA3'] - params['MA2']
+            sma2factor = sma2factor + np.around(random.uniform(-.20*sma2factor, .20*sma2factor),-3)
+            rankThresholdPct = rankThresholdPct + np.around(random.uniform(-.20*rankThresholdPct, .20*rankThresholdPct),-2)
+            riskDownside_min = riskDownside_min + np.around(random.uniform(-.20*riskDownside_min, .20*riskDownside_min),-3)
+            riskDownside_max = riskDownside_max + np.around(random.uniform(-.20*riskDownside_max, .20*riskDownside_max),-3)
+
+            days_NarrowChannel = random.triangular(4,5,9) # 4.6
+            factor_NarrowChannel = random.triangular(1.16,1.3,1.36) # 1.16
+            #middle = 1.163
+            #factor_NarrowChannel = random.uniform(.85*middle,1.15*middle) # 1.16
+
+            days_MediumChannel = random.triangular(17,22,27) # 21.6
+            middle = 1.09
+            factor_MediumChannel = random.uniform(1.04,1.15) # 1.08
+            factor_MediumChannel = random.uniform(.85*middle,1.15*middle) # 1.08
+
+            days_WideChannel = random.triangular(45,70,125) # 67.08
+            middle = 1.215
+            factor_WideChannel = random.uniform(1.12,1.28) # 1.2
+            factor_WideChannel = random.uniform(.85*middle,1.15*middle)
+
+            narrowDays = []
+            mediumDays = []
+            wideDays = []
+            for iii in range(8):
+                if iii>0:
+                    narrowDays.append( narrowDays[-1] * factor_NarrowChannel )
+                    mediumDays.append( mediumDays[-1] * factor_MediumChannel )
+                    wideDays.append( wideDays[-1] * factor_WideChannel )
+                else:
+                    narrowDays.append( days_NarrowChannel )
+                    mediumDays.append( days_MediumChannel )
+                    wideDays.append( days_WideChannel )
+
+            lowPct = float(params['lowPct'])*random.uniform(.85,1.15)
+            hiPct = float(params['hiPct'])*random.uniform(.85,1.15)
+
+
+        print " LongPeriod = ", LongPeriod
+        print ""
+        print " months to hold = ",holdMonths,monthsToHold
+        print ""
         monthgainloss = np.ones((adjClose.shape[0],adjClose.shape[1]),dtype=float)
         monthgainloss[:,LongPeriod:] = adjClose[:,LongPeriod:] / adjClose[:,:-LongPeriod]
         monthgainloss[isnan(monthgainloss)]=1.
 
+        ####################################################################
+        ###
+        ### calculate signal for uptrending stocks (in signal2D)
+        ### - method depends on params uptrendSignalMethod
+        ###
+        ####################################################################
 
-        ########################################################################
-        ## Calculate signal for all stocks based on 3 simple moving averages (SMA's)
-        ########################################################################
-        sma0 = SMA_2D( adjClose, MA2 )               # MA2 is shortest
-        sma1 = SMA_2D( adjClose, MA2 + MA2offset )
-        sma2 = sma2factor * SMA_2D( adjClose, MA1 )  # MA1 is longest
+        if uptrendSignalMethod == 'SMAs' :
+            print "  ...using 3 SMA's for signal2D"
+            print "\n\n ...calculating signal2D using '"+uptrendSignalMethod+"' method..."
+            ########################################################################
+            ## Calculate signal for all stocks based on 3 simple moving averages (SMA's)
+            ########################################################################
+            sma0 = SMA_2D( adjClose, MA2 )               # MA2 is shortest
+            sma1 = SMA_2D( adjClose, MA2 + MA2offset )
+            sma2 = sma2factor * SMA_2D( adjClose, MA1 )  # MA1 is longest
 
-        signal2D = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
-        for ii in range(adjClose.shape[0]):
-            for jj in range(adjClose.shape[1]):
-                if adjClose[ii,jj] > sma2[ii,jj] or ((adjClose[ii,jj] > min(sma0[ii,jj],sma1[ii,jj]) and sma0[ii,jj] > sma0[ii,jj-1])):
-                    signal2D[ii,jj] = 1
+            signal2D = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
+            for ii in range(adjClose.shape[0]):
+                for jj in range(adjClose.shape[1]):
+                    if adjClose[ii,jj] > sma2[ii,jj] or ((adjClose[ii,jj] > min(sma0[ii,jj],sma1[ii,jj]) and sma0[ii,jj] > sma0[ii,jj-1])):
+                        signal2D[ii,jj] = 1
+                        if jj== adjClose.shape[1]-1 and isnan(adjClose[ii,-1]):
+                            signal2D[ii,jj] = 0                #### added to avoid choosing stocks no longer in index
+                # take care of special case where constant share price is inserted at beginning of series
+                index = np.argmax(np.clip(np.abs(gainloss[ii,:]-1),0,1e-8)) - 1
+
+                signal2D[ii,0:index] = 0
+
+            dailyNumberUptrendingStocks = np.sum(signal2D,axis = 0)
+
+            # hold signal constant for each month
+            for jj in np.arange(1,adjClose.shape[1]):
+                #if not ((datearray[jj].month != datearray[jj-1].month) and (datearray[jj].month ==1 or datearray[jj].month == 5 or datearray[jj].month == 9)):
+                if not ((datearray[jj].month != datearray[jj-1].month) and (datearray[jj].month - 1)%monthsToHold == 0 ):
+                    signal2D[:,jj] = signal2D[:,jj-1]
+                else:
+                    if iter==0:
+                        print "date, signal2D changed",datearray[jj]
+
+            numberStocks = np.sum(signal2D,axis = 0)
+
+        elif uptrendSignalMethod == 'minmaxChannels' :
+            print "  ...using 3 minmax channels for signal2D"
+            print "\n\n ...calculating signal2D using '"+uptrendSignalMethod+"' method..."
+
+            ########################################################################
+            ## Calculate signal for all stocks based on 3 minmax channels (dpgchannels)
+            ########################################################################
+
+            # narrow channel is designed to remove day-to-day variability
+
+            print "narrow days min,max,inc = ", narrowDays[0], narrowDays[-1], (narrowDays[-1]-narrowDays[0])/7.
+            narrow_minChannel, narrow_maxChannel = dpgchannel_2D( adjClose, narrowDays[0], narrowDays[-1], (narrowDays[-1]-narrowDays[0])/7. )
+            narrow_midChannel = (narrow_minChannel+narrow_maxChannel)/2.
+
+            medium_minChannel, medium_maxChannel = dpgchannel_2D( adjClose, mediumDays[0], mediumDays[-1], (mediumDays[-1]-mediumDays[0])/7. )
+            medium_midChannel = (medium_minChannel+medium_maxChannel)/2.
+            mediumSignal = ((narrow_midChannel-medium_minChannel)/(medium_maxChannel-medium_minChannel)-0.5)*2.0
+
+            wide_minChannel, wide_maxChannel = dpgchannel_2D( adjClose, wideDays[0], wideDays[-1], (wideDays[-1]-wideDays[0])/7. )
+            wide_midChannel = (wide_minChannel+wide_maxChannel)/2.
+            wideSignal = ((narrow_midChannel-wide_minChannel)/(wide_maxChannel-wide_minChannel)-0.5)*2.0
+
+            signal2D = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
+            for ii in range(adjClose.shape[0]):
+                for jj in range(adjClose.shape[1]):
+                    if mediumSignal[ii,jj] + wideSignal[ii,jj] > 0:
+                        signal2D[ii,jj] = 1
+                        if jj== adjClose.shape[1]-1 and isnan(adjClose[ii,-1]):
+                            signal2D[ii,jj] = 0                #### added to avoid choosing stocks no longer in index
+                # take care of special case where constant share price is inserted at beginning of series
+                index = np.argmax(np.clip(np.abs(gainloss[ii,:]-1),0,1e-8)) - 1
+
+                signal2D[ii,0:index] = 0
+
+                '''
+                # take care of special case where mp quote exists at end of series
+                if firstTrailingEmptyPriceIndex[ii] != 0:
+                    signal2D[ii,firstTrailingEmptyPriceIndex[ii]:] = 0
+                '''
+
+        elif uptrendSignalMethod == 'percentileChannels' :
+            print "\n\n ...calculating signal2D using '"+uptrendSignalMethod+"' method..."
+            signal2D = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
+            lowChannel,hiChannel = percentileChannel_2D(adjClose,MA1,MA2+.01,MA2offset,lowPct,hiPct)
+            for ii in range(adjClose.shape[0]):
+                for jj in range(1,adjClose.shape[1]):
+                    if adjClose[ii,jj] > lowChannel[ii,jj] and adjClose[ii,jj-1] <= lowChannel[ii,jj-1]:
+                        signal2D[ii,jj] = 1
+                    elif adjClose[ii,jj] < hiChannel[ii,jj] and adjClose[ii,jj-1] >= hiChannel[ii,jj-1]:
+                        signal2D[ii,jj] = 0
+                    else:
+                        signal2D[ii,jj] = signal2D[ii,jj-1]
+
                     if jj== adjClose.shape[1]-1 and isnan(adjClose[ii,-1]):
                         signal2D[ii,jj] = 0                #### added to avoid choosing stocks no longer in index
-            # take care of special case where constant share price is inserted at beginning of series
-            index = np.argmax(np.clip(np.abs(gainloss[ii,:]-1),0,1e-8)) - 1
+                # take care of special case where constant share price is inserted at beginning of series
+                index = np.argmax(np.clip(np.abs(gainloss[ii,:]-1),0,1e-8)) - 1
+                signal2D[ii,0:index] = 0
 
-            signal2D[ii,0:index] = 0
 
-            # take care of special case where mp quote exists at end of series
-            if firstTrailingEmptyPriceIndex[ii] != 0:
-                signal2D[ii,firstTrailingEmptyPriceIndex[ii]:] = 0
+        if params['uptrendSignalMethod'] == 'percentileChannels':
+            signal2D, lowChannel, hiChannel = computeSignal2D( adjClose, gainloss, params )
+        else:
+            signal2D = computeSignal2D( adjClose, gainloss, params )
+
+
+        # copy to daily signal
+        signal2D_daily = signal2D.copy()
 
         # hold signal constant for each month
         for jj in np.arange(1,adjClose.shape[1]):
@@ -349,8 +892,9 @@ def dailyBacktest_pctLong():
 
         numberStocks = np.sum(signal2D,axis = 0)
 
-
         print " signal2D check: ",signal2D[isnan(signal2D)].shape
+        print " numberStocks (uptrending) min, mean,max: ",numberStocks.min(),numberStocks.mean(),numberStocks.max()
+
 
         ########################################################################
         ### compute weights for each stock based on:
@@ -359,43 +903,108 @@ def dailyBacktest_pctLong():
         ### 2. sharpe ratio computed from daily gains over "LongPeriod"
         ########################################################################
 
-        monthgainlossweight = sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,numberStocksTraded,riskDownside_min,riskDownside_max,rankThresholdPct)
+        monthgainlossweight = sharpeWeightedRank_2D( datearray,
+                                                     symbols,
+                                                     adjClose,
+                                                     signal2D,
+                                                     signal2D_daily,
+                                                     LongPeriod,
+                                                     numberStocksTraded,
+                                                     riskDownside_min,
+                                                     riskDownside_max,
+                                                     rankThresholdPct,
+                                                     stddevThreshold=stddevThreshold,
+                                                     makeQCPlots=False )
 
         print "here I am........"
 
+        """
         ########################################################################
         ### compute traded value of stock for each month
         ########################################################################
 
         monthvalue = value.copy()
         print " 1 - monthvalue check: ",monthvalue[isnan(monthvalue)].shape
-        #print '1 - monthvalue',monthvalue[:,-50]   #### diagnostic
         for ii in np.arange(1,monthgainloss.shape[1]):
-            #if datearray[ii].month <> datearray[ii-1].month:
-            #if iter==0:
-            #   print " date,test = ", datearray[ii], (datearray[ii].month != datearray[ii-1].month) and (datearray[ii].month ==1 or datearray[ii].month == 5 or datearray[ii].month == 9)
             if (datearray[ii].month != datearray[ii-1].month) and ( (datearray[ii].month - 1)%monthsToHold == 0):
                 valuesum=np.sum(monthvalue[:,ii-1])
-                #print " re-balancing ",datearray[ii],valuesum
                 for jj in range(value.shape[0]):
-                    #monthvalue[jj,ii] = signal2D[jj,ii]*valuesum*gainloss[jj,ii]   # re-balance using weights (that sum to 1.0)
                     monthvalue[jj,ii] = monthgainlossweight[jj,ii]*valuesum*gainloss[jj,ii]   # re-balance using weights (that sum to 1.0)
-                    ###if ii>0 and ii<30:print "      ",jj,ii," previous value, new value:  ",monthvalue[jj,ii-1],monthvalue[jj,ii],valuesum,monthgainlossweight[jj,ii],valuesum,gainloss[jj,ii],monthgainlossweight[jj,ii]
             else:
                 for jj in range(value.shape[0]):
                     monthvalue[jj,ii] = monthvalue[jj,ii-1]*gainloss[jj,ii]
 
 
         numberSharesCalc = monthvalue / adjClose    # for info only
+        """
 
+        ########################################################################
+        ### compute traded value of stock for each month
+        ########################################################################
+
+        # initialize monthvalue (assume B&H)
+        monthvalue = value.copy()
+
+        starting_valid_symbols = value[:,0]
+        starting_valid_symbols_count = starting_valid_symbols[starting_valid_symbols > 1.e-4].shape[0]
+
+        print "  \n\n\n"
+        for ii in np.arange(1,monthgainloss.shape[1]):
+
+            if (datearray[ii].month != datearray[ii-1].month) and \
+                    ( (datearray[ii].month - 1)%monthsToHold == 0) and \
+                    np.max(np.abs(monthgainlossweight[:,ii-1] - monthgainlossweight[:,ii])) > 1.e-4 :
+                commission = 0
+                symbol_changed_count = 0
+                valuemean=np.mean(monthvalue[:,ii-1])
+                valuesum=np.sum(monthvalue[:,ii-1])
+
+                # compute yesterday's holdings value
+                yesterdayValue = np.sum( monthgainlossweight[:,ii-1] * monthvalue[:,ii-1] )
+                todayValue = np.sum( gainloss[:,ii] * yesterdayValue * monthgainlossweight[:,ii] )
+                # reduce CASH by commission amount
+                weight_changes = np.abs(monthgainlossweight[:,ii-1]-monthgainlossweight[:,ii])
+                symbol_changed_count = weight_changes[weight_changes > 1.e-4].shape[0]
+                # handle special case for buying index
+                if symbol_changed_count > 2 * numberStocksTraded:
+                    # handle special case for buying index
+                    commission = trade_cost
+                else:
+                    commission = symbol_changed_count * trade_cost
+                commission_factor = (valuesum-commission*monthvalue.shape[0])/valuesum
+
+                print "date,changed#, commission,valuemean,yesterdayValue,todayValue,commissionFactor(%)= ", \
+                       datearray[ii], symbol_changed_count, commission, valuemean, yesterdayValue,todayValue,format(commission_factor-1.,'5.2%')
+                ### Note: this is only approximate to what I really want to do in trades. This models all percentages changing
+                ###       which implies trading all stocks. But I really want just to adjust CASH balance if monthgainlossweight is constant.
+                for jj in range(value.shape[0]):
+                    monthvalue[jj,ii] = gainloss[jj,ii]*valuesum*monthgainlossweight[jj,ii]*commission_factor   # re-balance using weights (that sum to 1.0 less commissions)
+
+            else:
+                for jj in range(value.shape[0]):
+                    monthvalue[jj,ii] = monthvalue[jj,ii-1]*gainloss[jj,ii]
+
+        numberSharesCalc = monthvalue / adjClose    # for info only
+
+        print "  \n\n\n"
 
         ########################################################################
         ### gather statistics on number of uptrending stocks
         ########################################################################
 
-        numberStocksUpTrending[iter,:] = numberStocks
-        numberStocksUpTrendingMedian = np.median(numberStocksUpTrending[:iter,:],axis=0)
-        numberStocksUpTrendingMean   = np.mean(numberStocksUpTrending[:iter,:],axis=0)
+        try:
+            print " iter = ", iter
+            print " numberStocks = ", numberStocks
+            print " numberStocksUpTrending[:iter,:].shape = ", numberStocksUpTrending[:iter,:].shape
+            print " np.median(numberStocksUpTrending[:iter,:],axis=0) = ", np.median(numberStocksUpTrending[:iter,:],axis=0)
+
+            numberStocksUpTrending[iter,:] = numberStocks
+            numberStocksUpTrendingMedian = np.median(numberStocksUpTrending[:iter,:],axis=0)
+            numberStocksUpTrendingMean   = np.mean(numberStocksUpTrending[:iter,:],axis=0)
+        except:
+            numberStocksUpTrending[iter,:] = numberStocks
+            numberStocksUpTrendingMedian = numberStocks
+            numberStocksUpTrendingMean   = numberStocks
 
         index = 3780
         if monthvalue.shape[1] < 3780: index = monthvalue.shape[1]
@@ -408,6 +1017,9 @@ def dailyBacktest_pctLong():
         Sharpe3Yr = ( gmean(PortfolioDailyGains[-756:])**252 -1. ) / ( np.std(PortfolioDailyGains[-756:])*sqrt(252) )
         Sharpe2Yr = ( gmean(PortfolioDailyGains[-504:])**252 -1. ) / ( np.std(PortfolioDailyGains[-504:])*sqrt(252) )
         Sharpe1Yr = ( gmean(PortfolioDailyGains[-252:])**252 -1. ) / ( np.std(PortfolioDailyGains[-252:])*sqrt(252) )
+        Sharpe6Mo = ( gmean(PortfolioDailyGains[-126:])**252 -1. ) / ( np.std(PortfolioDailyGains[-126:])*sqrt(252) )
+        Sharpe3Mo = ( gmean(PortfolioDailyGains[-63:])**252 -1. ) / ( np.std(PortfolioDailyGains[-63:])*sqrt(252) )
+        Sharpe1Mo = ( gmean(PortfolioDailyGains[-21:])**252 -1. ) / ( np.std(PortfolioDailyGains[-21:])*sqrt(252) )
         PortfolioSharpe[iter] = ( gmean(PortfolioDailyGains)**252 -1. ) / ( np.std(PortfolioDailyGains)*sqrt(252) )
 
         print "15 year : ",index,PortfolioValue[-1], PortfolioValue[-index],datearray[-index]
@@ -418,6 +1030,9 @@ def dailyBacktest_pctLong():
         Return3Yr = (PortfolioValue[-1] / PortfolioValue[-756])**(1/3.)
         Return2Yr = (PortfolioValue[-1] / PortfolioValue[-504])**(1/2.)
         Return1Yr = (PortfolioValue[-1] / PortfolioValue[-252])
+        Return6Mo = (PortfolioValue[-1] / PortfolioValue[-126])**(2.)
+        Return3Mo = (PortfolioValue[-1] / PortfolioValue[-63])**(4.)
+        Return1Mo = (PortfolioValue[-1] / PortfolioValue[-21])**(12.)
         PortfolioReturn[iter] = gmean(PortfolioDailyGains)**252 -1.
 
         MaxPortfolioValue *= 0.
@@ -430,8 +1045,31 @@ def dailyBacktest_pctLong():
         Drawdown3Yr = np.mean(PortfolioDrawdown[-756:])
         Drawdown2Yr = np.mean(PortfolioDrawdown[-504:])
         Drawdown1Yr = np.mean(PortfolioDrawdown[-252:])
+        Drawdown6Mo = np.mean(PortfolioDrawdown[-126:])
+        Drawdown3Mo = np.mean(PortfolioDrawdown[-63:])
+        Drawdown1Mo = np.mean(PortfolioDrawdown[-21:])
 
         if iter == 0:
+
+            Sharpe3Yr_PyTAAA = Sharpe3Yr
+            Sharpe2Yr_PyTAAA = Sharpe2Yr
+            Sharpe1Yr_PyTAAA = Sharpe1Yr
+            Sharpe6Mo_PyTAAA = Sharpe6Mo
+            Sharpe3Mo_PyTAAA = Sharpe3Mo
+            Sharpe1Mo_PyTAAA = Sharpe1Mo
+            Return3Yr_PyTAAA = Return3Yr
+            Return2Yr_PyTAAA = Return2Yr
+            Return1Yr_PyTAAA = Return1Yr
+            Return6Mo_PyTAAA = Return6Mo
+            Return3Mo_PyTAAA = Return3Mo
+            Return1Mo_PyTAAA = Return1Mo
+            Drawdown3Yr_PyTAAA = Drawdown3Yr
+            Drawdown2Yr_PyTAAA = Drawdown2Yr
+            Drawdown1Yr_PyTAAA = Drawdown1Yr
+            Drawdown6Mo_PyTAAA = Drawdown6Mo
+            Drawdown3Mo_PyTAAA = Drawdown3Mo
+            Drawdown1Mo_PyTAAA = Drawdown1Mo
+
             BuyHoldPortfolioValue = np.mean(value,axis=0)
             BuyHoldDailyGains = BuyHoldPortfolioValue[1:] / BuyHoldPortfolioValue[:-1]
             BuyHoldSharpe15Yr = ( gmean(BuyHoldDailyGains[-index:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-index:])*sqrt(252) )
@@ -440,12 +1078,18 @@ def dailyBacktest_pctLong():
             BuyHoldSharpe3Yr  = ( gmean(BuyHoldDailyGains[-756:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-756:])*sqrt(252) )
             BuyHoldSharpe2Yr  = ( gmean(BuyHoldDailyGains[-504:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-504:])*sqrt(252) )
             BuyHoldSharpe1Yr  = ( gmean(BuyHoldDailyGains[-252:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-252:])*sqrt(252) )
+            BuyHoldSharpe6Mo  = ( gmean(BuyHoldDailyGains[-126:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-126:])*sqrt(252) )
+            BuyHoldSharpe3Mo  = ( gmean(BuyHoldDailyGains[-63:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-63:])*sqrt(252) )
+            BuyHoldSharpe1Mo  = ( gmean(BuyHoldDailyGains[-21:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-21:])*sqrt(252) )
             BuyHoldReturn15Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-index])**(252./index)
             BuyHoldReturn10Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-2520])**(1/10.)
             BuyHoldReturn5Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-1260])**(1/5.)
             BuyHoldReturn3Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-756])**(1/3.)
             BuyHoldReturn2Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-504])**(1/2.)
             BuyHoldReturn1Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-252])
+            BuyHoldReturn6Mo = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-126])**(2.)
+            BuyHoldReturn3Mo = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-63])**(4.)
+            BuyHoldReturn1Mo = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-21])**(12.)
             for jj in range(BuyHoldPortfolioValue.shape[0]):
                 MaxBuyHoldPortfolioValue[jj] = max(MaxBuyHoldPortfolioValue[jj-1],BuyHoldPortfolioValue[jj])
 
@@ -456,7 +1100,9 @@ def dailyBacktest_pctLong():
             BuyHoldDrawdown3Yr = np.mean(BuyHoldPortfolioDrawdown[-756:])
             BuyHoldDrawdown2Yr = np.mean(BuyHoldPortfolioDrawdown[-504:])
             BuyHoldDrawdown1Yr = np.mean(BuyHoldPortfolioDrawdown[-252:])
-
+            BuyHoldDrawdown6Mo = np.mean(BuyHoldPortfolioDrawdown[-126:])
+            BuyHoldDrawdown3Mo = np.mean(BuyHoldPortfolioDrawdown[-63:])
+            BuyHoldDrawdown1Mo = np.mean(BuyHoldPortfolioDrawdown[-21:])
 
         print ""
         print ""
@@ -568,6 +1214,7 @@ def dailyBacktest_pctLong():
         ### gather sum of all quotes minus SMA
         ###
         QminusSMADays = int(random.uniform(252,5*252)+.5)
+        QminusSMADays = int(random.uniform(352,2*352)+.5)
         QminusSMAFactor = random.triangular(.88,.91,.999)
 
         # re-calc constant monthPctInvested
@@ -575,8 +1222,9 @@ def dailyBacktest_pctLong():
         PctInvestSlope = random.triangular(2.,5.,7.)
         PctInvestIntercept = -random.triangular(-.05,0.0,.07)
         maxPctInvested = choice([1.0,1.0,1.0,1.2,1.33,1.5])
+        maxPctInvested = 1.5
 
-        if iter == randomtrials-1 :
+        if iter == 0 :
             print "\n\n\n"
             print "*********************************\nUsing pyTAAA parameters .....\n"
             QminusSMADays = 355
@@ -748,14 +1396,6 @@ def dailyBacktest_pctLong():
             MonteCarloPortfolioValues = np.zeros( (randomtrials, len(datearray) ), float )
         MonteCarloPortfolioValues[iter,:] = np.average(monthvalue,axis=0)
 
-        ##
-        ## cumulate final values for grayscale histogram overlay
-        ##
-        if iter == 0:
-            MonteCarloPortfolioValues = np.zeros( (randomtrials, len(datearray) ), float )
-        MonteCarloPortfolioValues[iter,:] = np.average(monthvalue,axis=0)
-
-
         if iter > 9 and iter%10 == 0:
             yscale('log')
             ylim([1000,max(10000,plotmax)])
@@ -815,6 +1455,7 @@ def dailyBacktest_pctLong():
                       str(int(numberStocksTraded))+"__"+   \
                       str(int(monthsToHold))+"__"+   \
                       str(int(LongPeriod))+"-"+   \
+                      format(stddevThreshold,'4.2f')+"-"+   \
                       str(int(MA1))+"-"+   \
                       str(int(MA2))+"-"+   \
                       str(int(MA2+MA2offset))+"-"+   \
@@ -839,18 +1480,28 @@ def dailyBacktest_pctLong():
         fSharpe3Yr = format(Sharpe3Yr,'5.2f')
         fSharpe2Yr = format(Sharpe2Yr,'5.2f')
         fSharpe1Yr = format(Sharpe1Yr,'5.2f')
+        fSharpe6Mo = format(Sharpe6Mo,'5.2f')
+        fSharpe3Mo = format(Sharpe3Mo,'5.2f')
+        fSharpe1Mo = format(Sharpe1Mo,'5.2f')
         fReturn15Yr = format(Return15Yr,'5.2f')
         fReturn10Yr = format(Return10Yr,'5.2f')
         fReturn5Yr = format(Return5Yr,'5.2f')
         fReturn3Yr = format(Return3Yr,'5.2f')
         fReturn2Yr = format(Return2Yr,'5.2f')
         fReturn1Yr = format(Return1Yr,'5.2f')
+        fReturn6Mo = format(Return6Mo,'5.2f')
+        fReturn3Mo = format(Return3Mo,'5.2f')
+        fReturn1Mo = format(Return1Mo,'5.2f')
         fDrawdown15Yr = format(Drawdown15Yr,'.1%')
         fDrawdown10Yr = format(Drawdown10Yr,'.1%')
         fDrawdown5Yr = format(Drawdown5Yr,'.1%')
         fDrawdown3Yr = format(Drawdown3Yr,'.1%')
         fDrawdown2Yr = format(Drawdown2Yr,'.1%')
         fDrawdown1Yr = format(Drawdown1Yr,'.1%')
+        fDrawdown6Mo = format(Drawdown6Mo,'.1%')
+        fDrawdown3Mo = format(Drawdown3Mo,'.1%')
+        fDrawdown1Mo = format(Drawdown1Mo,'.1%')
+
         print " one year sharpe = ",fSharpe1Yr
         print ""
         plotrange = log10(plotmax / 1000.)
@@ -967,6 +1618,7 @@ def dailyBacktest_pctLong():
 
         # Compute trading days back to target start date
         targetdate = datetime.date(2008,1,1)
+        targetdate = datetime.date.today()-datetime.timedelta(365.25*3)
         lag = int((datearray[-1] - targetdate).days*252/365.25)
 
         # Print some stats for B&H and trading from target date to end_date
@@ -983,10 +1635,11 @@ def dailyBacktest_pctLong():
         Portfolioannualgainfromtargetdate = ( gmean(PortfolioDailyGains[-lag:])**252 )
         print "portfolio annualized gains & sharpe from target date: ", Portfolioannualgainfromtargetdate,Portfoliosharpefromtargetdate
 
-        csv_text = runnum+","+str(iter)+","+    \
+        csv_text = str(datearray[-1])+","+str(iter)+","+    \
                       str(numberStocksTraded)+","+   \
                       str(monthsToHold)+","+  \
                       str(LongPeriod)+","+   \
+                      format(stddevThreshold,'4.2f')+","+   \
                       str(MA1)+","+   \
                       str(MA2)+","+   \
                       str(MA2+MA2offset)+","+   \
@@ -1007,25 +1660,95 @@ def dailyBacktest_pctLong():
                       fSharpe3Yr+","+   \
                       fSharpe2Yr+","+   \
                       fSharpe1Yr+","+   \
+                      fSharpe6Mo+","+   \
+                      fSharpe3Mo+","+   \
+                      fSharpe1Mo+","+   \
                       fReturn15Yr+","+   \
                       fReturn10Yr+","+   \
                       fReturn5Yr+","+   \
                       fReturn3Yr+","+   \
                       fReturn2Yr+","+   \
                       fReturn1Yr+","+   \
+                      fReturn6Mo+","+   \
+                      fReturn3Mo+","+   \
+                      fReturn1Mo+","+   \
                       fDrawdown15Yr+","+   \
                       fDrawdown10Yr+","+   \
                       fDrawdown5Yr+","+   \
                       fDrawdown3Yr+","+   \
                       fDrawdown2Yr+","+   \
                       fDrawdown1Yr+","+   \
+                      fDrawdown6Mo+","+   \
+                      fDrawdown3Mo+","+   \
+                      fDrawdown1Mo+","+   \
                       format(beatBuyHoldTest,'5.3f')+","+\
                       format(beatBuyHoldTest2,'.2%')+","+\
                       str(paramNumberToVary)+\
                       " \n"
 
 
+        print "\n\ncsv_text = ", csv_text
         periodForSignal[iter] = LongPeriod
+
+        ###
+        ### save today's monte carlo backtest results to file ( B&H and system )
+        ###
+        try:
+            filepath = os.path.join( os.getcwd(), "pyTAAAweb_backtestTodayMontecarloPortfolioValue.csv" )
+            textmessage = ""
+            for idate in range(len(BuyHoldPortfolioValue)):
+                textmessage = textmessage + str(datearray[idate])+"  "+str(BuyHoldPortfolioValue[idate])+"  "+str(np.average(monthvalue[:,idate]))+"\n"
+            if iter == 0 :
+                csv_text = csv_text.replace(" \n","  ** Using pyTAAA parameters\n")
+                with open( filepath, "a" ) as f:
+                    f.write(csv_text)
+            else:
+                beatBuyHoldRecent = ( (Sharpe3Yr-BuyHoldSharpe3Yr)/15. + \
+                                      (Sharpe2Yr-BuyHoldSharpe2Yr)/10. + \
+                                      (Sharpe1Yr-BuyHoldSharpe1Yr)/5. + \
+                                      (Sharpe6Mo-BuyHoldSharpe6Mo)/3. + \
+                                      (Sharpe3Mo-BuyHoldSharpe3Mo)/2. + \
+                                      (Sharpe1Mo-BuyHoldSharpe1Mo)/1. + \
+                                      (Return3Yr-BuyHoldReturn3Yr)/15. + \
+                                      (Return2Yr-BuyHoldReturn2Yr)/10. + \
+                                      (Return1Yr-BuyHoldReturn1Yr)/5. + \
+                                      (Return6Mo-BuyHoldReturn6Mo)/3. + \
+                                      (Return3Mo-BuyHoldReturn3Mo)/2. + \
+                                      (Return1Mo-BuyHoldReturn1Mo)/1. + \
+                                      (Drawdown3Yr-BuyHoldDrawdown3Yr)/15. + \
+                                      (Drawdown2Yr-BuyHoldDrawdown2Yr)/10. + \
+                                      (Drawdown1Yr-BuyHoldDrawdown1Yr)/5. + \
+                                      (Drawdown6Mo-BuyHoldDrawdown6Mo)/3. + \
+                                      (Drawdown3Mo-BuyHoldDrawdown3Mo)/2. + \
+                                      (Drawdown1Mo-BuyHoldDrawdown1Mo)/1. ) \
+                                      / (3.*(1/15. + 1/10.+1/5.+1/3.+1/2.+1))
+                beatPyTAARecent =   ( (Sharpe3Yr-Sharpe3Yr_PyTAAA)/15. + \
+                                      (Sharpe2Yr-Sharpe2Yr_PyTAAA)/10. + \
+                                      (Sharpe1Yr-Sharpe1Yr_PyTAAA)/5. + \
+                                      (Sharpe6Mo-Sharpe6Mo_PyTAAA)/3. + \
+                                      (Sharpe3Mo-Sharpe3Mo_PyTAAA)/2. + \
+                                      (Sharpe1Mo-Sharpe1Mo_PyTAAA)/1. + \
+                                      (Return3Yr-Return3Yr_PyTAAA)/15. + \
+                                      (Return2Yr-Return2Yr_PyTAAA)/10. + \
+                                      (Return1Yr-Return1Yr_PyTAAA)/5. + \
+                                      (Return6Mo-Return6Mo_PyTAAA)/3. + \
+                                      (Return3Mo-Return3Mo_PyTAAA)/2. + \
+                                      (Return1Mo-Return1Mo_PyTAAA)/1. + \
+                                      (Drawdown3Yr-Drawdown3Yr_PyTAAA)/15. + \
+                                      (Drawdown2Yr-Drawdown2Yr_PyTAAA)/10. + \
+                                      (Drawdown1Yr-Drawdown1Yr_PyTAAA)/5. + \
+                                      (Drawdown6Mo-Drawdown6Mo_PyTAAA)/3. + \
+                                      (Drawdown3Mo-Drawdown3Mo_PyTAAA)/2. + \
+                                      (Drawdown1Mo-Drawdown1Mo_PyTAAA)/1. ) \
+                                      / (3.*(1/15. + 1/10.+1/5.+1/3.+1/2.+1))
+                print "\n\n ...beatBuyHoldRecent = ", beatBuyHoldRecent, "\n ...beatPyTAARecent = ", beatPyTAARecent, "\n\n"
+                if beatBuyHoldRecent > 0. and beatPyTAARecent > 0.:
+                    with open( filepath, "a" ) as f:
+                        csv_text = csv_text.replace("\n",","+str(beatBuyHoldRecent)+","+str(beatPyTAARecent)+"\n")
+                        csv_text = csv_text.replace("\n",","+str(last_symbols_text)+"\n")
+                        f.write(csv_text)
+        except:
+            pass
 
 
         # create and update counter for holding period
@@ -1061,5 +1784,30 @@ def dailyBacktest_pctLong():
                     print format(str(holdMonths[ii]),'7s')+   \
                           str(datearray[-1])+         \
                           format(holdmonthscount[ii],'7.2f'), tagnorm
+
+    ###
+    ### make plot of performance since 1/1/2013 (date that real-time tracking was started)
+    ###
+    realtimestartdate = datetime.date(2013,1,1)
+    import pdb
+    daysCount =  np.zeros( len(datearray), 'int' )
+    for ii in range( len(datearray) ):
+        daysCount[ii] = (datearray[ii]-realtimestartdate).days
+    #pdb.set_trace()
+    indexRealtimeStart = np.argmax( np.clip(daysCount,-5000,1) ) - 1
+    plotRecentPerfomance( datearray[indexRealtimeStart:],
+                          symbols,
+                          value[:,indexRealtimeStart:],
+                          monthvalue[:,indexRealtimeStart:],
+                          ValueOnDate[:],
+                          AllStocksHistogram[:,indexRealtimeStart:,:],
+                          MonteCarloPortfolioValues[:,indexRealtimeStart:],
+                          FinalTradedPortfolioValue[:],
+                          numberStocksUpTrending[:,indexRealtimeStart:],
+                          last_symbols_text,
+                          activeCount[indexRealtimeStart:],
+                          numberStocks[indexRealtimeStart:],
+                          numberStocksUpTrendingNearHigh[indexRealtimeStart:],
+                          numberStocksUpTrendingBeatBuyHold[indexRealtimeStart:] )
 
     return
