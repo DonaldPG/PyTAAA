@@ -15,7 +15,8 @@ def get_Naz100List( verbose=True ):
     ### Query nasdaq.com for updated list of stocks in Nasdaq 100 index.
     ### Return list with stock tickers.
     ###
-    import urllib
+    #import urllib
+    import requests
     import re
     import os
     import datetime
@@ -25,29 +26,29 @@ def get_Naz100List( verbose=True ):
     ###
     symbol_directory = os.path.join( os.getcwd(), "symbols" )
 
-    symbol_file = "Naz100_Symbols.txt"
+    symbol_file = "Naz100_symbols.txt"
     symbols_file = os.path.join( symbol_directory, symbol_file )
     with open(symbols_file, "r+") as f:
         old_symbolList = f.readlines()
     for i in range( len(old_symbolList) ) :
         old_symbolList[i] = old_symbolList[i].replace("\n","")
-    old_symbolList.sort()
-    
+
     ###
     ### get current symbol list from nasdaq website
     ###
     try:
         base_url = 'http://www.nasdaq.com/quotes/nasdaq-100-stocks.aspx'
-        content = urllib.urlopen(base_url).read()
-
-
+        content = requests.get(base_url).text
+        #print "\n\n\n content = ", content
+    
         m = re.search('var table_body.*?>*(?s)(.*?)<.*?>.*?<', content).group(0).split("],[")
         # handle exceptions in format for first and last entries in list
         m = m[0].split(",\r\n")
         m[0] = m[0].split("[")[2]
         m[-1] = m[-1].split("];")[0]
         print "****************"
-        print m
+        for i in range( len(m) ):
+            print i, m[i]
         print "len of m = ",len(m)
         print "****************"
         # parse list items for symbol name
@@ -56,32 +57,31 @@ def get_Naz100List( verbose=True ):
         for i in range( len(m) ):
             symbolList.append( m[i].split(",")[0].split('"')[1] )
             companyNamesList.append( m[i].split(",")[1].split('"')[1] )
-
+    
         companyName_file = os.path.join( symbol_directory, "companyNames.txt" )
         with open( companyName_file, "w" ) as f:
             for i in range( len(symbolList) ) :
                 f.write( symbolList[i] + ";" + companyNamesList[i] + "\n" )
-
-
+    
         ###
         ### compare old list with new list and print changes, if any
         ###
-
+        
         # file for index changes history
-        symbol_change_file = "Naz100_SymbolsChanges.txt"
+        symbol_change_file = "Naz100_symbolsChanges.txt"
         symbols_changes_file = os.path.join( symbol_directory, symbol_change_file )
         with open(symbols_changes_file, "r+") as f:
-            old_symbol_changesList = f.readlines()
+            old_symbol_changesList = f.readlines() 
         old_symbol_changesListText = ''
         for i in range( len(old_symbol_changesList) ):
             old_symbol_changesListText = old_symbol_changesListText + old_symbol_changesList[i]
-
+                
         # parse date
         year = datetime.datetime.now().year
         month = datetime.datetime.now().month
         day = datetime.datetime.now().day
         dateToday = str(year)+"-"+str(month)+"-"+str(day)
-
+                
         # compare lists to check for tickers removed from the index
         # - printing will be suppressed if "verbose = False"
         removedTickers = []
@@ -94,7 +94,7 @@ def get_Naz100List( verbose=True ):
                 if verbose:
                     print " Ticker ", ticker, " has been removed from the Nasdaq100 index"
                 removedTickersText = removedTickersText + "\n" + dateToday + " Remove " + ticker
-
+        
         # compare lists to check for tickers added to the index
         # - printing will be suppressed if "verbose = False"
         addedTickers = []
@@ -107,14 +107,14 @@ def get_Naz100List( verbose=True ):
                 if verbose:
                     print " Ticker ", ticker, " has been added to the Nasdaq100 index"
                 addedTickersText = addedTickersText + "\n" + dateToday + " Add    " + ticker
-
+            
         print ""
         with open(symbols_changes_file, "w") as f:
             f.write(addedTickersText)
             f.write(removedTickersText)
             f.write("\n")
-            f.write(old_symbol_changesListText)
-
+            f.write(old_symbol_changesListText)  
+    
         print "****************"
         print "addedTickers = ", addedTickers
         print "removedTickers = ", removedTickers
@@ -122,20 +122,20 @@ def get_Naz100List( verbose=True ):
         ###
         ### update symbols file with current list. Keep copy of of list.
         ###
-
+    
         if removedTickers != [] or addedTickers != []:
-
+            
             # make copy of previous symbols list file
             symbol_directory = os.path.join( os.getcwd(), "symbols" )
-            symbol_file = "Naz100_Symbols.txt"
-            archive_symbol_file = "Naz100_Symbols__" + str(datetime.date.today()) + ".txt"
+            symbol_file = "Naz100_symbols.txt"
+            archive_symbol_file = "Naz100_symbols__" + str(datetime.date.today()) + ".txt"
             symbols_file = os.path.join( symbol_directory, symbol_file )
             archive_symbols_file = os.path.join( symbol_directory, archive_symbol_file )
-
+    
             with open( archive_symbols_file, "w" ) as f:
                 for i in range( len(old_symbolList) ) :
                     f.write( old_symbolList[i] + "\n" )
-
+    
             # make new symbols list file
             with open( symbols_file, "w" ) as f:
                 for i in range( len(symbolList) ) :
@@ -151,13 +151,13 @@ def get_Naz100List( verbose=True ):
         print " ... also check web at http://www.nasdaq.com/quotes/nasdaq-100-stocks.aspx"
         print "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! "
         print "\n\n\n"
-
+        
         symbolList = old_symbolList
         removedTickers = []
         addedTickers = []
-
-
-    return symbolList.sort(), removedTickers, addedTickers
+        
+        
+    return symbolList, removedTickers, addedTickers
 
 
 def get_Naz100PlusETFsList( verbose=True ):
@@ -270,7 +270,9 @@ def arrayFromQuotesForList(symbolsFile, beginDate, endDate):
     quote = downloadQuotes(symbols,date1=beginDate,date2=endDate,adjust=True,Verbose=True)
 
     # clean up quotes for missing values and varying starting date
-    x = quote.as_matrix().swapaxes(0,1)
+    #x = quote.as_matrix().swapaxes(0,1)
+    x = quote.values.T
+    ###print "x = ", x
     date = quote.index
     date = [d.date().isoformat() for d in date]
     datearray = np.array(date)
@@ -280,6 +282,9 @@ def arrayFromQuotesForList(symbolsFile, beginDate, endDate):
     #  - infill interior NaN values using nearest good values to linearly interpolate
     #  - copy first valid quote to from valid date to all earlier positions
     for ii in range(x.shape[0]):
+        x[ii,:] = np.array(x[ii,:]).astype('float')
+        #print " progress-- ", ii, " of ", x.shape[0], " symbol = ", symbols[ii]
+        #print " line 283........."
         x[ii,:] = interpolate(x[ii,:])
         x[ii,:] = cleantobeginning(x[ii,:])
 
@@ -304,6 +309,7 @@ def arrayFromQuotesForListWithVol(symbolsFile, beginDate, endDate):
 
     # clean up quotes for missing values and varying starting date
     x=quote.copyx()
+    x=quote.as_matrix().swapaxes(0,1)
     date = quote.getlabel(2)
     datearray = np.array(date)
 
@@ -312,8 +318,9 @@ def arrayFromQuotesForListWithVol(symbolsFile, beginDate, endDate):
     #  - infill interior NaN values using nearest good values to linearly interpolate
     #  - copy first valid quote to from valid date to all earlier positions
     for ii in range(x.shape[0]):
-        x[ii,0,:] = interpolate(x[ii,0,:])
-        x[ii,0,:] = cleantobeginning(x[ii,0,:])
+        print " line 315........."
+        x[ii,0,:] = interpolate(x[ii,0,:].values)
+        x[ii,0,:] = cleantobeginning(x[ii,0,:].values)
 
     return x, symbolList, datearray
 
@@ -321,7 +328,7 @@ def arrayFromQuotesForListWithVol(symbolsFile, beginDate, endDate):
 def get_quote_google( symbol ):
     import urllib
     import re
-    base_url = 'http://finance.google.com/finance?q='
+    base_url = 'http://finance.google.com/finance?q=NASDAQ%3A'
     content = urllib.urlopen(base_url + symbol).read()
     m = re.search('class="pr".*?>*(?s)(.*?)<.*?>.*?<', content).group(0).split(">")[-1].split("<")[0]
     if m :
@@ -330,7 +337,18 @@ def get_quote_google( symbol ):
         quote = 'no quote available for: ' + symbol
     return quote
 
-
+def get_pe_google( symbol ):
+    import urllib
+    import re
+    base_url = 'http://finance.google.com/finance?q=NASDAQ%3A'
+    content = urllib.urlopen(base_url + symbol).read()
+    try:
+        m = float(content.split("pe_ratio")[1].split('\n')[2].split(">")[-1])
+        quote = m
+    except:
+        quote = ""
+    return quote
+    
 def LastQuotesForSymbolList( symbolList ):
     """
     read in latest (15-minute delayed) quote for each symbol in list.
