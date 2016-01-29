@@ -1,7 +1,6 @@
 import numpy as np
 import datetime
 
-import datetime
 from scipy import random
 from scipy.stats import rankdata
 
@@ -20,6 +19,7 @@ def get_Naz100List( verbose=True ):
     ### Return list with stock tickers.
     ###
     import urllib
+    import requests
     import re
     import os
     import datetime
@@ -39,10 +39,13 @@ def get_Naz100List( verbose=True ):
     ###
     ### get current symbol list from nasdaq website
     ###
+    base_url = 'http://www.nasdaq.com/quotes/nasdaq-100-stocks.aspx'
+    content = requests.get(base_url).text
+    print "\n\n\n content = ", content
     try:
         base_url = 'http://www.nasdaq.com/quotes/nasdaq-100-stocks.aspx'
-        content = urllib.urlopen(base_url).read()
-    
+        content = requests.get(base_url).text
+        print "\n\n\n content = ", content
     
         m = re.search('var table_body.*?>*(?s)(.*?)<.*?>.*?<', content).group(0).split("],[")
         # handle exceptions in format for first and last entries in list
@@ -319,7 +322,7 @@ def arrayFromQuotesForListWithVol(symbolsFile, beginDate, endDate):
 def get_quote_google( symbol ):
     import urllib
     import re
-    base_url = 'http://finance.google.com/finance?q='
+    base_url = 'http://finance.google.com/finance?q=NASDAQ%3A'
     content = urllib.urlopen(base_url + symbol).read()
     m = re.search('class="pr".*?>*(?s)(.*?)<.*?>.*?<', content).group(0).split(">")[-1].split("<")[0]
     if m :
