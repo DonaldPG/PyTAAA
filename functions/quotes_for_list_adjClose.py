@@ -1,15 +1,12 @@
 import numpy as np
 import datetime
 
+import datetime
 from scipy import random
 from scipy.stats import rankdata
 
-import nose
-import bottleneck as bn
-import la
-
-import functions.quotes_adjCloseVol
-from functions.quotes_adjCloseVol import *
+import functions.quotes_adjClose
+from functions.quotes_adjClose import *
 from functions.TAfunctions import *
 from functions.readSymbols import *
 
@@ -18,7 +15,7 @@ def get_Naz100List( verbose=True ):
     ### Query nasdaq.com for updated list of stocks in Nasdaq 100 index.
     ### Return list with stock tickers.
     ###
-    import urllib
+    #import urllib
     import requests
     import re
     import os
@@ -39,13 +36,10 @@ def get_Naz100List( verbose=True ):
     ###
     ### get current symbol list from nasdaq website
     ###
-    base_url = 'http://www.nasdaq.com/quotes/nasdaq-100-stocks.aspx'
-    content = requests.get(base_url).text
-    print "\n\n\n content = ", content
     try:
         base_url = 'http://www.nasdaq.com/quotes/nasdaq-100-stocks.aspx'
         content = requests.get(base_url).text
-        print "\n\n\n content = ", content
+        #print "\n\n\n content = ", content
     
         m = re.search('var table_body.*?>*(?s)(.*?)<.*?>.*?<', content).group(0).split("],[")
         # handle exceptions in format for first and last entries in list
@@ -53,7 +47,8 @@ def get_Naz100List( verbose=True ):
         m[0] = m[0].split("[")[2]
         m[-1] = m[-1].split("];")[0]
         print "****************"
-        print m
+        for i in range( len(m) ):
+            print i, m[i]
         print "len of m = ",len(m)
         print "****************"
         # parse list items for symbol name
@@ -67,7 +62,6 @@ def get_Naz100List( verbose=True ):
         with open( companyName_file, "w" ) as f:
             for i in range( len(symbolList) ) :
                 f.write( symbolList[i] + ";" + companyNamesList[i] + "\n" )
-    
     
         ###
         ### compare old list with new list and print changes, if any
@@ -238,8 +232,8 @@ def get_Naz100PlusETFsList( verbose=True ):
     if removedTickers != [] or addedTickers != []:
         # make copy of previous symbols list file
         symbol_directory = os.path.join( os.getcwd(), "symbols" )
-        symbol_file = "Naz100_symbols.txt"
-        archive_symbol_file = "Naz100_symbols__" + str(datetime.date.today()) + ".txt"
+        symbol_file = "Naz100_Symbols.txt"
+        archive_symbol_file = "Naz100_Symbols__" + str(datetime.date.today()) + ".txt"
         symbols_file = os.path.join( symbol_directory, symbol_file )
         archive_symbols_file = os.path.join( symbol_directory, archive_symbol_file )
 
@@ -252,7 +246,7 @@ def get_Naz100PlusETFsList( verbose=True ):
             for i in range( len(symbolList) ) :
                 f.write( symbolList[i] + "\n" )
 
-    return symbolList, removedTickers, addedTickers
+    return symbolList.sort(), removedTickers, addedTickers
 
 
 def arrayFromQuotesForList(symbolsFile, beginDate, endDate):
@@ -266,6 +260,9 @@ def arrayFromQuotesForList(symbolsFile, beginDate, endDate):
        - repeat first quote to beginning of series
     '''
 
+    from functions.TAfunctions import interpolate
+    from functions.TAfunctions import cleantobeginning
+
     # read symbols list
     symbols = readSymbolList(symbolsFile,verbose=True)
 
@@ -273,18 +270,25 @@ def arrayFromQuotesForList(symbolsFile, beginDate, endDate):
     quote = downloadQuotes(symbols,date1=beginDate,date2=endDate,adjust=True,Verbose=True)
 
     # clean up quotes for missing values and varying starting date
-    x=quote.copyx()
-    date = quote.getlabel(2)
+    #x = quote.as_matrix().swapaxes(0,1)
+    x = quote.values.T
+    ###print "x = ", x
+    date = quote.index
+    date = [d.date().isoformat() for d in date]
     datearray = np.array(date)
+    symbolList = list(quote.columns.values)
 
     # Clean up input quotes
     #  - infill interior NaN values using nearest good values to linearly interpolate
     #  - copy first valid quote to from valid date to all earlier positions
     for ii in range(x.shape[0]):
-        x[ii,0,:] = interpolate(x[ii,0,:])
-        x[ii,0,:] = cleantobeginning(x[ii,0,:])
+        x[ii,:] = np.array(x[ii,:]).astype('float')
+        #print " progress-- ", ii, " of ", x.shape[0], " symbol = ", symbols[ii]
+        #print " line 283........."
+        x[ii,:] = interpolate(x[ii,:])
+        x[ii,:] = cleantobeginning(x[ii,:])
 
-    return x[:,0,:], quote.getlabel(0), datearray
+    return x, symbolList, datearray
 
 def arrayFromQuotesForListWithVol(symbolsFile, beginDate, endDate):
     '''
@@ -305,18 +309,20 @@ def arrayFromQuotesForListWithVol(symbolsFile, beginDate, endDate):
 
     # clean up quotes for missing values and varying starting date
     x=quote.copyx()
+    x=quote.as_matrix().swapaxes(0,1)
     date = quote.getlabel(2)
     datearray = np.array(date)
+
 
     # Clean up input quotes
     #  - infill interior NaN values using nearest good values to linearly interpolate
     #  - copy first valid quote to from valid date to all earlier positions
     for ii in range(x.shape[0]):
-        x[ii,0,:] = interpolate(x[ii,0,:])
-        x[ii,0,:] = cleantobeginning(x[ii,0,:])
+        print " line 315........."
+        x[ii,0,:] = interpolate(x[ii,0,:].values)
+        x[ii,0,:] = cleantobeginning(x[ii,0,:].values)
 
-    return x[:,0,:], x[:,1,:], quote.getlabel(0), datearray
-
+    return x, symbolList, datearray
 
 
 def get_quote_google( symbol ):
@@ -331,7 +337,18 @@ def get_quote_google( symbol ):
         quote = 'no quote available for: ' + symbol
     return quote
 
-
+def get_pe_google( symbol ):
+    import urllib
+    import re
+    base_url = 'http://finance.google.com/finance?q=NASDAQ%3A'
+    content = urllib.urlopen(base_url + symbol).read()
+    try:
+        m = float(content.split("pe_ratio")[1].split('\n')[2].split(">")[-1])
+        quote = m
+    except:
+        quote = ""
+    return quote
+    
 def LastQuotesForSymbolList( symbolList ):
     """
     read in latest (15-minute delayed) quote for each symbol in list.

@@ -33,7 +33,8 @@ def CheckMarketOpen() :
 
     # Use simple checks to suppress execcessive execution during closed markets
     market_status = get_MarketOpenOrClosed()
-    if market_status == 'open':
+    #if market_status == 'open':
+    if market_status == 'close in':
         marketOpen = True
     else:
         marketOpen = False

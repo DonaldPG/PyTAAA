@@ -27,7 +27,7 @@ def PortfolioStatsOnDate( directory_name, file_name, params, StatDate ):
         listname = "TAA-Symbols"
     elif shortname == "cmg_symbols" :
         listname = "CMG-Symbols"
-    elif shortname == "Naz100_symbols" :
+    elif shortname == "Naz100_Symbols" :
         listname = "Naz100-Symbols"
     elif shortname == "biglist" :
         listname = "biglist-Symbols"

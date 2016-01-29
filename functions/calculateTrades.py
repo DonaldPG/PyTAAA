@@ -1,5 +1,6 @@
 import datetime
-from functions.quotes_for_list_adjCloseVol import *
+#from functions.quotes_for_list_adjCloseVol import *
+from functions.quotes_for_list_adjClose import *
 from functions.CheckMarketOpen import *
 
 ###
@@ -32,10 +33,14 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
     new_symbols - list with symbols after suggested trades (sells, buys, exchanges, and unchanged holdings)
     new_shares - list with shares after suggested trades (sells, buys, exchanges, and unchanged holdings)
     new_buyprice - list with market price after suggested trades (sells, buys, exchanges, and unchanged holdings)
+    buySellCost - total comission for recommended buys, sells, and re-balance trades (excluding CASH)
+    BuySellFee - per-trade comission (in dollars)
 
     """
     # set up empty lists for trades
     # - will use trade_shares > 0 for buy, < 0 for sells
+    buySellCost = 0.
+    BuySellFee = 4.95
     new_symbols = []
     new_shares = []
     new_buyprice = []
@@ -190,6 +195,7 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
             if symbol != "CASH" and last_symbols_deltashares_normed != 0:
                 trade_symbols.append( symbol )
                 trade_shares.append( last_symbols_deltashares_normed )
+                buySellCost += BuySellFee
             if symbol != "CASH" and holdings_shares[holdings_index] + last_symbols_deltashares_normed != 0:
                 shares = holdings_shares[holdings_index] + last_symbols_deltashares_normed
                 shares = int( shares )
@@ -198,6 +204,7 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
                 buy_price = value / new_shares[-1]
                 buy_price = round( buy_price, 2 )
                 new_buyprice.append( buy_price )
+                buySellCost += BuySellFee
         else:
             new_symbols.append( symbol )
             new_shares.append( holdings_shares[i] )
@@ -213,6 +220,7 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
         if symbol != "CASH":
             trade_symbols.append( symbol )
             trade_shares.append( -holdings_shares[holdings_index] )
+            buySellCost += BuySellFee
 
 
     ####################################################################
@@ -246,6 +254,7 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
             buy_price = round( buy_price, 2 )
             new_shares.append( shares )
             new_buyprice.append( buy_price )
+            buySellCost += BuySellFee
 
     ####################################################################
     ### adjust CASH balance
@@ -269,6 +278,7 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
         trade_symbols.append( "CASH" )
         trade_shares.append( round( cash_bal - holdings_cash_bal, 2 ) )
 
+    cash_bal -= buySellCost
 
     ####################################################################
     ### prepare messages for stocks purchases and sales
@@ -282,7 +292,10 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
         else:
             # append buys messages
             trade_message = trade_message + "<p>Buy  " + str(trade_symbols[i]) +" "+ str(trade_shares[i])+"</p>"
-    trade_message = trade_message + "<br>"
+    if 'Buy' in trade_message or 'Sell' in trade_message:
+        trade_message = trade_message + "<br>"
+        trade_message = trade_message + "<p>Transaction Fees Applied to Model  $" + str(buySellCost) +"</p>"
+        trade_message = trade_message + "<br>"
 
     # Determine if this is a trade-date, and if so, write new buys to PyTAAA_holdings.params
     # - based on day of month and whether market is open or closed
@@ -306,6 +319,7 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
                 holdingsfile.write( "stocks: " + new_symbols_str +"\n")
                 holdingsfile.write( "shares: " + new_shares_str +"\n")
                 holdingsfile.write( "buyprice: " + new_buyprice_str +"\n")
+                holdingsfile.write( "commissons: " + str(buySellCost) +"\n")
 
 
     print ""

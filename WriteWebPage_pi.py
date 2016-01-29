@@ -269,13 +269,6 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
 
 
     ##########################################
-    # compute stock value compared to offset trend and make plot
-    ##########################################
-
-    figure5a_htmlText = makeDailyChannelOffsetSignal( )
-
-
-    ##########################################
     # make plot showing monte carlo backtest using variable percent Long trades
     ##########################################
 

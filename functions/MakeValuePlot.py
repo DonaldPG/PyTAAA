@@ -8,7 +8,8 @@ import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pylab as plt
 import matplotlib.gridspec as gridspec
-from functions.GetParams import GetEdition
+from functions.GetParams import GetParams, GetEdition
+from functions.TAfunctions import dpgchannel, SMA
 
 def makeValuePlot(  ):
 
@@ -47,6 +48,35 @@ def makeValuePlot(  ):
 
     value = np.array( value ).astype('float')
 
+    # calculate mid-channel and compare to MA
+    dailyValue = [ value[-1] ]
+    dailyDate = [ date[-1] ]
+    for ii in range( len(value)-2, 0, -1 ):
+        if date[ii] != date[ii+1]:
+            dailyValue.append( value[ii] )
+            dailyDate.append( date[ii] )
+    sortindices = (np.array( dailyDate )).argsort()
+    sortedDailyValue = (np.array( dailyValue ))[ sortindices ]
+    sortedDailyDate = (np.array( dailyDate ))[ sortindices ]
+
+    minchannel, maxchannel = dpgchannel( sortedDailyValue, 5, 18, 4 )
+    midchannel = ( minchannel + maxchannel )/2.
+    MA_midchannel = SMA( midchannel, 5 )
+
+    # create signal 11,000 for 'long' and 10,001 for 'cash'
+    signal = np.ones_like( sortedDailyValue ) * 11000.
+    signal[ MA_midchannel > midchannel ] = 10001
+    signal[0] = 11000.
+
+    # calculate value only when signal is 11,000
+    valueSignal = np.zeros_like( signal )
+    valueSignal[:5] = sortedDailyValue[:5]
+    for ii in range( 4, len(signal) ):
+        if signal[ii] == 11000.:
+            valueSignal[ii] = sortedDailyValue[ii]/sortedDailyValue[ii-1]*valueSignal[ii-1]
+        else:
+            valueSignal[ii] = valueSignal[ii-1]
+
     for i in range(0,len(value),500 ):
         print "   ...inside makeValuePlot - i, date[i], value[i] = ", i, date[i], value[i]
 
@@ -54,6 +84,10 @@ def makeValuePlot(  ):
     plt.clf()
     plt.grid(True)
     plt.plot( date, value )
+    plt.plot( sortedDailyDate, midchannel )
+    plt.plot( sortedDailyDate, MA_midchannel )
+    plt.plot( sortedDailyDate, signal )
+    plt.plot( sortedDailyDate, valueSignal, 'k-', lw=2 )
     plt.xlim((date[0],date[-1]+datetime.timedelta(1) ))
     plt.title("pyTAAA Value History Plot ("+edition+" edition)")
     # put text line with most recent date at bottom of plot
@@ -61,7 +95,7 @@ def makeValuePlot(  ):
     x_range = date[-1] - date[0]
     text_x = date[0] + datetime.timedelta( x_range.days / 20. )
     text_y = ( np.max(value) - np.min(value) )* .05 + np.min(value)
-    plt.text( text_x,text_y, "most recent value from "+str(date[-1].date())+"\nplotted at "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"), fontsize=8 )
+    plt.text( text_x,text_y, "most recent value from "+str(date[-1].date())+"\nplotted at "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")+"\nCurrent signal = "+format(int(signal[-1]/11000.),'-2d'), fontsize=8 )
     plt.savefig(figurepath)
     try:
         plt.close(1)
@@ -304,7 +338,7 @@ def makeTrendDispersionPlot( ):
     plt.subplot(subplotsize[0])
     plt.grid(True)
     plt.yscale('log')
-    plotmax = 1.e9
+    plotmax = 1.e10
     plt.ylim([1000,max(10000,plotmax)])
     numDaysToPlot = 252*10
     numDaysToPlot = len( backtestBHvalue )
@@ -329,3 +363,325 @@ def makeTrendDispersionPlot( ):
     figure5_htmlText = figure5_htmlText + '''<br><img src="'''+figure5path+'''" alt="PyTAAA by DonaldPG" width="850" height="500"><br>\n'''
 
     return figure5_htmlText
+
+
+def makeDailyMonteCarloBacktest( ):
+
+    import datetime
+    from functions.UpdateSymbols_inHDF5 import *
+    from functions.dailyBacktest_pctLong import *
+
+    ##########################################
+    # make plot with daily monte carlo backtest
+    ##########################################
+    figure6path = os.path.join( os.getcwd(), 'pyTAAA_web', 'PyTAAA_monteCarloBacktest.png' )
+
+    ###
+    ### make a combined plot
+    ### - only update between midnight and 2 a.m.
+    ### - make plot showing trend below B&H and trade-system Value
+    ###
+
+    """
+    today = datetime.datetime.now()
+    hourOfDay = today.hour
+
+    if hourOfDay < 3:
+        dailyBacktest_pctLong()
+    """
+
+    ##########################################
+    # perform backtest if this is first time PyTAAA is computed today
+    ##########################################
+
+    symbol_directory = os.path.join( os.getcwd(), "symbols" )
+    symbol_file = "Naz100_Symbols.txt"
+    symbols_file = os.path.join( symbol_directory, symbol_file )
+
+    _, _, datearray, _, _ = loadQuotes_fromHDF( symbols_file )
+
+    # get day when output plot was last modified
+    try:
+        mtime = os.path.getmtime(figure6path)
+    except OSError:
+        mtime = 0
+    last_modified_date = datetime.date.fromtimestamp(mtime)
+
+    print "Backtest check:   last_modified_date (day) = ", last_modified_date.day, " datearray[-1].day = ", datearray[-1].day
+
+    #if last_modified_date.day <= datearray[-1].day:
+    if (last_modified_date - datearray[-1]).total_seconds() < 0:
+        dailyBacktest_pctLong()
+
+    ##########################################
+    # create html markup for backtest plot
+    ##########################################
+
+    figure6path = 'PyTAAA_monteCarloBacktest.png'  # re-set to name without full path
+    figure6_htmlText = "\n<br><h3>Daily backtest with trend indicators and measure of invested percent</h3>\n"
+    figure6_htmlText = figure6_htmlText + "\nCombined backtest with Trend indicators.\n"
+    figure6_htmlText = figure6_htmlText + '''<br><img src="'''+figure6path+'''" alt="PyTAAA by DonaldPG" width="850" height="500"><br>\n'''
+
+    figure6Recentpath = 'PyTAAA_monteCarloBacktestRecent.png'  # re-set to name without full path
+    figure6_htmlText = figure6_htmlText + "\n<br><h3>Recent portion of daily backtest with trend indicators and measure of invested percent</h3>\n"
+    figure6_htmlText = figure6_htmlText + "\nRecent part of combined backtest with Trend indicators.\n"
+    figure6_htmlText = figure6_htmlText + '''<br><img src="'''+figure6Recentpath+'''" alt="PyTAAA by DonaldPG" width="850" height="500"><br>\n'''
+
+    return figure6_htmlText
+
+
+
+def makeStockCluster( ):
+
+    import datetime
+    from functions.stock_cluster import *
+
+    ##########################################
+    # make plot with daily monte carlo backtest
+    ##########################################
+    figure7path = os.path.join( os.getcwd(), 'pyTAAA_web', 'Clustered_companyNames.png' )
+
+    ###
+    ### make a combined plot
+    ### - only update between midnight and 2 a.m.
+    ### - make plot showing stock performance clustering
+    ###
+
+    today = datetime.datetime.now()
+    hourOfDay = today.hour
+
+    if hourOfDay < 3:
+        figure7_htmlText = dailyStockClusters()
+    else:
+        figure7path = 'Clustered_companyNames.png'  # re-set to name without full path
+        figure7_htmlText = "\n<br><h3>Daily stock clustering analyis. Based on one year performance correlations.</h3>\n"
+        figure7_htmlText = figure7_htmlText + "\nClustering based on daily variation in Nasdaq 100 quotes.\n"
+        figure7_htmlText = figure7_htmlText + '''<br><img src="'''+figure7path+'''" alt="PyTAAA by DonaldPG" width="850" height="500"><br>\n'''
+
+
+    return figure7_htmlText
+
+
+
+def makeDailyChannelOffsetSignal( ):
+
+    from functions.TAfunctions import SMA, MoveMax, jumpTheChannelTest
+    import functions.allstats
+    from functions.UpdateSymbols_inHDF5 import *
+    from functions.GetParams import GetParams
+
+    file4path = os.path.join( os.getcwd(), "pyTAAAweb_DailyChannelOffsetSignal_status.params" )
+    figure4path = os.path.join( os.getcwd(), "pyTAAA_web", "PyTAAA_DailyChannelOffsetSignalV.png" )
+
+    symbol_directory = os.path.join( os.getcwd(), "symbols" )
+    symbol_file = "Naz100_Symbols.txt"
+    symbols_file = os.path.join( symbol_directory, symbol_file )
+
+    adjClose, symbols, datearray, _, _ = loadQuotes_fromHDF( symbols_file )
+
+    ###
+    ### get last date already processed
+    ###
+    _dates = []
+    avgPctChannel = []
+    numAboveBelowChannel = []
+    try:
+        with open( file4path, "r" ) as f:
+            # get number of lines in file
+            lines = f.read().split("\n")
+            numlines = len (lines)
+            for i in range(numlines):
+                statusline = lines[i]
+                statusline_list = statusline.split(" ")
+                statusline_list = filter(None, statusline_list)
+                if len( statusline_list ) == 3:
+                    _dates.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
+                    avgPctChannel.append( float(statusline_list[1].split('%')[0])/100. )
+                    numAboveBelowChannel.append( float(statusline_list[2]) )
+    except:
+        print " Error: unable to read updates from pyTAAAweb_numberUptrendingStocks_status.params"
+        print ""
+    #print "_dates = ", _dates
+    last_date = _dates[-1].date()
+    print "   ...inside makeDailyChannelOffsetSignal... last_date = ", last_date
+
+    # parameters for signal
+    params = GetParams()
+    minperiod = params['minperiod']
+    maxperiod = params['maxperiod']
+    incperiod = params['incperiod']
+    numdaysinfit = params['numdaysinfit']
+    offset = params['offset']
+
+    print "minperiod,maxperiod,incperiod,numdaysinfit,offset = ", minperiod,maxperiod,incperiod,numdaysinfit,offset
+
+    # process for each date
+    print "\n  ... inside makeDailyChannelOffsetSignal ..."
+    dailyChannelOffsetSignal = np.zeros( adjClose.shape[1], 'float' )
+    dailyCountDowntrendChannelOffsetSignal = np.zeros( adjClose.shape[1], 'float' )
+    #for idate in range(numdaysinfit+incperiod,adjClose.shape[1])
+    for idate in range(adjClose.shape[1]):
+        if datearray[idate] >= last_date :
+            #if datearray[idate] > datetime.date(1992,1,1) :
+            #if datearray[idate] > datetime.date(1992,1,1) :
+            if idate%10 == 0:
+                print "   ...idate, datearray[idate] = ", idate, datearray[idate]
+            # process all symbols
+            numberDowntrendSymbols = 0
+            dailyChannelPct = []
+            ##print "     ... symbols = ", symbols
+            floatChannelGainsLosses = []
+            floatStdevsAboveChannel = []
+            for i, symbol in enumerate(symbols):
+                #print "     ... symbol = ", symbol
+                quotes = adjClose[i,idate-numdaysinfit-offset-1:idate].copy()
+
+                channelGainLoss, numStdDevs, pctChannel = \
+                                                recentTrendAndStdDevs( \
+                                                quotes, \
+                                                datearray,\
+                                                minperiod=minperiod,\
+                                                maxperiod=maxperiod,\
+                                                incperiod=incperiod,\
+                                                numdaysinfit=numdaysinfit,\
+                                                offset=offset)
+
+
+                floatChannelGainsLosses.append(channelGainLoss)
+                floatStdevsAboveChannel.append(numStdDevs)
+
+            floatChannelGainsLosses = np.array(floatChannelGainsLosses)
+            floatChannelGainsLosses[np.isinf(floatChannelGainsLosses)] = -999.
+            floatChannelGainsLosses[np.isneginf(floatChannelGainsLosses)] = -999.
+            floatChannelGainsLosses[np.isnan(floatChannelGainsLosses)] = -999.
+            floatChannelGainsLosses = floatChannelGainsLosses[floatChannelGainsLosses != -999.]
+            floatStdevsAboveChannel = np.array(floatStdevsAboveChannel)
+            floatStdevsAboveChannel[np.isinf(floatStdevsAboveChannel)] = -999.
+            floatStdevsAboveChannel[np.isneginf(floatStdevsAboveChannel)] = -999.
+            floatStdevsAboveChannel[np.isnan(floatStdevsAboveChannel)] = -999.
+            floatStdevsAboveChannel = floatStdevsAboveChannel[floatStdevsAboveChannel != -999.]
+            ##print "floatChannelGainsLosses.shape = ", floatChannelGainsLosses.shape
+            trimmeanGains = np.mean(floatChannelGainsLosses[np.logical_and(\
+                                    floatChannelGainsLosses>np.percentile(floatChannelGainsLosses,5),\
+                                    floatChannelGainsLosses<np.percentile(floatChannelGainsLosses,95)\
+                                    )])
+            trimmeanStdevsAboveChannel = np.mean(floatStdevsAboveChannel[np.logical_and(\
+                                    floatStdevsAboveChannel>np.percentile(floatStdevsAboveChannel,5),\
+                                    floatStdevsAboveChannel<np.percentile(floatStdevsAboveChannel,95)\
+                                    )])
+
+            #print "idate= ",idate,str(datearray[idate])
+            textmessage2 = ''
+            with open( file4path, "a" ) as ff:
+                textmessage2 = "\n"+str(datearray[idate])+"  "+\
+                              format(trimmeanGains,"8.2%")+"  "+\
+                              format(trimmeanStdevsAboveChannel,"7.1f")
+                ff.write(textmessage2)
+                print "textmessage2 = ", textmessage2
+            #print "idate= ",idate, str(datearray[idate])
+
+
+    ##########################################
+    # make plot
+    ##########################################
+
+    ###
+    ### make a combined plot
+    ### 1. get percent of uptrending stocks
+    ###
+    _dates = []
+    avgPctChannel = []
+    numAboveBelowChannel = []
+    try:
+        with open( file4path, "r" ) as f:
+            # get number of lines in file
+            lines = f.read().split("\n")
+            numlines = len (lines)
+            for i in range(numlines):
+                statusline = lines[i]
+                statusline_list = statusline.split(" ")
+                statusline_list = filter(None, statusline_list)
+                if len( statusline_list ) == 3:
+                    _dates.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
+                    avgPctChannel.append( float(statusline_list[1].split('%')[0])/100. )
+                    numAboveBelowChannel.append( float(statusline_list[2]) )
+
+    except:
+        print " Error: unable to read updates from pyTAAAweb_numberUptrendingStocks_status.params"
+        print ""
+
+    _dates = np.array(_dates)
+    avgPctChannel = np.array(avgPctChannel)
+    numAboveBelowChannel = np.array(numAboveBelowChannel)
+    print " avgPctChannel min, mean, max = ", avgPctChannel.min(),avgPctChannel.mean(),avgPctChannel.max()
+    print "\n\n numAboveBelowChannel = ", numAboveBelowChannel
+    print " numAboveBelowChannel min, mean, max = ", numAboveBelowChannel.min(),numAboveBelowChannel.mean(),numAboveBelowChannel.max()
+    plt.figure(4,figsize=(9,7))
+    plt.clf()
+    plt.grid(True)
+    numDaysToPlot = 252*3
+    plt.plot( _dates[-numDaysToPlot:], np.clip(avgPctChannel[-numDaysToPlot:]*100.,-200.,200.), 'r-', lw=.1)
+    plt.plot( _dates[-numDaysToPlot:], numAboveBelowChannel[-numDaysToPlot:], 'b-', lw=.25)
+    plt.title("pyTAAA History Plot\nChannel Offset Signal")
+    plt.savefig(figure4path)
+    figure4path = 'PyTAAA_DailyChannelOffsetSignalV2.png'  # re-set to name without full path
+    figure4_htmlText = "\n<br><h3>Channel Offset Signal</h3>\n"
+    figure4_htmlText = figure4_htmlText + "\nPlot shows up/down trending in last few days compared to trend for stocks in Nasdaq 100.\n"
+    figure4_htmlText = figure4_htmlText + '''<br><img src="'''+figure4path+'''" alt="PyTAAA by DonaldPG" width="850" height="500"><br>\n'''
+
+    ###
+    ### make a combined plot
+    ### 2. make plot showing trend below B&H and trade-system Value
+    ###
+    file3path = os.path.join( os.getcwd(), "pyTAAAweb_backtestPortfolioValue.params" )
+    backtestDate = []
+    backtestBHvalue = []
+    backtestSystemvalue = []
+    try:
+        with open( file3path, "r" ) as f:
+            # get number of lines in file
+            lines = f.read().split("\n")
+            numlines = len (lines)
+            for i in range(numlines):
+                try:
+                    statusline = lines[i]
+                    statusline_list = statusline.split(" ")
+                    if len( statusline_list ) == 5:
+                        backtestDate.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
+                        backtestBHvalue.append( float(statusline_list[2]) )
+                        backtestSystemvalue.append( float(statusline_list[4]) )
+                except:
+                    break
+    except:
+        print " Error: unable to read updates from pyTAAAweb_backtestPortfolioValue.params"
+        print ""
+
+    figure5path = os.path.join( os.getcwd(), "pyTAAA_web", "PyTAAA_backtestWithOffsetChannelSignal.png" )
+    plt.figure(5,figsize=(9,7))
+    plt.clf()
+    subplotsize = gridspec.GridSpec(2,1,height_ratios=[5,3])
+    plt.subplot(subplotsize[0])
+    plt.grid(True)
+    plt.yscale('log')
+    plotmax = 1.e10
+    plt.ylim([1000,max(10000,plotmax)])
+    numDaysToPlot = 252*10
+    numDaysToPlot = len( backtestBHvalue )
+    plt.plot( backtestDate[-numDaysToPlot:], backtestBHvalue[-numDaysToPlot:], 'r-', lw=1.25, label='Buy & Hold')
+    plt.plot( backtestDate[-numDaysToPlot:], backtestSystemvalue[-numDaysToPlot:], 'k-', lw=1.25, label='Trading System')
+    plt.legend(loc=2,prop={'size':9})
+    plt.title("pyTAAA History Plot\n Portfolio Value")
+    plt.text( backtestDate[-numDaysToPlot+50], 2500, "Backtest updated "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"), fontsize=7.5 )
+    plt.subplot(subplotsize[1])
+    plt.grid(True)
+    plt.ylim(-100, 100)
+    plt.plot( _dates[-numDaysToPlot:], np.clip(avgPctChannel[-numDaysToPlot:]*100.,-200.,200.), 'r-', lw=.1, label='avg Pct offset channel')
+    plt.plot( _dates[-numDaysToPlot:], numAboveBelowChannel[-numDaysToPlot:], 'b-', lw=.25, label='number above/below offset channel')
+    plt.legend(loc=3,prop={'size':6})
+    plt.savefig(figure5path)
+    figure5path = 'PyTAAA_backtestWithOffsetChannelSignal.png'  # re-set to name without full path
+    figure5_htmlText = "\n<br><h3>Daily backtest with offset Channel trend signal</h3>\n"
+    figure5_htmlText = figure5_htmlText + "\nCombined backtest with offset Channel trend signal.\n"
+    figure5_htmlText = figure5_htmlText + '''<br><img src="'''+figure5path+'''" alt="PyTAAA by DonaldPG" width="850" height="500"><br>\n'''
+
+    return figure4_htmlText, figure5_htmlText
