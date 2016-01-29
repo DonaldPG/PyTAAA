@@ -1,5 +1,10 @@
 import numpy as np
 from numpy import isnan
+from yahooFinance import getQuote
+
+def normcorrcoef(a,b):
+    return np.correlate(a,b)/np.sqrt(np.correlate(a,a)*np.correlate(b,b))[0]
+
 
 def interpolate(self, method='linear'):
     """
@@ -17,17 +22,32 @@ def interpolate(self, method='linear'):
     edited to keep only 'linear' method
     Usage: infill NaN values with linear interpolated values
     """
+
+    #print " ... inside interpolate .... len(self) = ", len(self)
+
     inds = np.arange(len(self))
-    values = self.copy()
+    values = np.array(self.copy())
+    #print " values = ", values
+    #print " values.dtype = ", values.dtype
+    #print " type(values) = ", type(values)
     invalid = isnan(values)
     valid = -invalid
     firstIndex = valid.argmax()
+
+    #print " ... inside interpolate .... firstIndex = ", firstIndex
+
+
     valid = valid[firstIndex:]
     invalid = invalid[firstIndex:]
+
+    #print " ... inside interpolate .... len(valid) = ", len(valid)
+    #print " ... inside interpolate .... len(invalid) = ", len(invalid)
+
     inds = inds[firstIndex:]
     result = values.copy()
     result[firstIndex:][invalid] = np.interp(inds[invalid], inds[valid],values[firstIndex:][valid])
     return result
+
 #----------------------------------------------
 def cleantobeginning(self):
     """
@@ -37,12 +57,54 @@ def cleantobeginning(self):
     """
     inds = np.arange(len(self))
     values = self.copy()
+    #print " type(values) = ", type(values)
     invalid = isnan(values)
     valid = -invalid
     firstIndex = valid.argmax()
     for i in range(firstIndex):
         values[i]=values[firstIndex]
     return values
+
+#----------------------------------------------
+
+def cleanspikes(x,periods=20,stddevThreshold=5.0):
+    # remove outliers from gradient of x (in 2 directions)
+    x_clean = np.array(x).copy()
+    test = np.zeros(x.shape[0],'float')
+    #gainloss_f = np.ones((x.shape[0]),dtype=float)
+    #gainloss_r = np.ones((x.shape[0]),dtype=float)
+    #print gainloss_f[1:],x[1:].shape,x[:-1].shape
+    #print " ...inside cleanspikes... ", x[1:].shape, x[:-1].shape
+    #gainloss_f[1:] = x[1:] / x[:-1]
+    #gainloss_r[:-1] = x[:-1] / x[1:]
+    gainloss_f = x[1:] / x[:-1]
+    gainloss_r = x[:-1] / x[1:]
+    valid_f = gainloss_f[gainloss_f != 1.]
+    valid_f = valid_f[~np.isnan(valid_f)]
+    Stddev_f = np.std(valid_f) + 1.e-5
+    valid_r = gainloss_r[gainloss_r != 1.]
+    valid_r = valid_r[~np.isnan(valid_r)]
+    Stddev_r = np.std(valid_r) + 1.e-5
+
+    forward_test = gainloss_f/Stddev_f - np.median(gainloss_f/Stddev_f)
+    reverse_test = gainloss_r/Stddev_r - np.median(gainloss_r/Stddev_r)
+
+    test[:-1] += reverse_test
+    test[1:] += forward_test
+
+    x_clean[ test > stddevThreshold ] = np.nan
+
+    """
+    for i in range( 1,x.shape[0]-2 ):
+         minx = max(0,i-periods/2)
+         maxx = min(x.shape[0],i+periods/2)
+         #Stddev_f = np.std(gainloss_f[minx:maxx]) + 1.e-5
+         #Stddev_r = np.std(gainloss_r[minx:maxx]) + 1.e-5
+         if gainloss_f[i-1]/Stddev_f > stddevThreshold and gainloss_r[i]/Stddev_r > stddevThreshold:
+            x_clean[i] = np.nan
+    """
+    return x_clean
+
 #----------------------------------------------
 def cleantoend(self):
     """
@@ -54,6 +116,54 @@ def cleantoend(self):
     reverse = self[::-1]
     reverse = cleantobeginning(reverse)
     return reverse[::-1]
+
+#----------------------------------------------
+
+def percentileChannel(x,minperiod,maxperiod,incperiod,lowPct,hiPct):
+    periods = np.arange(minperiod,maxperiod,incperiod)
+    minchannel = np.zeros(len(x),dtype=float)
+    maxchannel = np.zeros(len(x),dtype=float)
+    for i in range(len(x)):
+        divisor = 0
+        for j in range(len(periods)):
+            minx = max(1,i-periods[j])
+            if len(x[minx:i]) < 1:
+                minchannel[i] = minchannel[i] + x[i]
+                maxchannel[i] = maxchannel[i] + x[i]
+                divisor += 1
+            else:
+                minchannel[i] = minchannel[i] + np.percentile(x[minx:i+1],lowPct)
+                maxchannel[i] = maxchannel[i] + np.percentile(x[minx:i+1],hiPct)
+                divisor += 1
+        minchannel[i] /= divisor
+        maxchannel[i] /= divisor
+    return minchannel,maxchannel
+#----------------------------------------------
+def percentileChannel_2D(x,minperiod,maxperiod,incperiod,lowPct,hiPct):
+    periods = np.arange(minperiod,maxperiod,incperiod)
+    minchannel = np.zeros( (x.shape[0],x.shape[1]), dtype=float)
+    maxchannel = np.zeros( (x.shape[0],x.shape[1]), dtype=float)
+    for i in range( x.shape[1] ):
+        divisor = 0
+        for j in range(len(periods)):
+            minx = max(1,i-periods[j])
+            if len(x[0,minx:i]) < 1:
+                minchannel[:,i] = minchannel[:,i] + x[:,i]
+                maxchannel[:,i] = maxchannel[:,i] + x[:,i]
+                divisor += 1
+            else:
+                minchannel[:,i] = minchannel[:,i] + np.percentile(x[:,minx:i+1],lowPct,axis=-1)
+                maxchannel[:,i] = maxchannel[:,i] + np.percentile(x[:,minx:i+1],hiPct,axis=-1)
+                divisor += 1
+        minchannel[:,i] /= divisor
+        maxchannel[:,i] /= divisor
+    print " minperiod,maxperiod,incperiod = ", minperiod,maxperiod,incperiod
+    print " lowPct,hiPct = ", lowPct,hiPct
+    print " x min,mean,max = ", x.min(),x.mean(),x.max()
+    print " divisor = ", divisor
+    return minchannel,maxchannel
+
+
 #----------------------------------------------
 def dpgchannel(x,minperiod,maxperiod,incperiod):
     periods = np.arange(minperiod,maxperiod,incperiod)
@@ -94,6 +204,351 @@ def dpgchannel_2D(x,minperiod,maxperiod,incperiod):
         minchannel[:,i] /= divisor
         maxchannel[:,i] /= divisor
     return minchannel,maxchannel
+#----------------------------------------------
+def selfsimilarity(hi,lo):
+
+    from scipy.stats import percentileofscore
+    HminusL = hi-lo
+
+    periods = 10
+    SMS = np.zeros( (hi.shape[0]), dtype=float)
+    for i in range( hi.shape[0] ):
+        minx = max(0,i-periods)
+        SMS[i] = np.sum(HminusL[minx:i+1],axis=-1)
+
+    # find the 10-day range (incl highest high and lowest low)
+    range10day = MoveMax(hi,10) - MoveMin(lo,10)
+
+    # normalize
+    SMS /= range10day
+
+    # compute quarterly (60-day) SMA
+    SMS = SMA(SMS,60)
+
+    # find percentile rank
+    movepctrank = np.zeros( (hi.shape[0]), dtype=float)
+    for i in range( hi.shape[0] ):
+        minx = max(0,i-periods)
+        movepctrank[i] = percentileofscore(SMS[minx:i+1],SMS[i])
+
+    return movepctrank
+
+#----------------------------------------------
+def jumpTheChannelTest(x,minperiod=4,maxperiod=12,incperiod=3,numdaysinfit=28, offset=3):
+    ###
+    ### compute linear trend in upper and lower channels and compare
+    ### actual stock price to forecast range
+    ### return pctChannel for each stock
+    ### calling function will use pctChannel as signal.
+    ### - e.g. negative pctChannel is signal that down-trend begins
+    ### - e.g. more than 100% pctChanel is sgnal of new up-trend beginning
+
+    # calculate dpgchannel for all stocks in x
+    # - x[stock_number,date]
+    # - 'numdaysinfit' describes number of days over which to calculate a linear trend
+    # - 'offset'  describes number days to forecast channel trends forward
+
+    import warnings
+    warnings.simplefilter('ignore', np.RankWarning)
+
+    pctChannel = np.zeros( (x.shape[0]), 'float' )
+    # calculate linear trend over 'numdaysinfit' with 'offset'
+    minchannel,maxchannel = dpgchannel(x,minperiod,maxperiod,incperiod)
+    minchannel_trenddata = minchannel[-(numdaysinfit+offset):-offset]
+    regression = np.polyfit(range(-(numdaysinfit+offset),-offset), minchannel_trenddata, 1)
+    minchannel_trend = regression[-1]
+    maxchannel_trenddata = maxchannel[-(numdaysinfit+offset):-offset]
+    regression = np.polyfit(range(-(numdaysinfit+offset),-offset), maxchannel_trenddata, 1)
+    maxchannel_trend = regression[-1]
+    pctChannel = (x[-1]-minchannel_trend) / (maxchannel_trend-minchannel_trend)
+
+    # calculate the stdev over the period
+    gainloss_period = x[-(numdaysinfit+offset)+1:-offset+1] / x[-(numdaysinfit+offset):-offset]
+    gainloss_period[np.isnan(gainloss_period)] = 1.
+    gainloss_cumu = np.cumprod( gainloss_period )[-1] -1.
+    gainloss_std = np.std( gainloss_period )
+
+    # calculate the current quote as number of stdevs above or below trend
+    currentMidChannel = (maxchannel_trenddata+minchannel_trend)/2.
+    numStdDevs = (x[-1]/currentMidChannel[-1]-1.) / gainloss_std
+
+    '''
+    print "pctChannel = ", pctChannel
+    print "gainloss_period = ", gainloss_period
+    print "gainloss_cumu = ", gainloss_cumu
+    print "gainloss_std = ", gainloss_std
+    print "currentMidChannel = ", currentMidChannel[-1]
+    print "numStdDevs = ", numStdDevs
+    '''
+
+    return pctChannel, gainloss_cumu, gainloss_std, numStdDevs
+
+#----------------------------------------------
+def recentChannelFit(x,minperiod=4,maxperiod=12,incperiod=3,numdaysinfit=28, offset=3):
+    ###
+    ### compute cumulative gain over fitting period and number of
+    ### ratio of current quote to fitted trend. Rescale based on std dev
+    ### of residuals during fitting period.
+    ### - e.g. negative pctChannel is signal that down-trend begins
+    ### - e.g. more than 100% pctChanel is sgnal of new up-trend beginning
+
+    # calculate dpgchannel for all stocks in x
+    # - x[stock_number,date]
+    # - 'numdaysinfit' describes number of days over which to calculate a linear trend
+    # - 'offset'  describes number days to forecast channel trends forward
+
+    import warnings
+    warnings.simplefilter('ignore', np.RankWarning)
+
+    pctChannel = np.zeros( (x.shape[0]), 'float' )
+    # calculate linear trend over 'numdaysinfit' with 'offset'
+    minchannel,maxchannel = dpgchannel(x,minperiod,maxperiod,incperiod)
+    minchannel_trenddata = minchannel[-(numdaysinfit+offset):-offset]
+    regression1 = np.polyfit(range(-(numdaysinfit+offset),-offset), minchannel_trenddata, 1)
+    minchannel_trend = regression1[-1]
+    maxchannel_trenddata = maxchannel[-(numdaysinfit+offset):-offset]
+    regression2 = np.polyfit(range(-(numdaysinfit+offset),-offset), maxchannel_trenddata, 1)
+    maxchannel_trend = regression2[-1]
+    pctChannel = (x[-1]-minchannel_trend) / (maxchannel_trend-minchannel_trend)
+
+    return regression1, regression2
+
+#----------------------------------------------
+def recentTrendAndStdDevs(x,datearray,minperiod=4,maxperiod=12,incperiod=3,numdaysinfit=28, offset=3):
+    ###
+    ### compute linear trend in upper and lower channels and compare
+    ### actual stock price to forecast range
+    ### return pctChannel for each stock
+    ### calling function will use pctChannel as signal.
+    ### - e.g. numStdDevs < -1. is signal that down-trend begins
+    ### - e.g. whereas  > 1.0 is signal of new up-trend beginning
+
+    # calculate dpgchannel for all stocks in x
+    # - x[stock_number,date]
+    # - 'numdaysinfit' describes number of days over which to calculate a linear trend
+    # - 'offset'  describes number days to forecast channel trends forward
+
+    # fit short-term recent trend channel for plotting
+    lowerFit, upperFit = recentChannelFit( x,
+                                           minperiod=minperiod,
+                                           maxperiod=maxperiod,
+                                           incperiod=incperiod,
+                                           numdaysinfit=numdaysinfit,
+                                           offset=offset)
+    recentFitDates = datearray[-numdaysinfit-offset:-offset+1]
+    relativedates = range(-numdaysinfit-offset,-offset+1)
+    p = np.poly1d(upperFit)
+    upperTrend = p(relativedates)
+    currentUpper = p(0) * 1.
+    p = np.poly1d(lowerFit)
+    lowerTrend = p(relativedates)
+    currentLower = p(0) * 1.
+    midTrend = (upperTrend+lowerTrend)/2.
+    #residuals = x[-numdaysinfit-offset:-offset+1] - midTrend
+    #fitStdDev = np.std(residuals)
+    fitStdDev = np.mean( upperTrend - lowerTrend )/2.
+    #print ".....lowerFit, upperFit = ", lowerFit, upperFit
+    #print ".....fitStdDev,currentUpper,currentLower,x[-1] = ", fitStdDev, currentUpper,currentLower,x[-1]
+    currentResidual = x[-1] - (currentUpper + currentLower)/2.
+    numStdDevs = currentResidual / fitStdDev
+
+    # calculate gain or loss over the period
+    gainloss_period = x[-(numdaysinfit+offset)+1:-offset+1] / x[-(numdaysinfit+offset):-offset]
+    gainloss_period[np.isnan(gainloss_period)] = 1.
+    gainloss_cumu = np.cumprod( gainloss_period )[-1] -1.
+
+    pctChannel = (x[-1]-currentUpper) / (currentUpper-currentLower)
+
+    return gainloss_cumu, numStdDevs, pctChannel
+
+#----------------------------------------------
+
+def recentTrendAndMidTrendWithGap(x,datearray,minperiod=4,maxperiod=12,incperiod=3,numdaysinfit=28,numdaysinfit2=20, offset=3):
+    ###
+    ### - Cmpute linear trend in upper and lower channels and compare
+    ###   actual stock price to forecast range
+    ### - Compute 2nd linear trend in upper and lower channels only for
+    ###   small number of recent prices without gap
+    ### - return pctChannel for each stock
+    ### - calling function will use pctChannel as signal.
+    ###   * e.g. numStdDevs < -1. is signal that down-trend begins
+    ###   * e.g. whereas  > 1.0 is signal of new up-trend beginning
+    
+    # calculate dpgchannel for all stocks in x
+    # - x[stock_number,date]
+    # - 'numdaysinfit' describes number of days over which to calculate a linear trend
+    # - 'offset'  describes number days to forecast channel trends forward
+    
+    # fit short-term recent trend channel with offset from current date for plotting
+    gappedLowerFit, gappedUpperFit = recentChannelFit( x,
+                                           minperiod=minperiod,
+                                           maxperiod=maxperiod,
+                                           incperiod=incperiod,
+                                           numdaysinfit=numdaysinfit,
+                                           offset=offset)
+    recentFitDates = datearray[-numdaysinfit-offset:-offset+1]
+    relativedates = range(-numdaysinfit-offset,-offset+1)
+    p = np.poly1d(gappedUpperFit)
+    upperTrend = p(relativedates)
+    currentUpper = p(0) * 1.
+    p = np.poly1d(gappedLowerFit)
+    lowerTrend = p(relativedates)
+    currentLower = p(0) * 1.
+    midTrend = (upperTrend+lowerTrend)/2.
+    #residuals = x[-numdaysinfit-offset:-offset+1] - midTrend
+    #fitStdDev = np.std(residuals)
+    fitStdDev = np.mean( upperTrend - lowerTrend )/2.
+    #print ".....gappedLowerFit, gappedUpperFit = ", gappedLowerFit, gappedUpperFit
+    #print ".....fitStdDev,currentUpper,currentLower,x[-1] = ", fitStdDev, currentUpper,currentLower,x[-1]
+    currentResidual = x[-1] - (currentUpper + currentLower)/2.
+    numStdDevs = currentResidual / fitStdDev
+    
+    # calculate gain or loss over the period (with offset)
+    gainloss_period = x[-(numdaysinfit+offset)+1:-offset+1] / x[-(numdaysinfit+offset):-offset]
+    gainloss_period[np.isnan(gainloss_period)] = 1.
+    gainloss_cumu = np.cumprod( gainloss_period )[-1] -1.
+    
+    pctChannel = (x[-1]-currentUpper) / (currentUpper-currentLower)
+    
+    
+    # fit shorter trend without offset
+    NoGapLowerFit, NoGapUpperFit = recentChannelFit( x,
+                                           minperiod=minperiod,
+                                           maxperiod=maxperiod,
+                                           incperiod=incperiod,
+                                           numdaysinfit=numdaysinfit2,
+                                           offset=1)
+    recentFitDates = datearray[-numdaysinfit2:]
+    relativedates = range(-numdaysinfit2,0)
+    p = np.poly1d(NoGapUpperFit)
+    NoGapUpperTrend = p(relativedates)
+    NoGapCurrentUpper = p(0) * 1.
+    p = np.poly1d(NoGapLowerFit)
+    NoGapLowerTrend = p(relativedates)
+    NoGapCurrentLower = p(0) * 1.
+    NoGapMidTrend = (NoGapUpperTrend+NoGapLowerTrend)/2.
+    
+    '''
+    # calculate gain or loss over the shorter period (with no offset)
+    gainloss_period = x[-(numdaysinfit2+1):1] / x[-(numdaysinfit2):]
+    gainloss_period[np.isnan(gainloss_period)] = 1.
+    gainloss_cumu = np.cumprod( gainloss_period )[-1] -1.
+    '''
+    
+    # calculate relative gain or loss over entire period
+    gainloss_cumu2 = NoGapMidTrend[-1]/midTrend[0] -1.
+    relative_GainLossRatio = (NoGapCurrentUpper + NoGapCurrentLower)/(currentUpper + currentLower)
+    
+    import matplotlib.pylab as plt
+    plt.figure(1)
+    plt.clf()
+    plt.grid(True)
+    plt.plot(datearray[-(numdaysinfit+offset+20):],x[-(numdaysinfit+offset+20):],'k-')
+    relativedates = range(-numdaysinfit-offset,-offset+1)
+    plt.plot(datearray[np.array(relativedates)],upperTrend,'y-')
+    plt.plot(datearray[np.array(relativedates)],lowerTrend,'y-')
+    plt.plot([datearray[-1]],[(upperTrend[-1]+lowerTrend[-1])/2.],'y.',ms=30)
+    relativedates = range(-numdaysinfit2,0)
+    plt.plot(datearray[np.array(relativedates)],NoGapUpperTrend,'c-')
+    plt.plot(datearray[np.array(relativedates)],NoGapLowerTrend,'c-')
+    plt.plot([datearray[-1]],[(NoGapUpperTrend[-1]+NoGapLowerTrend[-1])/2.],'c.',ms=30)
+    plt.show()
+
+    return gainloss_cumu, gainloss_cumu2, numStdDevs, relative_GainLossRatio
+
+#----------------------------------------------
+
+def textmessageOutsideTrendChannel(  symbols, adjClose ):
+
+    # temporarily skip this!!!!!!
+    #return
+
+    import datetime
+    from functions.GetParams import *
+    from functions.CheckMarketOpen import *
+    from functions.SendEmail import SendTextMessage
+    from functions.SendEmail import SendEmail
+
+    # send text message for held stocks if the lastest quote is outside
+    # (to downside) the established channel
+
+    # Get Credentials for sending email
+    params = GetParams()
+    print ""
+
+    #print "params = ", params
+    print ""
+    username = str(params['fromaddr']).split("@")[0]
+    emailpassword = str(params['PW'])
+
+    subjecttext = "PyTAAA update - Pct Trend Channel"
+    boldtext = "time is "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
+    headlinetext = "market status: " + get_MarketOpenOrClosed()
+
+    # Get Holdings from file
+    holdings = GetHoldings()
+    holdings_symbols = holdings['stocks']
+    edition = GetEdition()
+
+    # process symbols in current holdings
+    downtrendSymbols = []
+    channelPercent = []
+    channelGainsLossesHoldings = []
+    channelStdsHoldings = []
+    channelGainsLosses = []
+    channelStds = []
+    currentNumStdDevs = []
+    for i, symbol in enumerate(symbols):
+        pctChannel,channelGainLoss,channelStd,numStdDevs = jumpTheChannelTest(adjClose[i,:],\
+                                                                              #minperiod=4,\
+                                                                              #maxperiod=12,\
+                                                                              #incperiod=3,\
+                                                                              #numdaysinfit=28,\
+                                                                              #offset=3)
+                                                   minperiod=params['minperiod'],
+                                                   maxperiod=params['maxperiod'],
+                                                   incperiod=params['incperiod'],
+                                                   numdaysinfit=params['numdaysinfit'],
+                                                   offset=params['offset'])
+        channelGainsLosses.append(channelGainLoss)
+        channelStds.append(channelStd)
+        if symbol in holdings_symbols:
+            #pctChannel = jumpTheChannelTest(adjClose[i,:],minperiod=4,maxperiod=12,incperiod=3,numdaysinfit=28, offset=3)
+            print " ... performing PctChannelTest: symbol = ",format(symbol,'5s'), "  pctChannel = ", format(pctChannel-1.,'6.1%')
+            '''
+            if pctChannel < 1.:
+                # send textmessage alert of possible new down-trend
+                downtrendSymbols.append(symbol)
+                channelPercent.append(format(pctChannel-1.,'6.1%'))
+            '''
+            # send textmessage alert of current trend
+            downtrendSymbols.append(symbol)
+            channelPercent.append(format(pctChannel-1.,'6.1%'))
+            channelGainsLossesHoldings.append(format(channelGainLoss,'6.1%'))
+            channelStdsHoldings.append(format(channelStd,'6.1%'))
+            currentNumStdDevs.append(format(numStdDevs,'6.1f'))
+
+    print "\n ... downtrending symbols are ", downtrendSymbols, "\n"
+
+    if len(downtrendSymbols) > 0:
+        #--------------------------------------------------
+        # send text message
+        #--------------------------------------------------
+        #text_message = "PyTAAA/"+edition+" shows "+str(downtrendSymbols)+" in possible downtrend... \n"+str(channelPercent)+" % of trend channel."
+        text_message = "PyTAAA/"+edition+" shows "+str(downtrendSymbols)+" current trend... "+\
+                       "\nPct of trend channel  = "+str(channelPercent)+\
+                       "\nperiod gainloss     = "+str(channelGainsLossesHoldings)+\
+                       "\nperiod gainloss std = "+str(channelStdsHoldings)+\
+                       "\ncurrent # std devs  = "+str(currentNumStdDevs)
+
+        print text_message +"\n\n"
+
+        # send text message if market is open
+        if 'close in' in get_MarketOpenOrClosed():
+            #SendTextMessage( username,emailpassword,params['toSMS'],params['fromaddr'],text_message )
+            SendEmail(username,emailpassword,params['toSMS'],params['fromaddr'],subjecttext,text_message,boldtext,headlinetext)
+
+    return
 
 
 #----------------------------------------------
@@ -104,6 +559,24 @@ def SMA_2D(x,periods):
         minx = max(0,i-periods)
         SMA[:,i] = np.mean(x[:,minx:i+1],axis=-1)
     return SMA
+
+
+#----------------------------------------------
+
+def despike_2D(x,periods,stddevThreshold=5.0):
+    # remove outliers from gradient of x (in 2nd dimension)
+    gainloss = np.ones((x.shape[0],x.shape[1]),dtype=float)
+    gainloss[:,1:] = x[:,1:] / x[:,:-1]
+    for i in range( 1,x.shape[1] ):
+        minx = max(0,i-periods)
+        Stddev = np.std(gainloss[:,minx:i],axis=-1)
+        Stddev *= stddevThreshold
+        Stddev += 1.
+        test = np.dstack( (Stddev, gainloss[:,i]) )
+        gainloss[:,i] = np.min( test, axis=-1)
+    gainloss[:,0] = x[:,0].copy()
+    value = np.cumprod(gainloss,axis=1)
+    return value
 
 
 #----------------------------------------------
@@ -134,6 +607,15 @@ def MoveMax(x,periods):
         minx = max(0,i-periods)
         MMax[i] = np.max(x[minx:i+1],axis=-1)
     return MMax
+
+#----------------------------------------------
+
+def MoveMin(x,periods):
+    MMin = np.zeros( (x.shape[0]), dtype=float)
+    for i in range( x.shape[0] ):
+        minx = max(0,i-periods)
+        MMin[i] = np.min(x[minx:i+1],axis=-1)
+    return MMin
 
 
 #----------------------------------------------
@@ -173,9 +655,121 @@ def move_sharpe_2D(adjClose,dailygainloss,period):
 
 #----------------------------------------------
 
+def computeSignal2D( adjClose, gainloss, params ):
+
+    print " ... inside computeSignal2D ... "
+    print " params = ",params
+    MA1 = int(params['MA1'])
+    MA2 = int(params['MA2'])
+    MA2offset = int(params['MA2offset'])
+
+    narrowDays = params['narrowDays']
+    mediumDays = params['mediumDays']
+    wideDays = params['wideDays']
+
+    lowPct = float(params['lowPct'])
+    hiPct = float(params['hiPct'])
+    sma2factor = float(params['MA2factor'])
+    uptrendSignalMethod = params['uptrendSignalMethod']
+
+    if uptrendSignalMethod == 'SMAs' :
+        print "  ...using 3 SMA's for signal2D"
+        print "\n\n ...calculating signal2D using '"+uptrendSignalMethod+"' method..."
+        ########################################################################
+        ## Calculate signal for all stocks based on 3 simple moving averages (SMA's)
+        ########################################################################
+        sma0 = SMA_2D( adjClose, MA2 )               # MA2 is shortest
+        sma1 = SMA_2D( adjClose, MA2 + MA2offset )
+        sma2 = sma2factor * SMA_2D( adjClose, MA1 )  # MA1 is longest
+
+        signal2D = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
+        for ii in range(adjClose.shape[0]):
+            for jj in range(adjClose.shape[1]):
+                if adjClose[ii,jj] > sma2[ii,jj] or ((adjClose[ii,jj] > min(sma0[ii,jj],sma1[ii,jj]) and sma0[ii,jj] > sma0[ii,jj-1])):
+                    signal2D[ii,jj] = 1
+                    if jj== adjClose.shape[1]-1 and isnan(adjClose[ii,-1]):
+                        signal2D[ii,jj] = 0                #### added to avoid choosing stocks no longer in index
+            # take care of special case where constant share price is inserted at beginning of series
+            index = np.argmax(np.clip(np.abs(gainloss[ii,:]-1),0,1e-8)) - 1
+
+            signal2D[ii,0:index] = 0
+
+        dailyNumberUptrendingStocks = np.sum(signal2D,axis = 0)
+
+        return signal2D
+
+    elif uptrendSignalMethod == 'minmaxChannels' :
+        print "  ...using 3 minmax channels for signal2D"
+        print "\n\n ...calculating signal2D using '"+uptrendSignalMethod+"' method..."
+
+        ########################################################################
+        ## Calculate signal for all stocks based on 3 minmax channels (dpgchannels)
+        ########################################################################
+
+        # narrow channel is designed to remove day-to-day variability
+
+        print "narrow days min,max,inc = ", narrowDays[0], narrowDays[-1], (narrowDays[-1]-narrowDays[0])/7.
+        narrow_minChannel, narrow_maxChannel = dpgchannel_2D( adjClose, narrowDays[0], narrowDays[-1], (narrowDays[-1]-narrowDays[0])/7. )
+        narrow_midChannel = (narrow_minChannel+narrow_maxChannel)/2.
+
+        medium_minChannel, medium_maxChannel = dpgchannel_2D( adjClose, mediumDays[0], mediumDays[-1], (mediumDays[-1]-mediumDays[0])/7. )
+        medium_midChannel = (medium_minChannel+medium_maxChannel)/2.
+        mediumSignal = ((narrow_midChannel-medium_minChannel)/(medium_maxChannel-medium_minChannel)-0.5)*2.0
+
+        wide_minChannel, wide_maxChannel = dpgchannel_2D( adjClose, wideDays[0], wideDays[-1], (wideDays[-1]-wideDays[0])/7. )
+        wide_midChannel = (wide_minChannel+wide_maxChannel)/2.
+        wideSignal = ((narrow_midChannel-wide_minChannel)/(wide_maxChannel-wide_minChannel)-0.5)*2.0
+
+        signal2D = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
+        for ii in range(adjClose.shape[0]):
+            for jj in range(adjClose.shape[1]):
+                if mediumSignal[ii,jj] + wideSignal[ii,jj] > 0:
+                    signal2D[ii,jj] = 1
+                    if jj== adjClose.shape[1]-1 and isnan(adjClose[ii,-1]):
+                        signal2D[ii,jj] = 0                #### added to avoid choosing stocks no longer in index
+            # take care of special case where constant share price is inserted at beginning of series
+            index = np.argmax(np.clip(np.abs(gainloss[ii,:]-1),0,1e-8)) - 1
+
+            signal2D[ii,0:index] = 0
+
+            '''
+            # take care of special case where mp quote exists at end of series
+            if firstTrailingEmptyPriceIndex[ii] != 0:
+                signal2D[ii,firstTrailingEmptyPriceIndex[ii]:] = 0
+            '''
+
+        return signal2D
+
+    elif uptrendSignalMethod == 'percentileChannels' :
+        print "\n\n ...calculating signal2D using '"+uptrendSignalMethod+"' method..."
+        signal2D = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
+        lowChannel,hiChannel = percentileChannel_2D(adjClose,MA1,MA2+.01,MA2offset,lowPct,hiPct)
+        for ii in range(adjClose.shape[0]):
+            for jj in range(1,adjClose.shape[1]):
+                if (adjClose[ii,jj] > lowChannel[ii,jj] and adjClose[ii,jj-1] <= lowChannel[ii,jj-1]) or adjClose[ii,jj] > hiChannel[ii,jj]:
+                    signal2D[ii,jj] = 1
+                elif (adjClose[ii,jj] < hiChannel[ii,jj] and adjClose[ii,jj-1] >= hiChannel[ii,jj-1]) or adjClose[ii,jj] < lowChannel[ii,jj]:
+                    signal2D[ii,jj] = 0
+                else:
+                    signal2D[ii,jj] = signal2D[ii,jj-1]
+
+                if jj== adjClose.shape[1]-1 and isnan(adjClose[ii,-1]):
+                    signal2D[ii,jj] = 0                #### added to avoid choosing stocks no longer in index
+            # take care of special case where constant share price is inserted at beginning of series
+            index = np.argmax(np.clip(np.abs(gainloss[ii,:]-1),0,1e-8)) - 1
+            signal2D[ii,0:index] = 0
+
+        return signal2D, lowChannel, hiChannel
+
+
+#----------------------------------------------
+
 def nanrms(x, axis=None):
     from bottleneck import nanmean
     return sqrt(nanmean(x**2, axis=axis))
+
+#----------------------------------------------
+
 
 def move_informationRatio(dailygainloss_portfolio,dailygainloss_index,period):
     """
@@ -322,7 +916,7 @@ def move_martin_2D(adjClose,period):
 
 #----------------------------------------------
 
-def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthreshold,riskDownside_min,riskDownside_max,rankThresholdPct):
+def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,LongPeriod,rankthreshold,riskDownside_min,riskDownside_max,rankThresholdPct,stddevThreshold=4.,makeQCPlots=False):
 
     # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
     # rankthreshold --     # select this many funds with best recent performance
@@ -331,14 +925,24 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
     import nose
     import os
     import sys
+    from matplotlib.pylab import *
+    import matplotlib.gridspec as gridspec
     try:
         import bottleneck as bn
         from bn import rankdata as rd
     except:
         import scipy.stats.mstats as bn
+    from quotes_for_list_adjClose import get_Naz100List
+    from functions.GetParams import *
+
+    # Get params for sending textmessage and email
+    params = GetParams()
+
+    adjClose_despike = despike_2D( adjClose, LongPeriod, stddevThreshold=stddevThreshold )
 
     gainloss = np.ones((adjClose.shape[0],adjClose.shape[1]),dtype=float)
-    gainloss[:,1:] = adjClose[:,1:] / adjClose[:,:-1]
+    #gainloss[:,1:] = adjClose[:,1:] / adjClose[:,:-1]
+    gainloss[:,1:] = adjClose_despike[:,1:] / adjClose_despike[:,:-1]  ## experimental
     gainloss[isnan(gainloss)]=1.
 
     # convert signal2D to contain either 1 or 0 for weights
@@ -346,19 +950,76 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
     signal2D *= signal2D.max()
 
     # apply signal to daily gainloss
+    print "\n\n\n######################\n...gainloss min,median,max = ",gainloss.min(),gainloss.mean(),np.median(gainloss),gainloss.max()
+    print "...signal2D min,median,max = ",signal2D.min(),signal2D.mean(),np.median(signal2D),signal2D.max(),"\n\n\n"
     gainloss = gainloss * signal2D
     gainloss[gainloss == 0] = 1.0
+
+    # update file with daily count of uptrending symbols in index universe
+    filepath = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_dailyNumberUptrendingSymbolsList.txt" )
+    print "\n\nfile for daily number of uptrending symbols = ", filepath
+    if os.path.exists( os.path.abspath(filepath) ):
+        numberUptrendingSymbols = 0
+        for i in range(len(symbols)):
+            if signal2D_daily[i,-1] == 1.:
+                numberUptrendingSymbols += 1
+                #print "numberUptrendingSymbols,i,symbol,signal2D = ",numberUptrendingSymbols,i,symbols[i],signal2D_daily[i,-1]
+
+        dailyUptrendingCount_text = "\n"+str(datearray[-1])+", "+str(numberUptrendingSymbols)
+        with open( filepath, "a" ) as f:
+            f.write(dailyUptrendingCount_text)
+    else:
+        dailyUptrendingCount_text = "date, daily count of uptrending symbols"
+        with open( filepath, "w" ) as f:
+            f.write(dailyUptrendingCount_text)
+        numberUptrendingSymbols = np.zeros( signal2D_daily.shape[1], 'int' )
+        for k in range(signal2D_daily.shape[1]):
+            for i in range(len(symbols)):
+                if signal2D_daily[i,k] == 1.:
+                    numberUptrendingSymbols[k] += 1
+                    #print "numberUptrendingSymbols,i,symbol,signal2D = ",numberUptrendingSymbols[k],datearray[k],symbols[i],signal2D_daily[i,k]
+
+            dailyUptrendingCount_text = "\n"+str(datearray[k])+", "+str(numberUptrendingSymbols[k])
+            with open( filepath, "a" ) as f:
+                f.write(dailyUptrendingCount_text)
 
     value = 10000. * np.cumprod(gainloss,axis=1)
 
     # calculate gainloss over period of "LongPeriod" days
     monthgainloss = np.ones((adjClose.shape[0],adjClose.shape[1]),dtype=float)
-    monthgainloss[:,LongPeriod:] = adjClose[:,LongPeriod:] / adjClose[:,:-LongPeriod]
+    #monthgainloss[:,LongPeriod:] = adjClose[:,LongPeriod:] / adjClose[:,:-LongPeriod]
+    monthgainloss[:,LongPeriod:] = adjClose_despike[:,LongPeriod:] / adjClose_despike[:,:-LongPeriod]  ## experimental
     monthgainloss[isnan(monthgainloss)]=1.
+
+    # apply signal to daily monthgainloss
+    monthgainloss = monthgainloss * signal2D
+    monthgainloss[monthgainloss == 0] = 1.0
 
     monthgainlossweight = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
 
     rankweight = 1./rankthreshold
+
+    '''
+    # plot closing prices and signal-adjusted price
+    #
+    #   REMOVE THIS plot loop
+    #
+    symbol_root = "Naz100_"
+    print "datearray[-1] = ", datearray[-1]
+    print "datearray[-1] = ", str(datearray[-1])
+    strdate = str(datearray[-1].year) +"-" + str(datearray[-1].month) + "-" +str(datearray[-1].day)
+    for i in range(len(symbols)):
+        clf()
+        grid()
+        plot(datearray[-825:],signal2D[i,-825:]*np.max(adjClose[i,-825:]))
+        plot(datearray[-825:],adjClose[i,-825:])
+        plot(datearray[-825:],adjClose[i,-825]/value[i,-825]*value[i,-825:])
+        aaa = signal2D[i,:]
+        NaNcount = aaa[np.isnan(aaa)].shape[0]
+        title("signal2D before figure3 ... "+symbols[i]+"   "+str(NaNcount))
+        draw()
+        savefig(os.path.join("pngs",symbol_root+"_"+symbols[i]+"_"+strdate+"__"+".png"), format='png', edgecolor='gray' )
+    '''
 
     ########################################################################
     ## Calculate change in rank of active stocks each day (without duplicates as ties)
@@ -396,6 +1057,7 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
                 if jj == monthgainloss.shape[1]:
                     print "*******setting delta (Rank) low... Stock has rank outside acceptable range... ",ii, symbols[ii], monthgainloss[ii,jj]
 
+    """
     # if adjClose is nan, set deltarank to zero so stock will not be chosen
     #  - remember that low ranks are biggest gainers
     rankThreshold = (1. - rankThresholdPct) * ( monthgainlossRank.max() - monthgainlossRank.min() )
@@ -405,6 +1067,19 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
             numisnans = adjClose[ii,:]
             # NaN in last value usually means the stock is removed from the index so is not updated, but history is still in HDF file
             print "*******setting delta (Rank) low... Stock has NaN for last value... ",ii, symbols[ii], numisnans[np.isnan(numisnans)].shape
+    """
+
+    # if symbol is not in current Naz100 universe, set deltarank to zero so stock will not be chosen
+    #  - remember that low ranks are biggest gainers
+    Naz100SymbolList,_,_ = get_Naz100List()
+    rankThreshold = (1. - rankThresholdPct) * ( monthgainlossRank.max() - monthgainlossRank.min() )
+    for ii in range(monthgainloss.shape[0]):
+        if symbols[ii] not in Naz100SymbolList and symbols[ii] != 'CASH' :
+            delta[ii,:] = -monthgainloss.shape[0]/2
+            numisnans = adjClose[ii,:]
+            # NaN in last value usually means the stock is removed from the index so is not updated, but history is still in HDF file
+            print "*******setting delta (Rank) low... Stock is no longer in Naz100 universe... ",ii, symbols[ii]
+
 
     deltaRank = bn.rankdata( delta, axis=0 )
 
@@ -418,6 +1093,11 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
         if deltaRank[:,ii].min() == deltaRank[:,ii].max():
             deltaRank[:,ii] = 0.
 
+    ########################################################################
+    ## Copy current day rankings deltaRankToday
+    ########################################################################
+
+    deltaRankToday = deltaRank[:,-1].copy()
 
     ########################################################################
     ## Hold values constant for calendar month (gains, ranks, deltaRanks)
@@ -428,7 +1108,6 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
             monthgainloss[:,ii] = monthgainloss[:,ii-1]
             delta[:,ii] = delta[:,ii-1]
             deltaRank[:,ii] = deltaRank[:,ii-1]
-
 
     ########################################################################
     ## Calculate number of active stocks each day
@@ -505,6 +1184,530 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
     monthgainlossweight = monthgainlossweight / np.sum(monthgainlossweight,axis=0)
     monthgainlossweight[isnan(monthgainlossweight)] = 0.  # changed result from 1 to 0
 
+    if makeQCPlots==True:
+        # input symbols and company names from text file
+        companyName_file = os.path.join( os.getcwd(), "symbols",  "companyNames.txt" )
+        with open( companyName_file, "r" ) as f:
+            companyNames = f.read()
+
+        print "\n\n\n"
+        companyNames = companyNames.split("\n")
+        ii = companyNames.index("")
+        del companyNames[ii]
+        companySymbolList  = []
+        companyNameList = []
+        for iname,name in enumerate(companyNames):
+            name = name.replace("amp;", "")
+            testsymbol, testcompanyName = name.split(";")
+            companySymbolList.append(testsymbol)
+            companyNameList.append(testcompanyName)
+
+        # print list showing current rankings and weights
+        # - symbol
+        # - rank (at begining of month)
+        # - rank (most recent trading day)
+        # - weight from sharpe ratio
+        # - price
+        import os
+        '''
+        rank_text = "<div id='rank_table_container'><h3>"+"<p>Current stocks, with ranks, weights, and prices are :</p></h3><font face='courier new' size=3><table border='1'> \
+                   <tr><td>Rank (start of month) \
+                   </td><td>Rank (today) \
+                   </td><td>Symbol \
+                   </td><td>Company \
+                   </td><td>Weight \
+                   </td><td>Price  \
+                   </td><td>Trend  \
+                   </td><td>ChannelPct  \
+                   </td></tr>\n"
+        '''
+        rank_text = "<div id='rank_table_container'><h3>"+"<p>Current stocks, with ranks, weights, and prices are :</p></h3><font face='courier new' size=3><table border='1'> \
+                   <tr><td>Rank (start of month) \
+                   </td><td>Rank (today) \
+                   </td><td>Symbol \
+                   </td><td>Company \
+                   </td><td>Weight \
+                   </td><td>Price  \
+                   </td><td>Trend  \
+                   </td><td>recent Gain or Loss (excludes a few days)  \
+                   </td><td>stdDevs above or below trend  \
+                   </td><td>P/E ratio \
+                   </td></tr>\n"
+        ChannelPct_text = "channelPercent:"
+        channelPercent = []
+        channelGainsLosses = []
+        stdevsAboveChannel = []
+        floatChannelGainsLosses = []
+        floatStdevsAboveChannel = []
+        for i, isymbol in enumerate(symbols):
+            ### save current projected position in price channel calculated without recent prices
+            """
+            pctChannel,channelGainLoss,channelStd,numStdDevs = jumpTheChannelTest(adjClose[i,:],\
+                                                  #minperiod=4,\
+                                                  #maxperiod=12,\
+                                                  #incperiod=3,\
+                                                  #numdaysinfit=28,\
+                                                  #offset=3)
+                                                  minperiod=params['minperiod'],
+                                                  maxperiod=params['maxperiod'],
+                                                  incperiod=params['incperiod'],
+                                                  numdaysinfit=params['numdaysinfit'],
+                                                  offset=params['offset'])
+            print " ... performing PctChannelTest: symbol = ",format(isymbol,'5s'), "  pctChannel = ", format(pctChannel-1.,'6.1%')
+            channelPercent.append(format(pctChannel-1.,'6.1%'))
+            channelGainsLosses.append(format(channelGainLoss,'6.1%'))
+            stdevsAboveChannel.append(format(numStdDevs,'6.1f'))
+            floatChannelGainsLosses.append(channelGainLoss)
+            floatStdevsAboveChannel.append(numStdDevs)
+            ChannelPct_text = ChannelPct_text + format(pctChannel-1.,'6.1%')
+            """
+            #print "\nsymbol = ", isymbol
+            channelGainLoss, numStdDevs, pctChannel = recentTrendAndStdDevs(adjClose[i,:],
+                                                              datearray,
+                                                              minperiod=params['minperiod'],
+                                                              maxperiod=params['maxperiod'],
+                                                              incperiod=params['incperiod'],
+                                                              numdaysinfit=params['numdaysinfit'],
+                                                              offset=params['offset'])
+            print " ... performing PctChannelTest: symbol = ",format(isymbol,'5s'), "  numStdDevs = ", format(numStdDevs,'6.1f')
+            channelGainsLosses.append(format(channelGainLoss,'6.1%'))
+            stdevsAboveChannel.append(format(numStdDevs,'6.1f'))
+            floatChannelGainsLosses.append(channelGainLoss)
+            floatStdevsAboveChannel.append(numStdDevs)
+            ChannelPct_text = ChannelPct_text + format(pctChannel-1.,'6.1%')
+
+        path_symbolChartsSort_byRankBeginMonth = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_symbolCharts_MonthStartRank.html" )
+        path_symbolChartsSort_byRankToday = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_symbolCharts_TodayRank.html" )
+        path_symbolChartsSort_byRecentGainRank = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_symbolCharts_recentGainRank.html" )
+
+        pagetext_byRankBeginMonth = "<!DOCTYPE html>+\n"  +\
+                               "<html>+\n"  +\
+                               "<head>+\n"  +\
+                               "<title>pyTAAA web</title>+\n"  +\
+                               "</head>+\n"  +\
+                               "<br><h1>Symbol Charts Ordered by Ranking at Start of Month</h1>+\n"
+        pagetext_byRankToday = "<!DOCTYPE html>+\n"  +\
+                               "<html>+\n"  +\
+                               "<head>+\n"  +\
+                               "<title>pyTAAA web</title>+\n"  +\
+                               "</head>+\n"  +\
+                               "<br><h1>Symbol Charts Ordered by Ranking Today</h1>+\n"
+        pagetext_byRecentGainRank = "<!DOCTYPE html>+\n"  +\
+                               "<html>+\n"  +\
+                               "<head>+\n"  +\
+                               "<title>pyTAAA web</title>+\n"  +\
+                               "</head>+\n"  +\
+                               "<br><h1>Symbol Charts Ordered by Recent Gain Ranking</h1>+\n"
+
+        floatChannelGainsLosses = np.array(floatChannelGainsLosses)
+        floatChannelGainsLosses[np.isinf(floatChannelGainsLosses)] = -999.
+        floatChannelGainsLosses[np.isneginf(floatChannelGainsLosses)] = -999.
+        floatChannelGainsLosses[np.isnan(floatChannelGainsLosses)] = -999.
+        floatStdevsAboveChannel = np.array(floatStdevsAboveChannel)
+        floatStdevsAboveChannel[np.isinf(floatStdevsAboveChannel)] = -999.
+        floatStdevsAboveChannel[np.isneginf(floatStdevsAboveChannel)] = -999.
+        floatStdevsAboveChannel[np.isnan(floatStdevsAboveChannel)] = -999.
+        RecentGainRank = len(floatChannelGainsLosses) - bn.rankdata( floatChannelGainsLosses )
+        RecentGainStdDevRank = len(floatStdevsAboveChannel)- bn.rankdata( floatStdevsAboveChannel )
+        RecentOrder = np.argsort( RecentGainRank + RecentGainStdDevRank )
+        RecentRank = np.argsort( RecentOrder )
+
+        peList = []
+        floatPE_list = []
+        for i, isymbol in enumerate(symbols):
+            pe = getQuote(isymbol)['PE'][0]
+            floatPE_list.append(pe)
+            peList.append(str(pe))
+
+        for i, isymbol in enumerate(symbols):
+            for j in range(len(symbols)):
+
+                if int( deltaRank[j,-1] ) == i :
+                    if signal2D_daily[j,-1] == 1.:
+                        trend = 'up'
+                    else:
+                        trend = 'down'
+
+                    # search for company name
+                    try:
+                        symbolIndex = companySymbolList.index(symbols[j])
+                        companyName = companyNameList[symbolIndex]
+                    except:
+                        companyName = ""
+
+                    '''
+                    rank_text = rank_text + \
+                           "<tr><td>" + format(deltaRank[j,-1],'6.0f')  + \
+                           "<td>" + format(deltaRankToday[j],'6.0f')  + \
+                           "<td>" + format(symbols[j],'5s')  + \
+                           "<td>" + format(companyName,'15s')  + \
+                           "<td>" + format(monthgainlossweight[j,-1],'5.03f') + \
+                           "<td>" + format(adjClose[j,-1],'6.2f')  + \
+                           "<td>" + trend  + \
+                           "<td>" + channelPercent[j]  + \
+                           "</td></tr>  \n"
+                    '''
+                    #pe = format(getQuote(symbols[j])['PE'][0],'f7.2')
+                    #pe = str(getQuote(symbols[j])['PE'][0])
+                    pe = peList[j]
+                    rank_text = rank_text + \
+                           "<tr><td>" + format(deltaRank[j,-1],'6.0f')  + \
+                           "<td>" + format(deltaRankToday[j],'6.0f')  + \
+                           "<td>" + format(symbols[j],'5s')  + \
+                           "<td>" + format(companyName,'15s')  + \
+                           "<td>" + format(monthgainlossweight[j,-1],'5.03f') + \
+                           "<td>" + format(adjClose[j,-1],'6.2f')  + \
+                           "<td>" + trend  + \
+                           "<td>" + channelGainsLosses[j]  + \
+                           "<td>" + stdevsAboveChannel[j]  + \
+                           "<td>" + pe  + \
+                           "</td></tr>  \n"
+
+                    ###print " i,j,companyName = ", i,j,"__"+companyName+"__"
+                    if companyName != "":
+                        if i==1:
+                            avgChannelGainsLosses = floatChannelGainsLosses[j]
+                            avgStdevsAboveChannel = floatStdevsAboveChannel[j]
+                        else:
+                            avgChannelGainsLosses = (avgChannelGainsLosses*(i-1)+floatChannelGainsLosses[j])/(i)
+                            avgStdevsAboveChannel = (avgStdevsAboveChannel*(i-1)+floatStdevsAboveChannel[j])/(i)
+
+
+                if i == deltaRank[j,-1]:
+                    if signal2D_daily[j,-1] == 1.:
+                        trend = 'up'
+                    else:
+                        trend = 'down'
+                    # search for company name
+                    try:
+                        symbolIndex = companySymbolList.index(symbols[j])
+                        companyName = companyNameList[symbolIndex]
+                    except:
+                        companyName = ""
+                    #pe = str(getQuote(symbols[j])['PE'][0])
+                    pe = peList[j]
+                    pagetext_byRankBeginMonth = pagetext_byRankBeginMonth +"<br><p> </p><p> </p><p> </p>"+\
+                       "<font face='courier new' size=3><table border='1'>" +\
+                       "<tr><td>Rank (start of month)" +\
+                       "</td><td>Rank (today)" +\
+                       "</td><td>Symbol" +\
+                       "</td><td>Company" +\
+                       "</td><td>Weight" +\
+                       "</td><td>Price"  +\
+                       "</td><td>Trend"  +\
+                       "</td><td>recent Gain or Loss (excludes a few days)"  +\
+                       "</td><td>stdDevs above or below trend"  +\
+                       "</td><td>P/E ratio" +\
+                       "</td></tr>\n"+\
+                       "<tr><td>" + format(deltaRank[j,-1],'6.0f')  + \
+                       "<td>" + format(deltaRankToday[j],'6.0f')  + \
+                       "<td>" + format(symbols[j],'5s')  + \
+                       "<td>" + format(companyName,'15s')  + \
+                       "<td>" + format(monthgainlossweight[j,-1],'5.03f') + \
+                       "<td>" + format(adjClose[j,-1],'6.2f')  + \
+                       "<td>" + trend  + \
+                       "<td>" + channelGainsLosses[j]  + \
+                       "<td>" + stdevsAboveChannel[j]  + \
+                       "<td>" + pe  + \
+                       "</td></tr>  \n"+\
+                       u"<br><img src='0_recent_" +symbols[j]+ u".png' alt='PyTAAA by DonaldPG' width='850' height='500'>"
+
+                if i == deltaRankToday[j]:
+                    if signal2D_daily[j,-1] == 1.:
+                        trend = 'up'
+                    else:
+                        trend = 'down'
+                    # search for company name
+                    try:
+                        symbolIndex = companySymbolList.index(symbols[j])
+                        companyName = companyNameList[symbolIndex]
+                    except:
+                        companyName = ""
+                    #pe = str(getQuote(symbols[j])['PE'][0])
+                    pe = peList[j]
+                    pagetext_byRankToday = pagetext_byRankToday +"<br><p> </p><p> </p><p> </p><br>"+\
+                       "<font face='courier new' size=3><table border='1'>" +\
+                       "<tr><td>Rank (start of month)" +\
+                       "</td><td>Rank (today)" +\
+                       "</td><td>Symbol" +\
+                       "</td><td>Company" +\
+                       "</td><td>Weight" +\
+                       "</td><td>Price"  +\
+                       "</td><td>Trend"  +\
+                       "</td><td>recent Gain or Loss (excludes a few days)"  +\
+                       "</td><td>stdDevs above or below trend"  +\
+                       "</td><td>P/E ratio" +\
+                       "</td></tr>\n"+\
+                       "<tr><td>" + format(deltaRank[j,-1],'6.0f')  + \
+                       "<td>" + format(deltaRankToday[j],'6.0f')  + \
+                       "<td>" + format(symbols[j],'5s')  + \
+                       "<td>" + format(companyName,'15s')  + \
+                       "<td>" + format(monthgainlossweight[j,-1],'5.03f') + \
+                       "<td>" + format(adjClose[j,-1],'6.2f')  + \
+                       "<td>" + trend  + \
+                       "<td>" + channelGainsLosses[j]  + \
+                       "<td>" + stdevsAboveChannel[j]  + \
+                       "<td>" + pe  + \
+                       "</td></tr>  \n"+\
+                       u"<br><img src='0_recent_" +symbols[j]+ u".png' alt='PyTAAA by DonaldPG' width='850' height='500'>"
+
+                if i == RecentRank[j]:
+                    if signal2D_daily[j,-1] == 1.:
+                        trend = 'up'
+                    else:
+                        trend = 'down'
+                    # search for company name
+                    try:
+                        symbolIndex = companySymbolList.index(symbols[j])
+                        companyName = companyNameList[symbolIndex]
+                    except:
+                        companyName = ""
+                    #pe = str(getQuote(symbols[j])['PE'][0])
+                    pe = peList[j]
+                    pagetext_byRecentGainRank = pagetext_byRecentGainRank +"<br><p> </p><p> </p><p> </p><br>"+\
+                       "<font face='courier new' size=3><table border='1'>" +\
+                       "<tr><td>Rank (start of month)" +\
+                       "</td><td>Rank (today)" +\
+                       "</td><td>Symbol" +\
+                       "</td><td>Company" +\
+                       "</td><td>Weight" +\
+                       "</td><td>Price"  +\
+                       "</td><td>Trend"  +\
+                       "</td><td>recent Gain or Loss (excludes a few days)"  +\
+                       "</td><td>stdDevs above or below trend"  +\
+                       "</td><td>P/E ratio" +\
+                       "</td></tr>\n"+\
+                       "<tr><td>" + format(deltaRank[j,-1],'6.0f')  + \
+                       "<td>" + format(deltaRankToday[j],'6.0f')  + \
+                       "<td>" + format(symbols[j],'5s')  + \
+                       "<td>" + format(companyName,'15s')  + \
+                       "<td>" + format(monthgainlossweight[j,-1],'5.03f') + \
+                       "<td>" + format(adjClose[j,-1],'6.2f')  + \
+                       "<td>" + trend  + \
+                       "<td>" + channelGainsLosses[j]  + \
+                       "<td>" + stdevsAboveChannel[j]  + \
+                       "<td>" + pe  + \
+                       "</td></tr>  \n"+\
+                       u"<br><img src='0_recent_" +symbols[j]+ u".png' alt='PyTAAA by DonaldPG' width='850' height='500'>"
+
+        medianChannelGainsLosses = np.median(floatChannelGainsLosses)
+        medianStdevsAboveChannel = np.median(floatStdevsAboveChannel)
+
+        print "peList = ", floatPE_list
+        floatPE_list = np.array(floatPE_list)
+        floatPE_list = floatPE_list[~np.isinf(floatPE_list)]
+        floatPE_list = floatPE_list[~np.isneginf(floatPE_list)]
+        floatPE_list = floatPE_list[~np.isnan(floatPE_list)]
+        averagePE = np.mean(floatPE_list)
+        medianPE = np.median(floatPE_list)
+
+        avg_performance_text = "\n\n\n<font face='courier new' size=5><p>Average recent performance:</p></h3><font face='courier new' size=4>"+\
+                               "<p>average trend excluding several days  = "+format(avgChannelGainsLosses,'6.1%')+"<br>"+\
+                               "median trend excluding several days  = "+format(medianChannelGainsLosses,'6.1%')+"</p></h3><font face='courier new' size=4>"+\
+                               "<p>average number stds above/below trend = "+format(avgStdevsAboveChannel,'5.1f')+"<br>"+\
+                               "median number stds above/below trend = "+format(medianStdevsAboveChannel,'5.1f')+"</p></h3><font face='courier new' size=4>"+\
+                               "<p>average P/E = "+format(averagePE,'5.1f')+"<br>"+\
+                               "median P/E = "+format(medianPE,'5.1f')+"</p></h3><font face='courier new' size=4>\n\n"
+
+        rank_text = avg_performance_text + rank_text + "</table></div>\n"
+
+        filepath = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_RankList.txt" )
+        with open( filepath, "w" ) as f:
+            f.write(rank_text)
+
+        filepath = path_symbolChartsSort_byRankBeginMonth
+        with open( filepath, "w" ) as f:
+            f.write(pagetext_byRankBeginMonth)
+
+        filepath = path_symbolChartsSort_byRankToday
+        with open( filepath, "w" ) as f:
+            f.write(pagetext_byRankToday)
+
+        filepath = path_symbolChartsSort_byRecentGainRank
+        with open( filepath, "w" ) as f:
+            f.write(pagetext_byRecentGainRank)
+
+        ########################################################################
+        ### save current ranks to params file
+        ########################################################################
+
+        lastdate_text = "lastdate: " + str(datearray[-1])
+        symbol_text = "symbols: "
+        rank_text = "ranks:"
+        #####ChannelPct_text = "channelPercent:"
+        """
+        for i, isymbol in enumerate(symbols):
+            symbol_text = symbol_text + format(symbols[i],'6s')
+            rank_text = rank_text + format(deltaRankToday[i],'6.0f')
+        """
+
+        for i, isymbol in enumerate(symbols):
+            for j in range(len(symbols)):
+                if int( deltaRank[j,-1] ) == i :
+                    symbol_text = symbol_text + format(symbols[j],'6s')
+                    rank_text = rank_text + format(deltaRankToday[j],'6.0f')
+
+            #####pctChannel = jumpTheChannelTest(adjClose[i,:],minperiod=4,maxperiod=12,incperiod=3,numdaysinfit=28, offset=3)
+            #####print " ... performing PctChannelTest: symbol = ",format(symbol,'5s'), "  pctChannel = ", format(pctChannel-1.,'6.1%')
+            #####channelPercent.append(format(pctChannel-1.,'6.1%'))
+            #####ChannelPct_text = ChannelPct_text + format(pctChannel-1.,'6.1%')
+
+        filepath = os.path.join( os.getcwd(), "PyTAAA_ranks.params" )
+        with open( filepath, "a" ) as f:
+            f.write(lastdate_text)
+            f.write("\n")
+            f.write(symbol_text)
+            f.write("\n")
+            f.write(rank_text)
+            f.write("\n")
+            f.write(ChannelPct_text)
+            f.write("\n")
+        print "leaving function sharpeWeightedRank_2D..."
+
+    return monthgainlossweight
+
+#----------------------------------------------
+
+def MAA_WeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,LongPeriod,numberStocksTraded,
+                        wR, wC, wV, wS, stddevThreshold=4. ):
+
+    # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
+    # rankthreshold --     # select this many funds with best recent performance
+
+    import numpy as np
+    import nose
+    import os
+    import sys
+    from matplotlib.pylab import *
+    import matplotlib.gridspec as gridspec
+    try:
+        import bottleneck as bn
+        from bn import rankdata as rd
+    except:
+        import scipy.stats.mstats as bn
+
+    adjClose_despike = despike_2D( adjClose, LongPeriod, stddevThreshold=stddevThreshold )
+
+    gainloss = np.ones((adjClose.shape[0],adjClose.shape[1]),dtype=float)
+    #gainloss[:,1:] = adjClose[:,1:] / adjClose[:,:-1]
+    gainloss[:,1:] = adjClose_despike[:,1:] / adjClose_despike[:,:-1]  ## experimental
+    gainloss[isnan(gainloss)]=1.
+
+    # convert signal2D to contain either 1 or 0 for weights
+    signal2D -= signal2D.min()
+    signal2D *= signal2D.max()
+
+    ############################
+    ###
+    ### filter universe of stocks to exclude all that have return < 0
+    ### - needed for correlation to "equal weight index" (EWI)
+    ### - EWI is daily gain/loss percentage
+    ###
+    ############################
+
+    EWI  = np.zeros( adjClose.shape[1], 'float' )
+    EWI_count  = np.zeros( adjClose.shape[1], 'int' )
+    for jj in np.arange(LongPeriod,adjClose.shape[1]) :
+        for ii in range(adjClose.shape[0]):
+            if signal2D_daily[ii,jj] == 1:
+                EWI[jj] += gainloss[ii,jj]
+                EWI_count[jj] += 1
+    EWI = EWI/EWI_count
+    EWI[np.isnan(EWI)] = 1.0
+
+    ############################
+    ###
+    ### compute correlation to EWI
+    ### - each day, for each stock
+    ### - not needed for stocks on days with return < 0
+    ###
+    ############################
+
+    corrEWI  = np.zeros( adjClose.shape, 'float' )
+    for jj in np.arange(LongPeriod,adjClose.shape[1]) :
+        for ii in range(adjClose.shape[0]):
+            start_date = max( jj - LongPeriod, 0 )
+            if adjClose_despike[ii,jj] > adjClose_despike[ii,start_date]:
+                corrEWI[ii,jj] = normcorrcoef(gainloss[ii,start_date:jj]-1.,EWI[start_date:jj]-1.)
+                if corrEWI[ii,jj] <0:
+                    corrEWI[ii,jj] = 0.
+
+    ############################
+    ###
+    ### compute weights
+    ### - each day, for each stock
+    ### - set to 0. for stocks on days with return < 0
+    ###
+    ############################
+
+    weights  = np.zeros( adjClose.shape, 'float' )
+    for jj in np.arange(LongPeriod,adjClose.shape[1]) :
+        for ii in range(adjClose.shape[0]):
+            start_date = max( jj - LongPeriod, 0 )
+            returnForPeriod = (adjClose_despike[ii,jj]/adjClose_despike[ii,start_date])-1.
+            if returnForPeriod  < 0.:
+                returnForPeriod = 0.
+            volatility = np.std(adjClose_despike[ii,start_date:jj])
+            weights[ii,jj] = ( returnForPeriod**wR * (1.-corrEWI[ii,jj])**wC / volatility**wV ) **wS
+
+    weights[np.isnan(weights)] = 0.0
+
+    # make duplicate of weights for adjusting using crashProtection
+    CPweights = weights.copy()
+    CP_cashWeight = np.zeros(adjClose.shape[1], 'float' )
+    for jj in np.arange(adjClose.shape[1]) :
+        weightsToday = weights[:,jj]
+        CP_cashWeight[jj] = float(len(weightsToday[weightsToday==0.])) / len(weightsToday)
+
+    ############################
+    ###
+    ### compute weights ranking and keep best
+    ### 'best' are numberStocksTraded*%risingStocks
+    ### - weights need to sum to 100%
+    ###
+    ############################
+
+    weightRank = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=int)
+
+    weightRank = bn.rankdata(weights,axis=0)
+    # reverse the ranks (low ranks are biggest gainers)
+    maxrank = np.max(weightRank)
+    weightRank -= maxrank-1
+    weightRank *= -1
+    weightRank += 2
+
+    # set top 'numberStocksTraded' to have weights sum to 1.0
+    for jj in np.arange(adjClose.shape[1]) :
+        ranksToday = weightRank[:,jj].copy()
+        weightsToday = weights[:,jj].copy()
+        weightsToday[ranksToday > numberStocksTraded] = 0.
+        if np.sum(weightsToday) > 0.:
+            weights[:,jj] = weightsToday / np.sum(weightsToday)
+        else:
+            weights[:,jj] = 1./len(weightsToday)
+
+    # set CASH to have weight based on CrashProtection
+    cash_index = symbols.index("CASH")
+    for jj in np.arange(adjClose.shape[1]) :
+        CPweights[ii,jj] = CP_cashWeight[jj]
+        weightRank[ii,jj] = 0
+        ranksToday = weightRank[:,jj].copy()
+        weightsToday = CPweights[:,jj].copy()
+        weightsToday[ranksToday > numberStocksTraded] = 0.
+        if np.sum(weightsToday) > 0.:
+            CPweights[:,jj] = weightsToday / np.sum(weightsToday)
+        else:
+            CPweights[:,jj] = 1./len(weightsToday)
+
+    # hold weights constant for month
+    for jj in np.arange(LongPeriod,adjClose.shape[1]) :
+        start_date = max( jj - LongPeriod, 0 )
+        yesterdayMonth = datearray[jj-1].month
+        todayMonth = datearray[jj].month
+        if todayMonth == yesterdayMonth:
+            weights[:,jj] = weights[:,jj-1]
+            CPweights[:,jj] = CPweights[:,jj-1]
+
     # input symbols and company names from text file
     companyName_file = os.path.join( os.getcwd(), "symbols",  "companyNames.txt" )
     with open( companyName_file, "r" ) as f:
@@ -524,22 +1727,24 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
 
     # print list showing current rankings and weights
     # - symbol
-    # - rank
+    # - rank (at begining of month)
+    # - rank (most recent trading day)
     # - weight from sharpe ratio
     # - price
     import os
     rank_text = "<div id='rank_table_container'><h3>"+"<p>Current stocks, with ranks, weights, and prices are :</p></h3><font face='courier new' size=3><table border='1'> \
-               <tr><td>Rank \
+               </td><td>Rank (today) \
                </td><td>Symbol \
                </td><td>Company \
                </td><td>Weight \
+               </td><td>CP Weight \
                </td><td>Price  \
                </td><td>Trend  \
                </td></tr>\n"
     for i, isymbol in enumerate(symbols):
         for j in range(len(symbols)):
-            if int( deltaRank[j,-1] ) == i :
-                if signal2D[j,-1] == 1.:
+            if int( weightRank[j,-1] ) == i :
+                if signal2D_daily[j,-1] == 1.:
                     trend = 'up'
                 else:
                     trend = 'down'
@@ -552,22 +1757,33 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthr
                     companyName = ""
 
                 rank_text = rank_text + \
-                       "<tr><td>" + format(deltaRank[j,-1],'6.0f')  + \
+                       "<tr><td>" + format(weightRank[j,-1],'6.0f')  + \
                        "<td>" + format(symbols[j],'5s')  + \
                        "<td>" + format(companyName,'15s')  + \
-                       "<td>" + format(monthgainlossweight[j,-1],'5.03f') + \
+                       "<td>" + format(weights[j,-1],'5.03f') + \
+                       "<td>" + format(CPweights[j,-1],'5.03f') + \
                        "<td>" + format(adjClose[j,-1],'6.2f')  + \
                        "<td>" + trend  + \
                        "</td></tr>  \n"
     rank_text = rank_text + "</table></div>\n"
 
-    filepath = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_RankList.txt" )
-    with open( filepath, "w" ) as f:
-        f.write(rank_text)
+    print "leaving function MAA_WeightedRank_2D..."
 
-    print "leaving function sharpeWeightedRank_2D..."
+    """
+    print " symbols = ", symbols
+    print " weights = ", weights[:,-1]
+    print " CPweights = ", CPweights[:,-1]
 
-    return monthgainlossweight
+    print " number NaNs in weights = ", weights[np.isnan(weights)].shape
+    print " number NaNs in CPweights = ", CPweights[np.isnan(CPweights)].shape
+
+    print " NaNs in monthgainlossweight = ", weights[np.isnan(weights)].shape
+    testsum = np.sum(weights,axis=0)
+    print " testsum shape, min, and max = ", testsum.shape, testsum.min(), testsum.max()
+    """
+
+    return weights, CPweights
+
 
 #----------------------------------------------
 def UnWeightedRank_2D(datearray,adjClose,signal2D,LongPeriod,rankthreshold,riskDownside_min,riskDownside_max,rankThresholdPct):
