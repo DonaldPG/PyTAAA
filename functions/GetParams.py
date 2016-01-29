@@ -1,4 +1,4 @@
-
+import os
 import ConfigParser
 
 def from_config_file(config_filename):
@@ -26,6 +26,7 @@ def GetParams():
 
     toaddrs = config.get("Email", "To").split()
     fromaddr = config.get("Email", "From").split()
+    toSMS = config.get("Text_from_email", "phoneEmail").split()
     pw = config.get("Email", "PW")
     runtime = config.get("Setup", "Runtime").split()
     pausetime = config.get("Setup", "Pausetime").split()
@@ -75,19 +76,35 @@ def GetParams():
     # put params in a dictionary
     params['fromaddr'] = str(fromaddr[0])
     params['toaddrs'] = str(toaddrs[0])
+    params['toSMS'] = toSMS[0]
     params['PW'] = str(pw)
     params['runtime'] = max_uptime
     params['pausetime'] = seconds_between_runs
     params['numberStocksTraded'] = int( config.get("Valuation", "numberStocksTraded") )
+    params['trade_cost'] = float( config.get("Valuation", "trade_cost") )
     params['monthsToHold'] = int( config.get("Valuation", "monthsToHold") )
     params['LongPeriod'] = int( config.get("Valuation", "LongPeriod") )
+    params['stddevThreshold'] = float( config.get("Valuation", "stddevThreshold") )
     params['MA1'] = int( config.get("Valuation", "MA1") )
     params['MA2'] = int( config.get("Valuation", "MA2") )
     params['MA3'] = int( config.get("Valuation", "MA3") )
+    params['MA2offset'] = params['MA3'] - params['MA2']
     params['MA2factor'] = float( config.get("Valuation", "sma2factor") )
     params['rankThresholdPct'] = float( config.get("Valuation", "rankThresholdPct") )
     params['riskDownside_min'] = float( config.get("Valuation", "riskDownside_min") )
     params['riskDownside_max'] = float( config.get("Valuation", "riskDownside_max") )
+    params['narrowDays'] = [ float(config.get("Valuation", "narrowDays_min")), float(config.get("Valuation", "narrowDays_max")) ]
+    params['mediumDays'] = [ float(config.get("Valuation", "mediumDays_min")), float(config.get("Valuation", "mediumDays_max")) ]
+    params['wideDays'] = [ float(config.get("Valuation", "wideDays_min")), float(config.get("Valuation", "wideDays_max")) ]
+    params['uptrendSignalMethod'] = config.get("Valuation", "uptrendSignalMethod")
+    params['lowPct'] = config.get("Valuation", "lowPct")
+    params['hiPct'] = config.get("Valuation", "hiPct")
+
+    params['minperiod'] = int( config.get("Valuation", "minperiod") )
+    params['maxperiod'] = int( config.get("Valuation", "maxperiod") )
+    params['incperiod'] = int( config.get("Valuation", "incperiod") )
+    params['numdaysinfit'] = int( config.get("Valuation", "numdaysinfit") )
+    params['offset'] = int( config.get("Valuation", "offset") )
 
     return params
 
@@ -144,6 +161,28 @@ def GetHoldings():
     holdings['buyprice'] = config.get("Holdings", "buyprice").split()
     holdings['cumulativecashin'] = config.get("Holdings", "cumulativecashin").split()
 
+    # get rankings for latest dates for all stocks in index
+    # read the parameters form the configuration file
+    print " ...inside GetHoldings...  pwd = ", os.getcwd()
+    config_filename = "PyTAAA_ranks.params"
+    configfile = open(config_filename, "r")
+    config.readfp(configfile)
+    symbols = config.get("Ranks", "symbols").split()
+    ranks = config.get("Ranks", "ranks").split()
+    # put ranks params in dictionary
+    holdings_ranks = []
+    print "\n\n********************************************************"
+    print " ...inside GetParams/GetHoldings..."
+    for i, holding in enumerate(holdings['stocks']):
+        for j,symbol in enumerate(symbols):
+            print "... j, symbol, rank = ", j, symbol, ranks[j]
+            if symbol == holding:
+                print "                                       MATCH ... i, symbol, rank = ", i, holding, symbols[j], ranks[j]
+                holdings_ranks.append( ranks[j] )
+                break
+    holdings['ranks'] = holdings_ranks
+    print "\n\n********************************************************"
+    
     return holdings
 
 
