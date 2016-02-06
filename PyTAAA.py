@@ -217,7 +217,11 @@ def IntervalTask():
         regulartext = regulartext+"<br>elapsed time for web updates, computations, updating web page "+format(elapsed_time_total,'6.2f')+" seconds</p>"
     else:
         regulartext = regulartext+"<br>elapsed time for web updates, computations, updating web page "+format(elapsed_time_total/60.,'6.2f')+" minutes</p>"
-
+    regulartext = regulartext+"<br><p>Links:"
+    regulartext = regulartext+"<br><a href=pyTAAAweb_symbolCharts_MonthStartRank.html>Stock Charts Ordered by Ranking at Start of Month</a>"
+    regulartext = regulartext+"<br><a href=pyTAAAweb_symbolCharts_TodayRank.html>Stock Charts Ordered by Ranking Today</a>"
+    regulartext = regulartext+"<br><a href=pyTAAAweb_symbolCharts_recentGainRank.html>Stock Charts Ordered by Recent Gain Ranking</a>"
+    regulartext = regulartext+"<br><a href=pyTAAAweb_symbolCharts_recentTrendRatioRank.html>Stock Charts Ordered by Ranking Today using ratio of recent trends without and with gap</a>"
 
     # Customize and send email
     # - based on day of month and whether market is open or closed
