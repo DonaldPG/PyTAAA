@@ -300,16 +300,51 @@ def recentChannelFit(x,minperiod=4,maxperiod=12,incperiod=3,numdaysinfit=28, off
     import warnings
     warnings.simplefilter('ignore', np.RankWarning)
 
-    pctChannel = np.zeros( (x.shape[0]), 'float' )
+    ##pctChannel = np.zeros( (x.shape[0]), 'float' )
     # calculate linear trend over 'numdaysinfit' with 'offset'
     minchannel,maxchannel = dpgchannel(x,minperiod,maxperiod,incperiod)
-    minchannel_trenddata = minchannel[-(numdaysinfit+offset):-offset]
-    regression1 = np.polyfit(range(-(numdaysinfit+offset),-offset), minchannel_trenddata, 1)
-    minchannel_trend = regression1[-1]
-    maxchannel_trenddata = maxchannel[-(numdaysinfit+offset):-offset]
-    regression2 = np.polyfit(range(-(numdaysinfit+offset),-offset), maxchannel_trenddata, 1)
-    maxchannel_trend = regression2[-1]
-    pctChannel = (x[-1]-minchannel_trend) / (maxchannel_trend-minchannel_trend)
+    if offset == 0:
+        minchannel_trenddata = minchannel[-(numdaysinfit+offset):]
+        '''
+        print "numdaysinfit = ", numdaysinfit
+        print "offset = ", offset
+        print "len(x) = ", len(x)
+        print "len(minchannel) = ", len(minchannel)
+        print "most recent quote = ", x[-1]
+        print "quote[-offset:] = ", x[-offset:]
+        print "quote[-(numdaysinfit+offset)+1:-offset+1] = ", x[-(numdaysinfit+offset):]
+        print "len(quote[-(numdaysinfit+offset)+1:-offset+1]) = ", len(x[-(numdaysinfit+offset):])
+        print "length of days = ", len(range(-(numdaysinfit+offset)+1,-offset+1))
+        print "relative days = ", range(-(numdaysinfit+offset)+1,-offset+1)
+        print "length of quotes = ", len(minchannel_trenddata)
+        print "quotes = ", minchannel_trenddata
+        '''
+        regression1 = np.polyfit(range(-(numdaysinfit+offset)+1,-offset+1), minchannel_trenddata, 1)
+        minchannel_trend = regression1[-1]
+        maxchannel_trenddata = maxchannel[-(numdaysinfit+offset):]
+        regression2 = np.polyfit(range(-(numdaysinfit+offset)+1,-offset+1), maxchannel_trenddata, 1)
+    else:
+        minchannel_trenddata = minchannel[-(numdaysinfit+offset)+1:-offset+1]
+        '''
+        print "numdaysinfit = ", numdaysinfit
+        print "offset = ", offset
+        print "len(x) = ", len(x)
+        print "len(minchannel) = ", len(minchannel)
+        print "most recent quote = ", x[-1]
+        print "quote[-offset:] = ", x[-offset:]
+        print "quote[-(numdaysinfit+offset)+1:-offset+1] = ", x[-(numdaysinfit+offset)+1:-offset+1]
+        print "len(quote[-(numdaysinfit+offset)+1:-offset+1]) = ", len(x[-(numdaysinfit+offset)+1:-offset+1])
+        print "length of days = ", len(range(-(numdaysinfit+offset)+1,-offset+1))
+        print "relative days = ", range(-(numdaysinfit+offset)+1,-offset+1)
+        print "length of quotes = ", len(minchannel_trenddata)
+        print "quotes = ", minchannel_trenddata
+        '''
+        regression1 = np.polyfit(range(-(numdaysinfit+offset)+1,-offset+1), minchannel_trenddata, 1)
+        minchannel_trend = regression1[-1]
+        maxchannel_trenddata = maxchannel[-(numdaysinfit+offset)+1:-offset+1]
+        regression2 = np.polyfit(range(-(numdaysinfit+offset)+1,-offset+1), maxchannel_trenddata, 1)
+    ##maxchannel_trend = regression2[-1]
+    ##pctChannel = (x[-1]-minchannel_trend) / (maxchannel_trend-minchannel_trend)
 
     return regression1, regression2
 
@@ -363,6 +398,105 @@ def recentTrendAndStdDevs(x,datearray,minperiod=4,maxperiod=12,incperiod=3,numda
 
 #----------------------------------------------
 
+def recentTrendAndMidTrendChannelFitWithAndWithoutGap(x,minperiod=4,maxperiod=12,incperiod=3,numdaysinfit=28,numdaysinfit2=20, offset=3):
+    ###
+    ### - Cmpute linear trend in upper and lower channels and compare
+    ###   actual stock price to forecast range
+    ### - Compute 2nd linear trend in upper and lower channels only for
+    ###   small number of recent prices without gap
+    ### - return pctChannel for each stock
+    ### - calling function will use pctChannel as signal.
+    ###   * e.g. numStdDevs < -1. is signal that down-trend begins
+    ###   * e.g. whereas  > 1.0 is signal of new up-trend beginning
+
+    # calculate dpgchannel for all stocks in x
+    # - x[stock_number,date]
+    # - 'numdaysinfit' describes number of days over which to calculate a linear trend
+    # - 'offset'  describes number days to forecast channel trends forward
+
+    # fit short-term recent trend channel with offset from current date for plotting
+    gappedLowerFit, gappedUpperFit = recentChannelFit( x,
+                                           minperiod=minperiod,
+                                           maxperiod=maxperiod,
+                                           incperiod=incperiod,
+                                           numdaysinfit=numdaysinfit,
+                                           offset=offset)
+    #recentFitDates = datearray[-numdaysinfit-offset:-offset+1]
+    relativedates = range(-numdaysinfit-offset,-offset+1)
+    p = np.poly1d(gappedUpperFit)
+    upperTrend = p(relativedates)
+    currentUpper = p(0) * 1.
+    p = np.poly1d(gappedLowerFit)
+    lowerTrend = p(relativedates)
+    currentLower = p(0) * 1.
+    midTrend = (upperTrend+lowerTrend)/2.
+    #residuals = x[-numdaysinfit-offset:-offset+1] - midTrend
+    #fitStdDev = np.std(residuals)
+    fitStdDev = np.mean( upperTrend - lowerTrend )/2.
+    #print ".....gappedLowerFit, gappedUpperFit = ", gappedLowerFit, gappedUpperFit
+    #print ".....fitStdDev,currentUpper,currentLower,x[-1] = ", fitStdDev, currentUpper,currentLower,x[-1]
+    currentResidual = x[-1] - (currentUpper + currentLower)/2.
+    numStdDevs = currentResidual / fitStdDev
+
+    # calculate gain or loss over the period (with offset)
+    gainloss_period = x[-(numdaysinfit+offset)+1:-offset+1] / x[-(numdaysinfit+offset):-offset]
+    gainloss_period[np.isnan(gainloss_period)] = 1.
+    gainloss_cumu = np.cumprod( gainloss_period )[-1] -1.
+
+    pctChannel = (x[-1]-currentUpper) / (currentUpper-currentLower)
+
+
+    # fit shorter trend without offset
+    NoGapLowerFit, NoGapUpperFit = recentChannelFit( x,
+                                           minperiod=minperiod,
+                                           maxperiod=maxperiod,
+                                           incperiod=incperiod,
+                                           numdaysinfit=numdaysinfit2,
+                                           offset=0)
+    #recentFitDates = datearray[-numdaysinfit2:]
+    relativedates = range(-numdaysinfit2+1,1)
+    p = np.poly1d(NoGapUpperFit)
+    NoGapUpperTrend = p(relativedates)
+    NoGapCurrentUpper = p(0) * 1.
+    p = np.poly1d(NoGapLowerFit)
+    NoGapLowerTrend = p(relativedates)
+    NoGapCurrentLower = p(0) * 1.
+    NoGapMidTrend = (NoGapUpperTrend+NoGapLowerTrend)/2.
+
+    '''
+    # calculate gain or loss over the shorter period (with no offset)
+    gainloss_period = x[-(numdaysinfit2+1):1] / x[-(numdaysinfit2):]
+    gainloss_period[np.isnan(gainloss_period)] = 1.
+    gainloss_cumu = np.cumprod( gainloss_period )[-1] -1.
+    '''
+
+    '''
+    # calculate relative gain or loss over entire period
+    gainloss_cumu2 = NoGapMidTrend[-1]/midTrend[0] -1.
+    relative_GainLossRatio = (NoGapCurrentUpper + NoGapCurrentLower)/(currentUpper + currentLower)
+    '''
+
+    '''
+    import matplotlib.pylab as plt
+    plt.figure(1)
+    plt.clf()
+    plt.grid(True)
+    plt.plot(datearray[-(numdaysinfit+offset+20):],x[-(numdaysinfit+offset+20):],'k-')
+    relativedates = range(-numdaysinfit-offset,-offset+1)
+    plt.plot(datearray[np.array(relativedates)],upperTrend,'y-')
+    plt.plot(datearray[np.array(relativedates)],lowerTrend,'y-')
+    plt.plot([datearray[-1]],[(upperTrend[-1]+lowerTrend[-1])/2.],'y.',ms=30)
+    relativedates = range(-numdaysinfit2,0)
+    plt.plot(datearray[np.array(relativedates)],NoGapUpperTrend,'c-')
+    plt.plot(datearray[np.array(relativedates)],NoGapLowerTrend,'c-')
+    plt.plot([datearray[-1]],[(NoGapUpperTrend[-1]+NoGapLowerTrend[-1])/2.],'c.',ms=30)
+    plt.show()
+    '''
+
+    return lowerTrend, upperTrend, NoGapLowerTrend, NoGapUpperTrend
+
+#----------------------------------------------
+
 def recentTrendAndMidTrendWithGap(x,datearray,minperiod=4,maxperiod=12,incperiod=3,numdaysinfit=28,numdaysinfit2=20, offset=3):
     ###
     ### - Cmpute linear trend in upper and lower channels and compare
@@ -373,12 +507,12 @@ def recentTrendAndMidTrendWithGap(x,datearray,minperiod=4,maxperiod=12,incperiod
     ### - calling function will use pctChannel as signal.
     ###   * e.g. numStdDevs < -1. is signal that down-trend begins
     ###   * e.g. whereas  > 1.0 is signal of new up-trend beginning
-    
+
     # calculate dpgchannel for all stocks in x
     # - x[stock_number,date]
     # - 'numdaysinfit' describes number of days over which to calculate a linear trend
     # - 'offset'  describes number days to forecast channel trends forward
-    
+
     # fit short-term recent trend channel with offset from current date for plotting
     gappedLowerFit, gappedUpperFit = recentChannelFit( x,
                                            minperiod=minperiod,
@@ -402,24 +536,24 @@ def recentTrendAndMidTrendWithGap(x,datearray,minperiod=4,maxperiod=12,incperiod
     #print ".....fitStdDev,currentUpper,currentLower,x[-1] = ", fitStdDev, currentUpper,currentLower,x[-1]
     currentResidual = x[-1] - (currentUpper + currentLower)/2.
     numStdDevs = currentResidual / fitStdDev
-    
+
     # calculate gain or loss over the period (with offset)
     gainloss_period = x[-(numdaysinfit+offset)+1:-offset+1] / x[-(numdaysinfit+offset):-offset]
     gainloss_period[np.isnan(gainloss_period)] = 1.
     gainloss_cumu = np.cumprod( gainloss_period )[-1] -1.
-    
+
     pctChannel = (x[-1]-currentUpper) / (currentUpper-currentLower)
-    
-    
+
+
     # fit shorter trend without offset
     NoGapLowerFit, NoGapUpperFit = recentChannelFit( x,
                                            minperiod=minperiod,
                                            maxperiod=maxperiod,
                                            incperiod=incperiod,
                                            numdaysinfit=numdaysinfit2,
-                                           offset=1)
+                                           offset=0)
     recentFitDates = datearray[-numdaysinfit2:]
-    relativedates = range(-numdaysinfit2,0)
+    relativedates = range(-numdaysinfit2,1)
     p = np.poly1d(NoGapUpperFit)
     NoGapUpperTrend = p(relativedates)
     NoGapCurrentUpper = p(0) * 1.
@@ -427,18 +561,18 @@ def recentTrendAndMidTrendWithGap(x,datearray,minperiod=4,maxperiod=12,incperiod
     NoGapLowerTrend = p(relativedates)
     NoGapCurrentLower = p(0) * 1.
     NoGapMidTrend = (NoGapUpperTrend+NoGapLowerTrend)/2.
-    
+
     '''
     # calculate gain or loss over the shorter period (with no offset)
     gainloss_period = x[-(numdaysinfit2+1):1] / x[-(numdaysinfit2):]
     gainloss_period[np.isnan(gainloss_period)] = 1.
     gainloss_cumu = np.cumprod( gainloss_period )[-1] -1.
     '''
-    
+
     # calculate relative gain or loss over entire period
     gainloss_cumu2 = NoGapMidTrend[-1]/midTrend[0] -1.
     relative_GainLossRatio = (NoGapCurrentUpper + NoGapCurrentLower)/(currentUpper + currentLower)
-    
+
     import matplotlib.pylab as plt
     plt.figure(1)
     plt.clf()
@@ -1231,6 +1365,7 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
                    </td><td>Trend  \
                    </td><td>recent Gain or Loss (excludes a few days)  \
                    </td><td>stdDevs above or below trend  \
+                   </td><td>trends ratio (%) with & wo gap  \
                    </td><td>P/E ratio \
                    </td></tr>\n"
         ChannelPct_text = "channelPercent:"
@@ -1239,6 +1374,7 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
         stdevsAboveChannel = []
         floatChannelGainsLosses = []
         floatStdevsAboveChannel = []
+        trendsRatio = []
         for i, isymbol in enumerate(symbols):
             ### save current projected position in price channel calculated without recent prices
             """
@@ -1276,9 +1412,23 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
             floatStdevsAboveChannel.append(numStdDevs)
             ChannelPct_text = ChannelPct_text + format(pctChannel-1.,'6.1%')
 
+            lowerTrend, upperTrend, NoGapLowerTrend, NoGapUpperTrend = \
+                     recentTrendAndMidTrendChannelFitWithAndWithoutGap( \
+                                   adjClose[i,:], \
+                                   minperiod=params['minperiod'], \
+                                   maxperiod=params['maxperiod'], \
+                                   incperiod=params['incperiod'], \
+                                   numdaysinfit=params['numdaysinfit'], \
+                                   numdaysinfit2=params['numdaysinfit2'], \
+                                   offset=params['offset'])
+            midTrendEndPoint = (lowerTrend[-1]+upperTrend[-1])/2.
+            noGapMidTrendEndPoint = (NoGapLowerTrend[-1]+NoGapUpperTrend[-1])/2.
+            trendsRatio.append( noGapMidTrendEndPoint/midTrendEndPoint - 1. )
+
         path_symbolChartsSort_byRankBeginMonth = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_symbolCharts_MonthStartRank.html" )
         path_symbolChartsSort_byRankToday = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_symbolCharts_TodayRank.html" )
         path_symbolChartsSort_byRecentGainRank = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_symbolCharts_recentGainRank.html" )
+        path_symbolChartsSort_byRecentTrendsRatioRank = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_symbolCharts_recentTrendRatioRank.html" )
 
         pagetext_byRankBeginMonth = "<!DOCTYPE html>+\n"  +\
                                "<html>+\n"  +\
@@ -1298,6 +1448,12 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
                                "<title>pyTAAA web</title>+\n"  +\
                                "</head>+\n"  +\
                                "<br><h1>Symbol Charts Ordered by Recent Gain Ranking</h1>+\n"
+        pagetext_byRecentTrendRatioRank = "<!DOCTYPE html>+\n"  +\
+                               "<html>+\n"  +\
+                               "<head>+\n"  +\
+                               "<title>pyTAAA web</title>+\n"  +\
+                               "</head>+\n"  +\
+                               "<br><h1>Symbol Charts Ordered by Recent Trend Ratio Ranking</h1>+\n"
 
         floatChannelGainsLosses = np.array(floatChannelGainsLosses)
         floatChannelGainsLosses[np.isinf(floatChannelGainsLosses)] = -999.
@@ -1307,10 +1463,16 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
         floatStdevsAboveChannel[np.isinf(floatStdevsAboveChannel)] = -999.
         floatStdevsAboveChannel[np.isneginf(floatStdevsAboveChannel)] = -999.
         floatStdevsAboveChannel[np.isnan(floatStdevsAboveChannel)] = -999.
+        floatTrendsRatio = np.array(trendsRatio)
+        floatTrendsRatio[np.isinf(floatTrendsRatio)] = -999.
+        floatTrendsRatio[np.isneginf(floatTrendsRatio)] = -999.
+        floatTrendsRatio[np.isnan(floatTrendsRatio)] = -999.
+
         RecentGainRank = len(floatChannelGainsLosses) - bn.rankdata( floatChannelGainsLosses )
         RecentGainStdDevRank = len(floatStdevsAboveChannel)- bn.rankdata( floatStdevsAboveChannel )
         RecentOrder = np.argsort( RecentGainRank + RecentGainStdDevRank )
         RecentRank = np.argsort( RecentOrder )
+        RecentTrendsRatioRank = len(floatTrendsRatio) - bn.rankdata( floatTrendsRatio )
 
         peList = []
         floatPE_list = []
@@ -1360,6 +1522,7 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
                            "<td>" + trend  + \
                            "<td>" + channelGainsLosses[j]  + \
                            "<td>" + stdevsAboveChannel[j]  + \
+                           "<td>" + format(floatTrendsRatio[j],'4.1%') + \
                            "<td>" + pe  + \
                            "</td></tr>  \n"
 
@@ -1388,15 +1551,16 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
                     pe = peList[j]
                     pagetext_byRankBeginMonth = pagetext_byRankBeginMonth +"<br><p> </p><p> </p><p> </p>"+\
                        "<font face='courier new' size=3><table border='1'>" +\
-                       "<tr><td>Rank (start of month)" +\
-                       "</td><td>Rank (today)" +\
+                       "<tr><td>Rank<br>(start of month)" +\
+                       "</td><td>Rank<br>(today)" +\
                        "</td><td>Symbol" +\
                        "</td><td>Company" +\
                        "</td><td>Weight" +\
                        "</td><td>Price"  +\
                        "</td><td>Trend"  +\
-                       "</td><td>recent Gain or Loss (excludes a few days)"  +\
-                       "</td><td>stdDevs above or below trend"  +\
+                       "</td><td>recent<br>Gain or Loss<br>(excludes a few days)"  +\
+                       "</td><td>stdDevs above<br>or below trend"  +\
+                       "</td><td>trends ratio (%)<br>with & wo gap"  +\
                        "</td><td>P/E ratio" +\
                        "</td></tr>\n"+\
                        "<tr><td>" + format(deltaRank[j,-1],'6.0f')  + \
@@ -1408,9 +1572,10 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
                        "<td>" + trend  + \
                        "<td>" + channelGainsLosses[j]  + \
                        "<td>" + stdevsAboveChannel[j]  + \
+                       "<td>" + format(floatTrendsRatio[j],'4.1%') + \
                        "<td>" + pe  + \
                        "</td></tr>  \n"+\
-                       u"<br><img src='0_recent_" +symbols[j]+ u".png' alt='PyTAAA by DonaldPG' width='850' height='500'>"
+                       u"<br><img src='0_recent_" +symbols[j]+ u".png' alt='PyTAAA by DonaldPG' width='1000' height='500'>"
 
                 if i == deltaRankToday[j]:
                     if signal2D_daily[j,-1] == 1.:
@@ -1427,15 +1592,16 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
                     pe = peList[j]
                     pagetext_byRankToday = pagetext_byRankToday +"<br><p> </p><p> </p><p> </p><br>"+\
                        "<font face='courier new' size=3><table border='1'>" +\
-                       "<tr><td>Rank (start of month)" +\
-                       "</td><td>Rank (today)" +\
+                       "<tr><td>Rank <br>(start of month)" +\
+                       "</td><td>Rank<br>(today)" +\
                        "</td><td>Symbol" +\
                        "</td><td>Company" +\
                        "</td><td>Weight" +\
                        "</td><td>Price"  +\
                        "</td><td>Trend"  +\
-                       "</td><td>recent Gain or Loss (excludes a few days)"  +\
-                       "</td><td>stdDevs above or below trend"  +\
+                       "</td><td>recent<br>Gain or Loss<br>(excludes a few days)"  +\
+                       "</td><td>stdDevs above<br>or below trend"  +\
+                       "</td><td>trends ratio (%)<br>with & wo gap"  +\
                        "</td><td>P/E ratio" +\
                        "</td></tr>\n"+\
                        "<tr><td>" + format(deltaRank[j,-1],'6.0f')  + \
@@ -1447,9 +1613,10 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
                        "<td>" + trend  + \
                        "<td>" + channelGainsLosses[j]  + \
                        "<td>" + stdevsAboveChannel[j]  + \
+                       "<td>" + format(floatTrendsRatio[j],'4.1%') + \
                        "<td>" + pe  + \
                        "</td></tr>  \n"+\
-                       u"<br><img src='0_recent_" +symbols[j]+ u".png' alt='PyTAAA by DonaldPG' width='850' height='500'>"
+                       u"<br><img src='0_recent_" +symbols[j]+ u".png' alt='PyTAAA by DonaldPG' width='1000' height='500'>"
 
                 if i == RecentRank[j]:
                     if signal2D_daily[j,-1] == 1.:
@@ -1466,15 +1633,16 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
                     pe = peList[j]
                     pagetext_byRecentGainRank = pagetext_byRecentGainRank +"<br><p> </p><p> </p><p> </p><br>"+\
                        "<font face='courier new' size=3><table border='1'>" +\
-                       "<tr><td>Rank (start of month)" +\
-                       "</td><td>Rank (today)" +\
+                       "<tr><td>Rank<br>(start of month)" +\
+                       "</td><td>Rank<br>(today)" +\
                        "</td><td>Symbol" +\
                        "</td><td>Company" +\
                        "</td><td>Weight" +\
                        "</td><td>Price"  +\
                        "</td><td>Trend"  +\
-                       "</td><td>recent Gain or Loss (excludes a few days)"  +\
-                       "</td><td>stdDevs above or below trend"  +\
+                       "</td><td>recent<br>Gain or Loss<br>(excludes a few days)"  +\
+                       "</td><td>stdDevs above<br>or below trend"  +\
+                       "</td><td>trends ratio (%)<br>with & wo gap"  +\
                        "</td><td>P/E ratio" +\
                        "</td></tr>\n"+\
                        "<tr><td>" + format(deltaRank[j,-1],'6.0f')  + \
@@ -1486,11 +1654,55 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
                        "<td>" + trend  + \
                        "<td>" + channelGainsLosses[j]  + \
                        "<td>" + stdevsAboveChannel[j]  + \
+                       "<td>" + format(floatTrendsRatio[j],'4.1%') + \
                        "<td>" + pe  + \
                        "</td></tr>  \n"+\
-                       u"<br><img src='0_recent_" +symbols[j]+ u".png' alt='PyTAAA by DonaldPG' width='850' height='500'>"
+                       u"<br><img src='0_recent_" +symbols[j]+ u".png' alt='PyTAAA by DonaldPG' width='1000' height='500'>"
+
+                if i == RecentTrendsRatioRank[j]:
+                    if signal2D_daily[j,-1] == 1.:
+                        trend = 'up'
+                    else:
+                        trend = 'down'
+                    # search for company name
+                    try:
+                        symbolIndex = companySymbolList.index(symbols[j])
+                        companyName = companyNameList[symbolIndex]
+                    except:
+                        companyName = ""
+                    #pe = str(getQuote(symbols[j])['PE'][0])
+                    pe = peList[j]
+                    pagetext_byRecentTrendRatioRank = pagetext_byRecentTrendRatioRank +"<br><p> </p><p> </p><p> </p><br>"+\
+                       "<font face='courier new' size=3><table border='1'>" +\
+                       "<tr><td>Rank<br>(start of month)" +\
+                       "</td><td>Rank<br>(today)" +\
+                       "</td><td>Symbol" +\
+                       "</td><td>Company" +\
+                       "</td><td>Weight" +\
+                       "</td><td>Price"  +\
+                       "</td><td>Trend"  +\
+                       "</td><td>recent<br>Gain or Loss<br>(excludes a few days)"  +\
+                       "</td><td>stdDevs above<br>or below trend"  +\
+                       "</td><td>trends ratio (%)<br>with & wo gap"  +\
+                       "</td><td>P/E ratio" +\
+                       "</td></tr>\n"+\
+                       "<tr><td>" + format(deltaRank[j,-1],'6.0f')  + \
+                       "<td>" + format(deltaRankToday[j],'6.0f')  + \
+                       "<td>" + format(symbols[j],'5s')  + \
+                       "<td>" + format(companyName,'15s')  + \
+                       "<td>" + format(monthgainlossweight[j,-1],'5.03f') + \
+                       "<td>" + format(adjClose[j,-1],'6.2f')  + \
+                       "<td>" + trend  + \
+                       "<td>" + channelGainsLosses[j]  + \
+                       "<td>" + stdevsAboveChannel[j]  + \
+                       "<td>" + format(floatTrendsRatio[j],'4.1%') + \
+                       "<td>" + pe  + \
+                       "</td></tr>  \n"+\
+                       u"<br><img src='0_recent_" +symbols[j]+ u".png' alt='PyTAAA by DonaldPG' width='1000' height='500'>"
 
         medianChannelGainsLosses = np.median(floatChannelGainsLosses)
+        medianTrendsRatio = np.median(floatTrendsRatio)
+        avgTrendsRatio = np.mean(floatTrendsRatio)
         medianStdevsAboveChannel = np.median(floatStdevsAboveChannel)
 
         print "peList = ", floatPE_list
@@ -1504,6 +1716,8 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
         avg_performance_text = "\n\n\n<font face='courier new' size=5><p>Average recent performance:</p></h3><font face='courier new' size=4>"+\
                                "<p>average trend excluding several days  = "+format(avgChannelGainsLosses,'6.1%')+"<br>"+\
                                "median trend excluding several days  = "+format(medianChannelGainsLosses,'6.1%')+"</p></h3><font face='courier new' size=4>"+\
+                               "<p>average ratio of trend wo & with last several dayss  = "+format(avgTrendsRatio,'6.1%')+"<br>"+\
+                               "median ratio of trend wo & with last several days  = "+format(medianTrendsRatio,'6.1%')+"</p></h3><font face='courier new' size=4>"+\
                                "<p>average number stds above/below trend = "+format(avgStdevsAboveChannel,'5.1f')+"<br>"+\
                                "median number stds above/below trend = "+format(medianStdevsAboveChannel,'5.1f')+"</p></h3><font face='courier new' size=4>"+\
                                "<p>average P/E = "+format(averagePE,'5.1f')+"<br>"+\
@@ -1526,6 +1740,10 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
         filepath = path_symbolChartsSort_byRecentGainRank
         with open( filepath, "w" ) as f:
             f.write(pagetext_byRecentGainRank)
+
+        filepath = path_symbolChartsSort_byRecentTrendsRatioRank
+        with open( filepath, "w" ) as f:
+            f.write(pagetext_byRecentTrendRatioRank)
 
         ########################################################################
         ### save current ranks to params file
