@@ -34,7 +34,7 @@ def makeValuePlot(  ):
                 try:
                     statusline = lines[i]
                     statusline_list = (statusline.split("\r")[0]).split(" ")
-                    if len( statusline_list ) == 4:
+                    if len( statusline_list ) >= 4:
                         date.append( datetime.datetime.strptime( statusline_list[1], '%Y-%m-%d') )
                         value.append( float(statusline_list[3]) )
                 except:
