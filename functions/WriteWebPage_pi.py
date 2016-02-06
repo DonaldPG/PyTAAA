@@ -62,6 +62,7 @@ def ftpMoveDirectory(  ):
 
         transfer_list = os.listdir("./pyTAAA_web")
         transfer_list.append( '../PyTAAA_holdings.params' )
+        transfer_list.append( '../PyTAAA_status.params' )
 
         # remove png files from transfer_list except when market is open 10pm or before 8am
         today = datetime.datetime.now()
@@ -130,6 +131,7 @@ def piMoveDirectory(  ):
         source_directory = "./pyTAAA_web"
         transfer_list = os.listdir( source_directory )
         transfer_list.append( os.path.join( '..', 'PyTAAA_holdings.params' ) )
+        transfer_list.append( os.path.join( '..', 'PyTAAA_status.params' ) )
 
         print "\n\n ... diagnostic:  transfer_list = ", transfer_list
 
