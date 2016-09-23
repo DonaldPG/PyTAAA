@@ -72,7 +72,8 @@ def makeValuePlot(  ):
     valueSignal = np.zeros_like( signal )
     valueSignal[:5] = sortedDailyValue[:5]
     for ii in range( 4, len(signal) ):
-        if signal[ii] == 11000.:
+		# delay signal usage by one day compared to computation
+        if signal[ii-1] == 11000.:
             valueSignal[ii] = sortedDailyValue[ii]/sortedDailyValue[ii-1]*valueSignal[ii-1]
         else:
             valueSignal[ii] = valueSignal[ii-1]
@@ -96,6 +97,19 @@ def makeValuePlot(  ):
     text_x = date[0] + datetime.timedelta( x_range.days / 20. )
     text_y = ( np.max(value) - np.min(value) )* .05 + np.min(value)
     plt.text( text_x,text_y, "most recent value from "+str(date[-1].date())+"\nplotted at "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")+"\nCurrent signal = "+format(int(signal[-1]/11000.),'-2d'), fontsize=8 )
+	# set up to use dates for labels
+	xlocs = []
+	xlabels = []
+	for i in xrange(1,len(datearray)):
+		if datearray[i].year != datearray[i-1].year:
+			xlocs.append(i)
+			xlabels.append(str(datearray[i].year))
+	print "xlocs,xlabels = ", xlocs, xlabels
+	if len(xlocs) < 12 :
+		xticks(xlocs, xlabels)
+	else:
+		xticks(xlocs[::2], xlabels[::2])
+
     plt.savefig(figurepath)
     try:
         plt.close(1)
