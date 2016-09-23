@@ -200,19 +200,19 @@ def IntervalTask():
     if removedTickers != [] or addedTickers != []:
         message_text = message_text+"<br><p>There are changes in the stock list<p>"
         for i, ticker in enumerate( removedTickers ):
-            message_text = message_text+"<p> ...Ticker "+ticker+" has been removed from the Nasdaq100 index"
+            message_text = message_text+"<p> ...Ticker "+ticker+" has been removed from the stock index list"
         message_text += "<p>"
         for i, ticker in enumerate( addedTickers ):
-            message_text = message_text+"<p> ...Ticker "+ticker+" has been added to the Nasdaq100 index"
+            message_text = message_text+"<p> ...Ticker "+ticker+" has been added to the stock index list"
 
-    message_text = message_text+"<br><p>"+edition+" ediition software running at "+str(ip)
+    message_text = message_text+"<br><p>"+edition+" edition software running at "+str(ip)
 
     elapsed_time_total = time.time() - start_time_total
 
     # send an email with status and updates (tries up to 10 times for each call).
     boldtext = "time is "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
-    regulartext = message_text+"<br>elapsed time to update Nasdaq 100 companies from web "+format(elapsed_time_updateNaz100List,'6.2f')+" seconds"
-    regulartext = regulartext+"<br>elapsed time to update Nasdaq 100 stock prices from web "+format(elapsed_time,'6.2f')+" seconds"
+    regulartext = message_text+"<br>elapsed time to update stock index companies from web "+format(elapsed_time_updateNaz100List,'6.2f')+" seconds"
+    regulartext = regulartext+"<br>elapsed time to update stock index stock prices from web "+format(elapsed_time,'6.2f')+" seconds"
     if elapsed_time_total < 60 :
         regulartext = regulartext+"<br>elapsed time for web updates, computations, updating web page "+format(elapsed_time_total,'6.2f')+" seconds</p>"
     else:
@@ -221,7 +221,13 @@ def IntervalTask():
     regulartext = regulartext+"<br><a href=pyTAAAweb_symbolCharts_MonthStartRank.html>Stock Charts Ordered by Ranking at Start of Month</a>"
     regulartext = regulartext+"<br><a href=pyTAAAweb_symbolCharts_TodayRank.html>Stock Charts Ordered by Ranking Today</a>"
     regulartext = regulartext+"<br><a href=pyTAAAweb_symbolCharts_recentGainRank.html>Stock Charts Ordered by Recent Gain Ranking</a>"
+    regulartext = regulartext+"<br><a href=pyTAAAweb_symbolCharts_recentComboGainRank.html>Stock Charts Ordered by Recent Combo Gain Ranking</a>"
     regulartext = regulartext+"<br><a href=pyTAAAweb_symbolCharts_recentTrendRatioRank.html>Stock Charts Ordered by Ranking Today using ratio of recent trends without and with gap</a>"
+    regulartext = regulartext+"<br><a href=pyTAAAweb_symbolCharts_recentSharpeRatioRank.html>Stock Charts Ordered by recent sharpe ranking</a>"
+    regulartext = regulartext+"<br><p>Links to additional PyTAAA variants:"
+    regulartext = regulartext+"<br><a href=../pyTAAA_piweb/pyTAAAweb.html>PyTAAA using Nasdaq 100 (3 MAs method)</a>"
+    regulartext = regulartext+"<br><a href=../pyTAAA_web/pyTAAAweb.html>PyTAAA using Nasdaq 100 (3 minmax method)</a>"
+    regulartext = regulartext+"<br><a href=../pyTAAA_SP500web/pyTAAAweb.html>PyTAAA using S&P 500</a>"
 
     # Customize and send email
     # - based on day of month and whether market is open or closed
