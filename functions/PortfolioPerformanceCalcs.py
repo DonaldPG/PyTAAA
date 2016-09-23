@@ -12,6 +12,7 @@ from functions.allstats import *
 from functions.dailyBacktest import *
 from functions.TAfunctions import *
 from functions.CheckMarketOpen import *
+from functions.CountNewHighsLows import newHighsAndLows
 
 def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
 
@@ -305,7 +306,7 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
     today = datetime.datetime.now()
     hourOfDay = today.hour
 
-    if hourOfDay >= 22  or 11<hourOfDay<13:
+    if hourOfDay >= 1  or 11<hourOfDay<13:
         for ii in range( len(datearray) ):
             if datearray[ii].year > datearray[ii-1].year and datearray[ii].year == 2013:
                 firstdate_index = ii
@@ -347,13 +348,30 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
             quotes_despike = despike_2D( quotes, LongPeriod, stddevThreshold=stddevThreshold )
             # re-scale to have same value at beginning of plot
             quotes_despike *= quotes[0,firstdate_index]/quotes_despike[0,firstdate_index]
+
+            '''
             upperFit, lowerFit = recentChannelFit( adjClose[i,:],
                                                    minperiod=params['minperiod'],
                                                    maxperiod=params['maxperiod'],
                                                    incperiod=params['incperiod'],
                                                    numdaysinfit=params['numdaysinfit'],
                                                    offset=params['offset'])
-            recentFitDates = datearray[-params['numdaysinfit']-params['offset']:-params['offset']+1]
+            '''
+
+            lowerTrend, upperTrend, NoGapLowerTrend, NoGapUpperTrend = \
+                     recentTrendAndMidTrendChannelFitWithAndWithoutGap( \
+                                   adjClose[i,:], \
+                                   minperiod=params['minperiod'], \
+                                   maxperiod=params['maxperiod'], \
+                                   incperiod=params['incperiod'], \
+                                   numdaysinfit=params['numdaysinfit'], \
+                                   numdaysinfit2=params['numdaysinfit2'], \
+                                   offset=params['offset'])
+
+
+            #recentFitDates = datearray[-params['numdaysinfit']-params['offset']:-params['offset']+1]
+            #recentFitDates2 = datearray[-params['numdaysinfit']:]
+            '''
             upperTrend = []
             lowerTrend = []
             for iii in range(-params['numdaysinfit']-params['offset'],-params['offset']+1):
@@ -361,45 +379,63 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
                 upperTrend.append( p(iii) )
                 p = np.poly1d(lowerFit)
                 lowerTrend.append( p(iii) )
+            '''
 
-            try:
-                # plot recent (about 2 years) performance for each symbol in stock universe
-                plt.clf()
-                plt.grid(True)
-                plt.plot(datearray[firstdate_index:],adjClose[i,firstdate_index:])
-                plt.plot(datearray[firstdate_index:],signal2D[i,firstdate_index:]*adjClose[i,-1],lw=.25,alpha=.6)
-                plt.plot(datearray[firstdate_index:],signal2D_daily[i,firstdate_index:]*adjClose[i,-1],lw=.25,alpha=.6)
-                plt.plot(datearray[firstdate_index:],quotes_despike[0,firstdate_index:])
-                ymin = np.around(np.min(lowChannel[i,firstdate_index:]) * 0.85)
-                ymax = np.around(np.max(adjClose[i,firstdate_index:]) * 1.1)
-                plt.ylim((ymin,ymax))
-                xmin = datearray[firstdate_index]
-                xmax = datearray[-1] + datetime.timedelta( 10 )
-                plt.xlim((xmin,xmax))
-                if params['uptrendSignalMethod'] == 'percentileChannels':
-                    plt.plot(datearray[firstdate_index:],lowChannel[i,firstdate_index:],'m-')
-                    plt.plot(datearray[firstdate_index:],hiChannel[i,firstdate_index:],'m-')
-                plt.plot(recentFitDates,upperTrend,'y-')
-                plt.plot(recentFitDates,lowerTrend,'y-')
-                plot_text = str(adjClose[i,-7:])
-                plt.text(datearray[firstdate_index+10],ymin,plot_text, fontsize=10)
-                # put text line with most recent date at bottom of plot
-                # - get 7.5% of x-scale and y-scale for text location
-                x_range = datearray[-1] - datearray[firstdate_index]
-                text_x = datearray[firstdate_index] + datetime.timedelta( x_range.days / 20. )
-                text_y = ( np.max(adjClose[i,:]) - np.min(adjClose[i,:]) )* .085 + np.min(adjClose[i,:])
-                text_y = ( ymax - ymin )* .085 + ymin
-                plt.text( text_x,text_y, "most recent value from "+str(datearray[-1])+"\nplotted at "+today.strftime("%A, %d. %B %Y %I:%M%p")+"\nvalue = "+str(adjClose[i,-1]), fontsize=8 )
-                plt.title(symbols[i]+"\n"+ysq.get_company_name(symbols[i]))
-                # We change the fontsize of minor ticks label
-                plt.tick_params(axis='both', which='major', labelsize=8)
-                plt.tick_params(axis='both', which='minor', labelsize=6)
-                plotfilepath = os.path.join( filepath, "0_recent_"+symbols[i]+".png" )
-                print " ...inside PortfolioPerformancealcs... plotfilepath = ", plotfilepath
-                plt.savefig( plotfilepath, format='png' )
+
+            #try:
+            # plot recent (about 2 years) performance for each symbol in stock universe
+            plt.figure(10,figsize=(9,5))
+            plt.clf()
+            plt.grid(True)
+            #plt.plot(datearray[firstdate_index:],adjClose[i,firstdate_index:])
+            plt.plot(datearray[firstdate_index:],signal2D[i,firstdate_index:]*adjClose[i,-1],lw=.25,alpha=.6)
+            plt.plot(datearray[firstdate_index:],signal2D_daily[i,firstdate_index:]*adjClose[i,-1],lw=.25,alpha=.6)
+            plt.plot(datearray[firstdate_index:],quotes_despike[0,firstdate_index:],lw=.15)
+            ymin = np.around(np.min(lowChannel[i,firstdate_index:]) * 0.85)
+            ymax = np.around(np.max(adjClose[i,firstdate_index:]) * 1.1)
+            plt.ylim((ymin,ymax))
+            xmin = datearray[firstdate_index]
+            xmax = datearray[-1] + datetime.timedelta( 10 )
+            plt.xlim((xmin,xmax))
+            if params['uptrendSignalMethod'] == 'percentileChannels':
+                plt.plot(datearray[firstdate_index:],lowChannel[i,firstdate_index:],'m-')
+                plt.plot(datearray[firstdate_index:],hiChannel[i,firstdate_index:],'m-')
+            #plt.plot(recentFitDates,upperTrend,'y-')
+            #plt.plot(recentFitDates,lowerTrend,'y-')
+
+            relativedates = range(-params['numdaysinfit']-params['offset'],-params['offset']+1)
+            plt.plot(np.array(datearray)[relativedates],upperTrend,'y-',lw=.5)
+            plt.plot(np.array(datearray)[relativedates],lowerTrend,'y-',lw=.5)
+            #plt.plot(datearray[np.array(relativedates)],upperTrend,'y-')
+            #plt.plot(datearray[np.array(relativedates)],lowerTrend,'y-')
+            plt.plot([datearray[-1]],[(upperTrend[-1]+lowerTrend[-1])/2.],'y.',ms=10,alpha=.6)
+            plt.plot(np.array(datearray)[-params['numdaysinfit2']:],NoGapUpperTrend,ls='-',c=(0,0,1),lw=1.)
+            plt.plot(np.array(datearray)[-params['numdaysinfit2']:],NoGapLowerTrend,ls='-',c=(0,0,1),lw=1.)
+            plt.plot([datearray[-1]],[(NoGapUpperTrend[-1]+NoGapLowerTrend[-1])/2.],'.',c=(0,0,1),ms=10,alpha=.6)
+
+            plt.plot(datearray[firstdate_index:],adjClose[i,firstdate_index:],'k-',lw=.5)
+
+            plot_text = str(adjClose[i,-7:])
+            plt.text(datearray[firstdate_index+10],ymin,plot_text, fontsize=10)
+            # put text line with most recent date at bottom of plot
+            # - get 7.5% of x-scale and y-scale for text location
+            x_range = datearray[-1] - datearray[firstdate_index]
+            text_x = datearray[firstdate_index] + datetime.timedelta( x_range.days / 20. )
+            text_y = ( np.max(adjClose[i,:]) - np.min(adjClose[i,:]) )* .085 + np.min(adjClose[i,:])
+            text_y = ( ymax - ymin )* .085 + ymin
+            plt.text( text_x,text_y, "most recent value from "+str(datearray[-1])+"\nplotted at "+today.strftime("%A, %d. %B %Y %I:%M%p")+"\nvalue = "+str(adjClose[i,-1]), fontsize=8 )
+            plt.title(symbols[i]+"\n"+ysq.get_company_name(symbols[i]))
+            # We change the fontsize of minor ticks label
+            plt.tick_params(axis='both', which='major', labelsize=8)
+            plt.tick_params(axis='both', which='minor', labelsize=6)
+            plotfilepath = os.path.join( filepath, "0_recent_"+symbols[i]+".png" )
+            print " ...inside PortfolioPerformancealcs... plotfilepath = ", plotfilepath
+            plt.savefig( plotfilepath, format='png' )
+            '''
             except:
                 print " ERROR in PortfoloioPerformanceCalcs -- no plot generated for symbol ", symbols[i]
                 pass
+                '''
 
     # print list of currently uptrending stocks
     if uptrendSignalMethod == 'percentileChannels' :
@@ -438,6 +474,24 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
                                                 makeQCPlots=True)
 
     ########################################################################
+    ### compute stats on new 52-week highs and lows
+    ########################################################################
+
+    _, _ = newHighsAndLows(datearray,\
+                           adjClose,\
+                           num_days_highlow=252,\
+                           num_days_cumu=21,\
+                           makeQCPlots=True)
+
+    """
+    newHighsCount, newLowsCount = newHighsAndLows(datearray,\
+                                                  adjClose,\
+                                                  num_days_highlow=252,\
+                                                  num_days_cumu=21,\
+                                                  makeQCPlots=True)
+    """
+
+    ########################################################################
     ### compute traded value of stock for each month
     ########################################################################
 
@@ -474,8 +528,8 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
     # send text message for held stocks breaking to downside outside trend channel
     # - if markets are currently open
     marketStatus = get_MarketOpenOrClosed()
-    if 'close in' in marketStatus:
+    if 'Market Open' in marketStatus:
         textmessageOutsideTrendChannel( symbols, adjClose )
-    textmessageOutsideTrendChannel( symbols, adjClose )
+    #textmessageOutsideTrendChannel( symbols, adjClose )
 
     return datearray[-1], last_symbols_text, last_symbols_weight, last_symbols_price
