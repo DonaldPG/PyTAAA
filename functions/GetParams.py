@@ -200,7 +200,7 @@ def GetStatus():
     config.readfp(configfile)
 
     # put params in a dictionary
-    status = config.get("Status", "cumu_value").split()[-1]
+    status = config.get("Status", "cumu_value").split()[-3]
 
     return status
 
