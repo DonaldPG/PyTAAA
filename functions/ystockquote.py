@@ -49,7 +49,7 @@ def get_all(symbol):
           's6'+'b4'+'j4'+'p5'+'p6'+'r'+'r2'+'r5'+'r6'+'r7'+'s7'
 
     values = _request(symbol, ids).split(',')
-    
+
     return dict(
         dividend_yield=values[0],
         dividend_per_share=values[1],
@@ -71,9 +71,9 @@ def get_all(symbol):
         change_200_sma=values[17],
         gcommission=values[18],
         percent_change_200_sma=values[19],
-        
+
         todays_low=values[20],
-        change_50_sma=values[21],        
+        change_50_sma=values[21],
         todays_high=values[22],
         percent_change_50_sma=values[23],
         last_trade_realtime_time=values[24],
@@ -335,8 +335,13 @@ def get_percent_change_from_52_week_low(symbol):
 
 
 def get_company_name(symbol):
-    return _request(symbol, 'n')
-
+    try:
+        return _request(symbol, 'n')
+    except:
+        try:
+            return _request(symbol, 'n')
+        except:
+            return " "
 
 def get_percent_change_from_52_week_high(symbol):
     return _request(symbol, 'k5')
