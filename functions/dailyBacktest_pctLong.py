@@ -494,6 +494,9 @@ def dailyBacktest_pctLong():
     adjClose, symbols, datearray, _, _ = loadQuotes_fromHDF( filename )
     firstdate = datearray[0]
 
+    for iii in range(len(symbols)):
+        print " i,symbols[i],datearray[-1],adjClose[i,-1] = ", iii,symbols[iii],datearray[-1],adjClose[iii,-1]
+
 
     # Clean up missing values in input quotes
     #  - infill interior NaN values using nearest good values to linearly interpolate
@@ -1258,6 +1261,7 @@ def dailyBacktest_pctLong():
 
 
         print " NaNs in value = ", (value[np.isnan(value)]).shape
+        print " Infs in value = ", (value[np.isinf(value)]).shape
 
         monthvalueVariablePctInvest = value.copy()
         print " 1 - monthvalueVariablePctInvest check: ",monthvalueVariablePctInvest[isnan(monthvalueVariablePctInvest)].shape
@@ -1359,16 +1363,26 @@ def dailyBacktest_pctLong():
             ylim([1000,max(10000,plotmax)])
             ymin, ymax = emath.log10(1e3), emath.log10(max(10000,plotmax))
             bin_width = (ymax - ymin) / 50
+            print "ymin = ", ymin
+            print "ymax = ", ymax
+            print "bin_width = ", bin_width
+
             y_bins = np.arange(ymin, ymax+.0000001, bin_width)
+            print "y_bins = ", y_bins
+
             AllStocksHistogram = np.ones((len(y_bins)-1, len(datearray),3))
             HH = np.zeros((len(y_bins)-1, len(datearray)))
             mm = np.zeros(len(datearray))
             xlocs = []
             xlabels = []
             for i in xrange(1,len(datearray)):
-                ValueOnDate = value[:,i]
+                ValueOnDate = value[:,i].copy()
+                ValueOnDate = ValueOnDate[~np.isnan(ValueOnDate)]
+                ValueOnDate = ValueOnDate[~np.isinf(ValueOnDate)]
+                print " i,datearray[i],ValueOnDate.min(),ValueOnData.max() = ", i,datearray[i],ValueOnDate.min(),ValueOnDate.max()
+
                 if ValueOnDate[ValueOnDate == 10000].shape[0] > 1:
-                    ValueOnDate[ValueOnDate == 10000] = 0.
+                    ValueOnDate[ValueOnDate == 10000] = 1.
                     ValueOnDate[np.argmin(ValueOnDate)] = 10000.
                 h, _ = np.histogram(np.log10(ValueOnDate), bins=y_bins, density=True)
                 # reverse so big numbers become small(and print out black)
