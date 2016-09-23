@@ -206,7 +206,42 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
 <img src="PyTAAA_stock-chart-blue.png" alt="PyTAAA by DonaldPG" width="1000" height="350">
 
 """
+    # message body preliminaries
+    message = """<!DOCTYPE html>
+<html>
+<head>
+<title>pyTAAA web</title>
+</head>
 
+<body id="w3s" bgcolor=#F2F2F2>
+
+<style>
+    body
+    {
+    background-image: -ms-linear-gradient(top left, #F2F2F2 0%, #94B0B3 80%);
+
+    background-image: -moz-linear-gradient(top left, #F2F2F2 0%, #94B0B3 80%);
+
+    background-image: -webkit-linear-gradient(top left, #F2F2F2 0%, #94B0B3 80%);
+
+    background-image: linear-gradient(to bottom right, #F2F2F2 0%, #94B0B3 80%);
+    }
+    #rank_table_container
+    {
+      float:left;
+      width:825px;
+    }
+    #indexchanges_table_container
+    {
+      float:left;
+      width:150px;
+    }
+</style>
+
+
+<img src="PyTAAA_stock-chart-blue.png" alt="PyTAAA by DonaldPG" width="1000" height="350">
+
+"""
     ##########################################
     # add current valuation table to message
     ##########################################
