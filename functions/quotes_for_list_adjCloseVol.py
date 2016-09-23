@@ -6,9 +6,7 @@ from scipy.stats import rankdata
 
 import nose
 import bottleneck as bn
-import la
 
-import functions.quotes_adjCloseVol
 from functions.quotes_adjCloseVol import *
 from functions.TAfunctions import *
 from functions.readSymbols import *
@@ -29,7 +27,7 @@ def get_Naz100List( verbose=True ):
     ###
     symbol_directory = os.path.join( os.getcwd(), "symbols" )
 
-    symbol_file = "Naz100_symbols.txt"
+    symbol_file = "Naz100_Symbols.txt"
     symbols_file = os.path.join( symbol_directory, symbol_file )
     with open(symbols_file, "r+") as f:
         old_symbolList = f.readlines()
@@ -133,7 +131,7 @@ def get_Naz100List( verbose=True ):
             
             # make copy of previous symbols list file
             symbol_directory = os.path.join( os.getcwd(), "symbols" )
-            symbol_file = "Naz100_symbols.txt"
+            symbol_file = "Naz100_Symbols.txt"
             archive_symbol_file = "Naz100_symbols__" + str(datetime.date.today()) + ".txt"
             symbols_file = os.path.join( symbol_directory, symbol_file )
             archive_symbols_file = os.path.join( symbol_directory, archive_symbol_file )
@@ -238,7 +236,7 @@ def get_Naz100PlusETFsList( verbose=True ):
     if removedTickers != [] or addedTickers != []:
         # make copy of previous symbols list file
         symbol_directory = os.path.join( os.getcwd(), "symbols" )
-        symbol_file = "Naz100_symbols.txt"
+        symbol_file = "Naz100_Symbols.txt"
         archive_symbol_file = "Naz100_symbols__" + str(datetime.date.today()) + ".txt"
         symbols_file = os.path.join( symbol_directory, symbol_file )
         archive_symbols_file = os.path.join( symbol_directory, archive_symbol_file )
@@ -286,6 +284,8 @@ def arrayFromQuotesForList(symbolsFile, beginDate, endDate):
 
     return x[:,0,:], quote.getlabel(0), datearray
 
+
+"""
 def arrayFromQuotesForListWithVol(symbolsFile, beginDate, endDate):
     '''
     read in quotes and process to 'clean' ndarray plus date array
@@ -316,7 +316,50 @@ def arrayFromQuotesForListWithVol(symbolsFile, beginDate, endDate):
         x[ii,0,:] = cleantobeginning(x[ii,0,:])
 
     return x[:,0,:], x[:,1,:], quote.getlabel(0), datearray
+"""
 
+
+def arrayFromQuotesForListWithVol(symbolsFile, beginDate, endDate):
+    '''
+    read in quotes and process to 'clean' ndarray plus date array
+    - prices in array with dimensions [num stocks : num days ]
+    - process stock quotes to show closing prices adjusted for splits, dividends
+    - single ndarray with dates common to all stocks [num days]
+    - clean up stocks by:
+       - infilling empty values with linear interpolated value
+       - repeat first quote to beginning of series
+    '''
+
+    from functions.TAfunctions import interpolate
+    from functions.TAfunctions import cleantobeginning
+    from functions.quotes_adjCloseVol import *
+
+    # read symbols list
+    symbols = readSymbolList(symbolsFile,verbose=True)
+
+    # get quotes for each symbol in list (adjusted close)
+    quote = downloadQuotes(symbols,date1=beginDate,date2=endDate,adjust=True,Verbose=True)
+
+    # clean up quotes for missing values and varying starting date
+    #x = quote.as_matrix().swapaxes(0,1)
+    x = quote.values.T
+    ###print "x = ", x
+    date = quote.index
+    date = [d.date().isoformat() for d in date]
+    datearray = np.array(date)
+    symbolList = list(quote.columns.values)
+
+    # Clean up input quotes
+    #  - infill interior NaN values using nearest good values to linearly interpolate
+    #  - copy first valid quote to from valid date to all earlier positions
+    for ii in range(x.shape[0]):
+        x[ii,:] = np.array(x[ii,:]).astype('float')
+        #print " progress-- ", ii, " of ", x.shape[0], " symbol = ", symbols[ii]
+        #print " line 283........."
+        x[ii,:] = interpolate(x[ii,:])
+        x[ii,:] = cleantobeginning(x[ii,:])
+
+    return x, symbolList, datearray
 
 
 def get_quote_google( symbol ):
