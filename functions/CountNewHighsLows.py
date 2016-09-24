@@ -15,12 +15,12 @@ def newHighsAndLows(datearray,\
     newHighs_2D = np.zeros_like( adjClose )
     for i in range( adjClose.shape[0] ):
 
-        newLows = np.array_like( adjClose[i,:] )
-        newHighs = np.array_like( adjClose[i,:] )
-        for j in range( number_days_highlow, adjClose.shape[1] ):
+        newLows = np.zeros_like( adjClose[i,:] )
+        newHighs = np.zeros_like( adjClose[i,:] )
+        for j in range( num_days_highlow, adjClose.shape[1] ):
 
-            index_lo = np.argmin( adjClose[i,j-number_days_highlow:j] )
-            index_hi = np.argmax( adjClose[i,j-number_days_highlow:j] )
+            index_lo = np.argmin( adjClose[i,j-num_days_highlow:j] )
+            index_hi = np.argmax( adjClose[i,j-num_days_highlow:j] )
 
             if index_lo == j:
                 newLows[index_lo] += 1
