@@ -28,11 +28,11 @@ Subject: """+message_subject+"""
         server.quit()
         #print "email message = "
         #print message
-        print "Successfully sent email at ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
-        print ""
+        print("Successfully sent email at ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"))
+        print("")
     except :
-        print "Error: unable to send email"
-        print ""
+        print("Error: unable to send email")
+        print("")
 
 def SendTextMessage( username, emailpassword, phoneEmail, fromperson, message ) :
     import smtplib
@@ -46,22 +46,22 @@ def SendTextMessage( username, emailpassword, phoneEmail, fromperson, message ) 
 
     # The actual mail send
     try:
-        print "\n ... inside SendTextMessage ..."
+        print("\n ... inside SendTextMessage ...")
         #print " ... username = ", username
         #print " ... emailpassword = ", emailpassword
         #print " ... message_from = ", message_from
         #print " ... message_to = ", message_to
-        print " ... fromaddr = ", fromaddr
-        print " ... toaddr = ", phoneEmail
-        print " ... message_subject = ", message_subject
-        print " ... message = ", message, "\n\n"
+        print(" ... fromaddr = ", fromaddr)
+        print(" ... toaddr = ", phoneEmail)
+        print(" ... message_subject = ", message_subject)
+        print(" ... message = ", message, "\n\n")
         server = smtplib.SMTP('smtp.gmail.com:587')
         server.starttls()
         server.login(username,emailpassword)
         server.sendmail(fromaddr, phoneEmail, message)
         server.quit()
-        print "Successfully sent text message via email at ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
-        print ""
+        print("Successfully sent text message via email at ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"))
+        print("")
     except :
-        print "Error: unable to send text using email"
-        print ""
+        print("Error: unable to send text using email")
+        print("")

@@ -8,18 +8,99 @@ import datetime
 
 
 def get_MarketOpenOrClosed( ):
-    import urllib
+    import urllib.request, urllib.parse, urllib.error
     import re
     base_url = 'http://finance.yahoo.com'
-    content = urllib.urlopen( base_url ).read()
-    m = re.search('yfs_market_time(.*?)<',content).group(0).split("Markets ")[1].split("<")[0]
-    if m :
-        status = m
-        print ""
-        print " Markets are ", m
-        print ""
-    else:
+    content = urllib.request.urlopen( base_url ).read()
+    try:
+        m = re.search('yfs_market_time(.*?)<',content).group(0).split("Markets ")[1].split("<")[0]
+        if m :
+            status = m
+            print("")
+            print(" Markets are ", m)
+            print("")
+        else:
+            status = 'no Market Open/Closed status available'
+    except:
         status = 'no Market Open/Closed status available'
+    return status
+
+"""
+def get_MarketOpenOrClosed( ):
+    import urllib
+    import re
+    base_url = 'http://www.nasdaq.com/aspx/marketstatus.aspx'
+    content = urllib.urlopen( base_url ).read()
+    try:
+        closed_today = content.split('market_closed_today=').split('"')[0]
+        if closed_today == '"Y"':
+            status = 'Market Closed'
+        else:
+            m = content.split('"')[-2]
+            if m :
+                status = m
+                print ""
+                print " Markets are ", m
+                print ""
+            else:
+                status = 'no Market Open/Closed status available'
+    except:
+        status = 'no Market Open/Closed status available'
+    return status
+"""
+
+
+def get_MarketOpenOrClosed( ):
+    import urllib.request, urllib.parse, urllib.error
+    import re
+    base_url = 'http://www.nasdaq.com/aspx/marketstatus.aspx'
+    content = urllib.request.urlopen( base_url ).read()
+    try:
+        closed_today = content.split('market_closed_today=')[-1]
+        print(" closed_today  ", closed_today)
+        if closed_today == '"Y"':
+            status = 'Market Closed'
+        else:
+            m = content.split('"')[-2]
+            if m :
+                status = m
+                print("")
+                print(" Markets are ", m)
+                print("")
+            else:
+                status = 'no Market Open/Closed status available'
+    except:
+        status = 'no Market Open/Closed status available'
+    return status
+
+
+def get_MarketOpenOrClosed( ):
+
+    import datetime, pytz, holidays
+
+    tz = pytz.timezone('US/Eastern')
+    us_holidays = holidays.US()
+
+    after_hours = False
+
+    now = datetime.datetime.now(tz)
+    openTime = datetime.time(hour = 9, minute = 30, second = 0)
+    closeTime = datetime.time(hour = 16, minute = 0, second = 0)
+    # If a holiday
+    if now.strftime('%Y-%m-%d') in us_holidays:
+        after_hours = True
+    # If before 0930 or after 1600
+    if (now.time() < openTime) or (now.time() > closeTime):
+        after_hours = True
+    # If it's a weekend
+    if now.date().weekday() > 4:
+        after_hours = True
+
+    if after_hours:
+        status = " Markets are closed"
+    else:
+        status = " Markets are open"
+
     return status
 
 

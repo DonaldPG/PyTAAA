@@ -4,30 +4,32 @@ def ftpMoveDirectory(  ):
 
     # based on a demo in ptyhon package paramiko.
     #
-    import base64
+    #import base64
     import datetime
     import getpass
     import os
-    import socket
+    #import socket
     import sys
     import traceback
 
     # local imports
-    from functions.GetParams import *
+    from functions.GetParams import GetFTPParams
 
     import paramiko
 
     # get hostname and credentials
     ftpparams = GetFTPParams()
+    print("\n\n\n ... ftpparams = ", ftpparams, "\n\n\n")
     hostname = ftpparams['ftpHostname']
     hostIP   = ftpparams['remoteIP']
     username = ftpparams['ftpUsername']
     password = ftpparams['ftpPassword']
+    remote_path = ftpparams['remotepath']
 
     if hostname == '' :
-        hostname = raw_input('Hostname: ')
+        hostname = input('Hostname: ')
     if len(hostname) == 0:
-        print '*** Hostname required.'
+        print('*** Hostname required.')
         sys.exit(1)
     port = 22
     if hostname.find(':') >= 0:
@@ -37,31 +39,32 @@ def ftpMoveDirectory(  ):
     # get username
     if username == '':
         default_username = getpass.getuser()
-        username = raw_input('Username [%s]: ' % default_username)
+        username = input('Username [%s]: ' % default_username)
         if len(username) == 0:
             username = default_username
 
     # now, connect and use paramiko Transport to negotiate SSH2 across the connection
     try:
-        print ' connecting to remote server'
+        print(' connecting to remote server')
         t = paramiko.Transport((hostIP, port))
         t.connect(username=username, password=password)
         sftp = paramiko.SFTPClient.from_transport(t)
 
         # dirlist on remote host
-        dirlist = sftp.listdir('.')
+        #dirlist = sftp.listdir('.')
 
         # copy this demo onto the server
-        remote_path = "/var/www/mysite/pyTAAA_web/"
+        #remote_path = "/var/www/mysite/pyTAAA_web/"
         try:
             sftp.mkdir( remote_path )
         except IOError:
-            print '  ...'+remote_path+' already exists)'
+            print('  ...'+remote_path+' already exists)')
 
         sftp.open( os.path.join(remote_path, 'README'), 'w').write('This was created by pyTAAA/WriteWebPage.py on DonXPS\n')
 
         transfer_list = os.listdir("./pyTAAA_web")
         transfer_list.append( '../PyTAAA_holdings.params' )
+        transfer_list.append( '../PyTAAA_status.params' )
 
         # remove png files from transfer_list except when market is open 10pm or before 8am
         today = datetime.datetime.now()
@@ -76,12 +79,12 @@ def ftpMoveDirectory(  ):
             _, local_file_noPath = os.path.split( local_file )
             remote_file = os.path.join( remote_path, local_file_noPath )
             sftp.put( os.path.join("./pyTAAA_web/",local_file), remote_file )
-            print '  ...created '+remote_file+' on piDonaldPG'
+            print('  ...created '+remote_file+' on piDonaldPG')
 
         t.close()
 
-    except Exception, e:
-        print '*** Caught exception: %s: %s' % (e.__class__, e)
+    except Exception as e:
+        print('*** Caught exception: %s: %s' % (e.__class__, e))
         traceback.print_exc()
         try:
             t.close()
@@ -94,11 +97,11 @@ def piMoveDirectory(  ):
 
     import shutil
     import os
-    import sys
+    #import sys
     import datetime
 
     # local imports
-    from functions.GetParams import *
+    from functions.GetParams import GetFTPParams
 
     # create list of files to move and put them in web-accessible folder
     # - nothing here is 'mission critical'. fail without aborting.
@@ -107,31 +110,32 @@ def piMoveDirectory(  ):
         ftpparams = GetFTPParams()
         remote_path = ftpparams['remotepath']
 
-        print "\n\n ... diagnostic:  ftpparams = ", ftpparams
+        print("\n\n ... diagnostic:  ftpparams = ", ftpparams)
 
         # create a target directory if it does not exist already
         try:
             os.mkdirs( remote_path )
         except:
-            print '  ...'+remote_path+' already exists)'
+            print('  ...'+remote_path+' already exists)')
 
-        print "\n\n ... diagnostic:  remote_path = ", remote_path
+        print("\n\n ... diagnostic:  remote_path = ", remote_path)
 
         # create README in target directory
         try:
             with open( os.path.join(remote_path, 'README'), 'w') as f:
                 f.write('This was created by pyTAAA/WriteWebPage_pi.py on piDonaldPG\n')
-                print '  ...'+os.path.join(remote_path, 'README')+' created'
+                print('  ...'+os.path.join(remote_path, 'README')+' created')
         except:
             #pass
-            print '  ...'+os.path.join(remote_path, 'README')+' could not be created. Maybe already exists?'
+            print('  ...'+os.path.join(remote_path, 'README')+' could not be created. Maybe already exists?')
 
         # create a list of files to be copied
         source_directory = "./pyTAAA_web"
         transfer_list = os.listdir( source_directory )
         transfer_list.append( os.path.join( '..', 'PyTAAA_holdings.params' ) )
+        transfer_list.append( os.path.join( '..', 'PyTAAA_status.params' ) )
 
-        print "\n\n ... diagnostic:  transfer_list = ", transfer_list
+        print("\n\n ... diagnostic:  transfer_list = ", transfer_list)
 
         # remove png files from transfer_list except when market is open 10pm or before 8am
         today = datetime.datetime.now()
@@ -142,30 +146,38 @@ def piMoveDirectory(  ):
                 if extension == ".png" and name != "PyTAAA_value" :
                     transfer_list.pop(i)
 
-        print "\n\n ... updated diagnostic:  transfer_list = ", transfer_list
+        print("\n\n ... updated diagnostic:  transfer_list = ", transfer_list)
 
         for f in transfer_list:
             local_file = os.path.join( source_directory, f )
             _, local_file_noPath = os.path.split( local_file )
             remote_file = os.path.join( remote_path, local_file_noPath )
             #remote_file = os.path.join( remote_path, f )
-            print "\n ... diagnostic:  local_file, remote_file = ", local_file, remote_file
+            print("\n ... diagnostic:  local_file, remote_file = ", local_file, remote_file)
             shutil.copyfile( local_file, remote_file )
-            print '  ...created '+remote_file+' on piDonaldPG web server'
+            print('  ...created '+remote_file+' on piDonaldPG web server')
 
     except:
-        print " Unable to create updated web page..."
+        print(" Unable to create updated web page...")
 
     return
 
 
 def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_text, last_symbols_weight, last_symbols_price ) :
-    import smtplib
+    #import smtplib
     import datetime
     import os
-    import numpy as np
+    #import numpy as np
     # Local imports
-    from functions.MakeValuePlot import *
+    from functions.MakeValuePlot import (makeValuePlot,
+                           makeUptrendingPlot,
+                           makeNewHighsAndLowsPlot,
+                           makeTrendDispersionPlot,
+                           makeDailyChannelOffsetSignal,
+                           makeDailyMonteCarloBacktest,
+                           )
+
+    from functions.GetParams import GetParams
 
     # message body preliminaries
     message = """<!DOCTYPE html>
@@ -204,7 +216,42 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
 <img src="PyTAAA_stock-chart-blue.png" alt="PyTAAA by DonaldPG" width="1000" height="350">
 
 """
+    # message body preliminaries
+    message = """<!DOCTYPE html>
+<html>
+<head>
+<title>pyTAAA web</title>
+</head>
 
+<body id="w3s" bgcolor=#F2F2F2>
+
+<style>
+    body
+    {
+    background-image: -ms-linear-gradient(top left, #F2F2F2 0%, #94B0B3 80%);
+
+    background-image: -moz-linear-gradient(top left, #F2F2F2 0%, #94B0B3 80%);
+
+    background-image: -webkit-linear-gradient(top left, #F2F2F2 0%, #94B0B3 80%);
+
+    background-image: linear-gradient(to bottom right, #F2F2F2 0%, #94B0B3 80%);
+    }
+    #rank_table_container
+    {
+      float:left;
+      width:825px;
+    }
+    #indexchanges_table_container
+    {
+      float:left;
+      width:150px;
+    }
+</style>
+
+
+<img src="PyTAAA_stock-chart-blue.png" alt="PyTAAA by DonaldPG" width="1000" height="350">
+
+"""
     ##########################################
     # add current valuation table to message
     ##########################################
@@ -242,16 +289,15 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
     ##########################################
 
     figure2path = "PyTAAA_backtest.png"
-    figure_htmlText = figure_htmlText + "\n<br><h3>Original Monte-carlo Backtest plot</h3>\n"
-    figure_htmlText = figure_htmlText + "\nHeavy black line is back-tested performance for model. Black shaded area shows performance with different modeling parameters.\n"
-    figure_htmlText = figure_htmlText + "\n<br>Heavy red line is for equal-weighted basket of current Naz100 stocks. Red shaded area shows performance of individual stocks.\n"
-    figure_htmlText = figure_htmlText + "\n<br>Lower graph shows number of up-trending stocks.\n"
-    figure_htmlText = figure_htmlText + '''<br><img src="'''+figure2path+'''" alt="PyTAAA backtest by DonaldPG" width="850" height="500"><br><br>\n'''
+    figure2_htmlText = "<div id='rank_table_container'>\n<br><h3>Original Monte-carlo Backtest plot</h3>\n"
+    figure2_htmlText = figure2_htmlText + "\nHeavy black line is back-tested performance for model. Black shaded area shows performance with different modeling parameters.\n"
+    figure2_htmlText = figure2_htmlText + "\n<br>Heavy red line is for equal-weighted basket of current Naz100 stocks. Red shaded area shows performance of individual stocks.\n"
+    figure2_htmlText = figure2_htmlText + "\n<br>Lower graph shows number of up-trending stocks.\n"
+    figure2_htmlText = figure2_htmlText + '''<br><img src="'''+figure2path+'''" alt="PyTAAA backtest by DonaldPG" width="850" height="500"><br><br>\n'''
 
     figure3path = "PyTAAA_backtest_updated.png"
-    figure_htmlText = figure_htmlText + "\n<br><h3>Updated Monte-carlo Backtest plot</h3>\n"
-    figure_htmlText = figure_htmlText + '''<br><img src="'''+figure3path+'''" alt="PyTAAA backtest by DonaldPG" width="850" height="500"><br><br>\n'''
-
+    figure2_htmlText = figure2_htmlText + "\n<br><h3>Monte-carlo Backtest plot after 1 year of 'Forward Testing'</h3>\n"
+    figure2_htmlText = figure2_htmlText + '''<br><img src="'''+figure3path+'''" alt="PyTAAA backtest by DonaldPG" width="850" height="500"><br><br>\n</div>'''
 
 
     ##########################################
@@ -269,6 +315,13 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
 
 
     ##########################################
+    # read performance dispersion status file and make plot
+    ##########################################
+
+    figure5aa_htmlText = makeNewHighsAndLowsPlot( )
+
+
+    ##########################################
     # compute stock value compared to offset trend and make plot
     ##########################################
 
@@ -281,6 +334,7 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
 
     figure6_htmlText = makeDailyMonteCarloBacktest( )
 
+    """
     ##########################################
     # make plot showing how stock performance clusters
     ##########################################
@@ -289,6 +343,7 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
         figure7_htmlText = makeStockCluster( )
     except:
         pass
+    """
 
     ##########################################
     # add current rankings table to message
@@ -299,21 +354,27 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
         with open( filepath, "r" ) as f:
             rankingMessage = f.read()
     except:
-        print " Error: unable to read updates from pyTAAAweb_RankList.txt"
-        print ""
+        print(" Error: unable to read updates from pyTAAAweb_RankList.txt")
+        print("")
 
 
     ##########################################
     # add table with Nasdaq100 index exchanges to message
     ##########################################
 
-    filepath = os.path.join( os.getcwd(), "symbols", "Naz100_symbolsChanges.txt" )
+    params = GetParams()
+    stockList = params['stockList']
+
+    if stockList == 'Naz100':
+        filepath = os.path.join( os.getcwd(), "symbols", "Naz100_symbolsChanges.txt" )
+    elif stockList == 'SP500':
+        filepath = os.path.join( os.getcwd(), "symbols", "SP500_symbolsChanges.txt" )
     try:
         with open( filepath, "r" ) as f:
             input = f.read()
     except:
-        print " Error: unable to read updates from pyTAAAweb_RankList.txt"
-        print ""
+        print(" Error: unable to read updates from *_symbolsChanges.txt")
+        print("")
 
     # separate and remove empty lines
     inputList0 = input.split("\n")
@@ -342,6 +403,7 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
 
     # print html table entries
     for istring in inputListFiltered :
+        print("istring = "+istring)
         date, action, ticker = istring.split()
         indexExchangesMessage = indexExchangesMessage + "<tr><td>"+date \
                                           + "</td><td>"+action \
@@ -360,18 +422,22 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
             f.write(figure_htmlText)
             f.write(figure4_htmlText)
             f.write(figure5_htmlText)
+            f.write(figure5aa_htmlText)
             f.write(figure6_htmlText)
+            """
             try:
                 f.write(figure7_htmlText)
             except:
                 pass
+            """
             f.write(rankingMessage)
             f.write(indexExchangesMessage)
-        print " Successfully wrote updates to pyTAAAweb html ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
-        print ""
+            f.write(figure2_htmlText)
+        print(" Successfully wrote updates to pyTAAAweb html ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"))
+        print("")
     except :
-        print " Error: unable to write updates to pyTAAAweb html"
-        print ""
+        print(" Error: unable to write updates to pyTAAAweb html")
+        print("")
 
 
     ##########################################
@@ -385,32 +451,48 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
     architecture = platform.uname()[4]
     computerName = platform.uname()[1]
 
-    print "  ...platform: ", operatingSystem, architecture, computerName
+    print("  ...platform: ", operatingSystem, architecture, computerName)
 
     if operatingSystem == 'Linux' and architecture == 'armv6l' :
-        print "  ...using piMoveDirectory"
+        print("  ...using piMoveDirectory")
         piMoveDirectory(  )
         try:
             piMoveDirectory(  )
         except:
-            print "Could not ftp web files..."
+            print("Could not ftp web files...")
 
     elif operatingSystem == 'Windows' and computerName == 'Don-XPS1530' :
-        print "  ...using ftpMoveDirectory"
+        print("  ...using ftpMoveDirectory")
         try:
             ftpMoveDirectory(  )
         except:
-            print "Could not ftp web files..."
+            print("Could not ftp web files...")
 
     elif operatingSystem == 'Windows' and computerName == 'DonEnvy' :
-        print "  ...using ftpMoveDirectory"
+        print("  ...using ftpMoveDirectory")
         try:
             ftpMoveDirectory(  )
         except:
+            print("Could not ftp web files...")
+
+    elif operatingSystem == 'Windows' and computerName == 'Spectre' :
+        print("  ...using ftpMoveDirectory")
+        try:
+            ftpMoveDirectory(  )
+        except:
+            print("Could not ftp web files...")
+
+    elif operatingSystem == 'Linux' and computerName == 'pine64' :
+        print("  ...using ftpMoveDirectory")
+        #try:
+        ftpMoveDirectory(  )
+        '''
+        except:
             print "Could not ftp web files..."
+        '''
 
     else:
-        print "Could not place web files on server..."
+        print("Could not place web files on server...")
 
 
 
