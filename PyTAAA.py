@@ -29,7 +29,7 @@ print(sys.path)
 try:
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
 except:
-    os.chdir("C:\\Users\\Don\\raspberrypi\\Py3TAAA_pi")
+    os.chdir("C:\\Users\\Don\\Py3TAAA")
 
 
 computerName = platform.uname()[1]

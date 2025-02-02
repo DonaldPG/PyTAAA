@@ -5,6 +5,10 @@ if os.environ.get('DISPLAY','') == '':
     print('no display found. Using non-interactive Agg backend')
     matplotlib.use('Agg')
 from matplotlib import pyplot as plt
+# Set DPI for inline plots and saved figures
+plt.rcParams['figure.figsize'] = (16*.75, 9*.75)
+plt.rcParams['figure.dpi'] = 150
+plt.rcParams['savefig.dpi'] = 150
 from math import sqrt
 from functions.GetParams import GetParams
 #from functions.quotes_for_list_adjClose import *

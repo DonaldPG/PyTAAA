@@ -8,6 +8,10 @@ if os.environ.get('DISPLAY','') == '':
     print('no display found. Using non-interactive Agg backend')
     matplotlib.use('Agg')
 from matplotlib import pylab as plt
+# Set DPI for inline plots and saved figures
+plt.rcParams['figure.figsize'] = (9, 7)
+plt.rcParams['figure.dpi'] = 150
+plt.rcParams['savefig.dpi'] = 150
 import matplotlib.gridspec as gridspec
 from functions.GetParams import GetParams, GetEdition
 from functions.TAfunctions import dpgchannel, SMA
@@ -612,8 +616,9 @@ def makeDailyChannelOffsetSignal( ):
     except:
         print(" Error: unable to read updates from pyTAAAweb_numberUptrendingStocks_status.params")
         print("")
-    #print "_dates = ", _dates
-    last_date = _dates[-1].date()
+    print(" ... inside MakeValuePlot. .line 615. _dates = " + str( _dates))
+    # last_date = _dates[-1].date()
+    last_date = datetime.datetime.strptime(str(datearray[-1]), '%Y-%m-%d')
     print("   ...inside makeDailyChannelOffsetSignal... last_date = ", last_date)
 
     # parameters for signal

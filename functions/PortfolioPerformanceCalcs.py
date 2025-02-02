@@ -6,11 +6,30 @@ from scipy.stats import gmean
 from math import sqrt
 from numpy import std
 from numpy import isnan
+
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import pylab as plt
+# Set DPI for inline plots and saved figures
+plt.rcParams['figure.figsize'] = (9, 7)
+plt.rcParams['figure.dpi'] = 150
+plt.rcParams['savefig.dpi'] = 150
+
 from functions.readSymbols import *
-from functions.UpdateSymbols_inHDF5 import *
+from functions.UpdateSymbols_inHDF5 import (
+    loadQuotes_fromHDF
+)
 from functions.allstats import *
 from functions.dailyBacktest import computeDailyBacktest
-from functions.TAfunctions import *
+from functions.TAfunctions import (
+    computeSignal2D,
+    interpolate,
+    cleantobeginning,
+    cleantoend,
+    despike_2D,
+    recentTrendAndMidTrendChannelFitWithAndWithoutGap,
+    sharpeWeightedRank_2D
+)
 from functions.CheckMarketOpen import *
 from functions.CountNewHighsLows import newHighsAndLows
 
@@ -68,7 +87,6 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
     lowPct = float(params['lowPct'])
     hiPct = float(params['hiPct'])
     uptrendSignalMethod = params['uptrendSignalMethod']
-
 
     ##
 
@@ -303,9 +321,9 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
     ########################################################################
 
     import functions.ystockquote as ysq
-    import matplotlib
-    matplotlib.use('Agg')
-    from matplotlib import pylab as plt
+    # import matplotlib
+    # matplotlib.use('Agg')
+    # from matplotlib import pylab as plt
     filepath = os.path.join( os.getcwd(), "pyTAAA_web" )
 
     today = datetime.datetime.now()
@@ -318,6 +336,22 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
                 break
         for i in range( len(symbols) ) :
             # get 'despiked' quotes for this symbol
+
+            # check recency of plot file and skip if less than 20 hours old
+            # Get the modification time in seconds since the epoch
+            plotfilepath = os.path.join(
+                filepath, "0_"+symbols[i]+".png"
+            )
+            if os.path.isfile(plotfilepath):
+                mtime = datetime.datetime.fromtimestamp(
+                    os.path.getmtime(plotfilepath)
+                )
+                # Convert to elpased time in hours
+                modified_time = (datetime.datetime.now() - mtime).seconds
+                modified_hours = modified_time / (60. * 60.)
+                if modified_hours < 20.0:
+                    continue
+
             quotes = adjClose[i,:].copy()
             quotes = quotes.reshape(1,len(quotes))
             quotes_despike = despike_2D( quotes, LongPeriod, stddevThreshold=stddevThreshold )
@@ -376,6 +410,29 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
 
         for i in range( len(symbols) ) :
 
+            # check recency of plot file and skip if less than 20 hours old
+            # Get the modification time in seconds since the epoch
+            plotfilepath = os.path.join(
+                filepath, "0_recent_"+symbols[i]+".png"
+            )
+            if os.path.isfile(plotfilepath):
+                mtime = datetime.datetime.fromtimestamp(
+                    os.path.getmtime(plotfilepath)
+                )
+                # Convert to elpased time in hours
+                modified_time = (datetime.datetime.now() - mtime).seconds
+                modified_hours = modified_time / (60. * 60.)
+                if modified_hours < 20.0:
+                    continue
+            # mtime = datetime.datetime.fromtimestamp(
+            #     os.path.getmtime(plotfilepath)
+            # )
+            # # Convert to elpased time in hours
+            # modified_time = (datetime.datetime.now() - mtime).seconds
+            # modified_hours = modified_time / (60. * 60.)
+            # if modified_hours < 20.0:
+            #     continue
+
             # fit short-term recent trend channel for plotting
             quotes = adjClose[i,:].copy()
             quotes = quotes.reshape(1,len(quotes))
@@ -418,7 +475,8 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
 
             try:
                 # plot recent (about 2 years) performance for each symbol in stock universe
-                plt.figure(10,figsize=(9,5))
+                # plt.figure(10,figsize=(9,5))
+                plt.figure(10)
                 plt.clf()
                 plt.grid(True)
                 #plt.plot(datearray[firstdate_index:],adjClose[i,firstdate_index:])

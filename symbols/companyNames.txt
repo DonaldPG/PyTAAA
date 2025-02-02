@@ -1,100 +1,101 @@
-ATVI;Activision Blizzard
-ADBE;Adobe Systems Incorporated
-AKAM;Akamai Technologies
-ALXN;Alexion Pharmaceuticals
-ALTR;Altera Corporation
-AMZN;Amazon.com
-AMGN;Amgen Inc.
+ADBE;Adobe Inc.
+AMD;Advanced Micro Devices
+ABNB;Airbnb
+GOOGL;Alphabet Inc. (Class A)
+GOOG;Alphabet Inc. (Class C)
+AMZN;Amazon
+AEP;American Electric Power
+AMGN;Amgen
 ADI;Analog Devices
+ANSS;Ansys
 AAPL;Apple Inc.
 AMAT;Applied Materials
+APP;AppLovin
+ARM;Arm Holdings
+ASML;ASML Holding
+AZN;AstraZeneca
+TEAM;Atlassian
 ADSK;Autodesk
 ADP;Automatic Data Processing
-AVGO;Avago Technologies Limited
-BIDU;Baidu
-BBBY;Bed Bath &amp; Beyond Inc.
-BIIB;Biogen Idec Inc.
-BRCM;Broadcom Corporation
-CHRW;C.H. Robinson Worldwide
-CA;CA Inc.
-CTRX;Catamaran Corporation
-CELG;Celgene Corporation
-CERN;Cerner Corporation
+AXON;Axon Enterprise
+BKR;Baker Hughes
+BIIB;Biogen
+BKNG;Booking Holdings
+AVGO;Broadcom
+CDNS;Cadence Design Systems
+CDW;CDW Corporation
 CHTR;Charter Communications
-CHKP;Check Point Software Technologies Ltd.
-CSCO;Cisco Systems
-CTXS;Citrix Systems
-CTSH;Cognizant Technology Solutions Corporation
-CMCSA;Comcast Corporation
-COST;Costco Wholesale Corporation
-DTV;DIRECTV
-DISCA;Discovery Communications
-DISH;DISH Network Corporation
-DLTR;Dollar Tree
-EBAY;eBay Inc.
-EQIX;Equinix
-EXPE;Expedia
-EXPD;Expeditors International of Washington
-ESRX;Express Scripts Holding Company
-FFIV;F5 Networks
-FB;Facebook
-FAST;Fastenal Company
-FISV;Fiserv
-GRMN;Garmin Ltd.
+CTAS;Cintas
+CSCO;Cisco
+CCEP;Coca-Cola Europacific Partners
+CTSH;Cognizant
+CMCSA;Comcast
+CEG;Constellation Energy
+CPRT;Copart
+CSGP;CoStar Group
+COST;Costco
+CRWD;CrowdStrike
+CSX;CSX Corporation
+DDOG;Datadog
+DXCM;DexCom
+FANG;Diamondback Energy
+DASH;DoorDash
+EA;Electronic Arts
+EXC;Exelon
+FAST;Fastenal
+FTNT;Fortinet
+GEHC;GE HealthCare
 GILD;Gilead Sciences
-GOOG;Google Inc.
-GMCR;Green Mountain Coffee Roasters
-HSIC;Henry Schein
-ILMN;Illumina
-INTC;Intel Corporation
-INTU;Intuit Inc.
+GFS;GlobalFoundries
+HON;Honeywell
+IDXX;Idexx Laboratories
+INTC;Intel
+INTU;Intuit
 ISRG;Intuitive Surgical
-KLAC;KLA-Tencor Corporation
-KRFT;Kraft Foods Group
-LBTYA;Liberty Global plc
-LINTA;Liberty Interactive Corporation
-LMCA;Liberty Media Corporation
-LLTC;Linear Technology Corporation
+KDP;Keurig Dr Pepper
+KLAC;KLA Corporation
+KHC;Kraft Heinz
+LRCX;Lam Research
+LIN;Linde plc
+LULU;Lululemon Athletica
 MAR;Marriott International
-MAT;Mattel
-MXIM;Maxim Integrated Products
+MRVL;Marvell Technology
+MELI;MercadoLibre
+META;Meta Platforms
+MCHP;Microchip Technology
 MU;Micron Technology
-MSFT;Microsoft Corporation
+MSFT;Microsoft
+MSTR;MicroStrategy
 MDLZ;Mondelez International
-MNST;Monster Beverage Corporation
-MYL;Mylan Inc.
-NTAP;NetApp
-NFLX;Netflix
-NVDA;NVIDIA Corporation
-NXPI;NXP Semiconductors N.V.
+MDB;MongoDB Inc.
+MNST;Monster Beverage
+NFLX;Netflix, Inc.
+NVDA;Nvidia
+NXPI;NXP Semiconductors
 ORLY;O'Reilly Automotive
-PCAR;PACCAR Inc.
+ODFL;Old Dominion Freight Line
+ON;Onsemi
+PCAR;Paccar
+PLTR;Palantir Technologies
+PANW;Palo Alto Networks
 PAYX;Paychex
-PCLN;priceline.com Incorporated
-QCOM;QUALCOMM Incorporated
+PYPL;PayPal
+PDD;PDD Holdings
+PEP;PepsiCo
+QCOM;Qualcomm
 REGN;Regeneron Pharmaceuticals
+ROP;Roper Technologies
 ROST;Ross Stores
-SNDK;SanDisk Corporation
-SBAC;SBA Communications Corporation
-STX;Seagate Technology.
-SIAL;Sigma-Aldrich Corporation
-SIRI;Sirius XM Holdings Inc.
-SPLS;Staples
-SBUX;Starbucks Corporation
-SRCL;Stericycle
-SYMC;Symantec Corporation
-TSLA;Tesla Motors
-TXN;Texas Instruments Incorporated
-TSCO;Tractor Supply Company
-TRIP;TripAdvisor
-FOXA;Twenty-First Century Fox
+SBUX;Starbucks
+SNPS;Synopsys
+TTWO;Take-Two Interactive
+TMUS;T-Mobile US
+TSLA;Tesla, Inc.
+TXN;Texas Instruments
+TTD;Trade Desk (The)
 VRSK;Verisk Analytics
-VRTX;Vertex Pharmaceuticals Incorporated
-VIAB;Viacom Inc.
-VIP;VimpelCom Ltd.
-VOD;Vodafone Group Plc
-WDC;Western Digital Corporation
-WFM;Whole Foods Market
-WYNN;Wynn Resorts
-XLNX;Xilinx
-YHOO;Yahoo! Inc.
+VRTX;Vertex Pharmaceuticals
+WBD;Warner Bros. Discovery
+WDAY;Workday, Inc.
+XEL;Xcel Energy
+ZS;Zscaler
