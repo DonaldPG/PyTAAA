@@ -1,15 +1,19 @@
 
 import os
 import numpy as np
+
 import datetime
+
 import nose
-import pandas as pd
-from pandas.io.data import get_data_yahoo
+import bottleneck as bn
+import la
+import h5py
 
 from scipy.stats import gmean
+from la.external.matplotlib import quotes_historical_yahoo
 
 ## local imports
-from functions.quotes_for_list_adjClose import *
+from functions.quotes_for_list_adjCloseVol import *
 from functions.TAfunctions import *
 
 #---------------------------------------------
@@ -21,7 +25,7 @@ from functions.TAfunctions import *
 ##
 
 # read list of symbols from disk.
-symbol_file = "Naz100_Symbols.txt"                     # plotmax = 1.e10, runnum = 902   Naz100_Symbols.txt
+symbol_file = "Naz100_symbols.txt"                     # plotmax = 1.e10, runnum = 902   naz100_symbols.txt
 symbol_directory = os.path.join(os.getcwd(), 'symbols' )
 filename = os.path.join(symbol_directory, symbol_file)
 
@@ -29,7 +33,7 @@ filename = os.path.join(symbol_directory, symbol_file)
 
 # set up to write quotes to disk.
 
-listname = "Naz100_Symbols"
+listname = "Naz100-Symbols"
 
 hdf5_directory = os.path.join(os.getcwd(), 'symbols' )
 hdf5filename = os.path.join(hdf5_directory, listname + "_.hdf5")
@@ -45,25 +49,20 @@ print "hdf5filename = ",hdf5filename
 ## Clean up quotes.
 ## Make a plot showing all symbols in list
 ##
+
+firstdate=(2000,1,1)
 import datetime
-firstdate=datetime.date(1900,1,1)
-today = datetime.date.today()
-lastdate = today
+today = datetime.datetime.now()
+lastdate = ( today.year, today.month, today.day )
 
 adjClose, symbols, datearray = arrayFromQuotesForList(filename, firstdate, lastdate)
 
 print " security values check: ",adjClose[isnan(adjClose)].shape
 
 dates = []
-for i in range( len(datearray) ):
+for i in range(datearray.shape[0]):
     dates.append(str(datearray[i]))
-#quoteupdate = la.larry(adjClose, [symbols,dates], dtype=float)
+quoteupdate = la.larry(adjClose, [symbols,dates], dtype=float)
 
-# print first and last dates in dataframe
-print "... first and last datearray are: ", datearray[0], datearray[-1]
-print "... first and last dates are: ", dates[0], dates[-1]
-
-# create pandas dataframe and write to hdf
-quotes_df = pd.DataFrame( adjClose.swapaxes(0,1), index=datearray, columns=symbols)
-quotes_df.to_hdf( hdf5filename, listname, mode='a',format='table',append=False,complevel=5,complib='blosc')
-
+io = la.IO(hdf5filename)
+io[listname] = quoteupdate

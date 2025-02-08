@@ -2,6 +2,7 @@ import datetime
 #from functions.quotes_for_list_adjCloseVol import *
 from functions.quotes_for_list_adjClose import *
 from functions.CheckMarketOpen import *
+from functions.GetParams import *
 
 ###
 ### Perform a check to see if the stock market is open
@@ -37,7 +38,8 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
     BuySellFee - per-trade comission (in dollars)
 
     """
-    # set up empty lists for trades
+    print(" ... inside calculateTrades/calculateTrades ...")
+	# set up empty lists for trades
     # - will use trade_shares > 0 for buy, < 0 for sells
     buySellCost = 0.
     BuySellFee = 4.95
@@ -60,18 +62,32 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
     holdingsParams_buyprice = np.array(holdings['buyprice']).astype('float')
 
     # get current prices for holdings
-    holdingsParams_currentPrice = LastQuotesForSymbolList( holdingsParams_symbols )
+    #holdingsParams_currentPrice = LastQuotesForSymbolList( holdingsParams_symbols )
+    # Get Credentials for sending email
+    params = GetParams()
+    symbol_directory = os.path.join( os.getcwd(), "symbols" )
+    stockList = params['stockList']
+    if stockList == 'Naz100':
+        symbol_file = "Naz100_Symbols.txt"
+    elif stockList == 'SP500':
+        symbol_file = "SP500_Symbols.txt"
+    symbols_file = os.path.join( symbol_directory, symbol_file )
+    holdingsParams_currentPrice = LastQuotesForSymbolList_hdf( holdingsParams_symbols, symbols_file )
 
+    print(" ... holdingsParams_currentPrice = ", holdingsParams_currentPrice)
+
+    '''
     # check for duplicate holdings. Combine duplicates if they exist.
-    holdings_symbols = []
+    holdings_symbols = holdingsParams_symbols
+    #holdings_symbols = []
     holdings_shares = []
     holdings_buyprice = []
     holdings_currentPrice = []
 
     for i,val in enumerate(holdingsParams_symbols):
-        if holdingsParams_symbols.index(val) == i:
+        if holdingsParams_symbols.index(val) == i and holdingsParams_currentPrice[i] != np.nan:
             index = holdingsParams_symbols.index(val)
-            holdings_symbols.append( val )
+            #holdings_symbols.append( val )
             holdings_shares.append( holdingsParams_shares[index] )
             holdings_buyprice.append( holdingsParams_buyprice[index] )
             holdings_currentPrice.append( holdingsParams_currentPrice[index] )
@@ -82,6 +98,12 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
                       ( holdingsParams_buyprice[indexToAdjust] * holdingsParams_shares[indexToAdjust] +   \
                       holdingsParams_buyprice[i] * holdingsParams_shares[i] ) /   \
                       holdings_shares[indexToAdjust]
+    '''
+    # skip combining...
+    holdings_symbols = holdingsParams_symbols
+    holdings_shares = holdingsParams_shares
+    holdings_buyprice = holdingsParams_buyprice
+    holdings_currentPrice = holdingsParams_currentPrice
 
     # parse symbols in current holdings and new selections into buys, sells, and stocks in both lists
     sells = [item for item in holdings_symbols if item not in last_symbols_text]
@@ -89,14 +111,15 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
     matches = [item for item in holdings_symbols if item in last_symbols_text]
 
 
-    print " holdings_symbols      = ", holdings_symbols
-    print " holdings_shares       = ", holdings_shares
-    print " holdings_buyprice     = ", holdings_buyprice
-    print " holdings_currentPrice = ", holdings_currentPrice
+    print(" holdings_symbols      = ", holdings_symbols)
+    print(" holdings_shares       = ", holdings_shares)
+    print(" holdings_buyprice     = ", holdings_buyprice)
+    print(" holdings_currentPrice = ", holdings_currentPrice)
     profit = 0
     for i in range(len(holdings_symbols)):
+        print(" ... i, holdings_symbols[i], holdings_shares[i], holdings_buyprice[i], holdings_currentPrice[i] = ", i, holdings_symbols[i], holdings_shares[i], holdings_buyprice[i], holdings_currentPrice[i])
         profit += float(holdings_shares[i]) * ( float(holdings_currentPrice[i]) - float(holdings_buyprice[i]) )
-    print " holdings profit = ", profit
+    print(" holdings profit = ", profit)
 
     # calculate holdings value
     currentHoldingsValue = 0.
@@ -150,11 +173,11 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
             DeltaValueThresholded.append( deltaShares * last_symbols_price[last_symbols_index] )
         cumuAbsDeltaValueThresholded += abs( DeltaValueThresholded[-1] )
 
-    print " matches (symbols) =     ", matches
-    print " DeltaValue =            ", DeltaValue
-    print " DeltaValueThresholded = ", DeltaValueThresholded
-    print " cumuAbsDeltaValue =     ", cumuAbsDeltaValue
-    print " cumuAbsDeltaValueThresholded = ", cumuAbsDeltaValueThresholded
+    print(" matches (symbols) =     ", matches)
+    print(" DeltaValue =            ", DeltaValue)
+    print(" DeltaValueThresholded = ", DeltaValueThresholded)
+    print(" cumuAbsDeltaValue =     ", cumuAbsDeltaValue)
+    print(" cumuAbsDeltaValueThresholded = ", cumuAbsDeltaValueThresholded)
 
     DeltaValueThresholded = np.array( DeltaValueThresholded )
     if DeltaValueThresholded.all() != 0:
@@ -187,8 +210,8 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
             numDeltaShares = DeltaValueThresholdedNormed[i]/last_symbols_price[last_symbols_index]
             last_symbols_deltashares_normed = int( abs(numDeltaShares) ) * np.sign( numDeltaShares )
             cumuValueAfterExchanges += float( last_symbols_deltashares_normed + holdings_shares[holdings_index] ) * last_symbols_price[last_symbols_index]
-            print " symbol, numDeltaShares = ", last_symbols_text[last_symbols_index], numDeltaShares
-            print " cumValueAfterExchanges parts = ", last_symbols_deltashares_normed, holdings_shares[holdings_index], last_symbols_price[last_symbols_index]
+            print(" symbol, numDeltaShares = ", last_symbols_text[last_symbols_index], numDeltaShares)
+            print(" cumValueAfterExchanges parts = ", last_symbols_deltashares_normed, holdings_shares[holdings_index], last_symbols_price[last_symbols_index])
 
             # calculate effective (average) purchase price for all shares after exchange
             value = float(holdings_shares[holdings_index]) * float(holdings_buyprice[holdings_index]) + last_symbols_deltashares_normed*float(last_symbols_price[last_symbols_index])
@@ -322,11 +345,11 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
                 holdingsfile.write( "commissons: " + str(buySellCost) +"\n")
 
 
-    print ""
-    print "holdings_symbols = ", holdings_symbols
-    print "holdings_shares = ", holdings_shares
-    print "last_symbols_text = ", last_symbols_text
-    print "last_symbols_price = ", last_symbols_price
+    print("")
+    print("holdings_symbols = ", holdings_symbols)
+    print("holdings_shares = ", holdings_shares)
+    print("last_symbols_text = ", last_symbols_text)
+    print("last_symbols_price = ", last_symbols_price)
 
 
     return trade_message
