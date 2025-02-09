@@ -1,9 +1,10 @@
 import os
-import ConfigParser
+import numpy as np
+import configparser
 
 def from_config_file(config_filename):
     with open(config_filename, "r") as fid:
-        config = ConfigParser.ConfigParser()
+        config = configparser.ConfigParser(strict=False)
         params = config.readfp(fid)
     return params
 
@@ -20,22 +21,24 @@ def GetParams():
     config_filename = "PyTAAA.params"
 
     #params = from_config_file(config_filename)
-    config = ConfigParser.ConfigParser(defaults=defaults)
+    config = configparser.ConfigParser(strict=False, defaults=defaults)
     configfile = open(config_filename, "r")
     config.readfp(configfile)
 
     toaddrs = config.get("Email", "To").split()
     fromaddr = config.get("Email", "From").split()
     toSMS = config.get("Text_from_email", "phoneEmail").split()
+    send_texts = config.get("Text_from_email", "send_texts").split()
     pw = config.get("Email", "PW")
     runtime = config.get("Setup", "Runtime").split()
     pausetime = config.get("Setup", "Pausetime").split()
 
+    quote_server = config.get("stock_server", "quote_download_server")
 
     if len(runtime) == 1:
         runtime.join('days')
     if len(pausetime) == 1:
-        paustime.join('hours')
+        pausetime.join('hours')
 
     if runtime[1] == 'seconds':
         factor = 1
@@ -77,9 +80,14 @@ def GetParams():
     params['fromaddr'] = str(fromaddr[0])
     params['toaddrs'] = str(toaddrs[0])
     params['toSMS'] = toSMS[0]
+    if send_texts[0].lower() == 'true':
+        params['send_texts'] = True
+    elif send_texts[0].lower() == 'false':
+        params['send_texts'] = False
     params['PW'] = str(pw)
     params['runtime'] = max_uptime
     params['pausetime'] = seconds_between_runs
+    params['quote_server'] = quote_server
     params['numberStocksTraded'] = int( config.get("Valuation", "numberStocksTraded") )
     params['trade_cost'] = float( config.get("Valuation", "trade_cost") )
     params['monthsToHold'] = int( config.get("Valuation", "monthsToHold") )
@@ -107,6 +115,8 @@ def GetParams():
     params['numdaysinfit2'] = int( config.get("Valuation", "numdaysinfit2") )
     params['offset'] = int( config.get("Valuation", "offset") )
 
+    params['stockList'] = config.get("Valuation", "stockList")
+
     return params
 
 
@@ -121,7 +131,7 @@ def GetFTPParams():
     # read the parameters form the configuration file
     config_filename = "PyTAAA.params"
 
-    config = ConfigParser.ConfigParser()
+    config = configparser.ConfigParser(strict=False)
     configfile = open(config_filename, "r")
     config.readfp(configfile)
 
@@ -152,7 +162,7 @@ def GetHoldings():
     # read the parameters form the configuration file
     config_filename = "PyTAAA_holdings.params"
 
-    config = ConfigParser.ConfigParser()
+    config = configparser.ConfigParser(strict=False)
     configfile = open(config_filename, "r")
     config.readfp(configfile)
 
@@ -164,7 +174,7 @@ def GetHoldings():
 
     # get rankings for latest dates for all stocks in index
     # read the parameters form the configuration file
-    print " ...inside GetHoldings...  pwd = ", os.getcwd()
+    print(" ...inside GetHoldings...  pwd = ", os.getcwd())
     config_filename = "PyTAAA_ranks.params"
     configfile = open(config_filename, "r")
     config.readfp(configfile)
@@ -172,17 +182,17 @@ def GetHoldings():
     ranks = config.get("Ranks", "ranks").split()
     # put ranks params in dictionary
     holdings_ranks = []
-    print "\n\n********************************************************"
-    print " ...inside GetParams/GetHoldings..."
+    print("\n\n********************************************************")
+    print(" ...inside GetParams/GetHoldings...")
     for i, holding in enumerate(holdings['stocks']):
         for j,symbol in enumerate(symbols):
-            print "... j, symbol, rank = ", j, symbol, ranks[j]
+            print("... j, symbol, rank = ", j, symbol, ranks[j])
             if symbol == holding:
-                print "                                       MATCH ... i, symbol, rank = ", i, holding, symbols[j], ranks[j]
+                print("                                       MATCH ... i, symbol, rank = ", i, holding, symbols[j], ranks[j])
                 holdings_ranks.append( ranks[j] )
                 break
     holdings['ranks'] = holdings_ranks
-    print "\n\n********************************************************"
+    print("\n\n********************************************************")
 
     return holdings
 
@@ -195,7 +205,7 @@ def GetStatus():
     # read the parameters form the configuration file
     status_filename = "PyTAAA_status.params"
 
-    config = ConfigParser.ConfigParser()
+    config = configparser.ConfigParser(strict=False)
     configfile = open(status_filename, "r")
     config.readfp(configfile)
 
@@ -210,28 +220,28 @@ def PutStatus( cumu_status ):
     ######################
 
     import datetime
-    
+
     # read the parameters form the configuration file
     status_filename = "PyTAAA_status.params"
-    
+
     # check last value written to file for comparison with current cumu_status. Update if different.
     with open(status_filename, 'r') as f:
         lines = f.read()
     old_cumu_status = lines.split("\n")[-2]
     #old_cumu_status = old_cumu_status.split(" ")[-1]
     old_cumu_status = old_cumu_status.split(" ")[-3]
-    
+
     old_cumu_signal = lines.split("\n")[-2]
     old_cumu_signal = old_cumu_signal.split(" ")[-2]
-    
+
     # check current signal based on system protfolio value trend
     _, traded_values, _, last_signal = computeLongHoldSignal()
-    
-    print "cumu_status = ", str(cumu_status)
-    print "old_cumu_status = ", old_cumu_status
-    print "last_signal[-1] = ", last_signal[-1]
-    print "old_cumu_signal = ", old_cumu_signal
-    print str(cumu_status)== old_cumu_status, str(last_signal[-1])== old_cumu_signal
+
+    print("cumu_status = ", str(cumu_status))
+    print("old_cumu_status = ", old_cumu_status)
+    print("last_signal[-1] = ", last_signal[-1])
+    print("old_cumu_signal = ", old_cumu_signal)
+    print(str(cumu_status)== old_cumu_status, str(last_signal[-1])== old_cumu_signal)
     if str(cumu_status) != str(old_cumu_status) or str(last_signal[-1]) != str(old_cumu_signal):
         with open(status_filename, 'a') as f:
             f.write( "cumu_value: "+\
@@ -349,13 +359,14 @@ def GetIP( ):
     ### Input current cumulative value
     ######################
 
-    import urllib
+    import urllib.request, urllib.parse, urllib.error
     import re
-    f = urllib.urlopen("http://www.canyouseeme.org/")
-    html_doc = f.read()
+    f = urllib.request.urlopen("http://www.canyouseeme.org/")
+    html_doc = f.read().decode('utf-8')
     f.close()
     m = re.search('(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)',html_doc)
     return m.group(0)
+
 
 def GetEdition( ):
     ######################
@@ -375,3 +386,24 @@ def GetEdition( ):
         edition = 'none'
 
     return edition
+
+
+def GetSymbolsFile( ):
+    ######################
+    ### get filename where list of symbols is stored
+    ######################
+    ##
+    ##  Import list of symbols to process.
+    ##
+    params = GetParams()
+    stockList = params['stockList']
+
+    # read list of symbols from disk.
+    symbol_directory = os.path.join( os.getcwd(), "symbols" )
+    if stockList == 'Naz100':
+        symbol_file = "Naz100_Symbols.txt"
+    elif stockList == 'SP500':
+        symbol_file = "SP500_Symbols.txt"
+    symbols_file = os.path.join( symbol_directory, symbol_file )
+
+    return symbols_file

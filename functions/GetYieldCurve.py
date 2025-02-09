@@ -6,14 +6,14 @@ from bs4 import BeautifulSoup
 from matplotlib import pylab as plt
 
 # local imports
-from functions.UpdateSymbols_inHDF5 import *
-from functions.TAfunctions import *
+from UpdateSymbols_inHDF5 import *
+from TAfunctions import *
 
 def getYieldCurve():
     ###
     ### get yield curve (interest rates) from US Treasury website
     ###
-    print " ... Making plot of US Treasury Rates ..."
+    print(" ... Making plot of US Treasury Rates ...")
     #try:
     base_url = 'http://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData'
     content = urllib.urlopen(base_url).read()
@@ -29,7 +29,7 @@ def getYieldCurve():
                 #print " ... t.name = ", t.name
                 if "NEW_DATE" in t.name:
                     if idate%250 == 0:
-                        print " i, date = ", idate, t.string.split('T')[0]
+                        print(" i, date = ", idate, t.string.split('T')[0])
                     irate_date = datetime.datetime.strptime( t.string.split('T')[0], '%Y-%m-%d')
                     #irate_date = t.string.split('T')[0] )
                 elif "1MONTH" in t.name:
@@ -160,8 +160,8 @@ def getYieldCurve():
     plt.xlim((datetime.date(1990,1,1),datetime.datetime.now()))
     # put text line with most recent date at bottom of plot
     # - get 5% of x-scale and 70% of y-scale for text location
-    print "   interestRates[0,0] = ", interestRates[0,0]
-    print "   interestRates[-1,0] = ", interestRates[-1,0]
+    print("   interestRates[0,0] = ", interestRates[0,0])
+    print("   interestRates[-1,0] = ", interestRates[-1,0])
     x_range = interestRates[-1,0] - interestRates[0,0]
     text_x = interestRates[0,0] + datetime.timedelta( x_range.days / 20. )
     text_y = ( interestRates[:,1:].max() - interestRates[:,1:].min() )* .05 + interestRates[:,1:].min()

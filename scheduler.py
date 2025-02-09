@@ -5,11 +5,11 @@ class Task(object):
     def __init__(self, name, start_time, calc_next_time, func):
         """
         Initialize a Task.
-        
+
         Arguments:
         name            - Name of task.
         start_time      - First time for task to run
-        calc_next_time  - Function to calculate the time of next run, 
+        calc_next_time  - Function to calculate the time of next run,
                           gets one argument, the last run time as a datetime.
                           Returns None when task should no longer be run
         func            - A function to run
@@ -20,7 +20,7 @@ class Task(object):
         self.calc_next_time = calc_next_time
         self.func = func
         self.halt_flag = Event()
-        
+
     def run(self):
         logging.debug("Running %s task, scheduled at: %s" % (self.name, self.scheduled_time,))
         if not self.halt_flag.isSet():
@@ -32,35 +32,35 @@ class Task(object):
             finally:
                 self.scheduled_time = self.calc_next_time(self.scheduled_time)
                 logging.debug("Scheduled next run of %s for: %s" % (self.name, self.scheduled_time,))
-            
+
     def halt(self):
         self.halt_flag.set()
-        
+
 class Scheduler(Thread):
     def __init__(self):
         Thread.__init__(self)
-        self.setDaemon(True)        
+        self.setDaemon(True)
 
         self.tasks = {}
         self.tasks_lock = Lock()
         self.halt_flag = Event()
         self.nonempty = Event()
-        
+
     def schedule(self, name, start_time, calc_next_time, func):
         task = Task(name, start_time, calc_next_time, func)
         receipt = self.schedule_task(task)
         return receipt
-    
+
     def schedule_task(self, task):
         receipt = random.random()
-        
+
         self.tasks_lock.acquire()
         self.tasks[receipt] = task
         self.nonempty.set()
         self.tasks_lock.release()
-        
+
         return receipt
-    
+
     def drop(self, task_receipt):
         self.tasks_lock.acquire()
         try:
@@ -71,31 +71,31 @@ class Scheduler(Thread):
         except KeyError:
             logging.error('Invalid task receipt: %s' % (task_receipt,))
         self.tasks_lock.release()
-        
+
     def halt(self):
         self.halt_flag.set()
         # Drop all active tasks
-        map(self.drop, self.tasks.keys())
+        list(map(self.drop, list(self.tasks.keys())))
         # Exit the thread to kill the scheduler
         sys.exit()
-        
+
     def __find_next_task(self):
         self.tasks_lock.acquire()
-        items = self.tasks.items()
+        items = list(self.tasks.items())
         by_time = lambda x: operator.getitem(x, 1).scheduled_time
         items.sort(key=by_time)
         try:
             receipt = items[0][0]
-        except Exception, e:
+        except Exception as e:
             receipt = None
         self.tasks_lock.release()
         return receipt
-        
+
     def run(self):
         while 1:
             receipt = self.__find_next_task()
             if receipt != None:
-                task_time = self.tasks[receipt].scheduled_time  
+                task_time = self.tasks[receipt].scheduled_time
                 time_to_wait = task_time - datetime.datetime.now()
                 secs_to_wait = 0.
                 # Check if time to wait is in the future
@@ -107,12 +107,12 @@ class Scheduler(Thread):
                     try:
                         self.tasks_lock.acquire()
                         task = self.tasks[receipt]
-                        print "Running %s..." % (task.name,)   ### dpg
+                        print("Running %s..." % (task.name,))   ### dpg
                         logging.debug("Running %s..." % (task.name,))
                         task.run()
                     finally:
                         self.tasks_lock.release()
-                except Exception, e:
+                except Exception as e:
                     logging.exception(e)
                     logging.debug( self.tasks )
             else:
@@ -124,13 +124,13 @@ def every_x_secs(x):
     in the future from a given argument.
     """
     return lambda last: last + datetime.timedelta(seconds=x)
-    
+
 def every_x_mins(x):
     """
     Returns a function that will generate a datetime object that is x minutes
     in the future from a given argument.
     """
-    return lambda last: last + datetime.timedelta(minutes=x)    
+    return lambda last: last + datetime.timedelta(minutes=x)
 
 def daily_at(time):
     """
@@ -138,7 +138,7 @@ def daily_at(time):
     in the future from a datetime argument combined with 'time'.
     """
     return lambda last: datetime.datetime.combine(last + datetime.timedelta(days=1), time)
-    
+
 class RunUntilSuccess(object):
     """
     Provide control flow for a procedure.
@@ -151,7 +151,7 @@ class RunUntilSuccess(object):
         if args is not None :
             self.args = tuple(args)
         else:
-			self.args = None
+            self.args = None
 
     def __call__(self):
         try_count = 0
@@ -166,7 +166,7 @@ class RunUntilSuccess(object):
                 else:
                     self.func(*self.args)
                 is_success = True
-            except Exception, e:  # Some exception occurred, try again
+            except Exception as e:  # Some exception occurred, try again
                 logging.exception(e)
                 logging.error("Task failed on try #%s" % (try_count,))
                 continue
@@ -191,6 +191,6 @@ class RunOnce(object):
                 self.func()
             else:
                 self.func(self.args)
-        except Exception, e:  # Some exception occurred, try again
+        except Exception as e:  # Some exception occurred, try again
             logging.exception(e)
             logging.error("Task failed: %s" % (e))
