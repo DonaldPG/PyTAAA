@@ -1989,11 +1989,13 @@ def sharpeWeightedRank_2D(
 
     if makeQCPlots==True:
         json_dir = os.path.split(json_fn)[0]
+        symbols_file = get_symbols_file(json_fn)
+        symbols_dir = os.path.split(symbols_file)[0]
         # input symbols and company names from text file
         if stockList == 'Naz100':
-            companyName_file = os.path.join( json_dir, "symbols",  "companyNames.txt" )
+            companyName_file = os.path.join(symbols_dir, "companyNames.txt")
         elif stockList == 'SP500':
-            companyName_file = os.path.join( json_dir, "symbols",  "SP500_companyNames.txt" )
+            companyName_file = os.path.join(symbols_dir, "SP500_companyNames.txt")
         with open( companyName_file, "r" ) as f:
             companyNames = f.read()
 

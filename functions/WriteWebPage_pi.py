@@ -182,7 +182,7 @@ def writeWebPage(
         makeDailyMonteCarloBacktest,
     )
 
-    from functions.GetParams import get_json_params
+    from functions.GetParams import get_json_params, get_symbols_file
 
     # message body preliminaries
     message = """<!DOCTYPE html>
@@ -368,12 +368,14 @@ def writeWebPage(
     ##########################################
 
     params = get_json_params(json_fn)
+    symbols_fn = get_symbols_file(json_fn)
+    symbols_folder = os.path.split(symbols_fn)[0]
     stockList = params['stockList']
 
     if stockList == 'Naz100':
-        filepath = os.path.join( json_folder, "symbols", "Naz100_symbolsChanges.txt" )
+        filepath = os.path.join(symbols_folder, "Naz100_symbolsChanges.txt" )
     elif stockList == 'SP500':
-        filepath = os.path.join( json_folder, "symbols", "SP500_symbolsChanges.txt" )
+        filepath = os.path.join(symbols_folder, "SP500_symbolsChanges.txt" )
     try:
         with open( filepath, "r" ) as f:
             input = f.read()

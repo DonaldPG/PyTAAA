@@ -66,8 +66,12 @@ def loadQuotes_fromHDF(symbols_file, json_fn):
     # hdf5_directory = os.path.join( os.getcwd(), "symbols" )
     # hdf5filename = os.path.join(hdf5_directory, listname + "_.hdf5")
 
-    hdf5_directory = directory_name
-    hdf5filename = os.path.join(hdf5_directory, listname + "_.hdf5")
+    symbols_fn = get_symbols_file(json_fn)
+    hdf_folder = os.path.split(symbols_fn)[0]
+    hdf5filename = os.path.join(hdf_folder, listname + "_.hdf5")
+    
+    # hdf5_directory = directory_name
+    # hdf5filename = os.path.join(hdf5_directory, listname + "_.hdf5")
 
     print("")
     print("")
@@ -678,6 +682,7 @@ def UpdateHDF_yf(symbol_directory, symbols_file, json_fn):
 
     # filename = os.path.join(symbol_directory, symbols_file)
     filename = get_symbols_file(json_fn)
+    symbols_folder = os.path.split(filename)[0]
 
     print("    . UpdateHDF_yf: filename = " + filename)
     print("    . UpdateHDF_yf: json_fn = " + json_fn)
@@ -699,7 +704,7 @@ def UpdateHDF_yf(symbol_directory, symbols_file, json_fn):
         #import functions.fix_yahoo_finance as yf
         #yf.pdr_override() # <== that's all it takes :-)
         import yfinance as yf
-        
+
         # Adjust timeout to a longer period
         yf.shared._EXCHANGE_TIMEOUT = 10  # in seconds
 
@@ -907,8 +912,11 @@ def UpdateHDF_yf(symbol_directory, symbols_file, json_fn):
 
     # set up to write quotes to disk.
     # dirname = os.path.join( os.getcwd(), "symbols" )
-    hdf_folder = os.path.split(json_fn)[0]
-    hdf5filename = os.path.join(hdf_folder, "symbols", listname + "_.hdf5")
+
+    hdf_folder = symbols_folder
+    hdf5filename = os.path.join(hdf_folder, listname + "_.hdf5")
+    print("\n\n ... json_fn = " + json_fn)
+    print("\n\n ... hdf_folder = " + hdf_folder)
     print("hdf5 filename = ",hdf5filename)
     print("listname = ",listname)
     #updatedquotes.to_hdf( hdf5filename, listname, mode='a',format='table',append=False,complevel=5,complib='blosc')
