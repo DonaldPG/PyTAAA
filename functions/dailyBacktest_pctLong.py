@@ -2993,10 +2993,28 @@ def dailyBacktest_pctLong(json_fn):
         plt.grid(True)
         ##ylim(0, value.shape[0])
         plt.ylim(0, 1.2)
-        plt.plot(datearray,numberStocksUpTrendingMedian / activeCount,'g-',lw=1)
-        plt.plot(datearray,numberStocksUpTrendingNearHigh / activeCount,'b-',lw=1)
-        plt.plot(datearray,numberStocksUpTrendingBeatBuyHold / activeCount,'k-',lw=2)
-        plt.plot(datearray,numberStocks  / activeCount,'r-')
+        
+        n_stocks_uptrending_median = np.zeros((activeCount.size), 'float32')
+        n_stocks_uptrending_near_high = np.zeros_like(n_stocks_uptrending_median)
+        n_stocks_uptrending_beat_BH = np.zeros_like(n_stocks_uptrending_median)
+        n_stocks_uptrending = np.zeros_like(n_stocks_uptrending_median)
+        
+        ii = np.where(activeCount > 0)[0]
+        _dates = datearray[ii]
+        n_stocks_uptrending_median[ii] = numberStocksUpTrendingMedian[ii] / activeCount[ii]
+        n_stocks_uptrending_near_high[ii] = numberStocksUpTrendingNearHigh[ii] / activeCount[ii]
+        n_stocks_uptrending_beat_BH[ii] = numberStocksUpTrendingBeatBuyHold[ii] / activeCount[ii]
+        n_stocks_uptrending[ii] = numberStocks[ii] / activeCount[ii]
+
+        plt.plot(_dates, n_stocks_uptrending_median[ii],'g-',lw=1)
+        plt.plot(_dates, n_stocks_uptrending_near_high[ii],'b-',lw=1)
+        plt.plot(_dates, n_stocks_uptrending_beat_BH[ii],'k-',lw=2)
+        plt.plot(_dates, n_stocks_uptrending[ii] ,'r-') 
+        
+        # plt.plot(datearray,numberStocksUpTrendingMedian / activeCount,'g-',lw=1)
+        # plt.plot(datearray,numberStocksUpTrendingNearHigh / activeCount,'b-',lw=1)
+        # plt.plot(datearray,numberStocksUpTrendingBeatBuyHold / activeCount,'k-',lw=2)
+        # plt.plot(datearray,numberStocks  / activeCount,'r-')
         plt.xlim(datearray[0],datearray[len(datearray)-1])
 
 
