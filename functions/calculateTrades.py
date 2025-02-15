@@ -1,15 +1,20 @@
+import os
+import numpy as np
 import datetime
 #from functions.quotes_for_list_adjCloseVol import *
-from functions.quotes_for_list_adjClose import *
+from functions.quotes_for_list_adjClose import LastQuotesForSymbolList_hdf
 from functions.CheckMarketOpen import *
-from functions.GetParams import *
+from functions.GetParams import get_json_params, get_symbols_file
 
 ###
 ### Perform a check to see if the stock market is open
 ### - purpose is to stop calculating and sending emails when nothing has changed
 ###
 
-def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symbols_price ) :
+def calculateTrades(
+        holdings, last_symbols_text,
+        last_symbols_weight, last_symbols_price, json_fn
+):
     """
     Function calculates updates to holdings based on input lists.
     1. Finds stocks from existing holding that will continue to be held.
@@ -48,11 +53,9 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
     new_buyprice = []
     trade_symbols = []
     trade_shares = []
-    last_symbols_value = []
-    last_symbols_weight_normed = []
-    last_symbols_shares_normed = np.zeros( len(last_symbols_text), 'float')
+
     trade_message = "<br>"
-    newHoldingsValue = 0.
+
     cumuValueAfterExchanges = 0.
     today = datetime.datetime.now()
 
@@ -64,17 +67,21 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
     # get current prices for holdings
     #holdingsParams_currentPrice = LastQuotesForSymbolList( holdingsParams_symbols )
     # Get Credentials for sending email
-    params = GetParams()
-    symbol_directory = os.path.join( os.getcwd(), "symbols" )
+    params = get_json_params(json_fn)
+    json_dir = os.path.split(json_fn)[0]
+    symbol_directory = os.path.join( json_dir, "symbols" )
     stockList = params['stockList']
-    if stockList == 'Naz100':
-        symbol_file = "Naz100_Symbols.txt"
-    elif stockList == 'SP500':
-        symbol_file = "SP500_Symbols.txt"
-    symbols_file = os.path.join( symbol_directory, symbol_file )
-    holdingsParams_currentPrice = LastQuotesForSymbolList_hdf( holdingsParams_symbols, symbols_file )
+    # if stockList == 'Naz100':
+    #     symbol_file = "Naz100_Symbols.txt"
+    # elif stockList == 'SP500':
+    #     symbol_file = "SP500_Symbols.txt"
+    # symbols_file = os.path.join( symbol_directory, symbol_file )
+    symbols_file = get_symbols_file(json_fn)
+    holdingsParams_currentPrice = LastQuotesForSymbolList_hdf(
+        holdingsParams_symbols, symbols_file, json_fn
+    )
 
-    print(" ... holdingsParams_currentPrice = ", holdingsParams_currentPrice)
+    print(" ... holdingsParams_currentPrice = " + str(holdingsParams_currentPrice))
 
     '''
     # check for duplicate holdings. Combine duplicates if they exist.
@@ -127,7 +134,9 @@ def calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symb
         currentHoldingsValue += float(holdings_shares[i]) * float(holdings_currentPrice[i])
 
     ##### diagnostics ###################################################################################################
-    with open("PyTAAA_diagnostic.params", "a") as holdingsfile:
+    json_dir = os.path.split(json_fn)[0]
+    file_out = os.path.join(json_dir, "PyTAAA_diagnostic.params")
+    with open(file_out, "a") as holdingsfile:
 
         holdingsfile.write( str(today) + " \n" )
         holdingsfile.write( "currently held stocks:   " + str(holdings_symbols) +"\n")

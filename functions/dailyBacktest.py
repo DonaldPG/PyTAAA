@@ -1,10 +1,10 @@
 
-import time, threading
+# import time, threading
 
 import numpy as np
 import os
 import datetime
-from scipy.stats import rankdata
+# from scipy.stats import rankdata
 #import nose
 from scipy.stats import gmean
 from math import sqrt
@@ -12,29 +12,32 @@ from math import sqrt
 ## local imports
 from functions.quotes_for_list_adjClose import *
 from functions.TAfunctions import *
-from functions.UpdateSymbols_inHDF5 import UpdateHDF5, loadQuotes_fromHDF
+# from functions.UpdateSymbols_inHDF5 import UpdateHDF5
 
-def computeDailyBacktest( datearray, \
-                         symbols, \
-                         adjClose, \
-                         numberStocksTraded=7, \
-                         trade_cost=7.95, \
-                         monthsToHold=4, \
-                         LongPeriod=104, \
-                         MA1=207, \
-                         MA2=26, \
-                         MA2offset=3, \
-                         sma2factor=.911, \
-                         rankThresholdPct=.02, \
-                         riskDownside_min=.272, \
-                         riskDownside_max=4.386, \
-                         narrowDays=[6.,40.2], \
-                         mediumDays=[25.2,38.3],\
-                         wideDays=[75.2,512.3],\
-                         stddevThreshold=4.0,
-                         lowPct=17, \
-                         hiPct=84, \
-                         uptrendSignalMethod='uptrendSignalMethod' ):
+def computeDailyBacktest(
+        json_fn,
+        datearray,
+        symbols,
+        adjClose,
+        numberStocksTraded=7,
+        trade_cost=7.95,
+        monthsToHold=4,
+        LongPeriod=104,
+        MA1=207,
+        MA2=26,
+        MA2offset=3,
+        sma2factor=.911,
+        rankThresholdPct=.02,
+        riskDownside_min=.272,
+        riskDownside_max=4.386,
+        narrowDays=[6.,40.2],
+        mediumDays=[25.2,38.3],
+        wideDays=[75.2,512.3],
+        stddevThreshold=4.0,
+        lowPct=17,
+        hiPct=84,
+        uptrendSignalMethod='uptrendSignalMethod'
+):
 
     # put params in a dictionary
     params = {}
@@ -132,8 +135,11 @@ def computeDailyBacktest( datearray, \
     ### 2. sharpe ratio computed from daily gains over "LongPeriod"
     ########################################################################
 
-    monthgainlossweight = sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,LongPeriod,numberStocksTraded,riskDownside_min,riskDownside_max,rankThresholdPct,stddevThreshold=stddevThreshold)
-
+    monthgainlossweight = sharpeWeightedRank_2D(
+        json_fn, datearray, symbols, adjClose, signal2D ,signal2D_daily,
+        LongPeriod, numberStocksTraded, riskDownside_min, riskDownside_max,
+        rankThresholdPct, stddevThreshold=stddevThreshold
+    )
 
     ########################################################################
     ### compute traded value of stock for each month
@@ -325,7 +331,8 @@ def computeDailyBacktest( datearray, \
     ### save backtest portfolio values ( B&H and system )
     ###
     try:
-        filepath = os.path.join( os.getcwd(), "pyTAAAweb_backtestPortfolioValue.params" )
+        json_dir = os.path.split(json_fn)
+        filepath = os.path.join( json_dir, "pyTAAAweb_backtestPortfolioValue.params" )
         textmessage = ""
         for idate in range(len(BuyHoldPortfolioValue)):
             textmessage = textmessage + str(datearray[idate])+"  "+str(BuyHoldPortfolioValue[idate])+"  "+str(np.average(monthvalue[:,idate]))+"\n"
