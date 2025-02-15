@@ -13,17 +13,18 @@ plt.rcParams['figure.figsize'] = (9, 7)
 plt.rcParams['figure.dpi'] = 150
 plt.rcParams['savefig.dpi'] = 150
 import matplotlib.gridspec as gridspec
-from functions.GetParams import GetParams, GetEdition
+from functions.GetParams import get_json_params, get_symbols_file, GetEdition
 from functions.TAfunctions import dpgchannel, SMA
 
-def makeValuePlot(  ):
+def makeValuePlot(json_fn):
 
     ##########################################
     # read valuations status file and make plot
     ##########################################
 
-    filepath = os.path.join( os.getcwd(), "PyTAAA_status.params" )
-    figurepath = os.path.join( os.getcwd(), "pyTAAA_web", "PyTAAA_value.png" )
+    json_folder = os.path.split(json_fn)[0]
+    filepath = os.path.join(json_folder, "PyTAAA_status.params" )
+    figurepath = os.path.join(json_folder, "pyTAAA_web", "PyTAAA_value.png" )
 
     # get edition from where software is running
     edition = GetEdition()
@@ -107,6 +108,46 @@ def makeValuePlot(  ):
     plt.plot( sortedDailyDate, MA_midchannel )
     plt.plot( sortedDailyDate, signal )
     plt.plot( sortedDailyDate, valueSignal, 'k-', lw=.75)
+
+    params = get_json_params(json_fn)
+    if params['stockList'] == 'Naz100' and params['uptrendSignalMethod'] == "HMAs":
+        switch_date = datetime.date(2024,9,7)
+        switch_date = datetime.datetime(
+            switch_date.year, switch_date.month, switch_date.day
+        )
+        switch_value_index = np.argmin(np.abs(sortedDailyDate-switch_date))
+        plt.plot(
+            [switch_date, switch_date],
+            [sortedDailyValue[switch_value_index]//2., sortedDailyValue.max()],
+            'g-', lw=.75
+        )
+        plt.text(
+            switch_date, sortedDailyValue[switch_value_index]//2.,
+            "switch to HMAs",
+            rotation=90,
+            horizontalalignment = 'left',
+            verticalalignment='top'
+        )
+
+    if params['stockList'] == 'SP500' and params['uptrendSignalMethod'] == "HMAs":
+        switch_date = datetime.date(2025,1,1)
+        switch_date = datetime.datetime(
+            switch_date.year, switch_date.month, switch_date.day
+        )
+        switch_value_index = np.argmin(np.abs(sortedDailyDate-switch_date))
+        plt.plot(
+            [switch_date, switch_date],
+            [sortedDailyValue[switch_value_index]//2., sortedDailyValue.max()],
+            'g-', lw=.75
+        )
+        plt.text(
+            switch_date, sortedDailyValue[switch_value_index]//2.,
+            "switch to HMAs",
+            rotation=90,
+            horizontalalignment = 'left',
+            verticalalignment='top'
+        )
+
     plt.xlim((date[0],date[-1]+datetime.timedelta(10) ))
     plt.title("pyTAAA Value History Plot ("+edition+" edition)")
     # put text line with most recent date at bottom of plot
@@ -130,7 +171,7 @@ def makeValuePlot(  ):
     return figure_htmlText
 
 
-def makeUptrendingPlot( ):
+def makeUptrendingPlot(json_fn):
 
     from functions.TAfunctions import SMA, MoveMax, dpgchannel
 
@@ -138,7 +179,8 @@ def makeUptrendingPlot( ):
     # read uptrending stocks status file
     ##########################################
 
-    file2path = os.path.join( os.getcwd(), "pyTAAAweb_numberUptrendingStocks_status.params" )
+    json_folder = os.path.split(json_fn)[0]
+    file2path = os.path.join( json_folder, "pyTAAAweb_numberUptrendingStocks_status.params" )
 
     date = []
     value = []
@@ -166,7 +208,7 @@ def makeUptrendingPlot( ):
     # read multi-Sharpe signal status file
     ##########################################
 
-    file2path = os.path.join( os.getcwd(), "pyTAAAweb_multiSharpeIndicator_status.params" )
+    file2path = os.path.join( json_folder, "pyTAAAweb_multiSharpeIndicator_status.params" )
 
     dates = []
     medianSharpe = []
@@ -194,7 +236,7 @@ def makeUptrendingPlot( ):
     # make plot
     ##########################################
 
-    figure3path = os.path.join( os.getcwd(), "pyTAAA_web", "PyTAAA_numberUptrendingStocks.png" )
+    figure3path = os.path.join( json_folder, "pyTAAA_web", "PyTAAA_numberUptrendingStocks.png" )
 
     value = np.array( value ).astype('float') / np.array( active ).astype('float')
     valueSMA = SMA( value, 100 )
@@ -229,20 +271,20 @@ def makeUptrendingPlot( ):
     return figure3_htmlText
 
 
-def makeNewHighsAndLowsPlot( ):
+def makeNewHighsAndLowsPlot(json_fn):
 
     #from functions.TAfunctions import SMA, MoveMax, dpgchannel
-    from functions.GetParams import GetParams
+    from functions.GetParams import get_json_params
     from functions.CountNewHighsLows import newHighsAndLows
 
     ########################################################################
     ### compute plot showing new highs and lows over various time periods
     ########################################################################
 
-    params = GetParams()
+    params = get_json_params(json_fn)
 
     if params['stockList'] == 'Naz100':
-        _, _, _ = newHighsAndLows( num_days_highlow=(73,293),\
+        _, _, _ = newHighsAndLows(json_fn, num_days_highlow=(73,293),\
                                 num_days_cumu=(50,159),\
                                 HighLowRatio=(1.654,2.019),\
                                 HighPctile=(8.499,8.952),\
@@ -251,7 +293,7 @@ def makeNewHighsAndLowsPlot( ):
                                 makeQCPlots=True)
 
     elif params['stockList'] == 'SP500':
-        _, _, _ = newHighsAndLows( num_days_highlow=(73,146),\
+        _, _, _ = newHighsAndLows(json_fn, num_days_highlow=(73,146),\
                                 num_days_cumu=(76,108),\
                                 HighLowRatio=(2.293,1.573),\
                                 HighPctile=(12.197,11.534),\
@@ -271,7 +313,7 @@ def makeNewHighsAndLowsPlot( ):
     return figure_htmlText
 
 
-def makeTrendDispersionPlot( ):
+def makeTrendDispersionPlot(json_fn):
 
     from functions.TAfunctions import SMA, MoveMax
     #import functions.allstats
@@ -279,8 +321,9 @@ def makeTrendDispersionPlot( ):
     ##########################################
     # read uptrending stocks status file and make plot
     ##########################################
-    file4path = os.path.join( os.getcwd(), "pyTAAAweb_MeanTrendDispersion_status.params" )
-    figure4path = os.path.join( os.getcwd(), "pyTAAA_web", "PyTAAA_MeanTrendDispersion.png" )
+    json_folder = os.path.split(json_fn)[0]
+    file4path = os.path.join( json_folder, "pyTAAAweb_MeanTrendDispersion_status.params" )
+    figure4path = os.path.join( json_folder, "pyTAAA_web", "PyTAAA_MeanTrendDispersion.png" )
 
     dateMedians = []
     valueMeans = []
@@ -328,7 +371,7 @@ def makeTrendDispersionPlot( ):
     ### make a combined plot
     ### 1. get percent of uptrending stocks
     ###
-    file2path = os.path.join( os.getcwd(), "pyTAAAweb_numberUptrendingStocks_status.params" )
+    file2path = os.path.join( json_folder, "pyTAAAweb_numberUptrendingStocks_status.params" )
     date = []
     value = []
     active = []
@@ -363,7 +406,7 @@ def makeTrendDispersionPlot( ):
     valueMediansSMA65 = ( valueMediansSMA65 - valueMediansSMA65.mean() ) * 8. + .7
     valueMediansSMA100 = ( valueMediansSMA100 - valueMediansSMA100.mean() ) * 8. + .7
 
-    file3path = os.path.join( os.getcwd(), "pyTAAAweb_backtestPortfolioValue.params" )
+    file3path = os.path.join( json_folder, "pyTAAAweb_backtestPortfolioValue.params" )
     backtestDate = []
     backtestBHvalue = []
     backtestSystemvalue = []
@@ -391,7 +434,7 @@ def makeTrendDispersionPlot( ):
     ### make a combined plot
     ### 2. make plot showing trend below B&H and trade-system Value
     ###
-    figure5path = os.path.join( os.getcwd(), "pyTAAA_web", "PyTAAA_backtestWithTrend.png" )
+    figure5path = os.path.join( json_folder, "pyTAAA_web", "PyTAAA_backtestWithTrend.png" )
     plt.figure(5,figsize=(9,7))
     plt.clf()
     subplotsize = gridspec.GridSpec(2,1,height_ratios=[5,3])
@@ -402,18 +445,34 @@ def makeTrendDispersionPlot( ):
     plt.ylim([1000,max(10000,plotmax)])
     numDaysToPlot = 252*10
     numDaysToPlot = len( backtestBHvalue )
-    plt.plot( backtestDate[-numDaysToPlot:], backtestBHvalue[-numDaysToPlot:], 'r-', lw=1.25, label='Buy & Hold')
-    plt.plot( backtestDate[-numDaysToPlot:], backtestSystemvalue[-numDaysToPlot:], 'k-', lw=1.25, label='Trading System')
+    plt.plot(
+        backtestDate[-numDaysToPlot:], backtestBHvalue[-numDaysToPlot:],
+        'r-', lw=1.25, label='Buy & Hold'
+    )
+    plt.plot(
+        backtestDate[-numDaysToPlot:], backtestSystemvalue[-numDaysToPlot:],
+        'k-', lw=1.25, label='Trading System'
+    )
     plt.legend(loc=2,prop={'size':9})
     plt.title("pyTAAA History Plot\n Portfolio Value")
-    plt.text( backtestDate[-numDaysToPlot+50], 2500, "Backtest updated "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"), fontsize=7.5 )
+    plt.text(
+        backtestDate[-numDaysToPlot+50], 2500,
+        "Backtest updated "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"),
+        fontsize=7.5
+    )
     plt.subplot(subplotsize[1])
     plt.grid(True)
     plt.ylim(0, 1.2)
     numDaysToPlot = 252*10
     numDaysToPlot = len( value )
-    plt.plot( date[-numDaysToPlot:], value[-numDaysToPlot:], 'k-', lw=.25, label='Percent Uptrending')
-    plt.plot( date[-numDaysToPlot:], np.clip(PctInvested[-numDaysToPlot:],0.,1.2), 'g-', alpha=.65, lw=.5, label='Percent to Invest')
+    plt.plot(
+        date[-numDaysToPlot:], value[-numDaysToPlot:],
+        'k-', lw=.25, label='Percent Uptrending'
+    )
+    plt.plot(
+        date[-numDaysToPlot:], np.clip(PctInvested[-numDaysToPlot:],0.,1.2),
+        'g-', alpha=.65, lw=.5, label='Percent to Invest'
+    )
     numDaysToPlot = len( valueMedians )
     plt.legend(loc=3,prop={'size':6})
     plt.savefig(figure5path)
@@ -436,7 +495,7 @@ def makeTrendDispersionPlot( ):
     return figure5_htmlText
 
 
-def makeDailyMonteCarloBacktest( ):
+def makeDailyMonteCarloBacktest(json_fn):
 
     import datetime
     from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
@@ -445,7 +504,8 @@ def makeDailyMonteCarloBacktest( ):
     ##########################################
     # make plot with daily monte carlo backtest
     ##########################################
-    figure6path = os.path.join( os.getcwd(), 'pyTAAA_web', 'PyTAAA_monteCarloBacktest.png' )
+    json_folder = os.path.split(json_fn)[0]
+    figure6path = os.path.join( json_folder, 'pyTAAA_web', 'PyTAAA_monteCarloBacktest.png' )
 
     ###
     ### make a combined plot
@@ -469,31 +529,40 @@ def makeDailyMonteCarloBacktest( ):
     ### retrieve quotes with symbols and dates
     ###
 
-    params = GetParams()
-    stockList = params['stockList']
+    # params = get_json_params(json_fn)
+    symbols_file = get_symbols_file(json_fn)
+    # stockList = params['stockList']
 
-    # read list of symbols from disk.
-    symbol_directory = os.path.join( os.getcwd(), "symbols" )
-    if stockList == 'Naz100':
-        symbol_file = "Naz100_Symbols.txt"
-    elif stockList == 'SP500':
-        symbol_file = "SP500_Symbols.txt"
-    symbols_file = os.path.join( symbol_directory, symbol_file )
+    # # read list of symbols from disk.
+    # symbol_directory = os.path.join( json_folder, "symbols" )
+    # if stockList == 'Naz100':
+    #     symbol_file = "Naz100_Symbols.txt"
+    # elif stockList == 'SP500':
+    #     symbol_file = "SP500_Symbols.txt"
+    # symbols_file = os.path.join( symbol_directory, symbol_file )
+    symbol_directory, symbol_file = os.path.split(symbols_file)
 
-    _, _, datearray, _, _ = loadQuotes_fromHDF( symbols_file )
+    _, _, datearray, _, _ = loadQuotes_fromHDF(symbols_file, json_fn)
 
     # get day when output plot was last modified
     try:
         mtime = os.path.getmtime(figure6path)
     except OSError:
         mtime = 0
-    last_modified_date = datetime.date.fromtimestamp(mtime)
+    # last_modified_date = datetime.date.fromtimestamp(mtime)
+    last_modified_date = datetime.datetime.fromtimestamp(mtime)
 
     print("Backtest check:   last_modified_date (day) = ", last_modified_date.day, " datearray[-1].day = ", datearray[-1].day)
 
     #if last_modified_date.day <= datearray[-1].day:
-    if (last_modified_date - datearray[-1]).total_seconds() < 0:
-        dailyBacktest_pctLong()
+    # if (last_modified_date - datearray[-1]).total_seconds() < 0:
+    # if modified_hours < 20.0:
+    #     dailyBacktest_pctLong(json_fn)
+    modified_time = (datetime.datetime.now() - last_modified_date)
+    modified_hours = modified_time.days * 24 + modified_time.seconds / 3600
+
+    if modified_hours > 20.0:
+        dailyBacktest_pctLong(json_fn)
     #dailyBacktest_pctLong()   ### TODO: remove this line !!!!!!!!
 
     ##########################################
@@ -514,7 +583,7 @@ def makeDailyMonteCarloBacktest( ):
 
 
 
-def makeStockCluster( ):
+def makeStockCluster(json_fn):
 
     import datetime
     from functions.stock_cluster import dailyStockClusters
@@ -522,7 +591,8 @@ def makeStockCluster( ):
     ##########################################
     # make plot with daily monte carlo backtest
     ##########################################
-    figure7path = os.path.join( os.getcwd(), 'pyTAAA_web', 'Clustered_companyNames.png' )
+    json_folder = os.path.split(json_fn)[0]
+    figure7path = os.path.join( json_folder, 'pyTAAA_web', 'Clustered_companyNames.png' )
 
     ###
     ### make a combined plot
@@ -534,25 +604,25 @@ def makeStockCluster( ):
     hourOfDay = today.hour
 
     if hourOfDay < 3:
-        figure7_htmlText = dailyStockClusters()
+        figure7_htmlText = dailyStockClusters(json_fn)
     else:
         figure7path = 'Clustered_companyNames.png'  # re-set to name without full path
         figure7_htmlText = "\n<br><h3>Daily stock clustering analyis. Based on one year performance correlations.</h3>\n"
         figure7_htmlText = figure7_htmlText + "\nClustering based on daily variation in Nasdaq 100 quotes.\n"
         figure7_htmlText = figure7_htmlText + '''<br><img src="'''+figure7path+'''" alt="PyTAAA by DonaldPG" width="850" height="500"><br>\n'''
 
-
     return figure7_htmlText
 
 
-def makeMinimumSpanningTree( ):
+def makeMinimumSpanningTree(json_fn):
 
     from functions.make_stock_xcorr_network_plots import make_networkx_spanning_tree_plot
 
     ##########################################
     # make plot with daily monte carlo backtest
     ##########################################
-    figure7apath = os.path.join( os.getcwd(), 'pyTAAA_web', 'minimum_spanning_tree.png' )
+    json_folder = os.path.split(json_fn)[0]
+    figure7apath = os.path.join( json_folder, 'pyTAAA_web', 'minimum_spanning_tree.png' )
 
     ###
     ### make plot of minimum spanning tree based on correlations between
@@ -571,28 +641,29 @@ def makeMinimumSpanningTree( ):
 
 
 
-def makeDailyChannelOffsetSignal( ):
-
+def makeDailyChannelOffsetSignal(json_fn):
     from functions.TAfunctions import recentTrendAndStdDevs
     #import functions.allstats
     from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
-    from functions.GetParams import GetParams
 
-    file4path = os.path.join( os.getcwd(), "pyTAAAweb_DailyChannelOffsetSignal_status.params" )
-    figure4path = os.path.join( os.getcwd(), "pyTAAA_web", "PyTAAA_DailyChannelOffsetSignalV.png" )
+    json_folder = os.path.split(json_fn)[0]
+    file4path = os.path.join( json_folder, "pyTAAAweb_DailyChannelOffsetSignal_status.params" )
+    figure4path = os.path.join( json_folder, "pyTAAA_web", "PyTAAA_DailyChannelOffsetSignalV.png" )
 
-    params = GetParams()
-    stockList = params['stockList']
+    print("   . json_fn = " + str(json_fn))
+    params = get_json_params(json_fn)
+    symbols_file = get_symbols_file(json_fn)
 
-    # read list of symbols from disk.
-    symbol_directory = os.path.join( os.getcwd(), "symbols" )
-    if stockList == 'Naz100':
-        symbol_file = "Naz100_Symbols.txt"
-    elif stockList == 'SP500':
-        symbol_file = "SP500_Symbols.txt"
-    symbols_file = os.path.join( symbol_directory, symbol_file )
+    # # read list of symbols from disk.
+    # symbol_directory = os.path.join( json_folder, "symbols" )
+    # if stockList == 'Naz100':
+    #     symbol_file = "Naz100_Symbols.txt"
+    # elif stockList == 'SP500':
+    #     symbol_file = "SP500_Symbols.txt"
+    # symbols_file = os.path.join( symbol_directory, symbol_file )
+    symbol_directory, symbol_file = os.path.split(symbols_file)
 
-    adjClose, symbols, datearray, _, _ = loadQuotes_fromHDF( symbols_file )
+    adjClose, symbols, datearray, _, _ = loadQuotes_fromHDF(symbols_file, json_fn)
 
     ###
     ### get last date already processed
@@ -616,13 +687,13 @@ def makeDailyChannelOffsetSignal( ):
     except:
         print(" Error: unable to read updates from pyTAAAweb_numberUptrendingStocks_status.params")
         print("")
-    print(" ... inside MakeValuePlot. .line 615. _dates = " + str( _dates))
+    # print(" ... inside MakeValuePlot. .line 615. _dates = " + str( _dates))
     # last_date = _dates[-1].date()
     last_date = datetime.datetime.strptime(str(datearray[-1]), '%Y-%m-%d')
     print("   ...inside makeDailyChannelOffsetSignal... last_date = ", last_date)
 
     # parameters for signal
-    params = GetParams()
+    params = get_json_params(json_fn)
     minperiod = params['minperiod']
     maxperiod = params['maxperiod']
     incperiod = params['incperiod']
@@ -752,7 +823,7 @@ def makeDailyChannelOffsetSignal( ):
     ### make a combined plot
     ### 2. make plot showing trend below B&H and trade-system Value
     ###
-    file3path = os.path.join( os.getcwd(), "pyTAAAweb_backtestPortfolioValue.params" )
+    file3path = os.path.join( json_folder, "pyTAAAweb_backtestPortfolioValue.params" )
     backtestDate = []
     backtestBHvalue = []
     backtestSystemvalue = []
@@ -775,7 +846,7 @@ def makeDailyChannelOffsetSignal( ):
         print(" Error: unable to read updates from pyTAAAweb_backtestPortfolioValue.params")
         print("")
 
-    figure5path = os.path.join( os.getcwd(), "pyTAAA_web", "PyTAAA_backtestWithOffsetChannelSignal.png" )
+    figure5path = os.path.join( json_folder, "pyTAAA_web", "PyTAAA_backtestWithOffsetChannelSignal.png" )
     plt.figure(5,figsize=(9,7))
     plt.clf()
     subplotsize = gridspec.GridSpec(2,1,height_ratios=[5,3])

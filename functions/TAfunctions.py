@@ -4,7 +4,8 @@ import numpy as np
 from numpy import isnan
 #from yahooFinance import getQuote
 from functions.quotes_adjClose import get_pe
-from functions.readSymbols import readSymbolList
+# from functions.readSymbols import readSymbolList
+from functions.readSymbols import read_symbols_list_local
 
 import matplotlib
 if os.environ.get('DISPLAY','') == '':
@@ -446,7 +447,7 @@ def clean_signal(array1D,symbol_name):
     adjClose = cleantobeginning( adjClose )
     adjClose = cleantoend( adjClose )
     adjClose_changed = False in (adjClose==quotes_before_cleaning)
-    print("   ... inside PortfolioPerformanceCalcs ... symbol, did cleaning change adjClose? ", symbol_name, adjClose_changed)
+    print("   ... inside clean_signal ... symbol, did cleaning change adjClose? ", symbol_name, adjClose_changed)
     return adjClose
 
 #----------------------------------------------
@@ -901,7 +902,7 @@ def recentSharpeWithAndWithoutGap(x,numdaysinfit=504,offset_factor=.4):
         else:
             sharpe_pair = [sharpe2periods,sharpeList[i]]
         sharpe2periods = sharpe_pair[0]*np.sin(crossplot_rotationAngle) + sharpe_pair[1]*np.cos(crossplot_rotationAngle)
-        print("i, sharpe_pair, combined = ", i,sharpe_pair, sharpe2periods)
+        print("i, sharpe_pair, combined = " + str((i, sharpe_pair, sharpe2periods)))
 
     return sharpe2periods
 
@@ -1144,13 +1145,13 @@ def recentTrendComboGain(x,
 
 #----------------------------------------------
 
-def textmessageOutsideTrendChannel(  symbols, adjClose ):
+def textmessageOutsideTrendChannel(symbols, adjClose, json_fn):
 
     # temporarily skip this!!!!!!
     #return
 
     import datetime
-    from functions.GetParams import GetParams, GetHoldings, GetEdition
+    from functions.GetParams import get_json_params, get_holdings, GetEdition
     from functions.CheckMarketOpen import get_MarketOpenOrClosed
     #from functions.SendEmail import SendTextMessage
     from functions.SendEmail import SendEmail
@@ -1159,7 +1160,7 @@ def textmessageOutsideTrendChannel(  symbols, adjClose ):
     # (to downside) the established channel
 
     # Get Credentials for sending email
-    params = GetParams()
+    params = get_json_params(json_fn)
     print("")
 
     #print "params = ", params
@@ -1172,7 +1173,8 @@ def textmessageOutsideTrendChannel(  symbols, adjClose ):
     headlinetext = "market status: " + get_MarketOpenOrClosed()
 
     # Get Holdings from file
-    holdings = GetHoldings()
+    # holdings = GetHoldings()
+    holdings = get_holdings(json_fn)
     holdings_symbols = holdings['stocks']
     edition = GetEdition()
 
@@ -1303,8 +1305,8 @@ def hma(x, period):
     hma = diff.rolling(int(np.sqrt(period))).mean()
     hma = hma.values.T
     return hma
-    
-    
+
+
 def hma_pd(data, period):
     """
     Calculates the Hull Moving Average for a given dataset.
@@ -1719,7 +1721,11 @@ def move_martin_2D(adjClose,period):
 
 #----------------------------------------------
 
-def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,LongPeriod,rankthreshold,riskDownside_min,riskDownside_max,rankThresholdPct,stddevThreshold=4.,makeQCPlots=False):
+def sharpeWeightedRank_2D(
+        json_fn, datearray,symbols,adjClose,signal2D,signal2D_daily,
+        LongPeriod,rankthreshold,riskDownside_min,riskDownside_max,
+        rankThresholdPct,stddevThreshold=4.,makeQCPlots=False
+):
 
     # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
     # rankthreshold --     # select this many funds with best recent performance
@@ -1735,11 +1741,12 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
         from bn import rankdata as rd
     except:
         import scipy.stats.mstats as bn
-    from functions.quotes_for_list_adjClose import get_Naz100List, get_SP500List, get_ETFList
-    from functions.GetParams import GetParams
+    # from functions.quotes_for_list_adjClose import get_Naz100List, get_SP500List, get_ETFList
+    from functions.GetParams import get_json_params, get_symbols_file
 
     # Get params for sending textmessage and email
-    params = GetParams()
+    params = get_json_params(json_fn)
+    symbols_file = get_symbols_file(json_fn)
     stockList = params['stockList']
 
     adjClose_despike = despike_2D( adjClose, LongPeriod, stddevThreshold=stddevThreshold )
@@ -1760,7 +1767,8 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
     gainloss[gainloss == 0] = 1.0
 
     # update file with daily count of uptrending symbols in index universe
-    filepath = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_dailyNumberUptrendingSymbolsList.txt" )
+    json_dir = os.path.split(json_fn)[0]
+    filepath = os.path.join( json_dir, "pyTAAA_web", "pyTAAAweb_dailyNumberUptrendingSymbolsList.txt" )
     print("\n\nfile for daily number of uptrending symbols = ", filepath)
     if os.path.exists( os.path.abspath(filepath) ):
         numberUptrendingSymbols = 0
@@ -1850,14 +1858,17 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
 
     # if symbol is not in current stock index universe, set deltarank to zero so stock will not be chosen
     #  - remember that low ranks are biggest gainers
-    symbol_directory = os.path.join(os.getcwd(), "symbols")
+    json_dir = os.path.split(json_fn)[0]
+    symbol_directory = os.path.join(json_dir, "symbols")
 
     if stockList == 'Naz100':
-        currentSymbolList,_,_ = get_Naz100List()
+        # currentSymbolList,_,_ = get_Naz100List(symbols_file)
+        currentSymbolList = read_symbols_list_local(json_fn)
     elif stockList == 'SP500':
-        currentSymbolList,_,_ = get_SP500List()
-    elif stockList == 'ETF':
-        currentSymbolList,_,_ = get_ETFList()
+        # currentSymbolList,_,_ = get_SP500List(symbols_file)
+        currentSymbolList = read_symbols_list_local(json_fn)
+    # elif stockList == 'ETF':
+    #     currentSymbolList,_,_ = get_ETFList()
 
     print("TAFunctions.sharpeWeightedRank_2D ... monthgainloss.shape[0] = "+str(monthgainloss.shape[0]))
     rankThreshold = (1. - rankThresholdPct) * ( monthgainlossRank.max() - monthgainlossRank.min() )
@@ -1977,11 +1988,12 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
     monthgainlossweight[monthgainlossweight<1.e-3] = 0.  # changed result from 1 to 0
 
     if makeQCPlots==True:
+        json_dir = os.path.split(json_fn)[0]
         # input symbols and company names from text file
         if stockList == 'Naz100':
-            companyName_file = os.path.join( os.getcwd(), "symbols",  "companyNames.txt" )
+            companyName_file = os.path.join( json_dir, "symbols",  "companyNames.txt" )
         elif stockList == 'SP500':
-            companyName_file = os.path.join( os.getcwd(), "symbols",  "SP500_companyNames.txt" )
+            companyName_file = os.path.join( json_dir, "symbols",  "SP500_companyNames.txt" )
         with open( companyName_file, "r" ) as f:
             companyNames = f.read()
 
@@ -2079,12 +2091,13 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
 
         print(" ... finished computing price positions within trend channels ...")
 
-        path_symbolChartsSort_byRankBeginMonth = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_symbolCharts_MonthStartRank.html" )
-        path_symbolChartsSort_byRankToday = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_symbolCharts_TodayRank.html" )
-        path_symbolChartsSort_byRecentGainRank = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_symbolCharts_recentGainRank.html" )
-        path_symbolChartsSort_byRecentComboGainRank = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_symbolCharts_recentComboGainRank.html" )
-        path_symbolChartsSort_byRecentTrendsRatioRank = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_symbolCharts_recentTrendRatioRank.html" )
-        path_symbolChartsSort_byRecentSharpeRatioRank = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_symbolCharts_recentSharpeRatioRank.html" )
+        json_dir = os.path.split(json_fn)[0]
+        path_symbolChartsSort_byRankBeginMonth = os.path.join( json_dir, "pyTAAA_web", "pyTAAAweb_symbolCharts_MonthStartRank.html" )
+        path_symbolChartsSort_byRankToday = os.path.join( json_dir, "pyTAAA_web", "pyTAAAweb_symbolCharts_TodayRank.html" )
+        path_symbolChartsSort_byRecentGainRank = os.path.join( json_dir, "pyTAAA_web", "pyTAAAweb_symbolCharts_recentGainRank.html" )
+        path_symbolChartsSort_byRecentComboGainRank = os.path.join( json_dir, "pyTAAA_web", "pyTAAAweb_symbolCharts_recentComboGainRank.html" )
+        path_symbolChartsSort_byRecentTrendsRatioRank = os.path.join( json_dir, "pyTAAA_web", "pyTAAAweb_symbolCharts_recentTrendRatioRank.html" )
+        path_symbolChartsSort_byRecentSharpeRatioRank = os.path.join( json_dir, "pyTAAA_web", "pyTAAAweb_symbolCharts_recentSharpeRatioRank.html" )
 
         pagetext_byRankBeginMonth = "<!DOCTYPE html>+\n"  +\
                                "<html>+\n"  +\
@@ -2500,7 +2513,8 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
 
         rank_text = avg_performance_text + rank_text + "</table></div>\n"
 
-        filepath = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_RankList.txt" )
+        json_dir = os.path.split(json_fn)[0]
+        filepath = os.path.join( json_dir, "pyTAAA_web", "pyTAAAweb_RankList.txt" )
         with open( filepath, "w" ) as f:
             f.write(rank_text)
 
@@ -2553,7 +2567,7 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
             #####channelPercent.append(format(pctChannel-1.,'6.1%'))
             #####ChannelPct_text = ChannelPct_text + format(pctChannel-1.,'6.1%')
 
-        filepath = os.path.join( os.getcwd(), "PyTAAA_ranks.params" )
+        filepath = os.path.join( json_dir, "PyTAAA_ranks.params" )
         with open( filepath, "a" ) as f:
             f.write(lastdate_text)
             f.write("\n")
@@ -2569,8 +2583,11 @@ def sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,Lon
 
 #----------------------------------------------
 
-def MAA_WeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,LongPeriod,numberStocksTraded,
-                        wR, wC, wV, wS, stddevThreshold=4. ):
+def MAA_WeightedRank_2D(
+        json_fn, datearray, symbols, adjClose ,signal2D ,signal2D_daily,
+        LongPeriod,numberStocksTraded,
+        wR, wC, wV, wS, stddevThreshold=4.
+):
 
     # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
     # rankthreshold --     # select this many funds with best recent performance
@@ -2587,8 +2604,8 @@ def MAA_WeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,LongP
     except:
         import scipy.stats.mstats as bn
 
-    from functions.GetParams import GetParams
-    params = GetParams()
+    from functions.GetParams import get_json_params
+    params = get_json_params(json_fn)
     stockList = params['stockList']
 
     adjClose_despike = despike_2D( adjClose, LongPeriod, stddevThreshold=stddevThreshold )
@@ -2714,10 +2731,11 @@ def MAA_WeightedRank_2D(datearray,symbols,adjClose,signal2D,signal2D_daily,LongP
             CPweights[:,jj] = CPweights[:,jj-1]
 
     # input symbols and company names from text file
+    json_dir = os.path.split(json_fn)[0]
     if stockList == 'Naz100':
-        companyName_file = os.path.join( os.getcwd(), "symbols",  "companyNames.txt" )
+        companyName_file = os.path.join( json_dir, "symbols",  "companyNames.txt" )
     elif stockList == 'SP500':
-        companyName_file = os.path.join( os.getcwd(), "symbols",  "SP500_companyNames.txt" )
+        companyName_file = os.path.join( json_dir, "symbols",  "SP500_companyNames.txt" )
     with open( companyName_file, "r" ) as f:
         companyNames = f.read()
 

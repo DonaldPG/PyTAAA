@@ -33,11 +33,20 @@ from functions.TAfunctions import (
 from functions.CheckMarketOpen import *
 from functions.CountNewHighsLows import newHighsAndLows
 
-def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
+def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
 
+    print("\n\n ... inside PortfolioPerformanceCalcs...")
+    
+    print("   . symbol_directory = " + symbol_directory)
+    print("   . symbol_file = " + symbol_file)
+    
+    json_dir = os.path.split(json_fn)[0]
+    print("   . json_dir = " + json_dir)
+    
     ## update quotes from list of symbols
     filename = os.path.join(symbol_directory, symbol_file)
-    adjClose, symbols, datearray, _, _ = loadQuotes_fromHDF( symbol_file )
+    print("   . filename for loadQuotes_fromHDF = " + filename)
+    adjClose, symbols, datearray, _, _ = loadQuotes_fromHDF(filename, json_fn)
     for i in range(adjClose.shape[0]):
         adjClose[i,:] = interpolate(adjClose[i,:])
         adjClose[i,:] = cleantobeginning(adjClose[i,:])
@@ -104,100 +113,100 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
     ### Use either 3 SMA's or channels to comput uptrending signal
     ### - method depends on where code is running
 
-    """
-    # check the operatiing system to determine whether to move files or use ftp
-    import platform
+    # """
+    # # check the operatiing system to determine whether to move files or use ftp
+    # import platform
 
-    operatingSystem = platform.system()
-    architecture = platform.uname()[4]
-    computerName = platform.uname()[1]
+    # operatingSystem = platform.system()
+    # architecture = platform.uname()[4]
+    # computerName = platform.uname()[1]
 
-    print "  ...platform: ", operatingSystem, architecture, computerName
+    # print "  ...platform: ", operatingSystem, architecture, computerName
 
-    if uptrendSignalMethod == 'SMAs' :
-        print "  ...using 3 SMA's for signal2D"
-        print "\n\n ...calculating signal2D using '"+uptrendSignalMethod+"' method..."
-        ########################################################################
-        ## Calculate signal for all stocks based on 3 simple moving averages (SMA's)
-        ########################################################################
-        sma0 = SMA_2D( adjClose, MA2 )               # MA2 is shortest
-        sma1 = SMA_2D( adjClose, MA2 + MA2offset )
-        sma2 = sma2factor * SMA_2D( adjClose, MA1 )  # MA1 is longest
+    # if uptrendSignalMethod == 'SMAs' :
+    #     print "  ...using 3 SMA's for signal2D"
+    #     print "\n\n ...calculating signal2D using '"+uptrendSignalMethod+"' method..."
+    #     ########################################################################
+    #     ## Calculate signal for all stocks based on 3 simple moving averages (SMA's)
+    #     ########################################################################
+    #     sma0 = SMA_2D( adjClose, MA2 )               # MA2 is shortest
+    #     sma1 = SMA_2D( adjClose, MA2 + MA2offset )
+    #     sma2 = sma2factor * SMA_2D( adjClose, MA1 )  # MA1 is longest
 
-        signal2D = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
-        for ii in range(adjClose.shape[0]):
-            for jj in range(adjClose.shape[1]):
-                if adjClose[ii,jj] > sma2[ii,jj] or ((adjClose[ii,jj] > min(sma0[ii,jj],sma1[ii,jj]) and sma0[ii,jj] > sma0[ii,jj-1])):
-                    signal2D[ii,jj] = 1
-                    if jj== adjClose.shape[1]-1 and isnan(adjClose[ii,-1]):
-                        signal2D[ii,jj] = 0                #### added to avoid choosing stocks no longer in index
-            # take care of special case where constant share price is inserted at beginning of series
-            index = np.argmax(np.clip(np.abs(gainloss[ii,:]-1),0,1e-8)) - 1
+    #     signal2D = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
+    #     for ii in range(adjClose.shape[0]):
+    #         for jj in range(adjClose.shape[1]):
+    #             if adjClose[ii,jj] > sma2[ii,jj] or ((adjClose[ii,jj] > min(sma0[ii,jj],sma1[ii,jj]) and sma0[ii,jj] > sma0[ii,jj-1])):
+    #                 signal2D[ii,jj] = 1
+    #                 if jj== adjClose.shape[1]-1 and isnan(adjClose[ii,-1]):
+    #                     signal2D[ii,jj] = 0                #### added to avoid choosing stocks no longer in index
+    #         # take care of special case where constant share price is inserted at beginning of series
+    #         index = np.argmax(np.clip(np.abs(gainloss[ii,:]-1),0,1e-8)) - 1
 
-            signal2D[ii,0:index] = 0
+    #         signal2D[ii,0:index] = 0
 
-        dailyNumberUptrendingStocks = np.sum(signal2D,axis = 0)
+    #     dailyNumberUptrendingStocks = np.sum(signal2D,axis = 0)
 
 
-    elif uptrendSignalMethod == 'minmaxChannels' :
-        print "  ...using 3 minmax channels for signal2D"
-        print "\n\n ...calculating signal2D using '"+uptrendSignalMethod+"' method..."
+    # elif uptrendSignalMethod == 'minmaxChannels' :
+    #     print "  ...using 3 minmax channels for signal2D"
+    #     print "\n\n ...calculating signal2D using '"+uptrendSignalMethod+"' method..."
 
-        ########################################################################
-        ## Calculate signal for all stocks based on 3 minmax channels (dpgchannels)
-        ########################################################################
+    #     ########################################################################
+    #     ## Calculate signal for all stocks based on 3 minmax channels (dpgchannels)
+    #     ########################################################################
 
-        # narrow channel is designed to remove day-to-day variability
+    #     # narrow channel is designed to remove day-to-day variability
 
-        print "narrow days min,max,inc = ", narrowDays[0], narrowDays[-1], (narrowDays[-1]-narrowDays[0])/7.
-        narrow_minChannel, narrow_maxChannel = dpgchannel_2D( adjClose, narrowDays[0], narrowDays[-1], (narrowDays[-1]-narrowDays[0])/7. )
-        narrow_midChannel = (narrow_minChannel+narrow_maxChannel)/2.
+    #     print "narrow days min,max,inc = ", narrowDays[0], narrowDays[-1], (narrowDays[-1]-narrowDays[0])/7.
+    #     narrow_minChannel, narrow_maxChannel = dpgchannel_2D( adjClose, narrowDays[0], narrowDays[-1], (narrowDays[-1]-narrowDays[0])/7. )
+    #     narrow_midChannel = (narrow_minChannel+narrow_maxChannel)/2.
 
-        medium_minChannel, medium_maxChannel = dpgchannel_2D( adjClose, mediumDays[0], mediumDays[-1], (mediumDays[-1]-mediumDays[0])/7. )
-        medium_midChannel = (medium_minChannel+medium_maxChannel)/2.
-        mediumSignal = ((narrow_midChannel-medium_minChannel)/(medium_maxChannel-medium_minChannel)-0.5)*2.0
+    #     medium_minChannel, medium_maxChannel = dpgchannel_2D( adjClose, mediumDays[0], mediumDays[-1], (mediumDays[-1]-mediumDays[0])/7. )
+    #     medium_midChannel = (medium_minChannel+medium_maxChannel)/2.
+    #     mediumSignal = ((narrow_midChannel-medium_minChannel)/(medium_maxChannel-medium_minChannel)-0.5)*2.0
 
-        wide_minChannel, wide_maxChannel = dpgchannel_2D( adjClose, wideDays[0], wideDays[-1], (wideDays[-1]-wideDays[0])/7. )
-        wide_midChannel = (wide_minChannel+wide_maxChannel)/2.
-        wideSignal = ((narrow_midChannel-wide_minChannel)/(wide_maxChannel-wide_minChannel)-0.5)*2.0
+    #     wide_minChannel, wide_maxChannel = dpgchannel_2D( adjClose, wideDays[0], wideDays[-1], (wideDays[-1]-wideDays[0])/7. )
+    #     wide_midChannel = (wide_minChannel+wide_maxChannel)/2.
+    #     wideSignal = ((narrow_midChannel-wide_minChannel)/(wide_maxChannel-wide_minChannel)-0.5)*2.0
 
-        signal2D = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
-        for ii in range(adjClose.shape[0]):
-            for jj in range(adjClose.shape[1]):
-                if mediumSignal[ii,jj] + wideSignal[ii,jj] > 0:
-                    signal2D[ii,jj] = 1
-                    if jj== adjClose.shape[1]-1 and isnan(adjClose[ii,-1]):
-                        signal2D[ii,jj] = 0                #### added to avoid choosing stocks no longer in index
-            # take care of special case where constant share price is inserted at beginning of series
-            index = np.argmax(np.clip(np.abs(gainloss[ii,:]-1),0,1e-8)) - 1
+    #     signal2D = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
+    #     for ii in range(adjClose.shape[0]):
+    #         for jj in range(adjClose.shape[1]):
+    #             if mediumSignal[ii,jj] + wideSignal[ii,jj] > 0:
+    #                 signal2D[ii,jj] = 1
+    #                 if jj== adjClose.shape[1]-1 and isnan(adjClose[ii,-1]):
+    #                     signal2D[ii,jj] = 0                #### added to avoid choosing stocks no longer in index
+    #         # take care of special case where constant share price is inserted at beginning of series
+    #         index = np.argmax(np.clip(np.abs(gainloss[ii,:]-1),0,1e-8)) - 1
 
-            signal2D[ii,0:index] = 0
+    #         signal2D[ii,0:index] = 0
 
-            '''
-            # take care of special case where mp quote exists at end of series
-            if firstTrailingEmptyPriceIndex[ii] != 0:
-                signal2D[ii,firstTrailingEmptyPriceIndex[ii]:] = 0
-            '''
+    #         '''
+    #         # take care of special case where mp quote exists at end of series
+    #         if firstTrailingEmptyPriceIndex[ii] != 0:
+    #             signal2D[ii,firstTrailingEmptyPriceIndex[ii]:] = 0
+    #         '''
 
-    elif uptrendSignalMethod == 'percentileChannels' :
-        print "\n\n ...calculating signal2D using '"+uptrendSignalMethod+"' method..."
-        signal2D = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
-        lowChannel,hiChannel = percentileChannel_2D(adjClose,MA1,MA2+.01,MA2offset,lowPct,hiPct)
-        for ii in range(adjClose.shape[0]):
-            for jj in range(1,adjClose.shape[1]):
-                if adjClose[ii,jj] > lowChannel[ii,jj] and adjClose[ii,jj-1] <= lowChannel[ii,jj-1]:
-                    signal2D[ii,jj] = 1
-                elif adjClose[ii,jj] < hiChannel[ii,jj] and adjClose[ii,jj-1] >= hiChannel[ii,jj-1]:
-                    signal2D[ii,jj] = 0
-                else:
-                    signal2D[ii,jj] = signal2D[ii,jj-1]
+    # elif uptrendSignalMethod == 'percentileChannels' :
+    #     print "\n\n ...calculating signal2D using '"+uptrendSignalMethod+"' method..."
+    #     signal2D = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
+    #     lowChannel,hiChannel = percentileChannel_2D(adjClose,MA1,MA2+.01,MA2offset,lowPct,hiPct)
+    #     for ii in range(adjClose.shape[0]):
+    #         for jj in range(1,adjClose.shape[1]):
+    #             if adjClose[ii,jj] > lowChannel[ii,jj] and adjClose[ii,jj-1] <= lowChannel[ii,jj-1]:
+    #                 signal2D[ii,jj] = 1
+    #             elif adjClose[ii,jj] < hiChannel[ii,jj] and adjClose[ii,jj-1] >= hiChannel[ii,jj-1]:
+    #                 signal2D[ii,jj] = 0
+    #             else:
+    #                 signal2D[ii,jj] = signal2D[ii,jj-1]
 
-                if jj== adjClose.shape[1]-1 and isnan(adjClose[ii,-1]):
-                    signal2D[ii,jj] = 0                #### added to avoid choosing stocks no longer in index
-            # take care of special case where constant share price is inserted at beginning of series
-            index = np.argmax(np.clip(np.abs(gainloss[ii,:]-1),0,1e-8)) - 1
-            signal2D[ii,0:index] = 0
-    """
+    #             if jj== adjClose.shape[1]-1 and isnan(adjClose[ii,-1]):
+    #                 signal2D[ii,jj] = 0                #### added to avoid choosing stocks no longer in index
+    #         # take care of special case where constant share price is inserted at beginning of series
+    #         index = np.argmax(np.clip(np.abs(gainloss[ii,:]-1),0,1e-8)) - 1
+    #         signal2D[ii,0:index] = 0
+    # """
 
     if params['uptrendSignalMethod'] == 'percentileChannels':
         signal2D, lowChannel, hiChannel = computeSignal2D( adjClose, gainloss, params )
@@ -227,27 +236,30 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
     # Write daily backtest portfolio and even-weighted B&H values to file for web page
     ##########################################
 
-    computeDailyBacktest( datearray, \
-                     symbols, \
-                     adjClose, \
-                     numberStocksTraded = numberStocksTraded, \
-                     trade_cost=params['trade_cost'], \
-                     monthsToHold = monthsToHold, \
-                     LongPeriod = LongPeriod, \
-                     MA1 = MA1, \
-                     MA2 = MA2, \
-                     MA2offset = MA2offset, \
-                     sma2factor = sma2factor, \
-                     rankThresholdPct = rankThresholdPct, \
-                     riskDownside_min = riskDownside_min, \
-                     riskDownside_max = riskDownside_max,\
-                     narrowDays = narrowDays, \
-                     mediumDays = mediumDays, \
-                     wideDays = wideDays, \
-                     stddevThreshold = stddevThreshold, \
-                     lowPct=lowPct, \
-                     hiPct=hiPct, \
-                     uptrendSignalMethod=uptrendSignalMethod )
+    computeDailyBacktest(
+        json_fn,
+        datearray,
+        symbols,
+        adjClose,
+        numberStocksTraded = numberStocksTraded,
+        trade_cost=params['trade_cost'],
+        monthsToHold = monthsToHold,
+        LongPeriod = LongPeriod,
+        MA1 = MA1,
+        MA2 = MA2,
+        MA2offset = MA2offset,
+        sma2factor = sma2factor,
+        rankThresholdPct = rankThresholdPct,
+        riskDownside_min = riskDownside_min,
+        riskDownside_max = riskDownside_max,
+        narrowDays = narrowDays,
+        mediumDays = mediumDays,
+        wideDays = wideDays,
+        stddevThreshold = stddevThreshold,
+        lowPct=lowPct,
+        hiPct=hiPct,
+        uptrendSignalMethod=uptrendSignalMethod
+    )
 
     print("\n\n Successfully updated daily backtest at in 'pyTAAAweb_backtestPortfolioValue.params'. Completed on ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"))
     print("")
@@ -258,7 +270,7 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
     # Write date and Percent of up-trending stocks to file for web page
     ##########################################
     try:
-        filepath = os.path.join( os.getcwd(), "pyTAAAweb_numberUptrendingStocks_status.params" )
+        filepath = os.path.join(json_dir, "pyTAAAweb_numberUptrendingStocks_status.params")
         textmessage = ""
         for jj in range(dailyNumberUptrendingStocks.shape[0]):
             textmessage = textmessage + str(datearray[jj])+"  "+str(dailyNumberUptrendingStocks[jj])+"  "+str(activeCount[jj])+"\n"
@@ -271,50 +283,50 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
         print("")
 
 
-    '''
-    ##########################################
-    # Write date and trend dispersion value to file for web page
-    ##########################################
-    ### this version will be deleted after it works successfully once
+    # '''
+    # ##########################################
+    # # Write date and trend dispersion value to file for web page
+    # ##########################################
+    # ### this version will be deleted after it works successfully once
 
-    try:
-        print "\n\n diagnostics for updating pyTAAAweb_MeanTrendDispersion_status.params....."
-        dailyTrendDispersionMeans = []
-        dailyTrendDispersionMedians = []
+    # try:
+    #     print "\n\n diagnostics for updating pyTAAAweb_MeanTrendDispersion_status.params....."
+    #     dailyTrendDispersionMeans = []
+    #     dailyTrendDispersionMedians = []
 
-        for ii in range(adjClose.shape[0]):
-            try:
-                ii_zscore = np.mean( np.abs(allstats( adjClose[ii,-20:] ).z_score() ))
-            except:
-                ii_zscore = np.nan
-            try:
-                ii_sharpe = np.mean( allstats( adjClose[ii,-20:].sharpe() ))
-            except:
-                ii_sharpe = np.nan
+    #     for ii in range(adjClose.shape[0]):
+    #         try:
+    #             ii_zscore = np.mean( np.abs(allstats( adjClose[ii,-20:] ).z_score() ))
+    #         except:
+    #             ii_zscore = np.nan
+    #         try:
+    #             ii_sharpe = np.mean( allstats( adjClose[ii,-20:].sharpe() ))
+    #         except:
+    #             ii_sharpe = np.nan
 
-            dailyTrendDispersionMeans.append( ii_zscore )
-            dailyTrendDispersionMedians.append( ii_sharpe )
+    #         dailyTrendDispersionMeans.append( ii_zscore )
+    #         dailyTrendDispersionMedians.append( ii_sharpe )
 
-        dailyTrendDispersionMeans = np.array( dailyTrendDispersionMeans )
-        dailyTrendDispersionMeans = dailyTrendDispersionMeans[ dailyTrendDispersionMeans > 0. ]
+    #     dailyTrendDispersionMeans = np.array( dailyTrendDispersionMeans )
+    #     dailyTrendDispersionMeans = dailyTrendDispersionMeans[ dailyTrendDispersionMeans > 0. ]
 
-        dailyTrendDispersionMedians = np.array( dailyTrendDispersionMedians )
-        dailyTrendDispersionMedians = dailyTrendDispersionMedians[ np.isfinite( dailyTrendDispersionMedians ) ]
+    #     dailyTrendDispersionMedians = np.array( dailyTrendDispersionMedians )
+    #     dailyTrendDispersionMedians = dailyTrendDispersionMedians[ np.isfinite( dailyTrendDispersionMedians ) ]
 
 
-        filepath = os.path.join( os.getcwd(), "pyTAAAweb_MeanTrendDispersion_status.params" )
-        print "filepath in writeWebPage = ", filepath
-        textmessage = ""
-        textmessage = textmessage + str(datearray[-1])+"  "+str( dailyTrendDispersionMeans.mean() )+"  "+str( dailyTrendDispersionMedians.mean() )+"\n"
+    #     filepath = os.path.join( os.getcwd(), "pyTAAAweb_MeanTrendDispersion_status.params" )
+    #     print "filepath in writeWebPage = ", filepath
+    #     textmessage = ""
+    #     textmessage = textmessage + str(datearray[-1])+"  "+str( dailyTrendDispersionMeans.mean() )+"  "+str( dailyTrendDispersionMedians.mean() )+"\n"
 
-        with open( filepath, "a" ) as f:
-            f.write(textmessage)
-        print " Successfully updated to pyTAAAweb_MeanTrendDispersion_status.params at ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
-        print ""
-    except :
-        print " Error: unable to update pyTAAAweb_MeanTrendDispersion_status.params"
-        print ""
-    '''
+    #     with open( filepath, "a" ) as f:
+    #         f.write(textmessage)
+    #     print " Successfully updated to pyTAAAweb_MeanTrendDispersion_status.params at ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
+    #     print ""
+    # except :
+    #     print " Error: unable to update pyTAAAweb_MeanTrendDispersion_status.params"
+    #     print ""
+    # '''
 
     ########################################################################
     ### 1. make plots for all stocks of adjusted price history
@@ -324,7 +336,7 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
     # import matplotlib
     # matplotlib.use('Agg')
     # from matplotlib import pylab as plt
-    filepath = os.path.join( os.getcwd(), "pyTAAA_web" )
+    filepath = os.path.join(json_dir, "pyTAAA_web")
 
     today = datetime.datetime.now()
     hourOfDay = today.hour
@@ -347,39 +359,41 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
                     os.path.getmtime(plotfilepath)
                 )
                 # Convert to elpased time in hours
-                modified_time = (datetime.datetime.now() - mtime).seconds
-                modified_hours = modified_time / (60. * 60.)
+                # modified_time = (datetime.datetime.now() - mtime).seconds
+                # modified_hours = modified_time / (60. * 60.)
+                modified_time = (datetime.datetime.now() - mtime)
+                modified_hours = modified_time.days * 24 + modified_time.seconds / 3600
                 if modified_hours < 20.0:
                     continue
 
             quotes = adjClose[i,:].copy()
             quotes = quotes.reshape(1,len(quotes))
             quotes_despike = despike_2D( quotes, LongPeriod, stddevThreshold=stddevThreshold )
-            '''
-            try:
-                plt.clf()
-                plt.grid(True)
-                plt.plot(datearray,adjClose[i,:])
-                plt.plot(datearray,signal2D[i,:]*adjClose[i,-1],lw=.2)
-                plt.plot(datearray,quotes_despike[0,:])
-                if params['uptrendSignalMethod'] == 'percentileChannels':
-                    plt.plot(datearray,lowChannel[i,:],'m-')
-                    plt.plot(datearray,hiChannel[i,:],'m-')
-                plot_text = str(adjClose[i,-7:])
-                plt.text(datearray[50],0,plot_text)
-                # put text line with most recent date at bottom of plot
-                # - get 7.5% of x-scale and y-scale for text location
-                x_range = datearray[-1] - datearray[0]
-                text_x = datearray[0] + datetime.timedelta( x_range.days / 20. )
-                text_y = ( np.max(adjClose[i,:]) - np.min(adjClose[i,:]) )* .085 + np.min(adjClose[i,:])
-                plt.text( text_x,text_y, "most recent value from "+str(datearray[-1])+"\nplotted at "+today.strftime("%A, %d. %B %Y %I:%M%p")+"\nvalue = "+str(adjClose[i,-1]), fontsize=8 )
-                plt.title(symbols[i]+"\n"+ysq.get_company_name(symbols[i]))
-                plotfilepath = os.path.join( filepath, "0_"+symbols[i]+".png" )
-                print " ...inside PortfolioPerformancealcs... plotfilepath = ", plotfilepath
-                plt.savefig( plotfilepath, format='png' )
-            except:
-                pass
-            '''
+            # '''
+            # try:
+            #     plt.clf()
+            #     plt.grid(True)
+            #     plt.plot(datearray,adjClose[i,:])
+            #     plt.plot(datearray,signal2D[i,:]*adjClose[i,-1],lw=.2)
+            #     plt.plot(datearray,quotes_despike[0,:])
+            #     if params['uptrendSignalMethod'] == 'percentileChannels':
+            #         plt.plot(datearray,lowChannel[i,:],'m-')
+            #         plt.plot(datearray,hiChannel[i,:],'m-')
+            #     plot_text = str(adjClose[i,-7:])
+            #     plt.text(datearray[50],0,plot_text)
+            #     # put text line with most recent date at bottom of plot
+            #     # - get 7.5% of x-scale and y-scale for text location
+            #     x_range = datearray[-1] - datearray[0]
+            #     text_x = datearray[0] + datetime.timedelta( x_range.days / 20. )
+            #     text_y = ( np.max(adjClose[i,:]) - np.min(adjClose[i,:]) )* .085 + np.min(adjClose[i,:])
+            #     plt.text( text_x,text_y, "most recent value from "+str(datearray[-1])+"\nplotted at "+today.strftime("%A, %d. %B %Y %I:%M%p")+"\nvalue = "+str(adjClose[i,-1]), fontsize=8 )
+            #     plt.title(symbols[i]+"\n"+ysq.get_company_name(symbols[i]))
+            #     plotfilepath = os.path.join( filepath, "0_"+symbols[i]+".png" )
+            #     print " ...inside PortfolioPerformancealcs... plotfilepath = ", plotfilepath
+            #     plt.savefig( plotfilepath, format='png' )
+            # except:
+            #     pass
+            # '''
             plt.clf()
             plt.grid(True)
             plt.plot(datearray,adjClose[i,:])
@@ -420,8 +434,10 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
                     os.path.getmtime(plotfilepath)
                 )
                 # Convert to elpased time in hours
-                modified_time = (datetime.datetime.now() - mtime).seconds
-                modified_hours = modified_time / (60. * 60.)
+                # modified_time = (datetime.datetime.now() - mtime).seconds
+                # modified_hours = modified_time / (60. * 60.)
+                modified_time = (datetime.datetime.now() - mtime)
+                modified_hours = modified_time.days * 24 + modified_time.seconds / 3600
                 if modified_hours < 20.0:
                     continue
             # mtime = datetime.datetime.fromtimestamp(
@@ -440,14 +456,14 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
             # re-scale to have same value at beginning of plot
             quotes_despike *= quotes[0,firstdate_index]/quotes_despike[0,firstdate_index]
 
-            '''
-            upperFit, lowerFit = recentChannelFit( adjClose[i,:],
-                                                   minperiod=params['minperiod'],
-                                                   maxperiod=params['maxperiod'],
-                                                   incperiod=params['incperiod'],
-                                                   numdaysinfit=params['numdaysinfit'],
-                                                   offset=params['offset'])
-            '''
+            # '''
+            # upperFit, lowerFit = recentChannelFit( adjClose[i,:],
+            #                                        minperiod=params['minperiod'],
+            #                                        maxperiod=params['maxperiod'],
+            #                                        incperiod=params['incperiod'],
+            #                                        numdaysinfit=params['numdaysinfit'],
+            #                                        offset=params['offset'])
+            # '''
 
             lowerTrend, upperTrend, NoGapLowerTrend, NoGapUpperTrend = \
                      recentTrendAndMidTrendChannelFitWithAndWithoutGap( \
@@ -462,15 +478,15 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
 
             #recentFitDates = datearray[-params['numdaysinfit']-params['offset']:-params['offset']+1]
             #recentFitDates2 = datearray[-params['numdaysinfit']:]
-            '''
-            upperTrend = []
-            lowerTrend = []
-            for iii in range(-params['numdaysinfit']-params['offset'],-params['offset']+1):
-                p = np.poly1d(upperFit)
-                upperTrend.append( p(iii) )
-                p = np.poly1d(lowerFit)
-                lowerTrend.append( p(iii) )
-            '''
+            # '''
+            # upperTrend = []
+            # lowerTrend = []
+            # for iii in range(-params['numdaysinfit']-params['offset'],-params['offset']+1):
+            #     p = np.poly1d(upperFit)
+            #     upperTrend.append( p(iii) )
+            #     p = np.poly1d(lowerFit)
+            #     lowerTrend.append( p(iii) )
+            # '''
 
 
             try:
@@ -555,30 +571,24 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
     ### 2. sharpe ratio computed from daily gains over "LongPeriod_random"
     ########################################################################
 
-    monthgainlossweight = sharpeWeightedRank_2D(datearray,\
-                                                symbols,\
-                                                adjClose,\
-                                                signal2D,\
-                                                signal2D_daily,\
-                                                LongPeriod,\
-                                                numberStocksTraded,\
-                                                riskDownside_min,\
-                                                riskDownside_max,\
-                                                rankThresholdPct,\
-                                                stddevThreshold=stddevThreshold,\
-                                                makeQCPlots=True)
+    monthgainlossweight = sharpeWeightedRank_2D(
+        json_fn, datearray, symbols, adjClose,
+        signal2D, signal2D_daily, LongPeriod, numberStocksTraded,
+        riskDownside_min, riskDownside_max, rankThresholdPct,
+        stddevThreshold=stddevThreshold, makeQCPlots=True
+    )
 
-    """
-    # moved to MakeValuePlot.py
-    ########################################################################
-    ### compute stats on new 52-week highs and lows
-    ########################################################################
+    # """
+    # # moved to MakeValuePlot.py
+    # ########################################################################
+    # ### compute stats on new 52-week highs and lows
+    # ########################################################################
 
-    _, _ = newHighsAndLows( num_days_highlow=(84,252),\
-                            num_days_cumu=(63,126),\
-                            HighLowRatio=(2.,2.),\
-                            makeQCPlots=True)
-    """
+    # _, _ = newHighsAndLows( num_days_highlow=(84,252),\
+    #                         num_days_cumu=(63,126),\
+    #                         HighLowRatio=(2.,2.),\
+    #                         makeQCPlots=True)
+    # """
 
     ########################################################################
     ### compute traded value of stock for each month
@@ -614,6 +624,12 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
             last_symbols_weight.append( monthgainlossweight[ii,-1] )
             last_symbols_price.append( round(adjClose[ii,-1],2) )
 
+    print("\n ... inside portfolioPerformanceCalcs")
+    print("   . datearray[-1] = " +str(datearray[-1]))
+    print("   . last_symbols_text = " +str(last_symbols_text))
+    print("   . last_symbols_weight = " +str(last_symbols_weight))
+    print("   . last_symbols_price = " +str(last_symbols_price))
+
     # send text message for held stocks breaking to downside outside trend channel
     # - if markets are currently open
     marketStatus = get_MarketOpenOrClosed()
@@ -622,3 +638,4 @@ def PortfolioPerformanceCalcs( symbol_directory, symbol_file, params ) :
     #textmessageOutsideTrendChannel( symbols, adjClose )
 
     return datearray[-1], last_symbols_text, last_symbols_weight, last_symbols_price
+

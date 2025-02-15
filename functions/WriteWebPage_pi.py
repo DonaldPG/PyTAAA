@@ -1,6 +1,6 @@
 
 
-def ftpMoveDirectory(  ):
+def ftpMoveDirectory(json_fn):
 
     # based on a demo in ptyhon package paramiko.
     #
@@ -13,12 +13,12 @@ def ftpMoveDirectory(  ):
     import traceback
 
     # local imports
-    from functions.GetParams import GetFTPParams
+    from functions.GetParams import get_json_ftp_params
 
     import paramiko
 
     # get hostname and credentials
-    ftpparams = GetFTPParams()
+    ftpparams = get_json_ftp_params(json_fn)
     print("\n\n\n ... ftpparams = ", ftpparams, "\n\n\n")
     hostname = ftpparams['ftpHostname']
     hostIP   = ftpparams['remoteIP']
@@ -93,7 +93,7 @@ def ftpMoveDirectory(  ):
         sys.exit(1)
 
 
-def piMoveDirectory(  ):
+def piMoveDirectory(json_fn):
 
     import shutil
     import os
@@ -101,13 +101,13 @@ def piMoveDirectory(  ):
     import datetime
 
     # local imports
-    from functions.GetParams import GetFTPParams
+    from functions.GetParams import get_json_ftp_params
 
     # create list of files to move and put them in web-accessible folder
     # - nothing here is 'mission critical'. fail without aborting.
     try:
         # get remote path location
-        ftpparams = GetFTPParams()
+        ftpparams = get_json_ftp_params(json_fn)
         remote_path = ftpparams['remotepath']
 
         print("\n\n ... diagnostic:  ftpparams = ", ftpparams)
@@ -163,21 +163,26 @@ def piMoveDirectory(  ):
     return
 
 
-def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_text, last_symbols_weight, last_symbols_price ) :
+def writeWebPage(
+        regulartext, boldtext, headlinetext, lastdate,
+        last_symbols_text, last_symbols_weight, last_symbols_price,
+        json_fn
+):
     #import smtplib
     import datetime
     import os
     #import numpy as np
     # Local imports
-    from functions.MakeValuePlot import (makeValuePlot,
-                           makeUptrendingPlot,
-                           makeNewHighsAndLowsPlot,
-                           makeTrendDispersionPlot,
-                           makeDailyChannelOffsetSignal,
-                           makeDailyMonteCarloBacktest,
-                           )
+    from functions.MakeValuePlot import (
+        makeValuePlot,
+        makeUptrendingPlot,
+        makeNewHighsAndLowsPlot,
+        makeTrendDispersionPlot,
+        makeDailyChannelOffsetSignal,
+        makeDailyMonteCarloBacktest,
+    )
 
-    from functions.GetParams import GetParams
+    from functions.GetParams import get_json_params
 
     # message body preliminaries
     message = """<!DOCTYPE html>
@@ -280,8 +285,8 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
     ##########################################
     # read valuations status file and make plot
     ##########################################
-
-    figure_htmlText = makeValuePlot(  )
+    json_folder = os.path.split(json_fn)[0]
+    figure_htmlText = makeValuePlot(json_fn)
 
 
     ##########################################
@@ -304,35 +309,35 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
     # read uptrending stocks status file and make plot
     ##########################################
 
-    figure4_htmlText = makeUptrendingPlot( )
+    figure4_htmlText = makeUptrendingPlot(json_fn)
 
 
     ##########################################
     # read performance dispersion status file and make plot
     ##########################################
 
-    figure5_htmlText = makeTrendDispersionPlot( )
+    figure5_htmlText = makeTrendDispersionPlot(json_fn)
 
 
     ##########################################
     # read performance dispersion status file and make plot
     ##########################################
 
-    figure5aa_htmlText = makeNewHighsAndLowsPlot( )
+    figure5aa_htmlText = makeNewHighsAndLowsPlot(json_fn)
 
 
     ##########################################
     # compute stock value compared to offset trend and make plot
     ##########################################
 
-    figure5a_htmlText = makeDailyChannelOffsetSignal( )
+    figure5a_htmlText = makeDailyChannelOffsetSignal(json_fn)
 
 
     ##########################################
     # make plot showing monte carlo backtest using variable percent Long trades
     ##########################################
 
-    figure6_htmlText = makeDailyMonteCarloBacktest( )
+    figure6_htmlText = makeDailyMonteCarloBacktest(json_fn)
 
     """
     ##########################################
@@ -349,7 +354,7 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
     # add current rankings table to message
     ##########################################
 
-    filepath = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb_RankList.txt" )
+    filepath = os.path.join( json_folder, "pyTAAA_web", "pyTAAAweb_RankList.txt" )
     try:
         with open( filepath, "r" ) as f:
             rankingMessage = f.read()
@@ -362,13 +367,13 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
     # add table with Nasdaq100 index exchanges to message
     ##########################################
 
-    params = GetParams()
+    params = get_json_params(json_fn)
     stockList = params['stockList']
 
     if stockList == 'Naz100':
-        filepath = os.path.join( os.getcwd(), "symbols", "Naz100_symbolsChanges.txt" )
+        filepath = os.path.join( json_folder, "symbols", "Naz100_symbolsChanges.txt" )
     elif stockList == 'SP500':
-        filepath = os.path.join( os.getcwd(), "symbols", "SP500_symbolsChanges.txt" )
+        filepath = os.path.join( json_folder, "symbols", "SP500_symbolsChanges.txt" )
     try:
         with open( filepath, "r" ) as f:
             input = f.read()
@@ -416,7 +421,7 @@ def writeWebPage( regulartext, boldtext, headlinetext, lastdate, last_symbols_te
     # Create an updated html page
     ##########################################
     try:
-        filepath = os.path.join( os.getcwd(), "pyTAAA_web", "pyTAAAweb.html" )
+        filepath = os.path.join(json_folder, "pyTAAA_web", "pyTAAAweb.html")
         with open( filepath, "w" ) as f:
             f.write(message)
             f.write(figure_htmlText)
