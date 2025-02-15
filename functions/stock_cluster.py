@@ -26,7 +26,7 @@ def getClusterForSymbolsList( holdings_symbols ):
 """
 
 
-def getClusterForSymbolsList( holdings_symbols ):
+def getClusterForSymbolsList(holdings_symbols, json_fn):
 
     import datetime
     import os
@@ -40,7 +40,7 @@ def getClusterForSymbolsList( holdings_symbols ):
 
     from sklearn import cluster, covariance, manifold
 
-    from functions.GetParams import GetParams, GetSymbolsFile
+    from functions.GetParams import get_json_params, GetSymbolsFile
     from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
 
     ########################################################################
@@ -59,7 +59,7 @@ def getClusterForSymbolsList( holdings_symbols ):
     ########################################################################
     # Retrieve the data from Internet
 
-    params = GetParams()
+    params = get_json_params(json_fn)
     stockList = params['stockList']
 
     # Choose a time period reasonnably calm (not too long ago so that we get
@@ -107,7 +107,7 @@ def getClusterForSymbolsList( holdings_symbols ):
     ###############################################################################################
     ###  UpdateHDF5( symbols_directory, symbols_file )  ### assume hdf is already up to date
     symbols_file = GetSymbolsFile()
-    adjClose, quotes_symbols, datearray, _, _ = loadQuotes_fromHDF( symbols_file )
+    adjClose, quotes_symbols, datearray, _, _ = loadQuotes_fromHDF(symbols_file, json_fn)
 
     print(" ... adjClose.shape = ", adjClose.shape)
 
@@ -239,7 +239,7 @@ def getClusterForSymbolsList( holdings_symbols ):
     return holdings_cluster_label
 
 
-def dailyStockClusters():
+def dailyStockClusters(json_fn):
     import datetime
     import os
     import numpy as np
@@ -250,6 +250,9 @@ def dailyStockClusters():
     from matplotlib.collections import LineCollection
 
     from sklearn import cluster, covariance, manifold
+
+    from functions.GetParams import get_json_params
+
     ########################################################################
     ###
     ### This example employs several unsupervised learning techniques to
@@ -272,7 +275,7 @@ def dailyStockClusters():
     d1 = datetime.datetime(today.year-1, today.month, today.day)
     d2 = datetime.datetime(today.year, today.month, today.day)
 
-    params = GetParams()
+    params = get_json_params(json_fn)
     stockList = params['stockList']
 
     # input symbols and company names from text file

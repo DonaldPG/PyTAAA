@@ -10,20 +10,22 @@ except:
     pass
 
 from functions.TAfunctions import SMS
-from functions.GetParams import GetParams
+from functions.GetParams import get_json_params
 from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
 from functions.allstats import *
 
 #----------------------------------------------
 
-def newHighsAndLows(num_days_highlow=252,\
-                    num_days_cumu=21,\
-                    HighLowRatio=2.,\
-                    HighPctile=1.,\
-                    HGamma=1.,\
-                    LGamma=1.,\
-                    makeQCPlots=True,\
-                    outputStats=False):
+def newHighsAndLows(
+        json_fn, num_days_highlow=252,
+        num_days_cumu=21,
+        HighLowRatio=2.,
+        HighPctile=1.,
+        HGamma=1.,
+        LGamma=1.,
+        makeQCPlots=True,
+        outputStats=False
+):
 
     ####################################################################
     ###
@@ -41,19 +43,20 @@ def newHighsAndLows(num_days_highlow=252,\
     ### retrieve quotes with symbols and dates
     ###
 
-    params = GetParams()
+    params = get_json_params(json_fn)
     stockList = params['stockList']
     #stockList = 'Naz100'
 
     # read list of symbols from disk.
-    symbol_directory = os.path.join( os.getcwd(), "symbols" )
+    json_dir = os.path.split(json_fn)[0]
+    symbol_directory = os.path.join(json_dir, "symbols")
     if stockList == 'Naz100':
         symbol_file = "Naz100_Symbols.txt"
     elif stockList == 'SP500':
         symbol_file = "SP500_Symbols.txt"
     symbols_file = os.path.join( symbol_directory, symbol_file )
 
-    adjClose, symbols, datearray, _, _ = loadQuotes_fromHDF( symbols_file )
+    adjClose, symbols, datearray, _, _ = loadQuotes_fromHDF(symbols_file, json_fn)
 
     ###
     ### Count new highs and new lows over lookback period of number_days_highlow
@@ -188,7 +191,9 @@ def newHighsAndLows(num_days_highlow=252,\
         matplotlib.use('Agg')
         from matplotlib import pylab as plt
         import matplotlib.gridspec as gridspec
-        filepath = os.path.join( os.getcwd(), "pyTAAA_web" )
+        
+        json_dir = os.path.split(json_fn)[0]
+        filepath = os.path.join(json_dir, "pyTAAA_web" )
 
         today = datetime.datetime.now()
 
@@ -491,7 +496,7 @@ def HighLowIterate(iterations=100):
 
 
 if __name__ == "__main__":
-    
+
     num_days_highlow = 73
     num_days_cumu = 76
     HighLowRatio = 2.293
