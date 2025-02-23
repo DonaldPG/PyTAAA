@@ -6,7 +6,7 @@ import json
 def from_config_file(config_filename):
     with open(config_filename, "r") as fid:
         config = configparser.ConfigParser(strict=False)
-        params = config.readfp(fid)
+        params = config.read_file(fid)
     return params
 
 
@@ -25,7 +25,6 @@ def get_symbols_file(json_fn):
         symbols_file = params["symbols_file"]
     else:
         # read list of symbols from disk.
-        # assumes symbols folder and pyTAAA_web folders are in same folder as json_fn
         top_dir = os.path.split(json_fn)[0]
         symbol_directory = os.path.join( top_dir, "symbols" )
         if stockList == 'Naz100':
@@ -35,6 +34,35 @@ def get_symbols_file(json_fn):
         symbols_file = os.path.join( symbol_directory, symbol_file )
 
     return symbols_file
+
+
+def get_performance_store(json_fn):
+    ######################
+    ### get folder where performance history files (*.params) are stored
+    ######################
+    with open(json_fn, 'r') as json_file:
+        config = json.load(json_file)
+
+    # Access and print different sections
+    valuation_section = config.get('Valuation')
+    p_store = valuation_section["performance_store"]
+
+    return p_store
+
+
+def get_webpage_store(json_fn):
+    ######################
+    ### get folder where updated webpage is created
+    ######################
+
+    with open(json_fn, 'r') as json_file:
+        config = json.load(json_file)
+
+    # Access and print different sections
+    valuation_section = config.get('Valuation')
+    w_store = valuation_section["webpage"]
+
+    return w_store
 
 
 def get_json_ftp_params(json_fn, verbose=False):
@@ -82,11 +110,12 @@ def get_holdings(json_fn):
     # read the parameters form the configuration file
     # params = get_json_params(json_fn)
     params_folder = os.path.split(json_fn)[0]
-    config_filename = os.path.join(params_folder, "PyTAAA_holdings.params")
+    p_store = get_performance_store(json_fn)
+    config_filename = os.path.join(p_store, "PyTAAA_holdings.params")
 
     config = configparser.ConfigParser(strict=False)
     configfile = open(config_filename, "r")
-    config.readfp(configfile)
+    config.read_file(configfile)
 
     # put params in a dictionary
     holdings['stocks'] = config.get("Holdings", "stocks").split()
@@ -96,10 +125,10 @@ def get_holdings(json_fn):
 
     # get rankings for latest dates for all stocks in index
     # read the parameters form the configuration file
-    print(" ...inside GetHoldings...  pwd = ", os.getcwd())
-    config_filename = "PyTAAA_ranks.params"
+    print(" ...inside GetHoldings...  p_store = ", p_store)
+    config_filename = os.path.join(p_store, "PyTAAA_ranks.params")
     configfile = open(config_filename, "r")
-    config.readfp(configfile)
+    config.read_file(configfile)
     symbols = config.get("Ranks", "symbols").split()
     ranks = config.get("Ranks", "ranks").split()
     # put ranks params in dictionary
@@ -108,7 +137,7 @@ def get_holdings(json_fn):
     print(" ...inside GetParams/GetHoldings...")
     for i, holding in enumerate(holdings['stocks']):
         for j,symbol in enumerate(symbols):
-            print("... j, symbol, rank = ", j, symbol, ranks[j])
+            # print("... j, symbol, rank = ", j, symbol, ranks[j])
             if symbol == holding:
                 print("                                       MATCH ... i, symbol, rank = ", i, holding, symbols[j], ranks[j])
                 holdings_ranks.append( ranks[j] )
@@ -269,7 +298,8 @@ def get_json_status(json_fn):
     ######################
 
     # read the parameters form the configuration file
-    json_folder = os.path.split(json_fn)[0]
+    # json_folder = os.path.split(json_fn)[0]
+    json_folder = get_performance_store(json_fn)
     status_filename = os.path.join(json_folder, "PyTAAA_status.params")
 
     config = configparser.ConfigParser(strict=False)
@@ -308,8 +338,10 @@ def compute_long_hold_signal(json_fn):
            result2.append(seq2[i])
        return result,result2
 
-    json_dir = os.path.split(json_fn)[0]
-    filepath = os.path.join( json_dir, "PyTAAA_status.params" )
+    # json_dir = os.path.split(json_fn)[0]
+    # filepath = os.path.join( json_dir, "PyTAAA_status.params" )
+    json_folder = get_performance_store(json_fn)
+    filepath = os.path.join(json_folder, "PyTAAA_status.params")
 
     date = []
     value = []
@@ -392,12 +424,13 @@ def get_status(json_fn):
     ######################
 
     # read the parameters form the configuration file
-    json_dir = os.path.split(json_fn)[0]
-    status_filename = os.path.join(json_dir, "PyTAAA_status.params")
+    # json_dir = os.path.split(json_fn)[0]
+    p_store = get_performance_store(json_fn)
+    status_filename = os.path.join(p_store, "PyTAAA_status.params")
 
     config = configparser.ConfigParser(strict=False)
     configfile = open(status_filename, "r")
-    config.readfp(configfile)
+    config.read_file(configfile)
 
     # put params in a dictionary
     status = config.get("Status", "cumu_value").split()[-3]
@@ -413,8 +446,9 @@ def put_status(cumu_status, json_fn):
     import datetime
 
     # read the parameters form the configuration file
-    json_dir = os.path.split(json_fn)[0]
-    status_filename = os.path.join(json_dir, "PyTAAA_status.params")
+    # json_dir = os.path.split(json_fn)[0]
+    p_store = get_performance_store(json_fn)
+    status_filename = os.path.join(p_store, "PyTAAA_status.params")
 
     # check last value written to file for comparison with current cumu_status. Update if different.
     with open(status_filename, 'r') as f:
@@ -460,7 +494,7 @@ def GetParams():
     #params = from_config_file(config_filename)
     config = configparser.ConfigParser(strict=False, defaults=defaults)
     configfile = open(config_filename, "r")
-    config.readfp(configfile)
+    config.read_file(configfile)
 
     toaddrs = config.get("Email", "To").split()
     fromaddr = config.get("Email", "From").split()
@@ -570,7 +604,7 @@ def GetFTPParams():
 
     config = configparser.ConfigParser(strict=False)
     configfile = open(config_filename, "r")
-    config.readfp(configfile)
+    config.read_file(configfile)
 
     ftpHostname = config.get("FTP", "hostname")
     ftpUsername = config.get("FTP", "username")
@@ -601,7 +635,7 @@ def GetHoldings():
 
     config = configparser.ConfigParser(strict=False)
     configfile = open(config_filename, "r")
-    config.readfp(configfile)
+    config.read_filefp(configfile)
 
     # put params in a dictionary
     holdings['stocks'] = config.get("Holdings", "stocks").split()
@@ -614,7 +648,7 @@ def GetHoldings():
     print(" ...inside GetHoldings...  pwd = ", os.getcwd())
     config_filename = "PyTAAA_ranks.params"
     configfile = open(config_filename, "r")
-    config.readfp(configfile)
+    config.read_file(configfile)
     symbols = config.get("Ranks", "symbols").split()
     ranks = config.get("Ranks", "ranks").split()
     # put ranks params in dictionary
@@ -623,7 +657,7 @@ def GetHoldings():
     print(" ...inside GetParams/GetHoldings...")
     for i, holding in enumerate(holdings['stocks']):
         for j,symbol in enumerate(symbols):
-            print("... j, symbol, rank = ", j, symbol, ranks[j])
+            # print("... j, symbol, rank = ", j, symbol, ranks[j])
             if symbol == holding:
                 print("                                       MATCH ... i, symbol, rank = ", i, holding, symbols[j], ranks[j])
                 holdings_ranks.append( ranks[j] )
@@ -644,7 +678,7 @@ def GetStatus():
 
     config = configparser.ConfigParser(strict=False)
     configfile = open(status_filename, "r")
-    config.readfp(configfile)
+    config.read_file(configfile)
 
     # put params in a dictionary
     status = config.get("Status", "cumu_value").split()[-3]

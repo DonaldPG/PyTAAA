@@ -716,6 +716,7 @@ def UpdateHDF_yf(symbol_directory, symbols_file, json_fn):
             end_date = str(datetime.datetime.now()).split(' ')[0]
         # data = pdr.get_data_yahoo(symbols, start=start_date, end=end_date)
         # data = yf.download(symbols, start=start_date, end=end_date)
+        
         data = yf.download(
             symbols, start=start_date, end=end_date, auto_adjust=False,
             repair=True, timeout=15

@@ -1174,7 +1174,7 @@ def LastQuotesForSymbolList_hdf(symbolList, symbols_file, json_fn):
     for itick, ticker in enumerate( symbolList ):
         quotelist.append(float(quote[ticker].values[-1]))
     print(" ... inside LastQuotesForSymbolList_hdf")
-    print("   . quote[-10:] = " +str(quote[-10:]))
+    # print("   . quote[-10:] = " +str(quote[-10:]))
     return quotelist
 
 

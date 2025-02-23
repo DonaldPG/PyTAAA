@@ -1,3 +1,5 @@
+import shutil
+from functions.GetParams import get_json_ftp_params, get_webpage_store
 
 
 def ftpMoveDirectory(json_fn):
@@ -13,7 +15,6 @@ def ftpMoveDirectory(json_fn):
     import traceback
 
     # local imports
-    from functions.GetParams import get_json_ftp_params
 
     import paramiko
 
@@ -354,7 +355,8 @@ def writeWebPage(
     # add current rankings table to message
     ##########################################
 
-    filepath = os.path.join( json_folder, "pyTAAA_web", "pyTAAAweb_RankList.txt" )
+    webpage_dir = get_webpage_store(json_fn)
+    filepath = os.path.join(webpage_dir, "pyTAAAweb_RankList.txt" )
     try:
         with open( filepath, "r" ) as f:
             rankingMessage = f.read()
@@ -423,7 +425,8 @@ def writeWebPage(
     # Create an updated html page
     ##########################################
     try:
-        filepath = os.path.join(json_folder, "pyTAAA_web", "pyTAAAweb.html")
+        webpage_dir = get_webpage_store(json_fn)
+        filepath = os.path.join(webpage_dir, "pyTAAAweb.html")
         with open( filepath, "w" ) as f:
             f.write(message)
             f.write(figure_htmlText)
@@ -445,6 +448,26 @@ def writeWebPage(
     except :
         print(" Error: unable to write updates to pyTAAAweb html")
         print("")
+
+
+    ##########################################
+    # Make sure banner is present
+    ##########################################
+    print("\n\n ... checking banner image is exists")
+    try:
+        banner_fn = os.path.abspath(os.path.join(
+            os.path.abspath(__file__),
+            "../..", "assets", "PyTAAA_stock-chart-blue.png"
+        ))
+        webpage_dir = get_webpage_store(json_fn)
+        dest_fn = os.path.join(webpage_dir, "PyTAAA_stock-chart-blue.png")
+        if not os.path.isfile(dest_fn):
+            # Copy the file with metadata
+            shutil.copy2(banner_fn, os.path.split(dest_fn)[0])
+    except:
+        print("\n\n ... Error:   unable to copy banner image")
+    print("   . banner_fn = " + banner_fn)
+    print("   . dest_fn = " + dest_fn)
 
 
     ##########################################

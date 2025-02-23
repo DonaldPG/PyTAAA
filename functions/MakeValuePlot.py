@@ -13,8 +13,12 @@ plt.rcParams['figure.figsize'] = (9, 7)
 plt.rcParams['figure.dpi'] = 150
 plt.rcParams['savefig.dpi'] = 150
 import matplotlib.gridspec as gridspec
-from functions.GetParams import get_json_params, get_symbols_file, GetEdition
+from functions.GetParams import (
+    get_json_params, get_symbols_file, GetEdition, get_performance_store
+)
 from functions.TAfunctions import dpgchannel, SMA
+from functions.GetParams import get_webpage_store
+
 
 def makeValuePlot(json_fn):
 
@@ -23,8 +27,13 @@ def makeValuePlot(json_fn):
     ##########################################
 
     json_folder = os.path.split(json_fn)[0]
-    filepath = os.path.join(json_folder, "PyTAAA_status.params" )
-    figurepath = os.path.join(json_folder, "pyTAAA_web", "PyTAAA_value.png" )
+    p_store = get_performance_store(json_fn)
+    webpage_dir = get_webpage_store(json_fn)
+
+    filepath = os.path.join(p_store, "PyTAAA_status.params" )
+    figurepath = os.path.join(webpage_dir, "PyTAAA_value.png" )
+    
+    print(" ... inside makeValuePlot. '.params' filepath = " + filepath)
 
     # get edition from where software is running
     edition = GetEdition()
@@ -180,7 +189,8 @@ def makeUptrendingPlot(json_fn):
     ##########################################
 
     json_folder = os.path.split(json_fn)[0]
-    file2path = os.path.join( json_folder, "pyTAAAweb_numberUptrendingStocks_status.params" )
+    p_store = get_performance_store(json_fn)
+    file2path = os.path.join(p_store, "pyTAAAweb_numberUptrendingStocks_status.params" )
 
     date = []
     value = []
@@ -208,7 +218,7 @@ def makeUptrendingPlot(json_fn):
     # read multi-Sharpe signal status file
     ##########################################
 
-    file2path = os.path.join( json_folder, "pyTAAAweb_multiSharpeIndicator_status.params" )
+    file2path = os.path.join(p_store, "pyTAAAweb_multiSharpeIndicator_status.params" )
 
     dates = []
     medianSharpe = []
@@ -236,7 +246,8 @@ def makeUptrendingPlot(json_fn):
     # make plot
     ##########################################
 
-    figure3path = os.path.join( json_folder, "pyTAAA_web", "PyTAAA_numberUptrendingStocks.png" )
+    webpage_dir = get_webpage_store(json_fn)
+    figure3path = os.path.join(webpage_dir, "PyTAAA_numberUptrendingStocks.png" )
 
     value = np.array( value ).astype('float') / np.array( active ).astype('float')
     valueSMA = SMA( value, 100 )
@@ -322,8 +333,10 @@ def makeTrendDispersionPlot(json_fn):
     # read uptrending stocks status file and make plot
     ##########################################
     json_folder = os.path.split(json_fn)[0]
-    file4path = os.path.join( json_folder, "pyTAAAweb_MeanTrendDispersion_status.params" )
-    figure4path = os.path.join( json_folder, "pyTAAA_web", "PyTAAA_MeanTrendDispersion.png" )
+    p_store = get_performance_store(json_fn)
+    file4path = os.path.join(p_store, "pyTAAAweb_MeanTrendDispersion_status.params" )
+    webpage_dir = get_webpage_store(json_fn)
+    figure4path = os.path.join(webpage_dir, "PyTAAA_MeanTrendDispersion.png" )
 
     dateMedians = []
     valueMeans = []
@@ -371,7 +384,7 @@ def makeTrendDispersionPlot(json_fn):
     ### make a combined plot
     ### 1. get percent of uptrending stocks
     ###
-    file2path = os.path.join( json_folder, "pyTAAAweb_numberUptrendingStocks_status.params" )
+    file2path = os.path.join(p_store, "pyTAAAweb_numberUptrendingStocks_status.params" )
     date = []
     value = []
     active = []
@@ -406,7 +419,7 @@ def makeTrendDispersionPlot(json_fn):
     valueMediansSMA65 = ( valueMediansSMA65 - valueMediansSMA65.mean() ) * 8. + .7
     valueMediansSMA100 = ( valueMediansSMA100 - valueMediansSMA100.mean() ) * 8. + .7
 
-    file3path = os.path.join( json_folder, "pyTAAAweb_backtestPortfolioValue.params" )
+    file3path = os.path.join(p_store, "pyTAAAweb_backtestPortfolioValue.params" )
     backtestDate = []
     backtestBHvalue = []
     backtestSystemvalue = []
@@ -434,7 +447,9 @@ def makeTrendDispersionPlot(json_fn):
     ### make a combined plot
     ### 2. make plot showing trend below B&H and trade-system Value
     ###
-    figure5path = os.path.join( json_folder, "pyTAAA_web", "PyTAAA_backtestWithTrend.png" )
+    webpage_dir = get_webpage_store(json_fn)
+
+    figure5path = os.path.join(webpage_dir, "PyTAAA_backtestWithTrend.png" )
     plt.figure(5,figsize=(9,7))
     plt.clf()
     subplotsize = gridspec.GridSpec(2,1,height_ratios=[5,3])
@@ -504,8 +519,9 @@ def makeDailyMonteCarloBacktest(json_fn):
     ##########################################
     # make plot with daily monte carlo backtest
     ##########################################
-    json_folder = os.path.split(json_fn)[0]
-    figure6path = os.path.join( json_folder, 'pyTAAA_web', 'PyTAAA_monteCarloBacktest.png' )
+    # json_folder = os.path.split(json_fn)[0]
+    webpage_dir = get_webpage_store(json_fn)
+    figure6path = os.path.join(webpage_dir, 'PyTAAA_monteCarloBacktest.png' )
 
     ###
     ### make a combined plot
@@ -591,8 +607,8 @@ def makeStockCluster(json_fn):
     ##########################################
     # make plot with daily monte carlo backtest
     ##########################################
-    json_folder = os.path.split(json_fn)[0]
-    figure7path = os.path.join( json_folder, 'pyTAAA_web', 'Clustered_companyNames.png' )
+    webpage_dir = get_webpage_store(json_fn)
+    figure7path = os.path.join(webpage_dir, 'Clustered_companyNames.png' )
 
     ###
     ### make a combined plot
@@ -621,8 +637,8 @@ def makeMinimumSpanningTree(json_fn):
     ##########################################
     # make plot with daily monte carlo backtest
     ##########################################
-    json_folder = os.path.split(json_fn)[0]
-    figure7apath = os.path.join( json_folder, 'pyTAAA_web', 'minimum_spanning_tree.png' )
+    webpage_dir = get_webpage_store(json_fn)
+    figure7apath = os.path.join(webpage_dir, 'minimum_spanning_tree.png' )
 
     ###
     ### make plot of minimum spanning tree based on correlations between
@@ -647,8 +663,10 @@ def makeDailyChannelOffsetSignal(json_fn):
     from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
 
     json_folder = os.path.split(json_fn)[0]
-    file4path = os.path.join( json_folder, "pyTAAAweb_DailyChannelOffsetSignal_status.params" )
-    figure4path = os.path.join( json_folder, "pyTAAA_web", "PyTAAA_DailyChannelOffsetSignalV.png" )
+    p_store = get_performance_store(json_fn)
+    webpage_dir = get_webpage_store(json_fn)
+    file4path = os.path.join(p_store, "pyTAAAweb_DailyChannelOffsetSignal_status.params" )
+    figure4path = os.path.join(webpage_dir, "PyTAAA_DailyChannelOffsetSignalV.png" )
 
     print("   . json_fn = " + str(json_fn))
     params = get_json_params(json_fn)
@@ -823,7 +841,7 @@ def makeDailyChannelOffsetSignal(json_fn):
     ### make a combined plot
     ### 2. make plot showing trend below B&H and trade-system Value
     ###
-    file3path = os.path.join( json_folder, "pyTAAAweb_backtestPortfolioValue.params" )
+    file3path = os.path.join(p_store, "pyTAAAweb_backtestPortfolioValue.params" )
     backtestDate = []
     backtestBHvalue = []
     backtestSystemvalue = []
@@ -846,7 +864,8 @@ def makeDailyChannelOffsetSignal(json_fn):
         print(" Error: unable to read updates from pyTAAAweb_backtestPortfolioValue.params")
         print("")
 
-    figure5path = os.path.join( json_folder, "pyTAAA_web", "PyTAAA_backtestWithOffsetChannelSignal.png" )
+    webpage_dir = get_webpage_store(json_fn)
+    figure5path = os.path.join(webpage_dir, "PyTAAA_backtestWithOffsetChannelSignal.png" )
     plt.figure(5,figsize=(9,7))
     plt.clf()
     subplotsize = gridspec.GridSpec(2,1,height_ratios=[5,3])

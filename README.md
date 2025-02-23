@@ -18,7 +18,7 @@
 
 5. To let the code know how to track a portfolio for you, manually update the stock holdings in "PyTAAA_holdings.params".
 
-6. A web page is created in the 'pyTAAA_web' directory. In Windows, you can double-click pyTAAAweb.html to see the latest status and holdings, as recommended by PyTAAA.
+6. A web page is created in the folder listed in the json file with PyTAAA parameters ("webpage"). In Windows, you can double-click pyTAAAweb.html to see the latest status and holdings, as recommended by PyTAAA.
 
 
 ##### Notes:
