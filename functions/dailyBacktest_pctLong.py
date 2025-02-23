@@ -10,29 +10,32 @@ plt.rcParams['figure.figsize'] = (16*.75, 9*.75)
 plt.rcParams['figure.dpi'] = 150
 plt.rcParams['savefig.dpi'] = 150
 from math import sqrt
-from functions.GetParams import get_json_params, get_symbols_file
+from functions.GetParams import (
+    get_json_params, get_symbols_file, get_webpage_store, get_performance_store
+)
 #from functions.quotes_for_list_adjClose import *
-from functions.TAfunctions import (cleantobeginning,
-                                   cleantoend,
-                                   interpolate)
+from functions.TAfunctions import (
+    cleantobeginning, cleantoend,interpolate
+)
 from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
 
 
-def plotRecentPerfomance3( indexRealtimeStart, _datearray, symbols,
-                           _value, _monthvalue,
-                           _AllStocksHistogram,
-                           _MonteCarloPortfolioValues,
-                           _FinalTradedPortfolioValue,
-                           _TradedPortfolioValue,
-                           _BuyHoldPortfolioValue,
-                           _numberStocksUpTrending,
-                           last_symbols_text,
-                           _activeCount,
-                           _numberStocks,
-                           _numberStocksUpTrendingNearHigh,
-                           _numberStocksUpTrendingBeatBuyHold,
-                           png_fn,
-                           json_fn
+def plotRecentPerfomance3(
+        indexRealtimeStart, _datearray, symbols,
+        _value, _monthvalue,
+        _AllStocksHistogram,
+        _MonteCarloPortfolioValues,
+        _FinalTradedPortfolioValue,
+        _TradedPortfolioValue,
+        _BuyHoldPortfolioValue,
+        _numberStocksUpTrending,
+        last_symbols_text,
+        _activeCount,
+        _numberStocks,
+        _numberStocksUpTrendingNearHigh,
+        _numberStocksUpTrendingBeatBuyHold,
+        png_fn,
+        json_fn
 ):
 
     # make local copies of arrays after indexRealtimeStart (2013,1,1)
@@ -581,8 +584,9 @@ def plotRecentPerfomance3( indexRealtimeStart, _datearray, symbols,
 
     plt.draw()
     # save figure to disk
-    json_dir = os.path.split(json_fn)[0]
-    outputplotname = os.path.join( json_dir, 'pyTAAA_web', png_fn+'.png' )
+    # json_dir = os.path.split(json_fn)[0]
+    webpage_dir = get_webpage_store(json_fn)
+    outputplotname = os.path.join(webpage_dir, png_fn+'.png' )
     plt.savefig(outputplotname, format='png', edgecolor='gray' )
 
     return
@@ -1070,8 +1074,11 @@ def plotRecentPerfomance2(
 
     plt.draw()
     # save figure to disk
-    json_dir = os.path.split(json_fn)[0]
-    outputplotname = os.path.join( json_dir, 'pyTAAA_web', 'PyTAAA_monteCarloBacktestRecent.png' )
+    # json_dir = os.path.split(json_fn)[0]
+    # outputplotname = os.path.join( json_dir, 'pyTAAA_web', 'PyTAAA_monteCarloBacktestRecent.png' )
+    webpage_dir = get_webpage_store(json_fn)
+    png_fn = 'PyTAAA_monteCarloBacktestRecent'
+    outputplotname = os.path.join(webpage_dir, png_fn+'.png' )
     plt.savefig(outputplotname, format='png', edgecolor='gray' )
 
     return
@@ -1553,13 +1560,15 @@ def plotRecentPerfomance(
 
     plt.draw()
     # save figure to disk
-    outputplotname = os.path.join( json_dir, 'pyTAAA_web', 'PyTAAA_monteCarloBacktestRecent.png' )
+    from functions.GetParams import get_webpage_store
+    webpage_dir = get_webpage_store(json_fn)
+    outputplotname = os.path.join(webpage_dir, 'PyTAAA_monteCarloBacktestRecent.png' )
     plt.savefig(outputplotname, format='png', edgecolor='gray' )
 
     return
 
 
-def dailyBacktest_pctLong(json_fn):
+def dailyBacktest_pctLong(json_fn, verbose=False):
 
     # import time, threading
 
@@ -1611,7 +1620,7 @@ def dailyBacktest_pctLong(json_fn):
         randomtrials = 51
         randomtrials = 15
     elif edition == 'MacOS':
-        randomtrials = 25
+        randomtrials = 17
 
     ##
     ##  Import list of symbols to process.
@@ -1631,6 +1640,7 @@ def dailyBacktest_pctLong(json_fn):
     # symbols_file = GetSymbolsFile()
     symbols_file = get_symbols_file(json_fn)
     json_dir = os.path.split(json_fn)[0]
+    p_store = get_performance_store(json_fn)
     # '''
     # # read list of symbols from disk.
     # filename = os.path.join( os.getcwd(), 'symbols', 'Naz100_Symbols.txt' )
@@ -1642,8 +1652,10 @@ def dailyBacktest_pctLong(json_fn):
     firstdate = datearray[0]
 
     for iii in range(len(symbols)):
-        print(" i,symbols[i],datearray[-1],adjClose[i,-1] = ", iii,symbols[iii],datearray[-1],adjClose[iii,-1])
-
+        print(
+            " i,symbols[i],datearray[-1],adjClose[i,-1] = ",
+            iii, symbols[iii], datearray[-1], adjClose[iii,-1]
+        )
 
     # Clean up missing values in input quotes
     #  - infill interior NaN values using nearest good values to linearly interpolate
@@ -1653,7 +1665,6 @@ def dailyBacktest_pctLong(json_fn):
         adjClose[ii,:] = interpolate(adjClose[ii,:])
         adjClose[ii,:] = cleantobeginning(adjClose[ii,:])
         adjClose[ii,:] = cleantoend(adjClose[ii,:])
-
 
     import os
     basename = os.path.split( symbols_file )[-1]
@@ -1744,7 +1755,11 @@ def dailyBacktest_pctLong(json_fn):
     for ii in range(adjClose.shape[0]):
         # take care of special case where constant share price is inserted at beginning of series
         index = np.argmax(np.clip(np.abs(gainloss[ii,:]-1),0,1e-8)) - 1
-        print("first valid price and date = ",symbols[ii]," ",index," ",datearray[index])
+        if verbose:
+            print(
+                "first valid price and date = ",
+                symbols[ii]," ",index," ",datearray[index]
+            )
         lastEmptyPriceIndex[ii] = index
         activeCount[lastEmptyPriceIndex[ii]+1:] += 1
 
@@ -2993,14 +3008,14 @@ def dailyBacktest_pctLong(json_fn):
         plt.grid(True)
         ##ylim(0, value.shape[0])
         plt.ylim(0, 1.2)
-        
+
         n_stocks_uptrending_median = np.zeros((activeCount.size), 'float32')
         n_stocks_uptrending_near_high = np.zeros_like(n_stocks_uptrending_median)
         n_stocks_uptrending_beat_BH = np.zeros_like(n_stocks_uptrending_median)
         n_stocks_uptrending = np.zeros_like(n_stocks_uptrending_median)
-        
+
         ii = np.where(activeCount > 0)[0]
-        _dates = datearray[ii]
+        _dates = np.array(datearray)[ii]
         n_stocks_uptrending_median[ii] = numberStocksUpTrendingMedian[ii] / activeCount[ii]
         n_stocks_uptrending_near_high[ii] = numberStocksUpTrendingNearHigh[ii] / activeCount[ii]
         n_stocks_uptrending_beat_BH[ii] = numberStocksUpTrendingBeatBuyHold[ii] / activeCount[ii]
@@ -3009,8 +3024,8 @@ def dailyBacktest_pctLong(json_fn):
         plt.plot(_dates, n_stocks_uptrending_median[ii],'g-',lw=1)
         plt.plot(_dates, n_stocks_uptrending_near_high[ii],'b-',lw=1)
         plt.plot(_dates, n_stocks_uptrending_beat_BH[ii],'k-',lw=2)
-        plt.plot(_dates, n_stocks_uptrending[ii] ,'r-') 
-        
+        plt.plot(_dates, n_stocks_uptrending[ii] ,'r-')
+
         # plt.plot(datearray,numberStocksUpTrendingMedian / activeCount,'g-',lw=1)
         # plt.plot(datearray,numberStocksUpTrendingNearHigh / activeCount,'b-',lw=1)
         # plt.plot(datearray,numberStocksUpTrendingBeatBuyHold / activeCount,'k-',lw=2)
@@ -3026,22 +3041,24 @@ def dailyBacktest_pctLong(json_fn):
         plt.xlim(datearray[0],datearray[len(datearray)-1])
         plt.draw()
         # save figure to disk, but only if trades produce good results
+        webpage_dir = get_webpage_store(json_fn)
         if iter==randomtrials-1:
-            outputplotname = os.path.join( json_dir, 'pyTAAA_web', 'PyTAAA_monteCarloBacktest.png' )
+            outputplotname = os.path.join(webpage_dir, 'PyTAAA_monteCarloBacktest.png' )
             plt.savefig(outputplotname, format='png', edgecolor='gray' )
 
         ###
         ### save backtest portfolio values ( B&H and system )
         ###
         try:
-            filepath = os.path.join( json_dir, "pyTAAAweb_backtestPortfolioValue.params" )
+            filepath = os.path.join(p_store, "pyTAAAweb_backtestPortfolioValue.params" )
             textmessage = ""
             for idate in range(len(BuyHoldPortfolioValue)):
                 textmessage = textmessage + str(datearray[idate])+"  "+str(BuyHoldPortfolioValue[idate])+"  "+str(np.average(monthvalue[:,idate]))+"\n"
             with open( filepath, "w" ) as f:
                 f.write(textmessage)
         except:
-            pass
+            _fn = os.path.join(p_store, "pyTAAAweb_backtestPortfolioValue.params")
+            print(" ERROR: unable to update file " + _fn)
 
 
         ########################################################################
@@ -3136,7 +3153,7 @@ def dailyBacktest_pctLong(json_fn):
         ### save today's monte carlo backtest results to file ( B&H and system )
         ###
         try:
-            filepath = os.path.join( json_dir, "pyTAAAweb_backtestTodayMontecarloPortfolioValue.csv" )
+            filepath = os.path.join(p_store, "pyTAAAweb_backtestTodayMontecarloPortfolioValue.csv" )
             textmessage = ""
             for idate in range(len(BuyHoldPortfolioValue)):
                 textmessage = textmessage + str(datearray[idate])+"  "+str(BuyHoldPortfolioValue[idate])+"  "+str(np.average(monthvalue[:,idate]))+"\n"
@@ -3190,7 +3207,8 @@ def dailyBacktest_pctLong(json_fn):
                         csv_text = csv_text.replace("\n",","+str(last_symbols_text)+"\n")
                         f.write(csv_text)
         except:
-            pass
+            filepath = os.path.join(p_store, "pyTAAAweb_backtestTodayMontecarloPortfolioValue.csv" )
+            print(" Error: unable to update file " + filepath)
 
 
         # create and update counter for holding period

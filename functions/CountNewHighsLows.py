@@ -192,8 +192,10 @@ def newHighsAndLows(
         from matplotlib import pylab as plt
         import matplotlib.gridspec as gridspec
         
-        json_dir = os.path.split(json_fn)[0]
-        filepath = os.path.join(json_dir, "pyTAAA_web" )
+        # json_dir = os.path.split(json_fn)[0]
+        from functions.GetParams import get_webpage_store
+        filepath = get_webpage_store(json_fn)
+        # filepath = os.path.join(json_dir, "pyTAAA_web" )
 
         today = datetime.datetime.now()
 
@@ -286,7 +288,9 @@ def newHighsAndLows(
     if outputStats :
 
         outputfilepath = "CountNewHighsLows_stats.csv"
-        output_file = os.path.join( symbol_directory, "..", "PyTAAA_web", outputfilepath )
+        from functions.GetParams import get_webpage_store
+        webpage_dir = get_webpage_store(json_fn)
+        output_file = os.path.join(webpage_dir, outputfilepath )
         PortfolioValue = np.mean(TradedValue,axis=0)
 
         PortfolioDailyGains = PortfolioValue[1:] / PortfolioValue[:-1]

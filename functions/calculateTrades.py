@@ -4,7 +4,9 @@ import datetime
 #from functions.quotes_for_list_adjCloseVol import *
 from functions.quotes_for_list_adjClose import LastQuotesForSymbolList_hdf
 from functions.CheckMarketOpen import *
-from functions.GetParams import get_json_params, get_symbols_file
+from functions.GetParams import (
+    get_json_params, get_symbols_file, get_performance_store
+)
 
 ###
 ### Perform a check to see if the stock market is open
@@ -135,7 +137,8 @@ def calculateTrades(
 
     ##### diagnostics ###################################################################################################
     json_dir = os.path.split(json_fn)[0]
-    file_out = os.path.join(json_dir, "PyTAAA_diagnostic.params")
+    p_store = get_performance_store(json_fn)
+    file_out = os.path.join(p_store, "PyTAAA_diagnostic.params")
     with open(file_out, "a") as holdingsfile:
 
         holdingsfile.write( str(today) + " \n" )
@@ -337,7 +340,9 @@ def calculateTrades(
     if lastDayOfMonth and makeChanges:
         if not marketOpen:
 
-            with open("PyTAAA_holdings.params", "a") as holdingsfile:
+            p_store = get_performance_store(json_fn)
+            holdings_fn = os.path.join(p_store, "PyTAAA_holdings.params")
+            with open(holdings_fn, "a") as holdingsfile:
                 new_symbols_str = ""
                 new_shares_str = ""
                 new_buyprice_str = ""
@@ -362,3 +367,197 @@ def calculateTrades(
 
 
     return trade_message
+
+
+def trade_today(json_fn, symbols_today, weight_today, price_today):
+
+    from functions.GetParams import (
+        get_holdings, get_symbols_file, get_performance_store
+    )
+
+    # get holdings, p_store folder
+    holdings = get_holdings(json_fn)
+    symbols_file = get_symbols_file(json_fn)
+    p_store = get_performance_store(json_fn)
+
+
+    trade_date = str(datetime.datetime.now()).split(" ")[0]
+
+    # Get updated Holdings from file (ranks are updated)
+    print("")
+    print("current Holdings :")
+    print("stocks: ", holdings['stocks'])
+    print("shares: ", holdings['shares'])
+    print("buyprice: ", holdings['buyprice'])
+    print("current ranks: ", holdings['ranks'])
+    print("cumulativecashin: ", holdings['cumulativecashin'][0])
+    print("")
+
+    # put holding data in lists
+    holdings_symbols = holdings['stocks']
+    holdings_shares = np.array(holdings['shares']).astype('float')
+    holdings_buyprice = np.array(holdings['buyprice']).astype('float')
+    holdings_ranks = np.array(holdings['ranks']).astype('int')
+
+    unique_symbols = list(set(holdings_symbols))
+    holdings_currentPrice = LastQuotesForSymbolList_hdf(
+        unique_symbols, symbols_file, json_fn
+    )
+    print("holdings_symbols = ", holdings_symbols)
+    print("holdings_shares = ", holdings_shares)
+    print("holdings_currentPrice = ", holdings_currentPrice)
+
+    # calculate holdings total value
+    currentHoldingsValue = 0.
+    for j, _symbol in enumerate(holdings_symbols):
+        for i, held_symbol in enumerate(unique_symbols):
+            if held_symbol == _symbol:
+                currentHoldingsValue += (
+                    float(holdings_shares[j]) * float(holdings_currentPrice[i])
+                )
+
+    # set up lists if trades executed today
+    today_symbols = []
+    today_shares = []
+    today_buyprice = []
+
+    # find unchanged holdings
+    unchanged_symbols = [x for x in holdings_symbols if x in symbols_today]
+
+    # find new symbols
+    new_symbols = [x for x in symbols_today if x not in holdings_symbols]
+
+    # find dropped symbols
+    drop_symbols = [x for x in holdings_symbols if x not in symbols_today]
+
+
+    print(" ... unchanged_symbols = " + str(unchanged_symbols))
+    print(" ... new_symbols = " + str(new_symbols))
+    print(" ... drop_symbols = " + str(drop_symbols))
+
+    # compute shares_today
+    shares_today = []
+    for i, t_symbol in enumerate(symbols_today):
+        today_value = weight_today[i] * currentHoldingsValue
+        shares_today.append(int(today_value / price_today[i]))
+
+    # process changes
+    shares_residual = np.array(shares_today).astype('int')
+    weight_residual = np.array(weight_today).astype('float32')
+    buy_text = ""
+    sell_text = ""
+    cumu_value = 0.0
+    for i, h_symbol in enumerate(holdings_symbols):
+        # if i == 5:
+        #     break
+        if h_symbol in unchanged_symbols:
+            today_index = symbols_today.index(h_symbol)
+            today_value = weight_residual[today_index] * currentHoldingsValue
+            if holdings_shares[i] == shares_residual[today_index]:
+                # keep shares from last month. no transactions
+                today_symbols.append(holdings_symbols[i])
+                today_buyprice.append(holdings_buyprice[i])
+                today_shares.append(int(holdings_shares[i]))
+                shares_residual[today_index] -= holdings_shares[i]
+                # cumu_value += today_buyprice[-1] * today_shares[-1]
+                # weight_residual[today_index] = 0.0
+                last_price = price_today[today_index]
+                cumu_value += last_price * today_shares[-1]
+            elif 0 < shares_residual[today_index] < holdings_shares[i]:
+                # need to sell some, but not all shares
+                today_symbols.append(holdings_symbols[i])
+                today_buyprice.append(holdings_buyprice[i])
+                # today_value_ = weight_residual[today_index] * currentHoldingsValue
+                today_shares_ = int(today_value / price_today[today_index])
+                sell_shares = int(holdings_shares[i] - today_shares_)
+                shares_residual[today_index] = (holdings_shares[i] - sell_shares)
+                weight_residual[today_index] -= (shares_residual[today_index] * today_buyprice[-1]) / currentHoldingsValue
+                today_shares.append(today_shares_)
+                shares_residual[today_index] -= today_shares_
+                # cumu_value += today_buyprice[-1] * today_shares[-1]
+                last_price = price_today[today_index]
+                cumu_value += last_price * today_shares[-1]
+                sell_text = sell_text + "info:  Sell " + trade_date + " " + holdings_symbols[i].ljust(6)
+                sell_text = sell_text + format(-int(sell_shares), '7d')
+                sell_text = sell_text + format(price_today[today_index], '8.2f')
+                sell_text = sell_text + "\n"
+            elif shares_residual[today_index] >= holdings_shares[i]:
+                # keep shares from last month
+                today_symbols.append(holdings_symbols[i])
+                today_buyprice.append(holdings_buyprice[i])
+                today_shares.append(int(holdings_shares[i]))
+                shares_residual[today_index] -= holdings_shares[i]
+                weight_residual[today_index] -= (int(holdings_shares[i]) * holdings_buyprice[today_index]) / currentHoldingsValue
+                last_price = price_today[today_index]
+                cumu_value += last_price * today_shares[-1]
+            elif shares_residual[today_index] <= 0:
+                sell_shares = holdings_shares[i] - shares_residual[today_index]
+                sell_text = sell_text + "info:  Sell " + trade_date + " " + holdings_symbols[i].ljust(6)
+                sell_text = sell_text + format(-sell_shares, '7d')
+                sell_text = sell_text + format(price_today[today_index], '8.2f')
+                sell_text = sell_text + "\n"
+
+        if h_symbol in drop_symbols and h_symbol != "CASH":
+            today_index = list(set(holdings_symbols)).index(h_symbol)
+            sell_shares = int(holdings_shares[i])
+            print(" ... sell holdings symbol " + holdings_symbols[i])
+            print(" ... sell holdings shares " + str(sell_shares))
+            sell_text = sell_text + "info:  Sell " + trade_date + " " + holdings_symbols[i].ljust(6)
+            sell_text = sell_text + format(-sell_shares, '7d')
+            sell_text = sell_text + format(holdings_currentPrice[today_index], '8.2f')
+            sell_text = sell_text + "\n"
+
+    # existing symbols having added shares today
+    for i, t_symbol in enumerate(symbols_today):
+        if shares_residual[i] > 0 and t_symbol in holdings_symbols:
+            today_symbols.append(t_symbol)
+            buy_shares = int(shares_residual[i])
+            today_shares.append(buy_shares)
+            today_buyprice.append(price_today[i])
+            cumu_value += today_buyprice[-1] * today_shares[-1]
+            buy_text = buy_text + "info:  Buy  " + trade_date + " " + t_symbol.ljust(6)
+            buy_text = buy_text + format(buy_shares, '7d')
+            buy_text = buy_text + format(price_today[i], '8.2f')
+            buy_text = buy_text + "\n"
+
+    for j, n_symbol in enumerate(new_symbols):
+
+        today_index = symbols_today.index(n_symbol)
+        today_symbols.append(n_symbol)
+        buy_shares = int(weight_today[today_index] * currentHoldingsValue / price_today[today_index])
+        today_shares.append(buy_shares)
+        today_buyprice.append(price_today[today_index])
+        cumu_value += today_buyprice[-1] * today_shares[-1]
+        buy_text = buy_text + "info:  Buy  " + trade_date + " " + n_symbol.ljust(6)
+        buy_text = buy_text + format(buy_shares, '7d')
+        buy_text = buy_text + format(price_today[today_index], '8.2f')
+        buy_text = buy_text + "\n"
+
+    # add cash
+    today_symbols.append("CASH")
+    today_shares.append(int(currentHoldingsValue - cumu_value + 0.5))
+    today_buyprice.append(1.00)
+
+    # price new holdings text
+    holdings_text = "stocks:      "
+    for i, _symbol in enumerate(today_symbols):
+        holdings_text = holdings_text + _symbol.ljust(8)
+    holdings_text = holdings_text + "\nshares:      "
+    for i, _share in enumerate(today_shares):
+        holdings_text = holdings_text + str(_share).ljust(8)
+    holdings_text = holdings_text + "\nbuyprice:    "
+    for i, _buyprice in enumerate(today_buyprice):
+        holdings_text = holdings_text + str(np.round(_buyprice,2)).ljust(8)
+
+    # print and write to file
+    hypthetical_trade_info = "\n\nTradeDate: " + trade_date + "\n"
+    hypthetical_trade_info = hypthetical_trade_info + sell_text
+    hypthetical_trade_info = hypthetical_trade_info + buy_text
+    hypthetical_trade_info = hypthetical_trade_info + holdings_text
+    
+    print(hypthetical_trade_info)
+
+    filepath = os.path.join(p_store, "PyTAAA_hypothetical_trades.txt" )
+    with open( filepath, "w" ) as f:
+        f.write(hypthetical_trade_info)
+        f.write("\n")

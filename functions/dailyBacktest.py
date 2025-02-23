@@ -12,6 +12,7 @@ from math import sqrt
 ## local imports
 from functions.quotes_for_list_adjClose import *
 from functions.TAfunctions import *
+from functions.GetParams import get_performance_store
 # from functions.UpdateSymbols_inHDF5 import UpdateHDF5
 
 def computeDailyBacktest(
@@ -36,7 +37,8 @@ def computeDailyBacktest(
         stddevThreshold=4.0,
         lowPct=17,
         hiPct=84,
-        uptrendSignalMethod='uptrendSignalMethod'
+        uptrendSignalMethod='uptrendSignalMethod',
+        verbose=False
 ):
 
     # put params in a dictionary
@@ -88,7 +90,11 @@ def computeDailyBacktest(
     for ii in range(adjClose.shape[0]):
         # take care of special case where constant share price is inserted at beginning of series
         index = np.argmax(np.clip(np.abs(gainloss[ii,:]-1),0,1e-8)) - 1
-        print("first valid price and date = ",symbols[ii]," ",index," ",datearray[index])
+        if verbose:
+            print(
+                "first valid price and date = ",
+                symbols[ii]," ",index," ",datearray[index]
+            )
         lastEmptyPriceIndex[ii] = index
         activeCount[lastEmptyPriceIndex[ii]+1:] += 1
 
@@ -176,8 +182,12 @@ def computeDailyBacktest(
                 commission = symbol_changed_count * trade_cost
             commission_factor = (valuesum-commission*monthvalue.shape[0])/valuesum
 
-            print("date,changed#, commission,valuemean,yesterdayValue,todayValue,commissionFactor(%)= ", \
-                   datearray[ii], symbol_changed_count, commission, valuemean, yesterdayValue,todayValue,format(commission_factor-1.,'5.2%'))
+            # print(
+            #     "date,changed#, commission,valuemean,yesterdayValue,todayValue,commissionFactor(%)= ", \
+            #     datearray[ii], symbol_changed_count, commission, valuemean,
+            #     yesterdayValue,todayValue,format(commission_factor-1.,'5.2%')
+            # )
+
             ### Note: this is only approximate to what I really want to do in trades. This models all percentages changing
             ###       which implies trading all stocks. But I really want just to adjust CASH balance if monthgainlossweight is constant.
             for jj in range(value.shape[0]):
@@ -332,7 +342,8 @@ def computeDailyBacktest(
     ###
     try:
         json_dir = os.path.split(json_fn)
-        filepath = os.path.join( json_dir, "pyTAAAweb_backtestPortfolioValue.params" )
+        p_store = get_performance_store(json_fn)
+        filepath = os.path.join(p_store, "pyTAAAweb_backtestPortfolioValue.params" )
         textmessage = ""
         for idate in range(len(BuyHoldPortfolioValue)):
             textmessage = textmessage + str(datearray[idate])+"  "+str(BuyHoldPortfolioValue[idate])+"  "+str(np.average(monthvalue[:,idate]))+"\n"

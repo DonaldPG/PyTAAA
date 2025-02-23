@@ -31,18 +31,19 @@ from functions.TAfunctions import (
     sharpeWeightedRank_2D
 )
 from functions.CheckMarketOpen import *
+from functions.GetParams import get_webpage_store
 from functions.CountNewHighsLows import newHighsAndLows
 
 def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
 
     print("\n\n ... inside PortfolioPerformanceCalcs...")
-    
+
     print("   . symbol_directory = " + symbol_directory)
     print("   . symbol_file = " + symbol_file)
-    
+
     json_dir = os.path.split(json_fn)[0]
     print("   . json_dir = " + json_dir)
-    
+
     ## update quotes from list of symbols
     filename = os.path.join(symbol_directory, symbol_file)
     print("   . filename for loadQuotes_fromHDF = " + filename)
@@ -269,8 +270,10 @@ def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
     ##########################################
     # Write date and Percent of up-trending stocks to file for web page
     ##########################################
+    
+    web_dir = get_webpage_store(json_fn)
     try:
-        filepath = os.path.join(json_dir, "pyTAAAweb_numberUptrendingStocks_status.params")
+        filepath = os.path.join(web_dir, "pyTAAAweb_numberUptrendingStocks_status.params")
         textmessage = ""
         for jj in range(dailyNumberUptrendingStocks.shape[0]):
             textmessage = textmessage + str(datearray[jj])+"  "+str(dailyNumberUptrendingStocks[jj])+"  "+str(activeCount[jj])+"\n"
@@ -336,7 +339,8 @@ def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
     # import matplotlib
     # matplotlib.use('Agg')
     # from matplotlib import pylab as plt
-    filepath = os.path.join(json_dir, "pyTAAA_web")
+    filepath = get_webpage_store(json_fn)
+    # filepath = os.path.join(json_dir, "pyTAAA_web")
 
     today = datetime.datetime.now()
     hourOfDay = today.hour
@@ -621,14 +625,14 @@ def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
         if monthgainlossweight[ii,-1] > 0:
             print(datearray[-1], format(symbols[ii],'5s'), format(monthgainlossweight[ii,-1],'5.3f'))
             last_symbols_text.append( symbols[ii] )
-            last_symbols_weight.append( monthgainlossweight[ii,-1] )
-            last_symbols_price.append( round(adjClose[ii,-1],2) )
+            last_symbols_weight.append( float(round(monthgainlossweight[ii,-1],4)))
+            last_symbols_price.append( float(round(adjClose[ii,-1],2)))
 
     print("\n ... inside portfolioPerformanceCalcs")
     print("   . datearray[-1] = " +str(datearray[-1]))
     print("   . last_symbols_text = " +str(last_symbols_text))
-    print("   . last_symbols_weight = " +str(last_symbols_weight))
-    print("   . last_symbols_price = " +str(last_symbols_price))
+    print("   . last_symbols_weight = " + str(last_symbols_weight))
+    print("   . last_symbols_price = " + str(last_symbols_price))
 
     # send text message for held stocks breaking to downside outside trend channel
     # - if markets are currently open

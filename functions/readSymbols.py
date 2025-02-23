@@ -6,6 +6,7 @@ Created on May 12, 202
 import os
 import datetime
 import pandas as pd
+import pandas_market_calendars as mcal
 
 class webpage_companies_extractor:
     Url = None
@@ -226,6 +227,11 @@ def read_company_names_local(json_fn, verbose=False):
         ).replace(
             "SP500_Symbols", "companyNames"
     )
+    symbol_folder = os.path.split(get_symbols_file(json_fn))[0]
+    if "Naz100".lower() in symbol_folder.lower():
+        existing_company_names_fn = os.path.join( symbol_folder, "Naz100_companyNames.txt" )
+    elif "SP500".lower() in symbol_folder.lower():
+        existing_company_names_fn = os.path.join( symbol_folder, "SP500_companyNames.txt" )
 
     print(" ...inside readSymbolList... existing_company_names_fn = ", existing_company_names_fn)
     with open(existing_company_names_fn, "r") as infile:
@@ -322,6 +328,160 @@ def read_symbols_list_web(json_fn, verbose=True ):
 
             symbolList, companyNamesList = read_company_names_local(json_fn)
 
+    elif "SP500_symbols".lower() in existing_symbols_file.lower():
+
+        ###
+        ### Query wikipedia.com for updated list of stocks in S&P 500 index.
+        ### Return list with stock tickers.
+        ###
+        #import urllib2
+        import urllib.request, urllib.error, urllib.parse
+        import requests
+        import re
+        from bs4 import BeautifulSoup
+        import os
+        import datetime
+        import unicodedata
+
+        ###
+        ### get symbol list from previous period
+        ###
+        # symbol_directory = os.path.join( os.getcwd(), "symbols" )
+
+        # symbol_file = "SP500_Symbols.txt"
+        # symbols_file = os.path.join( symbol_directory, symbol_file )
+        existing_symbols_file = get_symbols_file(json_fn)
+        symbol_directory, symbol_file = os.path.split(existing_symbols_file)
+
+        with open(existing_symbols_file, "r+") as f:
+            old_symbolList = f.readlines()
+        for i in range( len(old_symbolList) ) :
+            old_symbolList[i] = old_symbolList[i].replace("\n","")
+
+        ###
+        ### get current symbol list from wikipedia website
+        ###
+
+        # base_url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
+        # soup = BeautifulSoup( urllib.request.urlopen(base_url), "lxml" )
+        # t = soup.find(
+        #     "table",
+        #     {
+        #         "class" : "wikitable sortable sticky-header",
+        #         "id": "constituents"
+        #     }
+        # )
+
+        # print("... got web content")
+        # print("... ran beautiful soup on web content")
+
+        # symbolList = [] # store all of the records in this list
+        # companyNamesList = []
+        # data=[]
+        # n_cos = 0
+        # for row in t.find_all('tr'):
+        #     if str(row)==[]:
+        #         continue
+        #     col = row.find_all('td')
+        #     cols = row.find_all('td')
+        #     cols = [ele.text.strip() for ele in cols]
+        #     data.append([ele for ele in cols if ele])
+        #     if col==[]:
+        #         continue
+        #     company_name = data[-1][1].encode("utf8")
+        #     # if company_name[:3]=='MON':
+        #     #     break
+        #     company_name = unicodedata.normalize('NFD',data[-1][1]).encode('ascii', 'ignore').decode('ascii')
+        #     symbol_name = data[-1][0].encode("utf8").decode('ascii')
+        #     symbol_name = symbol_name.replace(".", "-")
+
+        #     #print(str(row)+"\n ...company_name = "+company_name+"\n ...symbol_name="+symbol_name+"\n")
+        #     print("  ...symbol_name=" + f'{symbol_name:<6}'+ " ...company_name = "+company_name)
+        #     companyNamesList.append(company_name)
+        #     symbolList.append(symbol_name)
+        #     n_cos += 1
+        # print("... retrieved " + str(n_cos) + " SP500 companies lists from internet")
+
+
+        ### -----------------
+        ### start of revised code
+        ### -----------------
+        ###
+        ### Query wikipedia.com for updated list of stocks in S&P 500 index.
+        ### Return list with stock tickers.
+        ###
+        #import urllib2
+        import urllib.request, urllib.error, urllib.parse
+        import requests
+        import re
+        from bs4 import BeautifulSoup
+        import os
+        import datetime
+        import unicodedata
+
+        ###
+        ### get symbol list from previous period
+        ###
+        symbol_directory = os.path.split(existing_symbols_file)[0]
+
+        symbol_file = "SP500_Symbols.txt"
+        symbols_file = os.path.join( symbol_directory, symbol_file )
+        with open(symbols_file, "r+") as f:
+            old_symbolList = f.readlines()
+        for i in range( len(old_symbolList) ) :
+            old_symbolList[i] = old_symbolList[i].replace("\n","")
+
+        ###
+        ### get current symbol list from wikipedia website
+        ###
+        base_url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
+        soup = BeautifulSoup( urllib.request.urlopen(base_url), "lxml" )
+        t = soup.find(
+            "table",
+            {
+                "class" : "wikitable sortable sticky-header",
+                "id": "constituents"
+            }
+        )
+
+        print("... got web content")
+        print("... ran beautiful soup on web content")
+
+        symbolList = [] # store all of the records in this list
+        companyNamesList = []
+        data=[]
+        for row in t.find_all('tr'):
+            if str(row)==[]:
+                continue
+            col = row.find_all('td')
+            cols = row.find_all('td')
+            cols = [ele.text.strip() for ele in cols]
+            data.append([ele for ele in cols if ele])
+            if col==[]:
+                continue
+            company_name = data[-1][0].encode("utf8")
+            # if company_name[:3]=='MON':
+            #     break
+            company_name = unicodedata.normalize('NFD',data[-1][1]).encode('ascii', 'ignore').decode('ascii')
+            symbol_name = data[-1][0].encode("utf8").decode('ascii')
+            symbol_name = symbol_name.replace(".", "-")
+
+            #print(str(row)+"\n ...company_name = "+company_name+"\n ...symbol_name="+symbol_name+"\n")
+            print("  ...symbol_name="+symbol_name + " ...company_name = "+company_name)
+            companyNamesList.append(company_name)
+            symbolList.append(symbol_name)
+        print("... retrieved SP500 companies lists from internet")
+
+        companyName_file = os.path.join( symbol_directory, "SP500_companyNames.txt" )
+        with open( companyName_file, "w" ) as f:
+            for i in range( len(symbolList) ) :
+                f.write( symbolList[i] + ";" + companyNamesList[i] + "\n" )
+        print("... wrote SP500_companyNames.txt")
+
+        ### -----------------
+        ### end of revised code
+        ### -----------------
+
     return companyNamesList, symbolList
 
 
@@ -341,7 +501,10 @@ def get_symbols_changes(json_fn, verbose=False):
     w_companyNamesList, w_symbolList = read_symbols_list_web(json_fn)
 
     # update local list of company names with version from web
-    companyName_file = os.path.join( symbol_folder, "companyNames.txt" )
+    if "Naz100".lower() in symbol_folder.lower():
+        companyName_file = os.path.join( symbol_folder, "Naz100_companyNames.txt" )
+    elif "SP500".lower() in symbol_folder.lower():
+        companyName_file = os.path.join( symbol_folder, "SP500_companyNames.txt" )
     with open( companyName_file, "w" ) as f:
         for i in range( len(w_symbolList) ) :
             f.write( w_symbolList[i] + ";" + w_companyNamesList[i] + "\n" )
@@ -351,7 +514,12 @@ def get_symbols_changes(json_fn, verbose=False):
     ###
 
     # file for index changes history
-    symbol_change_file = "Naz100_symbolsChanges.txt"
+    if "Naz100".lower() in symbol_fn.lower():
+        symbol_change_file = "Naz100_symbolsChanges.txt"
+        stock_index = "SP500"
+    elif "SP500".lower() in symbol_fn.lower():
+        symbol_change_file = "SP500_symbolsChanges.txt"
+        stock_index = "SP500"
     symbols_changes_file = os.path.join( symbol_folder, symbol_change_file )
     with open(symbols_changes_file, "r+") as f:
         old_symbol_changesList = f.readlines()
@@ -375,7 +543,7 @@ def get_symbols_changes(json_fn, verbose=False):
         if ticker not in w_symbolList:
             removedTickers.append( ticker )
             if verbose:
-                print(" Ticker ", ticker, " has been removed from the Nasdaq100 index")
+                print(" Ticker ", ticker, " has been removed from the "+ stock_index + " index")
             removedTickersText = removedTickersText + "\n" + dateToday + " Remove " + ticker
 
     # compare lists to check for tickers added to the index
@@ -409,9 +577,19 @@ def get_symbols_changes(json_fn, verbose=False):
     if removedTickers != [] or addedTickers != []:
 
         # make copy of previous symbols list file
-        symbol_directory = os.path.join( json_dir, "symbols" )
-        symbol_file = "Naz100_Symbols.txt"
-        archive_symbol_file = "Naz100_symbols__" + str(datetime.date.today()) + ".txt"
+        # symbol_directory = os.path.join( json_dir, "symbols" )
+        symbol_directory = symbol_folder
+        if "Naz100".lower() in symbol_fn.lower():
+            symbol_file = "Naz100_Symbols.txt"
+            symbol_change_file = "Naz100_symbolsChanges.txt"
+            fn_stem = "Naz100_symbols__"
+        elif "SP500".lower() in symbol_fn.lower():
+            symbol_file = "SP500_Symbols.txt"
+            symbol_change_file = "SP500_symbolsChanges.txt"
+            fn_stem = "SP500_symbols__"
+        symbols_changes_file = os.path.join( symbol_folder, symbol_change_file )
+
+        archive_symbol_file = fn_stem + str(datetime.date.today()) + ".txt"
         symbols_file = os.path.join( symbol_directory, symbol_file )
         archive_symbols_file = os.path.join( symbol_directory, archive_symbol_file )
 
@@ -441,3 +619,33 @@ def get_symbols_changes(json_fn, verbose=False):
 
     return w_symbolList, removedTickers, addedTickers
 
+
+def is_last_trade_day_in_month():
+    from datetime import datetime, timedelta
+
+    # Get the NYSE calendar
+    nyse = mcal.get_calendar('NYSE')
+
+    # Get today's date
+    today = datetime.now().date()
+
+    # Get the schedule for the current month
+    current_month_schedule = nyse.schedule(
+        start_date=today.replace(day=1),
+        end_date=today.replace(day=28) + timedelta(days=4)
+    )  # Ensure end_date is safely in the next month
+
+    # Get the last trading day of the month
+    last_trading_day = current_month_schedule.index[-1].date()
+
+    # Check if today is the last trading day of the month
+    is_last_trading_day_of_month = today == last_trading_day
+
+    if is_last_trading_day_of_month:
+        print("Today is the last trading day of the month.")
+        last_day_of_month = True
+    else:
+        print("Today is not the last trading day of the month.")
+        last_day_of_month = False
+
+    return last_day_of_month

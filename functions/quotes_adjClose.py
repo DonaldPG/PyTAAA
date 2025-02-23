@@ -89,6 +89,7 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
     ####from functions.get_data_yahoo_fix import get_data_yahoo_fix  # <== that's all it takes :-)
     from functions.quotes_adjClose_alphavantage import get_ts_data
     from functions.quotes_adjClose_quandl import get_q_data
+    # from functions.quotes
 
     if date1 is None:
         date1 = datetime.date(1900, 1, 1)
