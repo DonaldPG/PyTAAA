@@ -2389,7 +2389,7 @@ def sharpeWeightedRank_2D(
                         companyName = companyNameList[symbolIndex]
                     except:
                         companyName = ""
-                    print((" ...at line 2236: companyName = "+companyName))
+                    # print((" ...at line 2236: companyName = "+companyName))
                     #pe = str(getQuote(symbols[j])['PE'][0])
                     pe = peList[j]
                     pagetext_byRecentComboGainRank = pagetext_byRecentComboGainRank +"<br><p> </p><p> </p><p> </p><br>"+\
@@ -2904,7 +2904,9 @@ def sharpeWeightedRank_2D(
 
     from functions.readSymbols import read_symbols_list_web
 
-    companyNameList, companySymbolList = read_symbols_list_web(json_fn, verbose=True )
+    companyNameList, companySymbolList = read_symbols_list_web(
+        json_fn, verbose=False
+    )
     for ii in range(1,monthgainloss.shape[1]):
         if datearray[ii].month == datearray[ii-1].month:
             monthgainloss[:,ii] = monthgainloss[:,ii-1]
@@ -3316,7 +3318,7 @@ def sharpeWeightedRank_2D(
                         companyName = companyNameList[symbolIndex]
                     except:
                         companyName = ""
-                    print((" ...at line 2193: companyName = "+companyName))
+                    # print((" ...at line 2193: companyName = "+companyName))
                     #pe = str(getQuote(symbols[j])['PE'][0])
                     pe = peList[j]
                     pagetext_byRecentGainRank = pagetext_byRecentGainRank +"<br><p> </p><p> </p><p> </p><br>"+\
@@ -3358,7 +3360,7 @@ def sharpeWeightedRank_2D(
                         companyName = companyNameList[symbolIndex]
                     except:
                         companyName = ""
-                    print((" ...at line 2236: companyName = "+companyName))
+                    # print((" ...at line 2236: companyName = "+companyName))
                     #pe = str(getQuote(symbols[j])['PE'][0])
                     pe = peList[j]
                     pagetext_byRecentComboGainRank = pagetext_byRecentComboGainRank +"<br><p> </p><p> </p><p> </p><br>"+\
@@ -3495,7 +3497,7 @@ def sharpeWeightedRank_2D(
         hypo_trade_text = ""
         for item in lines:
             _item = item.replace("\n", "<br>")
-            for i in range(10):    
+            for i in range(10):
                 _item_ = _item.replace("  ", "&nbsp; ")
                 if _item == _item_:
                     break

@@ -258,7 +258,7 @@ def read_company_names_local(json_fn, verbose=False):
     return symbols, company_names
 
 
-def read_symbols_list_web(json_fn, verbose=True ):
+def read_symbols_list_web(json_fn, verbose=True):
 
     import os
     # determine if SP500 or Naz100
@@ -279,7 +279,13 @@ def read_symbols_list_web(json_fn, verbose=True ):
         ###
         ### get current symbol list from wikipedia website
         ###
+        symbolList = [] # store all of the records in this list
+        companyNamesList = []
+        data=[]
+
         try:
+
+            '''
             base_url ='https://en.wikipedia.org/wiki/NASDAQ-100#Components'
             soup = BeautifulSoup( urllib.request.urlopen(base_url).read(), "lxml" )
             t = soup.find("table", {"id": "constituents"}) # 2024-10-05
@@ -295,6 +301,8 @@ def read_symbols_list_web(json_fn, verbose=True ):
                     continue
                 if str(row)=="\n":
                     continue
+                if "<th>" in str(row):
+                    continue
                 col = row.find_all('td')
                 cols = row.find_all('td')
                 cols = [ele.text.strip() for ele in cols]
@@ -308,15 +316,199 @@ def read_symbols_list_web(json_fn, verbose=True ):
                 company_name = strip_accents(data[-1][0])
                 symbol_name = data[-1][1]
 
-                print(" ...symbol_name="+'{0: <5}'.format(symbol_name)+" ...company_name="+company_name)
+                if verbose:
+                    print(
+                        " ...symbol_name="+'{0: <5}'.format(symbol_name) + \
+                        " ...company_name=" + company_name
+                    )
                 companyNamesList.append(company_name)
                 symbolList.append(symbol_name)
+            '''
+            import pandas as pd
+
+            url = "https://yfiua.github.io/index-constituents/constituents-nasdaq100.csv"
+            df = pd.read_csv(url)
+            # Sort by 'Age' in descending order
+            df = df.sort_values(by='Symbol', ascending=True)
+            symbolList = df["Symbol"].values
+            companyNamesList = df["Name"].values
+
+            if verbose:
+                for _symbol, _company in zip(symbolList, companyNamesList):
+                       print(
+                           " ...symbol_name="+'{0: <5}'.format(_symbol) + \
+                           " ...company_name=" + _company
+                       )
+
+            print(f"... retrieved {symbolList.size} Naz100 companies lists from internet")
+            print("\nsymbolList = ", symbolList)
+
+            symbolList = list(symbolList)
+            companyNamesList = list(companyNamesList)
+
+        except:
+
+            base_url ='https://en.wikipedia.org/wiki/NASDAQ-100#Components'
+            soup = BeautifulSoup( urllib.request.urlopen(base_url).read(), "lxml" )
+            t = soup.find("table", {"id": "constituents"}) # 2024-10-05
+
+            print("... got web content")
+            print("... ran beautiful soup on web content")
+
+            symbolList = [] # store all of the records in this list
+            companyNamesList = []
+            data=[]
+            for row in t.find_all('tr'):
+                if str(row)==[]:
+                    continue
+                if str(row)=="\n":
+                    continue
+                if "<th>" in str(row):
+                    continue
+                col = row.find_all('td')
+                cols = row.find_all('td')
+                cols = [ele.text.strip() for ele in cols]
+                data.append([ele for ele in cols if ele])
+                if col==[]:
+                    continue
+                company_name = data[-1][0].encode("utf8")
+                if company_name[:3]=='MON':
+                    break
+
+                company_name = strip_accents(data[-1][0])
+                symbol_name = data[-1][1]
+
+                if verbose:
+                    print(
+                        " ...symbol_name="+'{0: <5}'.format(symbol_name) + \
+                        " ...company_name=" + company_name
+                    )
+                companyNamesList.append(company_name)
+                symbolList.append(symbol_name)
+
+
+            # import requests
+            # base_url ='https://www.liberatedstocktrader.com/nasdaq-100-companies-list-sector-market-cap/'
+            # headers = {
+            #     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            # }
+            # response = requests.get(base_url, headers=headers)
+            # soup = BeautifulSoup(response.text, "html.parser")
+
+            # table_list = []
+            # for table in soup.find_all("table"):
+            #     table_list.append(table)
+            # t1 = table_list[1]
+
+            # print("... got web content")
+            # print("... ran beautiful soup on web content")
+
+            # symbolList = [] # store all of the records in this list
+            # companyNamesList = []
+            # data=[]
+            # for row in t1.find_all('tr'):
+            #     if str(row)==[]:
+            #         continue
+            #     if str(row)=="\n":
+            #         continue
+            #     if "<tr stye>" in str(row):
+            #         continue
+            #     col = row.find_all('td')
+            #     cols = row.find_all('td')
+            #     cols = [ele.text.strip() for ele in cols]
+            #     data.append([ele for ele in cols if ele])
+            #     if col==[]:
+            #         continue
+            #     company_name = data[-1][0].encode("utf8")
+            #     if company_name[:3]=='MON':
+            #         break
+
+            #     company_name = strip_accents(data[-1][1])
+            #     symbol_name = data[-1][0]
+
+            #     if symbol_name.lower() == "ticker":
+            #         continue
+
+            #     if verbose:
+            #         print(
+            #             " ...symbol_name="+'{0: <5}'.format(symbol_name) + \
+            #             " ...company_name=" + company_name
+            #         )
+            #     companyNamesList.append(company_name)
+            #     symbolList.append(symbol_name)
+            # print("... retrieved Naz100 companies lists from internet")
+            # print("\nsymbolList = ", symbolList)
+
+        '''
+        except:
+            import requests
+            url_list = [
+                #"https://markets.businessinsider.com/index/components/nasdaq_100",
+                #"https://markets.businessinsider.com/index/components/nasdaq_100?p=1",
+                "https://markets.businessinsider.com/index/components/nasdaq_100?p=2",
+                #"https://markets.businessinsider.com/index/components/nasdaq_100?p=3",
+            ]
+
+            symbolList = [] # store all of the records in this list
+            companyNamesList = []
+            data=[]
+
+            base_url = "https://markets.businessinsider.com/index/components/nasdaq_100"
+            for base_url in url_list:
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                }
+                response = requests.get(base_url, headers=headers)
+                soup = BeautifulSoup(response.text, "html.parser")
+
+                table_list = []
+                for table in soup.find_all("table"):
+                    table_list.append(table)
+                t1 = table_list[0]
+
+                print("... got web content")
+                print("... ran beautiful soup on web content")
+
+                for row in t1.find_all('tr'):
+                    if str(row)==[]:
+                        continue
+                    if str(row)=="\n":
+                        continue
+                    if "<th class>" in str(row):
+                        continue
+                    col = row.find_all('td')
+                    cols = row.find_all('td')
+                    cols = [ele.text.strip() for ele in cols]
+                    data.append([ele for ele in cols if ele])
+                    ticker = str(row.find_all('a')).split("stocks/")[-1].split("-")[0]
+                    if col==[]:
+                        continue
+                    company_name = data[-1][0].encode("utf8")
+                    if company_name[:3]=='MON':
+                        break
+
+                    company_name = strip_accents(data[-1][0])
+                    symbol_name = ticker.upper()
+
+                    if symbol_name.lower() == "ticker":
+                        continue
+
+                    if verbose:
+                        print(
+                            " ...symbol_name="+'{0: <5}'.format(symbol_name) + \
+                            " ...company_name=" + company_name
+                        )
+                    companyNamesList.append(company_name)
+                    symbolList.append(symbol_name)
             print("... retrieved Naz100 companies lists from internet")
             print("\nsymbolList = ", symbolList)
 
-        except:
+        '''
+
+
+        if len(companyNamesList) == 0:
             ###
-            ### something didn't wor. print message and return old list.
+            ### something didn't work. print message and return old list.
             ###
             print("\n\n\n")
             print("! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ")
@@ -467,10 +659,16 @@ def read_symbols_list_web(json_fn, verbose=True ):
             symbol_name = symbol_name.replace(".", "-")
 
             #print(str(row)+"\n ...company_name = "+company_name+"\n ...symbol_name="+symbol_name+"\n")
-            print("  ...symbol_name="+symbol_name + " ...company_name = "+company_name)
+            if verbose:
+                print(
+                    # "  ...symbol_name=" + symbol_name + \
+                    # " ...company_name = " + company_name
+                    " ...symbol_name="+'{0: <5}'.format(symbol_name) + \
+                    " ...company_name=" + company_name
+                )
             companyNamesList.append(company_name)
             symbolList.append(symbol_name)
-        print("... retrieved SP500 companies lists from internet")
+        print(f"... retrieved {len(symbolList)} SP500 companies lists from internet")
 
         companyName_file = os.path.join( symbol_directory, "SP500_companyNames.txt" )
         with open( companyName_file, "w" ) as f:
@@ -498,7 +696,9 @@ def get_symbols_changes(json_fn, verbose=False):
     l_symbolList, l_companyNamesList = read_company_names_local(json_fn)
 
     # get current symbols and company_name lists
-    w_companyNamesList, w_symbolList = read_symbols_list_web(json_fn)
+    w_companyNamesList, w_symbolList = read_symbols_list_web(
+        json_fn, verbose=verbose
+    )
 
     # update local list of company names with version from web
     if "Naz100".lower() in symbol_folder.lower():

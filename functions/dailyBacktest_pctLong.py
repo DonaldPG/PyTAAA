@@ -307,7 +307,7 @@ def plotRecentPerfomance3(
         HH[:,i] = h
         mm[i] = np.median(value[-1,:])
         if datearray[i].year != datearray[i-1].year:
-            print(" inside histogram evaluation for date = ", datearray[i])
+            # print(" inside histogram evaluation for date = ", datearray[i])
             xlocs.append(i)
             xlabels.append(str(datearray[i].year))
     HH -= np.percentile(HH.flatten(),2)
@@ -420,8 +420,8 @@ def plotRecentPerfomance3(
         h += .5
         H[:,i] = h
         m[i] = np.median(value[-1,:])
-        if datearray[i].year != datearray[i-1].year:
-            print(" inside histogram evaluation for date = ", datearray[i])
+        # if datearray[i].year != datearray[i-1].year:
+        #     print(" inside histogram evaluation for date = ", datearray[i])
     H -= np.percentile(H.flatten(),2)
     H /= H.max()
     H = np.clip( H, 0., 1. )
@@ -881,7 +881,7 @@ def plotRecentPerfomance2(
         HH[:,i] = h
         mm[i] = np.median(value[-1,:])
         if datearray[i].year != datearray[i-1].year:
-            print(" inside histogram evaluation for date = ", datearray[i])
+            # print(" inside histogram evaluation for date = ", datearray[i])
             xlocs.append(i)
             xlabels.append(str(datearray[i].year))
     HH -= np.percentile(HH.flatten(),2)
@@ -938,8 +938,8 @@ def plotRecentPerfomance2(
         h += .5
         H[:,i] = h
         m[i] = np.median(value[-1,:])
-        if datearray[i].year != datearray[i-1].year:
-            print(" inside histogram evaluation for date = ", datearray[i])
+        # if datearray[i].year != datearray[i-1].year:
+        #     print(" inside histogram evaluation for date = ", datearray[i])
     H -= np.percentile(H.flatten(),2)
     H /= H.max()
     H = np.clip( H, 0., 1. )
@@ -1362,7 +1362,7 @@ def plotRecentPerfomance(
         HH[:,i] = h
         mm[i] = np.median(value[-1,:])
         if datearray[i].year != datearray[i-1].year:
-            print(" inside histogram evaluation for date = ", datearray[i])
+            # print(" inside histogram evaluation for date = ", datearray[i])
             xlocs.append(i)
             xlabels.append(str(datearray[i].year))
     HH -= np.percentile(HH.flatten(),2)
@@ -1414,8 +1414,8 @@ def plotRecentPerfomance(
         h += .5
         H[:,i] = h
         m[i] = np.median(value[-1,:])
-        if datearray[i].year != datearray[i-1].year:
-            print(" inside histogram evaluation for date = ", datearray[i])
+        # if datearray[i].year != datearray[i-1].year:
+        #     print(" inside histogram evaluation for date = ", datearray[i])
     H -= np.percentile(H.flatten(),2)
     H /= H.max()
     H = np.clip( H, 0., 1. )
@@ -1651,11 +1651,11 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
     adjClose, symbols, datearray, _, _ = loadQuotes_fromHDF(symbols_file, json_fn)
     firstdate = datearray[0]
 
-    for iii in range(len(symbols)):
-        print(
-            " i,symbols[i],datearray[-1],adjClose[i,-1] = ",
-            iii, symbols[iii], datearray[-1], adjClose[iii,-1]
-        )
+    # for iii in range(len(symbols)):
+    #     print(
+    #         " i,symbols[i],datearray[-1],adjClose[i,-1] = ",
+    #         iii, symbols[iii], datearray[-1], adjClose[iii,-1]
+    #     )
 
     # Clean up missing values in input quotes
     #  - infill interior NaN values using nearest good values to linearly interpolate
@@ -1981,7 +1981,8 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
                     signal2D[:,jj] = signal2D[:,jj-1]
                 else:
                     if iter==0:
-                        print("date, signal2D changed",datearray[jj])
+                        # print("date, signal2D changed",datearray[jj])
+                        pass
 
             numberStocks = np.sum(signal2D,axis = 0)
 
@@ -2061,7 +2062,8 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
                 signal2D[:,jj] = signal2D[:,jj-1]
             else:
                 if iter==0:
-                    print("date, signal2D changed",datearray[jj])
+                    # print("date, signal2D changed",datearray[jj])
+                    pass
 
         numberStocks = np.sum(signal2D,axis = 0)
 
@@ -2660,7 +2662,7 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
                 HH[:,i] = h
                 mm[i] = np.median(value[-1,:])
                 if datearray[i].year != datearray[i-1].year:
-                    print(" inside histogram evaluation for date = ", datearray[i])
+                    # print(" inside histogram evaluation for date = ", datearray[i])
                     xlocs.append(i)
                     xlabels.append(str(datearray[i].year))
             AllStocksHistogram[:,:,2] = HH
@@ -2698,8 +2700,8 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
                 h += .5
                 H[:,i] = h
                 m[i] = np.median(value[-1,:])
-                if datearray[i].year != datearray[i-1].year:
-                    print(" inside histogram evaluation for date = ", datearray[i])
+                # if datearray[i].year != datearray[i-1].year:
+                #     print(" inside histogram evaluation for date = ", datearray[i])
             hb[:,:,0] = H
             hb[:,:,1] = H
             hb[:,:,2] = H

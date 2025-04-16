@@ -93,8 +93,8 @@ def makeValuePlot(json_fn):
         else:
             valueSignal[ii] = valueSignal[ii-1]
 
-    for i in range(0,len(value),500 ):
-        print("   ...inside makeValuePlot - i, date[i], value[i] = ", i, date[i], value[i])
+    # for i in range(0,len(value),500 ):
+    #     print("   ...inside makeValuePlot - i, date[i], value[i] = ", i, date[i], value[i])
 
     plt.figure(1,figsize=(9,7))
     plt.clf()

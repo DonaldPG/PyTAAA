@@ -127,7 +127,8 @@ def computeDailyBacktest(
             signal2D[:,jj] = signal2D[:,jj-1]
         else:
             if iter==0:
-                print("date, signal2D changed",datearray[jj])
+                # print("date, signal2D changed",datearray[jj])
+                pass
 
     numberStocks = np.sum(signal2D,axis = 0)
 
