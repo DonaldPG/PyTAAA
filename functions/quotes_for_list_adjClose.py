@@ -878,7 +878,7 @@ def arrayFromQuotesForList(symbolsFile, json_fn, beginDate, endDate):
 
     # read symbols list
     # symbols = readSymbolList(symbolsFile, json_fn, verbose=True)
-    _, symbols = read_symbols_list_web(json_fn, verbose=True)
+    _, symbols = read_symbols_list_web(json_fn, verbose=False)
 
     # get quotes for each symbol in list (adjusted close)
     quote = downloadQuotes(symbols,date1=beginDate,date2=endDate,adjust=True,Verbose=True)
@@ -918,7 +918,7 @@ def arrayFromQuotesForListWithVol(symbolsFile, json_fn, beginDate, endDate):
 
     # read symbols list
     # symbols = readSymbolList(symbolsFile, json_fn, verbose=True)
-    _, symbols = read_symbols_list_web(json_fn, verbose=True)
+    _, symbols = read_symbols_list_web(json_fn, verbose=False)
 
     # get quotes for each symbol in list (adjusted close)
     quote = downloadQuotes(symbols,date1=beginDate,date2=endDate,adjust=True,Verbose=True)
@@ -938,7 +938,7 @@ def arrayFromQuotesForListWithVol(symbolsFile, json_fn, beginDate, endDate):
         x[ii,0,:] = interpolate(x[ii,0,:].values)
         x[ii,0,:] = cleantobeginning(x[ii,0,:].values)
 
-    return x, symbolList, datearray
+    return x, symbols, datearray
 
 '''
 def get_quote_google( symbol ):

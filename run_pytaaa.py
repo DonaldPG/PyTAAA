@@ -75,10 +75,7 @@ def run_pytaaa(json_fn):
     hourOfDay = today.hour
     start_time_updateStockList = time.time()
     if hourOfDay <= 17:
-        if stockList == 'Naz100':
-            # _, removedTickers, addedTickers = get_Naz100List(symbols_file, verbose=True)
-            _, removedTickers, addedTickers = get_symbols_changes(json_fn)
-        elif stockList == 'SP500':
+        if stockList == 'Naz100' or stockList == 'SP500':
             # _, removedTickers, addedTickers = get_SP500List(symbols_file, verbose=True)
             _, removedTickers, addedTickers = get_symbols_changes(json_fn)
     else:

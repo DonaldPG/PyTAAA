@@ -65,6 +65,9 @@ def loadQuotes_fromHDF(symbols_file, json_fn):
 
     # hdf5_directory = os.path.join( os.getcwd(), "symbols" )
     # hdf5filename = os.path.join(hdf5_directory, listname + "_.hdf5")
+    
+    print(" ... inside loadQuotes_fromHDF")
+    print("   . json_fn = " + json_fn)
 
     symbols_fn = get_symbols_file(json_fn)
     hdf_folder = os.path.split(symbols_fn)[0]
@@ -110,7 +113,9 @@ def loadQuotes_fromHDF(symbols_file, json_fn):
         which_block = 'try'
     except:
         print(" ...inside loadQuotes_fromHDF ... top of 'except' block")
-        createHDF( hdf5_directory, symbols_file, listname, json_fn )
+        # createHDF( hdf5_directory, symbols_file, listname, json_fn )
+        createHDF( hdf_folder, symbols_file, listname, json_fn )
+
         quote = pd.read_hdf( hdf5filename, listname )
         #x = quote.as_matrix()
         x = quote.to_numpy()
@@ -710,7 +715,7 @@ def UpdateHDF_yf(symbol_directory, symbols_file, json_fn):
 
         # read symbols list
         # symbols = readSymbolList(filename, json_fn, verbose=True)
-        _, symbols = read_symbols_list_web(json_fn, verbose=True)
+        _, symbols = read_symbols_list_web(json_fn, verbose=False)
 
         if end_date == None:
             end_date = str(datetime.datetime.now()).split(' ')[0]
@@ -766,7 +771,7 @@ def UpdateHDF_yf(symbol_directory, symbols_file, json_fn):
 
     # locate symbols added to list that aren't in HDF5 file
     # symbols_in_list = readSymbolList(filename, json_fn, verbose=False)
-    _, symbols_in_list = read_symbols_list_web(json_fn, verbose=False)
+    _, symbols_in_list = read_symbols_list_web(json_fn, verbose=True)
     #symbols_in_HDF5 = list(quote.columns.values)
     #new_symbols = [x for x in symbols_in_list if x  not in symbols_in_HDF5]
     symbols_in_HDF5 = [str(s) for s in quote.columns.values]

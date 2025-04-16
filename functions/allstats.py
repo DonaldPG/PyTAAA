@@ -206,31 +206,49 @@ class allstats():
 
 
 
-'''
-# do example
-x = np.array( ( 1,4,3,5,6,9,22,453,1,3,5,9,5,4,3,7,4,8,0,12,-12) )
-print "mean = ", allstats(np.diff(x)).mean()
-print "median = ", allstats(np.diff(x)).median()
-print "MAD = ", allstats(x).mad()
-print "sharpe = ", allstats(np.diff(x)).sharpe()
-print "stddev = ", allstats(np.diff(x)).std()
-print "z_score = ", allstats(np.diff(x)).z_score()
-print "med_score = ", allstats(np.diff(x)).med_score()
+if __name__ == "__main__":
+    # do example
+    x = np.array( ( 1,4,3,5,6,9,22,453,1,3,5,9,5,4,3,7,4,8,0,12,-12) )
+    x = np.random.normal(loc=0.03, scale=1.0, size=1000)
+    
+    # print("mean = ", allstats(np.diff(x)).mean())
+    # print("median = ", allstats(np.diff(x)).median())
+    # print("MAD = ", allstats(x).mad())
+    # print("sharpe = ", allstats(np.diff(x)).sharpe())
+    # print("stddev = ", allstats(np.diff(x)).std())
+    # print("Sortino Ratio =", allstats(x).sortino(risk_free_rate=0., target_rate=0.05))
+    # print("z_score = ", allstats(np.diff(x)).z_score())
+    # print("med_score = ", allstats(np.diff(x)).med_score())
+    
+    from matplotlib import pylab as plt
+    plt.ion()
+    
+    plt.plot(x)
+    plt.plot(allstats(np.diff(x)).z_score())
+    plt.plot(allstats(np.diff(x)).med_score())
+    plt.grid()
+    
+    
+    # Returns from the portfolio (r) and market (m)
+    r = np.random.uniform(0., 2., 5000)
+    r = np.random.normal(1.036, .25, 5000)
+    dr = np.gradient(r)
+    r[dr>0.] = r[dr>0.0] ** 1.05
 
-from matplotlib import pylab as plt
-plt.ion()
+    # Risk-adjusted return based on Volatility
+    print("mean = ", allstats(np.diff(r)).mean())
+    print("median = ", allstats(np.diff(r)).median())
+    print("MAD = ", allstats(r).mad())
+    print("sharpe = ", allstats(np.diff(r)).sharpe())
+    print("stddev = ", allstats(np.diff(r)).std())
+    print("Sortino Ratio =", allstats(r).sortino(risk_free_rate=0.03, target_rate=0.))
+    
+    value = r.copy()
+    value[0] = 10000.
+    value = np.cumprod(value)
+    print("final value = " + format(value[-1], '9,.0f'))
 
-plt.plot(x)
-plt.plot(allstats(np.diff(x)).z_score())
-plt.plot(allstats(np.diff(x)).med_score())
-plt.grid()
-
-
-# Returns from the portfolio (r) and market (m)
-r = np.random.uniform(0., 2., 50)
-r = np.random.normal(1.1, .25, 50)
-# Risk-adjusted return based on Volatility
-print("Sortino Ratio =", allstats(r).sortino(risk_free_rate=0., target_rate=0.))
-'''
-
-
+    plt.clf()
+    plt.grid()
+    plt.plot(value, 'k-')
+    plt.yscale('log')

@@ -461,7 +461,8 @@ def put_status(cumu_status, json_fn):
     old_cumu_signal = old_cumu_signal.split(" ")[-2]
 
     # check current signal based on system protfolio value trend
-    _, traded_values, _, last_signal = computeLongHoldSignal()
+    # _, traded_values, _, last_signal = computeLongHoldSignal()
+    _, traded_values, _, last_signal = compute_long_hold_signal(json_fn)
 
     print("cumu_status = ", str(cumu_status))
     print("old_cumu_status = ", old_cumu_status)

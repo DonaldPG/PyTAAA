@@ -471,6 +471,40 @@ def writeWebPage(
 
 
     ##########################################
+    # Make sure original backtest plots (2014) are present
+    ##########################################
+    print("\n\n ... checking original backtest plots exist")
+    try:
+        banner_fn = os.path.abspath(os.path.join(
+            os.path.abspath(__file__),
+            "../..", "assets", "PyTAAA_backtest.png"
+        ))
+        webpage_dir = get_webpage_store(json_fn)
+        dest_fn = os.path.join(webpage_dir, "PyTAAA_backtest.png")
+        if not os.path.isfile(dest_fn):
+            # Copy the file with metadata
+            shutil.copy2(banner_fn, os.path.split(dest_fn)[0])
+    except:
+        print("\n\n ... Error:   unable to copy backtest image 1")
+    print("   . banner_fn = " + banner_fn)
+    print("   . dest_fn = " + dest_fn)
+
+    try:
+        banner_fn = os.path.abspath(os.path.join(
+            os.path.abspath(__file__),
+            "../..", "assets", "PyTAAA_backtest_updated.png"
+        ))
+        webpage_dir = get_webpage_store(json_fn)
+        dest_fn = os.path.join(webpage_dir, "PyTAAA_backtest_updated.png")
+        if not os.path.isfile(dest_fn):
+            # Copy the file with metadata
+            shutil.copy2(banner_fn, os.path.split(dest_fn)[0])
+    except:
+        print("\n\n ... Error:   unable to copy backtest image 2")
+    print("   . banner_fn = " + banner_fn)
+    print("   . dest_fn = " + dest_fn)
+
+    ##########################################
     # Copy web pages to piDonaldPG using ftp (from pc) or using filecopy (from linux)
     ##########################################
 

@@ -1,12 +1,16 @@
 import os
 import numpy as np
 import datetime
+import pandas as pd
 #from functions.quotes_for_list_adjCloseVol import *
 from functions.quotes_for_list_adjClose import LastQuotesForSymbolList_hdf
 from functions.CheckMarketOpen import *
 from functions.GetParams import (
     get_json_params, get_symbols_file, get_performance_store
 )
+
+# Set print options to suppress scientific notation and control precision
+np.set_printoptions(suppress=True, precision=2)
 
 ###
 ### Perform a check to see if the stock market is open
@@ -85,29 +89,6 @@ def calculateTrades(
 
     print(" ... holdingsParams_currentPrice = " + str(holdingsParams_currentPrice))
 
-    '''
-    # check for duplicate holdings. Combine duplicates if they exist.
-    holdings_symbols = holdingsParams_symbols
-    #holdings_symbols = []
-    holdings_shares = []
-    holdings_buyprice = []
-    holdings_currentPrice = []
-
-    for i,val in enumerate(holdingsParams_symbols):
-        if holdingsParams_symbols.index(val) == i and holdingsParams_currentPrice[i] != np.nan:
-            index = holdingsParams_symbols.index(val)
-            #holdings_symbols.append( val )
-            holdings_shares.append( holdingsParams_shares[index] )
-            holdings_buyprice.append( holdingsParams_buyprice[index] )
-            holdings_currentPrice.append( holdingsParams_currentPrice[index] )
-        else:
-            indexToAdjust = holdings_symbols.index(val)
-            holdings_shares[indexToAdjust] += holdingsParams_shares[i]
-            holdings_buyprice[indexToAdjust] =   \
-                      ( holdingsParams_buyprice[indexToAdjust] * holdingsParams_shares[indexToAdjust] +   \
-                      holdingsParams_buyprice[i] * holdingsParams_shares[i] ) /   \
-                      holdings_shares[indexToAdjust]
-    '''
     # skip combining...
     holdings_symbols = holdingsParams_symbols
     holdings_shares = holdingsParams_shares
@@ -149,8 +130,15 @@ def calculateTrades(
         holdingsfile.write( "new stock selection: " + str(last_symbols_text) +"\n")
         holdingsfile.write( "new stock weight:    " + str(last_symbols_weight) +"\n")
         holdingsfile.write( "new stock nowprice:  " + str(last_symbols_price) +"\n")
+    print( str(today))
+    print( "currently held stocks:   " + str(holdings_symbols))
+    print( "currently held shares:   " + str(holdings_shares))
+    print( "currently held buyprice: " + str(holdings_buyprice))
+    print( "currently held nowprice: " + str(np.array(holdings_currentPrice)))
+    print( "new stock selection: " + str(last_symbols_text))
+    print( "new stock weight:    " + str(last_symbols_weight))
+    print( "new stock nowprice:  " + str(last_symbols_price))
     ##### end diagnostics ###############################################################################################
-
 
     ####################################################################
     ### check for adjustments to current holdings -- stocks that were in last period and are in now
@@ -172,7 +160,9 @@ def calculateTrades(
         old_numshares = holdings_shares[holdings_index]
         new_numshares = currentHoldingsValue* last_symbols_weight[last_symbols_index] / last_symbols_price[last_symbols_index]
         deltaShares = new_numshares - old_numshares
-        DeltaValue.append( deltaShares * last_symbols_price[last_symbols_index] )
+        DeltaValue.append(
+            float(np.round(deltaShares * last_symbols_price[last_symbols_index], 2))
+        )
 
         cumuAbsDeltaValue += abs( DeltaValue[-1] )
 
@@ -180,15 +170,17 @@ def calculateTrades(
         deltaValueTotal = 0
         cumuThresholdedValue = 0.
         if abs(DeltaValue[-1]) < 400 :
-            DeltaValueThresholded.append( 0. )
+            DeltaValueThresholded.append(0.)
         else:
-            DeltaValueThresholded.append( deltaShares * last_symbols_price[last_symbols_index] )
+            DeltaValueThresholded.append(
+                float(np.round(deltaShares * last_symbols_price[last_symbols_index], 2))
+            )
         cumuAbsDeltaValueThresholded += abs( DeltaValueThresholded[-1] )
 
     print(" matches (symbols) =     ", matches)
     print(" DeltaValue =            ", DeltaValue)
     print(" DeltaValueThresholded = ", DeltaValueThresholded)
-    print(" cumuAbsDeltaValue =     ", cumuAbsDeltaValue)
+    print(" cumuAbsDeltaValue =     ", float(np.round(cumuAbsDeltaValue,2)))
     print(" cumuAbsDeltaValueThresholded = ", cumuAbsDeltaValueThresholded)
 
     DeltaValueThresholded = np.array( DeltaValueThresholded )
@@ -250,13 +242,23 @@ def calculateTrades(
     ### check for sells -- stocks that were in last period and out now
     ####################################################################
 
+    # for i, symbol in enumerate( sells ):
+    #     holdings_index = holdings_symbols.index( sells[i] )
+    #     if symbol != "CASH":
+    #         trade_symbols.append( symbol )
+    #         trade_shares.append( -holdings_shares[holdings_index] )
+    #         buySellCost += BuySellFee
+
+    holdings_indices = []
+    for i, symbol in enumerate(holdings_symbols):
+        if symbol in sells:
+            holdings_indices.append(i)
     for i, symbol in enumerate( sells ):
-        holdings_index = holdings_symbols.index( sells[i] )
         if symbol != "CASH":
+            holdings_index = holdings_indices[i]
             trade_symbols.append( symbol )
             trade_shares.append( -holdings_shares[holdings_index] )
             buySellCost += BuySellFee
-
 
     ####################################################################
     ### check for buys -- stocks that were out last period and in now
@@ -358,18 +360,16 @@ def calculateTrades(
                 holdingsfile.write( "buyprice: " + new_buyprice_str +"\n")
                 holdingsfile.write( "commissons: " + str(buySellCost) +"\n")
 
-
     print("")
     print("holdings_symbols = ", holdings_symbols)
     print("holdings_shares = ", holdings_shares)
     print("last_symbols_text = ", last_symbols_text)
     print("last_symbols_price = ", last_symbols_price)
 
-
     return trade_message
 
 
-def trade_today(json_fn, symbols_today, weight_today, price_today):
+def trade_today(json_fn, symbols_today, weight_today, price_today, verbose=False):
 
     from functions.GetParams import (
         get_holdings, get_symbols_file, get_performance_store
@@ -393,171 +393,332 @@ def trade_today(json_fn, symbols_today, weight_today, price_today):
     print("cumulativecashin: ", holdings['cumulativecashin'][0])
     print("")
 
-    # put holding data in lists
-    holdings_symbols = holdings['stocks']
-    holdings_shares = np.array(holdings['shares']).astype('float')
-    holdings_buyprice = np.array(holdings['buyprice']).astype('float')
-    holdings_ranks = np.array(holdings['ranks']).astype('int')
-
-    unique_symbols = list(set(holdings_symbols))
+    symbols_file = get_symbols_file(json_fn)
+    # holdings_currentPrice = LastQuotesForSymbolList_hdf(
+    #     holdingsParams_symbols, symbols_file, json_fn
+    # )
     holdings_currentPrice = LastQuotesForSymbolList_hdf(
-        unique_symbols, symbols_file, json_fn
+        holdings["stocks"], symbols_file, json_fn
     )
-    print("holdings_symbols = ", holdings_symbols)
-    print("holdings_shares = ", holdings_shares)
-    print("holdings_currentPrice = ", holdings_currentPrice)
 
-    # calculate holdings total value
+    # put holdings in pandas datafroame to get total shares for held symbols
+    holdings_symbols = holdings['stocks']
+    holdings_shares = np.array(holdings['shares']).astype("float32").astype("int")
+    holdings_buyprice = np.array(holdings['buyprice']).astype("float32")
+    current_holdings_dict = {
+        "symbols": holdings_symbols,
+        "shares": holdings_shares,
+        "buyprice": holdings_buyprice,
+        "price": holdings_currentPrice
+    }
+    held_df = pd.DataFrame(current_holdings_dict)
+    # held_df = held_df[held_df['symbols'] != "CASH"]
+    held_grouped_df = held_df.groupby('symbols')['shares'].sum().reset_index()
+
+    # test if all buyprice are same as price. if so, don't compute trades
+    price_diff = np.abs(held_df["buyprice"] - held_df["price"])
+    print("   . abs price_diff = " + str(price_diff))
+    print("   . abs price_diff.sum() = " + str(price_diff.sum()))
+    if price_diff.sum() <= 0.10:
+        return
+
+    if verbose:
+        print("\held_df:\n" + str(held_df))
+        print("\held_grouped_df:\n" + str(held_grouped_df))
+
+    # calculate holdings value
     currentHoldingsValue = 0.
-    for j, _symbol in enumerate(holdings_symbols):
-        for i, held_symbol in enumerate(unique_symbols):
-            if held_symbol == _symbol:
-                currentHoldingsValue += (
-                    float(holdings_shares[j]) * float(holdings_currentPrice[i])
-                )
+    for i in range(len(holdings_symbols)):
+        currentHoldingsValue += float(holdings_shares[i]) * float(holdings_currentPrice[i])
 
-    # set up lists if trades executed today
-    today_symbols = []
-    today_shares = []
-    today_buyprice = []
+    # do same for target holdings
+    new_shares = []
+    new_buy_price = []
+    cumu_new_value = 0.0
+    for i, _weight in enumerate(weight_today):
+        new_shares.append(
+            int(currentHoldingsValue * _weight / price_today[i])
+        )
+        new_buy_price.append(price_today[i])
+        cumu_new_value += new_shares[-1] * price_today[i]
+    cash_value = int(currentHoldingsValue - cumu_new_value + 0.5)
+    symbols_today.append("CASH")
+    price_today.append(1.00)
+    new_buy_price.append(1.00)
+    new_shares.append(cash_value)
 
-    # find unchanged holdings
-    unchanged_symbols = [x for x in holdings_symbols if x in symbols_today]
+    new_holdings_dict = {
+        "symbols": symbols_today,
+        "shares": np.array(new_shares).astype("int"),
+        "buyprice": new_buy_price,
+        "price": new_buy_price
+    }
+    new_df = pd.DataFrame(new_holdings_dict)
+    if verbose:
+        print("\nnew_df:\n" + str(new_df))
 
-    # find new symbols
-    new_symbols = [x for x in symbols_today if x not in holdings_symbols]
+    df1 = held_df
+    df2 = new_df
+    # Sum shares for each symbol in df1
+    df1_sum = df1.groupby('symbols', as_index=False).agg(
+        {'shares': 'sum', 'buyprice': 'first', 'price': 'first'}
+    )
 
-    # find dropped symbols
-    drop_symbols = [x for x in holdings_symbols if x not in symbols_today]
+    # Merge the two DataFrames on 'symbols'
+    merged_df = pd.merge(df1_sum, df2, on='symbols', how='outer', suffixes=('_df1', '_df2'))
+
+    # Calculate the differences in shares
+    merged_df['shares_diff'] = merged_df['shares_df2'].fillna(0) - merged_df['shares_df1'].fillna(0)
+    if verbose:
+        print("\nmerged_df:\n" + str(merged_df))
+
+    ####################################################################
+    ### check for sells -- stocks that were in last period and out now
+    ####################################################################
+    buySellCost = 0.
+    BuySellFee = 4.95
+    new_symbols = []
+    new_shares = []
+    new_buyprice = []
+    trade_symbols = []
+    trade_shares = []
+    trade_price = []
+    trade_activity = []
+    trade_buyprice = []
+
+    # sell entire holding
+    sells = merged_df[merged_df['shares_df1'] > 0 ]
+    sells = sells[np.isnan(sells['shares_df2'])]
+    if len(list(sells.symbols)) > 0:
+        for i, symbol in enumerate(list(sells.symbols)):
+            trade_symbols.append( symbol )
+            trade_shares.append(int(sells.shares_diff.values[i]))
+            trade_price.append(float(np.round(sells.price_df1.values[i],2)))
+            trade_buyprice.append(np.round(sells.buyprice_df1.values[i],2))
+            trade_activity.append("sell")
+            buySellCost += BuySellFee
+
+    # decrease existing holding
+    sellsome = merged_df[merged_df['shares_diff'] < 0 ]
+    sellsome = sellsome[sellsome['shares_df1'] > 0]
+    sellsome = sellsome[sellsome['shares_df2'] > 0]
+    sellsome = sellsome[sellsome["symbols"] != "CASH"]
+
+    sellsome_held = held_df[held_df['symbols'].isin(sellsome['symbols'])]
+    sellsome = sellsome.set_index('symbols')
+
+    if len(list(sellsome_held.symbols)) > 0:
+        for i, symbol in enumerate(list(sellsome_held.symbols)):
+
+            shares_to_sell = min(
+                sellsome[
+                    sellsome.index == symbol
+                ].loc[:,"shares_diff"].values[0] * -1,
+                sellsome_held.loc[:, "shares"].iloc[i]
+            )
+
+            sellsome.loc[symbol, "shares_diff"] = shares_to_sell + \
+                sellsome.loc[symbol, "shares_diff"]
+
+            trade_symbols.append( symbol )
+            trade_shares.append(int(-1 * shares_to_sell))
+            trade_buyprice.append(np.round(sellsome_held.buyprice.values[i],2))
+            trade_price.append(float(np.round(sellsome_held.price.values[i],2)))
+            trade_activity.append("reduce")
+
+            buySellCost += BuySellFee
+
+    # buy non-held company
+    buys = merged_df[merged_df['shares_df2'] > 0 ]
+    buys = buys[np.isnan(buys['shares_df1'])]
+    if len(list(buys.symbols)):
+        for i, symbol in enumerate(list(buys.symbols)):
+            trade_symbols.append( symbol )
+            trade_shares.append(int(buys.shares_diff.values[i]))
+            trade_price.append(float(np.round(buys.price_df2.values[i],2)))
+            trade_buyprice.append(float(np.round(buys.buyprice_df2.values[i],2)))
+            trade_activity.append("buy")
+            buySellCost += BuySellFee
+
+    # increase existing holding
+    buymore = merged_df[merged_df['shares_diff'] > 0 ]
+    buymore = buymore[buymore['shares_df1'] > 0]
+    buymore = buymore[buymore["symbols"] != "CASH"]
+    if len(list(buymore.symbols)) > 0:
+        for i, symbol in enumerate(list(buymore.symbols)):
+            trade_symbols.append( symbol )
+            trade_shares.append(int(buymore.shares_diff.values[i]))
+            trade_price.append(float(np.round(buymore.price_df2.values[i],2)))
+            trade_buyprice.append(float(np.round(buymore.buyprice_df2.values[i],2)))
+            trade_activity.append("increase")
+            buySellCost += BuySellFee
+
+    # hold unchanged
+    hold = merged_df[merged_df['shares_diff'] == 0 ]
+    hold = hold[hold['shares_df1'] > 0]
+    hold = hold[hold["symbols"] != "CASH"]
+    if len(list(hold.symbols)) > 0:
+        for i, symbol in enumerate(list(hold.symbols)):
+            trade_symbols.append( symbol )
+            trade_shares.append(0)
+            trade_price.append(float(np.round(hold.price_df1.values[i],2)))
+            trade_buyprice.append(float(np.round(hold.buyprice_df1.values[i],2)))
+            trade_activity.append("hold")
+            buySellCost += BuySellFee
+
+    # handle cash
+    symbol = "CASH"
+    trade_symbols.append( symbol )
+    trade_shares.append(int(merged_df[merged_df["symbols"] == symbol].shares_diff.values[0]))
+    trade_price.append(1.0)
+    trade_buyprice.append(1.0)
+    if trade_shares[-1] > 0:
+            trade_activity.append("increase")
+    elif trade_shares[-1] < 0:
+            trade_activity.append("reduce")
+    elif trade_shares[-1] == 0:
+            trade_activity.append("hold")
+
+    # put trades in dataframe
+    trades_dict = {
+        "symbols": trade_symbols,
+        "shares": trade_shares,
+        "buyprice": trade_buyprice,
+        "price": trade_price,
+        "activity": trade_activity
+    }
+    trades_df = pd.DataFrame(trades_dict)
+    if verbose:
+        print("\ntrades_df:\n" + str(trades_df))
+
+    # # merge with held_df
+    # held_df2 = held_df
+    # activity_list = []
+    # for _row_i in range(held_df.values.shape[0]):
+    #     # row = held_df.values[_row_i,:]
+    #     _symb = held_df.iloc[_row_i, :]["symbols"]
+    #     trades_activity = trades_df.loc[trades_df["symbols"] == _symb]["activity"]
+    #     activity_list.append(trades_activity.values[0])
+    # held_df2['activity'] = activity_list
 
 
-    print(" ... unchanged_symbols = " + str(unchanged_symbols))
-    print(" ... new_symbols = " + str(new_symbols))
-    print(" ... drop_symbols = " + str(drop_symbols))
+    trades_df_wo_buy = trades_df[trades_df["activity"] != "buy"]
+    # trades_df_wo_buy = held_df2[held_df2["activity"] != "buy"]
 
-    # compute shares_today
-    shares_today = []
-    for i, t_symbol in enumerate(symbols_today):
-        today_value = weight_today[i] * currentHoldingsValue
-        shares_today.append(int(today_value / price_today[i]))
+    try:
+        # merged_trades_df = pd.merge(
+        #     held_df, trades_df_wo_buy, on=['symbols','buyprice'], how='outer',
+        #     suffixes=('_held', '_trade'), validate="one_to_one"
+        # )
+        merged_trades_df = pd.merge(
+            held_df, trades_df_wo_buy, on=['symbols','buyprice'], how='outer',
+            suffixes=('_held', '_trade'), validate="one_to_one"
+        )
+    except:
+        print("\nheld_df:\n" + str(held_df))
+        print("\ntrades_df_wo_buy:\n" + str(trades_df_wo_buy))
+        print(
+            "\n\n\n ************************* Error\n" + \
+            "   . calculateTrades.py line 606, in trade_today " + \
+            "   . pandas.errors.MergeError: " + \
+            "Merge keys are not unique in left dataset; not a one-to-one merge"
+        )
+        return
+    # set NaNs in shares to zero and compute number of shares after monthly update
+    merged_trades_df['shares_target'] = merged_trades_df[
+        ['shares_held', 'shares_trade']
+    ].fillna(0).sum(axis=1)
 
-    # process changes
-    shares_residual = np.array(shares_today).astype('int')
-    weight_residual = np.array(weight_today).astype('float32')
-    buy_text = ""
-    sell_text = ""
-    cumu_value = 0.0
-    for i, h_symbol in enumerate(holdings_symbols):
-        # if i == 5:
-        #     break
-        if h_symbol in unchanged_symbols:
-            today_index = symbols_today.index(h_symbol)
-            today_value = weight_residual[today_index] * currentHoldingsValue
-            if holdings_shares[i] == shares_residual[today_index]:
-                # keep shares from last month. no transactions
-                today_symbols.append(holdings_symbols[i])
-                today_buyprice.append(holdings_buyprice[i])
-                today_shares.append(int(holdings_shares[i]))
-                shares_residual[today_index] -= holdings_shares[i]
-                # cumu_value += today_buyprice[-1] * today_shares[-1]
-                # weight_residual[today_index] = 0.0
-                last_price = price_today[today_index]
-                cumu_value += last_price * today_shares[-1]
-            elif 0 < shares_residual[today_index] < holdings_shares[i]:
-                # need to sell some, but not all shares
-                today_symbols.append(holdings_symbols[i])
-                today_buyprice.append(holdings_buyprice[i])
-                # today_value_ = weight_residual[today_index] * currentHoldingsValue
-                today_shares_ = int(today_value / price_today[today_index])
-                sell_shares = int(holdings_shares[i] - today_shares_)
-                shares_residual[today_index] = (holdings_shares[i] - sell_shares)
-                weight_residual[today_index] -= (shares_residual[today_index] * today_buyprice[-1]) / currentHoldingsValue
-                today_shares.append(today_shares_)
-                shares_residual[today_index] -= today_shares_
-                # cumu_value += today_buyprice[-1] * today_shares[-1]
-                last_price = price_today[today_index]
-                cumu_value += last_price * today_shares[-1]
-                sell_text = sell_text + "info:  Sell " + trade_date + " " + holdings_symbols[i].ljust(6)
-                sell_text = sell_text + format(-int(sell_shares), '7d')
-                sell_text = sell_text + format(price_today[today_index], '8.2f')
-                sell_text = sell_text + "\n"
-            elif shares_residual[today_index] >= holdings_shares[i]:
-                # keep shares from last month
-                today_symbols.append(holdings_symbols[i])
-                today_buyprice.append(holdings_buyprice[i])
-                today_shares.append(int(holdings_shares[i]))
-                shares_residual[today_index] -= holdings_shares[i]
-                weight_residual[today_index] -= (int(holdings_shares[i]) * holdings_buyprice[today_index]) / currentHoldingsValue
-                last_price = price_today[today_index]
-                cumu_value += last_price * today_shares[-1]
-            elif shares_residual[today_index] <= 0:
-                sell_shares = holdings_shares[i] - shares_residual[today_index]
-                sell_text = sell_text + "info:  Sell " + trade_date + " " + holdings_symbols[i].ljust(6)
-                sell_text = sell_text + format(-sell_shares, '7d')
-                sell_text = sell_text + format(price_today[today_index], '8.2f')
-                sell_text = sell_text + "\n"
+    # check and make corrections for mutiple held entries
+    merged_trades_grouped_df = merged_trades_df.groupby(
+            'symbols'
+        )['shares_target'].sum().reset_index()
+    # merge grouped and ungrouped versions
+    merged_trades_df2 = merged_trades_df.copy()
+    revised_target_list = []
+    for _row_i in range(merged_trades_df.values.shape[0]):
+        _symb = merged_trades_df.iloc[_row_i, :]["symbols"]
+        _shares_target = merged_trades_grouped_df.loc[merged_trades_grouped_df["symbols"] == _symb]["shares_target"]
+        revised_target_list.append(_shares_target.values[0])
+    merged_trades_df2['shares_target'] = revised_target_list
 
-        if h_symbol in drop_symbols and h_symbol != "CASH":
-            today_index = list(set(holdings_symbols)).index(h_symbol)
-            sell_shares = int(holdings_shares[i])
-            print(" ... sell holdings symbol " + holdings_symbols[i])
-            print(" ... sell holdings shares " + str(sell_shares))
-            sell_text = sell_text + "info:  Sell " + trade_date + " " + holdings_symbols[i].ljust(6)
-            sell_text = sell_text + format(-sell_shares, '7d')
-            sell_text = sell_text + format(holdings_currentPrice[today_index], '8.2f')
-            sell_text = sell_text + "\n"
 
-    # existing symbols having added shares today
-    for i, t_symbol in enumerate(symbols_today):
-        if shares_residual[i] > 0 and t_symbol in holdings_symbols:
-            today_symbols.append(t_symbol)
-            buy_shares = int(shares_residual[i])
-            today_shares.append(buy_shares)
-            today_buyprice.append(price_today[i])
-            cumu_value += today_buyprice[-1] * today_shares[-1]
-            buy_text = buy_text + "info:  Buy  " + trade_date + " " + t_symbol.ljust(6)
-            buy_text = buy_text + format(buy_shares, '7d')
-            buy_text = buy_text + format(price_today[i], '8.2f')
-            buy_text = buy_text + "\n"
+    trades_df_only_buy = trades_df[trades_df["activity"] == "buy"]
 
-    for j, n_symbol in enumerate(new_symbols):
-
-        today_index = symbols_today.index(n_symbol)
-        today_symbols.append(n_symbol)
-        buy_shares = int(weight_today[today_index] * currentHoldingsValue / price_today[today_index])
-        today_shares.append(buy_shares)
-        today_buyprice.append(price_today[today_index])
-        cumu_value += today_buyprice[-1] * today_shares[-1]
-        buy_text = buy_text + "info:  Buy  " + trade_date + " " + n_symbol.ljust(6)
-        buy_text = buy_text + format(buy_shares, '7d')
-        buy_text = buy_text + format(price_today[today_index], '8.2f')
-        buy_text = buy_text + "\n"
-
-    # add cash
-    today_symbols.append("CASH")
-    today_shares.append(int(currentHoldingsValue - cumu_value + 0.5))
-    today_buyprice.append(1.00)
+    if verbose:
+        print("\nmerged_trades_df:\n" + str(merged_trades_df2))
+        print("\ntrades_df_only_buy:\n" + str(trades_df_only_buy))
 
     # price new holdings text
     holdings_text = "stocks:      "
-    for i, _symbol in enumerate(today_symbols):
-        holdings_text = holdings_text + _symbol.ljust(8)
+
+    # stocks that were held both last month and this month
+    for i, _symbol in enumerate(merged_trades_df2.loc[:, "symbols"]):
+        if merged_trades_df2.loc[i, "shares_target"] > 0.0:
+            holdings_text = holdings_text + _symbol.ljust(8)
+    for i, _symbol in enumerate(trades_df_only_buy.loc[:, "symbols"]):
+            holdings_text = holdings_text + _symbol.ljust(8)
     holdings_text = holdings_text + "\nshares:      "
-    for i, _share in enumerate(today_shares):
-        holdings_text = holdings_text + str(_share).ljust(8)
+    for i, _share in enumerate(merged_trades_df2.loc[:, "shares_target"]):
+        if merged_trades_df2.loc[i, "shares_target"] > 0.0:
+            holdings_text = holdings_text + str(_share).ljust(8)
+    for i, _share in enumerate(trades_df_only_buy.loc[:, "shares"]):
+            holdings_text = holdings_text + str(_share).ljust(8)
     holdings_text = holdings_text + "\nbuyprice:    "
-    for i, _buyprice in enumerate(today_buyprice):
-        holdings_text = holdings_text + str(np.round(_buyprice,2)).ljust(8)
+    for i, _buyprice in enumerate(merged_trades_df2.loc[:, "buyprice"]):
+        if merged_trades_df2.loc[i, "shares_target"] > 0.0:
+            holdings_text = holdings_text + str(np.round(_buyprice,2)).ljust(8)
+    for i, _buyprice in enumerate(trades_df_only_buy.loc[:, "buyprice"]):
+            holdings_text = holdings_text + str(np.round(_buyprice,2)).ljust(8)
+
+    print(holdings_text)
+
+
+    # stocks that were held both last month and this month
+    sell_text = ""
+    for i, _symbol in enumerate(trades_df.loc[:, "symbols"]):
+        if _symbol == "CASH":
+            continue
+        if trades_df.loc[i, "shares"] >= 0.0:
+            continue
+
+        _sell_shares = trades_df.loc[i, "shares"]
+        _sell_price = trades_df.loc[i, "price"]
+        if verbose:
+            print(" ... sell holdings symbol " + _symbol)
+            print(" ... sell holdings shares " + str(_sell_shares))
+        sell_text = sell_text + "info:  Sell " + trade_date + " " + _symbol.ljust(6)
+        sell_text = sell_text + format(_sell_shares, '7d')
+        sell_text = sell_text + format(_sell_price, '8.2f')
+        sell_text = sell_text + "\n"
+
+    buy_text = ""
+    for i, _symbol in enumerate(trades_df.loc[:, "symbols"]):
+        if _symbol == "CASH":
+            continue
+        if trades_df.loc[i, "shares"] <= 0.0:
+            continue
+        _buy_shares = trades_df.loc[i, "shares"]
+        _buy_price = trades_df.loc[i, "price"]
+        if verbose:
+            print(" ... buy holdings symbol " + _symbol)
+            print(" ... buy holdings shares " + str(_buy_shares))
+        buy_text = buy_text + "info:  Buy  " + trade_date + " " + _symbol.ljust(6)
+        buy_text = buy_text + format(_buy_shares, '7d')
+        buy_text = buy_text + format(_buy_price, '8.2f')
+        buy_text = buy_text + "\n"
 
     # print and write to file
     hypthetical_trade_info = "\n\nTradeDate: " + trade_date + "\n"
     hypthetical_trade_info = hypthetical_trade_info + sell_text
     hypthetical_trade_info = hypthetical_trade_info + buy_text
     hypthetical_trade_info = hypthetical_trade_info + holdings_text
-    
+
     print(hypthetical_trade_info)
 
     filepath = os.path.join(p_store, "PyTAAA_hypothetical_trades.txt" )
     with open( filepath, "w" ) as f:
         f.write(hypthetical_trade_info)
         f.write("\n")
+
+
