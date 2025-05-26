@@ -125,7 +125,7 @@ def run_pytaaa(json_fn):
         last_symbols_text, \
         last_symbols_weight, \
         last_symbols_price = PortfolioPerformanceCalcs(
-            symbol_directory, symbol_file, params, json_fn
+            symbol_directory, symbol_file, params, json_fn,
         )
         CalcsUpdateCount += 1
 

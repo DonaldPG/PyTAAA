@@ -2627,7 +2627,8 @@ def sharpeWeightedRank_2D(
 def sharpeWeightedRank_2D(
         json_fn, datearray,symbols,adjClose,signal2D,signal2D_daily,
         LongPeriod,rankthreshold,riskDownside_min,riskDownside_max,
-        rankThresholdPct,stddevThreshold=4.,makeQCPlots=False, verbose=False
+        rankThresholdPct,stddevThreshold=4.,
+        is_backtest=True, makeQCPlots=False, verbose=False
 ):
 
     # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
@@ -2968,7 +2969,8 @@ def sharpeWeightedRank_2D(
                 weight_today.append(monthgainlossweightToday[j])
                 price_today.append(adjClose[j,-1])
     print("\n\n\n")
-    trade_today(json_fn, symbols_today, weight_today, price_today)
+    if not is_backtest:
+        trade_today(json_fn, symbols_today, weight_today, price_today)
     ### TODO: make sure re-rodering this loop works. If not. delete repeated function -- end
 
     if makeQCPlots==True:

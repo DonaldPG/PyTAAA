@@ -2084,6 +2084,7 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
             LongPeriod, numberStocksTraded, riskDownside_min, riskDownside_max,
             rankThresholdPct,
             stddevThreshold=stddevThreshold,
+            is_backtest=True,
             makeQCPlots=False
         )
 

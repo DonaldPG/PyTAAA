@@ -271,7 +271,7 @@ def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
     ##########################################
     # Write date and Percent of up-trending stocks to file for web page
     ##########################################
-    
+
     web_dir = get_webpage_store(json_fn)
     try:
         filepath = os.path.join(web_dir, "pyTAAAweb_numberUptrendingStocks_status.params")
@@ -580,7 +580,8 @@ def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
         json_fn, datearray, symbols, adjClose,
         signal2D, signal2D_daily, LongPeriod, numberStocksTraded,
         riskDownside_min, riskDownside_max, rankThresholdPct,
-        stddevThreshold=stddevThreshold, makeQCPlots=True
+        stddevThreshold=stddevThreshold,
+        is_backtest=False, makeQCPlots=True
     )
 
     # """
