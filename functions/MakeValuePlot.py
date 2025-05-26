@@ -728,7 +728,8 @@ def makeDailyChannelOffsetSignal(json_fn):
     #dailyCountDowntrendChannelOffsetSignal = np.zeros( adjClose.shape[1], 'float' )
     #for idate in range(numdaysinfit+incperiod,adjClose.shape[1])
     for idate in range(adjClose.shape[1]):
-        if datearray[idate] >= last_date :
+        datearray_last_date = datetime.datetime.strptime(str(datearray[idate]), '%Y-%m-%d')
+        if datearray_last_date >= last_date :
             #if datearray[idate] > datetime.date(1992,1,1) :
             #if datearray[idate] > datetime.date(1992,1,1) :
             if idate%10 == 0:
