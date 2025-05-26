@@ -3,7 +3,7 @@ import numpy as np
 import os
 import time
 import platform
-from functions.SendEmail import SendEmail
+# Email functionality removed
 from functions.WriteWebPage_pi import writeWebPage
 from functions.GetParams import (
     get_json_params, get_symbols_file,
@@ -33,12 +33,10 @@ def run_pytaaa(json_fn):
 
     computerName = platform.uname()[1]
 
-    # Get Credentials for sending email
+    # Get parameters (email functionality removed)
     params = get_json_params(json_fn, verbose=True)
     symbols_file = get_symbols_file(json_fn)
 
-    username = str(params['fromaddr']).split("@")[0]
-    emailpassword = str(params['PW'])
     stockList = params['stockList']
     # get name of server used to download and serve quotes
     quote_server = params['quote_server']
@@ -47,10 +45,7 @@ def run_pytaaa(json_fn):
     except:
         ip = '0.0.0.0'
     print("Current ip address is ", ip)
-    print(
-        "An email with updated analysis will be sent to ",
-        params['toaddrs'], " every ", params['pausetime'], " seconds"
-    )
+    print("Analysis will be updated every ", params['pausetime'], " seconds")
 
     # keep track of total time to update everything
     start_time_total = time.time()
@@ -277,7 +272,7 @@ def run_pytaaa(json_fn):
 
     elapsed_time_total = time.time() - start_time_total
 
-    # send an email with status and updates (tries up to 10 times for each call).
+    # prepare status and updates (email functionality removed).
     boldtext = "time is "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
     regulartext = message_text+"<br>elapsed time to update stock index companies from web "+format(elapsed_time_updateStockList,'6.2f')+" seconds"
     regulartext = regulartext+"<br>elapsed time to update stock index stock prices from web "+format(elapsed_time,'6.2f')+" seconds"
@@ -298,7 +293,7 @@ def run_pytaaa(json_fn):
     regulartext = regulartext+"<br><a href=../pyTAAA_SP500web/pyTAAAweb.html>PyTAAA using S&P 500</a>"
     regulartext = regulartext+"<br><a href=../pyTAAADL_web/pyTAAAweb.html>PyTAAADL using Nasdaq 100</a>"
 
-    # Customize and send email
+    # Prepare status message (email functionality removed)
     # - based on day of month and whether market is open or closed
     if lastDayOfMonth:
         subjecttext = "PyTAAA holdings update and trade suggestions"
@@ -311,10 +306,11 @@ def run_pytaaa(json_fn):
     print(trade_message != "<br>")
     if np.round(float(cumu_value_prior),2) != np.round(cumu_value,2) or trade_message != "<br>":
         headlinetext = "Regularly scheduled update. Market status: " + get_MarketOpenOrClosed()
-        SendEmail(username,emailpassword,params['toaddrs'],params['fromaddr'],subjecttext,regulartext,boldtext,headlinetext)
+        print("Status update available - ", headlinetext)
+        print("Subject: ", subjecttext)
     else:
         headlinetext = "Regularly scheduled update. Market status: " + get_MarketOpenOrClosed()
-        print(" No email required or sent -- no new information since last email...")
+        print(" No update required -- no new information since last update...")
         cumu_value_prior = cumu_value
 
 

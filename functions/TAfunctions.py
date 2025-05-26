@@ -1153,20 +1153,17 @@ def textmessageOutsideTrendChannel(symbols, adjClose, json_fn):
     import datetime
     from functions.GetParams import get_json_params, get_holdings, GetEdition
     from functions.CheckMarketOpen import get_MarketOpenOrClosed
-    #from functions.SendEmail import SendTextMessage
-    from functions.SendEmail import SendEmail
+    # Email functionality removed
 
-    # send text message for held stocks if the lastest quote is outside
+    # display message for held stocks if the lastest quote is outside
     # (to downside) the established channel
 
-    # Get Credentials for sending email
+    # Get parameters (email functionality removed)
     params = get_json_params(json_fn)
     print("")
 
     #print "params = ", params
     print("")
-    username = str(params['fromaddr']).split("@")[0]
-    emailpassword = str(params['PW'])
 
     subjecttext = "PyTAAA update - Pct Trend Channel"
     boldtext = "time is "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
@@ -1231,10 +1228,10 @@ def textmessageOutsideTrendChannel(symbols, adjClose, json_fn):
 
         print(text_message +"\n\n")
 
-        # send text message if market is open
+        # display message if market is open (email functionality removed)
         if 'close in' in get_MarketOpenOrClosed():
-            #SendTextMessage( username,emailpassword,params['toSMS'],params['fromaddr'],text_message )
-            SendEmail(username,emailpassword,params['toSMS'],params['fromaddr'],subjecttext,text_message,boldtext,headlinetext)
+            print("Market alert: ", text_message)
+            print("Subject: ", subjecttext)
 
     return
 
@@ -1746,7 +1743,7 @@ def sharpeWeightedRank_2D(
 
     start_time = datetime.datetime.now()
 
-    # Get params for sending textmessage and email
+    # Get params for processing data
     params = get_json_params(json_fn)
     symbols_file = get_symbols_file(json_fn)
     stockList = params['stockList']
@@ -2651,7 +2648,7 @@ def sharpeWeightedRank_2D(
 
     start_time = datetime.datetime.now()
 
-    # Get params for sending textmessage and email
+    # Get params for processing data
     params = get_json_params(json_fn)
     symbols_file = get_symbols_file(json_fn)
     stockList = params['stockList']

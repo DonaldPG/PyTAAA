@@ -157,21 +157,13 @@ def get_json_params(json_fn, verbose=False):
     with open(json_fn, 'r') as json_file:
         config = json.load(json_file)
 
-    # Access and print different sections
-    email_section = config.get('Email')
-    text_from_email_section = config.get('Text_from_email')
+    # Access and print different sections (email sections removed)
     ftp_section = config.get('FTP')
     stock_server_section = config.get('stock_server')
     setup_section = config.get('Setup')
     valuation_section = config.get('Valuation')
 
     if verbose:
-        print("Email Section:")
-        print(email_section)
-
-        print("\nText from Email Section:")
-        print(text_from_email_section)
-
         print("\nFTP Section:")
         print(ftp_section)
 
@@ -187,11 +179,12 @@ def get_json_params(json_fn, verbose=False):
     # set default values
     params = {}
 
-    toaddrs = config.get("Email")["To"]
-    fromaddr = config.get("Email")["From"]
-    toSMS = config.get("Text_from_email")["phoneEmail"]
-    send_texts = config.get("Text_from_email")["send_texts"]
-    pw = config.get("Email")["PW"]
+    # Email functionality removed - set default values
+    toaddrs = ["disabled@example.com"]
+    fromaddr = ["disabled@example.com"]
+    toSMS = ["disabled@example.com"]
+    send_texts = ["False"]
+    pw = "disabled"
     runtime = config.get("Setup")["runtime"]
     pausetime = config.get("Setup")["pausetime"]
 
@@ -238,15 +231,8 @@ def get_json_params(json_fn, verbose=False):
 
     seconds_between_runs = int(pausetime.split(" ")[0]) * factor
 
-    # put params in a dictionary
-    params['fromaddr'] = str(fromaddr)
-    params['toaddrs'] = str(toaddrs)
-    params['toSMS'] = toSMS
-    if str(send_texts).lower() == 'true':
-        params['send_texts'] = True
-    elif str(send_texts).lower() == 'false':
-        params['send_texts'] = False
-    params['PW'] = str(pw)
+    # put params in a dictionary (email functionality removed)
+    # Email parameters no longer stored
     params['runtime'] = max_uptime
     params['pausetime'] = seconds_between_runs
     params['quote_server'] = quote_server
@@ -288,6 +274,13 @@ def get_json_params(json_fn, verbose=False):
 
     params['stockList'] = config.get("Valuation")["stockList"]
     params['symbols_file'] = config.get("Valuation")["symbols_file"]
+    
+    # Add safety email parameters to prevent crashes if code tries to access them
+    params['fromaddr'] = "disabled@example.com"
+    params['toaddrs'] = "disabled@example.com"
+    params['toSMS'] = "disabled@example.com"
+    params['send_texts'] = False
+    params['PW'] = "disabled"
 
     return params
 
@@ -497,11 +490,12 @@ def GetParams():
     configfile = open(config_filename, "r")
     config.read_file(configfile)
 
-    toaddrs = config.get("Email", "To").split()
-    fromaddr = config.get("Email", "From").split()
-    toSMS = config.get("Text_from_email", "phoneEmail").split()
-    send_texts = config.get("Text_from_email", "send_texts").split()
-    pw = config.get("Email", "PW")
+    # Email functionality removed - set default values
+    toaddrs = ["disabled@example.com"]
+    fromaddr = ["disabled@example.com"]
+    toSMS = ["disabled@example.com"]
+    send_texts = ["False"]
+    pw = "disabled"
     runtime = config.get("Setup", "Runtime").split()
     pausetime = config.get("Setup", "Pausetime").split()
 
@@ -548,15 +542,8 @@ def GetParams():
 
     seconds_between_runs = int(pausetime[0]) * factor
 
-    # put params in a dictionary
-    params['fromaddr'] = str(fromaddr[0])
-    params['toaddrs'] = str(toaddrs[0])
-    params['toSMS'] = toSMS[0]
-    if send_texts[0].lower() == 'true':
-        params['send_texts'] = True
-    elif send_texts[0].lower() == 'false':
-        params['send_texts'] = False
-    params['PW'] = str(pw)
+    # put params in a dictionary (email functionality removed)
+    # Email parameters no longer stored
     params['runtime'] = max_uptime
     params['pausetime'] = seconds_between_runs
     params['quote_server'] = quote_server
@@ -588,6 +575,13 @@ def GetParams():
     params['offset'] = int( config.get("Valuation", "offset") )
 
     params['stockList'] = config.get("Valuation", "stockList")
+    
+    # Add safety email parameters to prevent crashes if code tries to access them
+    params['fromaddr'] = "disabled@example.com"
+    params['toaddrs'] = "disabled@example.com"
+    params['toSMS'] = "disabled@example.com"
+    params['send_texts'] = False
+    params['PW'] = "disabled"
 
     return params
 

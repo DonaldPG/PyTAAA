@@ -636,12 +636,12 @@ def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
     print("   . last_symbols_weight = " + str(last_symbols_weight))
     print("   . last_symbols_price = " + str(last_symbols_price))
 
-    # send text message for held stocks breaking to downside outside trend channel
+    # display message for held stocks breaking to downside outside trend channel (email functionality removed)
     # - if markets are currently open
     marketStatus = get_MarketOpenOrClosed()
     if 'Market Open' in marketStatus:
-        textmessageOutsideTrendChannel( symbols, adjClose )
-    #textmessageOutsideTrendChannel( symbols, adjClose )
+        textmessageOutsideTrendChannel( symbols, adjClose, json_fn )
+    #textmessageOutsideTrendChannel( symbols, adjClose, json_fn )
 
     return datearray[-1], last_symbols_text, last_symbols_weight, last_symbols_price
 

@@ -1,14 +1,4 @@
 {
-    "Email": {
-        "From": "me@mail.com",
-        "To": "me@othermail.com",
-        "PW": "myPasswordMail",
-        "IPaddress": "444.333.222.111"
-    },
-    "Text_from_email": {
-        "phoneEmail": "2025551234@attmail.net",
-        "send_texts": false
-    },
     "FTP": {
         "hostname": "myWebHost",
         "username": "myWebUID",
