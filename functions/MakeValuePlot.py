@@ -32,7 +32,7 @@ def makeValuePlot(json_fn):
 
     filepath = os.path.join(p_store, "PyTAAA_status.params" )
     figurepath = os.path.join(webpage_dir, "PyTAAA_value.png" )
-    
+
     print(" ... inside makeValuePlot. '.params' filepath = " + filepath)
 
     # get edition from where software is running
@@ -365,7 +365,7 @@ def makeTrendDispersionPlot(json_fn):
     valueMedians = np.array( np.clip(valueMedians,-25.,25. ) ).astype('float')
     valueMediansSMA = SMA( valueMedians, 100 )
 
-    plt.figure(4,figsize=(9,7))
+    plt.figure(3,figsize=(9,7))
     plt.clf()
     plt.grid(True)
     numDaysToPlot = 252*10
@@ -450,7 +450,7 @@ def makeTrendDispersionPlot(json_fn):
     webpage_dir = get_webpage_store(json_fn)
 
     figure5path = os.path.join(webpage_dir, "PyTAAA_backtestWithTrend.png" )
-    plt.figure(5,figsize=(9,7))
+    plt.figure(4,figsize=(9,7))
     plt.clf()
     subplotsize = gridspec.GridSpec(2,1,height_ratios=[5,3])
     plt.subplot(subplotsize[0])
@@ -824,7 +824,7 @@ def makeDailyChannelOffsetSignal(json_fn):
     print(" avgPctChannel min, mean, max = ", avgPctChannel.min(),avgPctChannel.mean(),avgPctChannel.max())
     print("\n\n numAboveBelowChannel = ", numAboveBelowChannel)
     print(" numAboveBelowChannel min, mean, max = ", numAboveBelowChannel.min(),numAboveBelowChannel.mean(),numAboveBelowChannel.max())
-    plt.figure(4,figsize=(9,7))
+    plt.figure(5,figsize=(9,7))
     plt.clf()
     plt.grid(True)
     numDaysToPlot = 252*3
@@ -866,7 +866,7 @@ def makeDailyChannelOffsetSignal(json_fn):
 
     webpage_dir = get_webpage_store(json_fn)
     figure5path = os.path.join(webpage_dir, "PyTAAA_backtestWithOffsetChannelSignal.png" )
-    plt.figure(5,figsize=(9,7))
+    plt.figure(6,figsize=(9,7))
     plt.clf()
     subplotsize = gridspec.GridSpec(2,1,height_ratios=[5,3])
     plt.subplot(subplotsize[0])
