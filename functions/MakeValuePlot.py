@@ -717,8 +717,8 @@ def makeDailyChannelOffsetSignal(json_fn):
     incperiod = params['incperiod']
     numdaysinfit = params['numdaysinfit']
     offset = params['offset']
-    send_texts = bool(params['send_texts'])
-    print(" ... in MakeValuePlot.makeDailyChannelOffsetSignal: send_texts = "+str(send_texts) + ", type = " + str(type(send_texts)))
+    # Email/text functionality removed
+    print(" ... in MakeValuePlot.makeDailyChannelOffsetSignal: processing data...")
 
     print("minperiod,maxperiod,incperiod,numdaysinfit,offset = ", minperiod,maxperiod,incperiod,numdaysinfit,offset)
 
@@ -728,7 +728,7 @@ def makeDailyChannelOffsetSignal(json_fn):
     #dailyCountDowntrendChannelOffsetSignal = np.zeros( adjClose.shape[1], 'float' )
     #for idate in range(numdaysinfit+incperiod,adjClose.shape[1])
     for idate in range(adjClose.shape[1]):
-        if send_texts and datearray[idate] >= last_date :
+        if datearray[idate] >= last_date :
             #if datearray[idate] > datetime.date(1992,1,1) :
             #if datearray[idate] > datetime.date(1992,1,1) :
             if idate%10 == 0:

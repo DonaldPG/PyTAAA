@@ -7,16 +7,17 @@
    "python re-generateHDF5.py"
   
 2. edit the file containing information for PyTAA to report results
-   - options exist to send an email to your desired email from another email account (they don't have to be the same email account)
-   - edit PyTAAA.params with a text editor and replace example values with your information
+   - email functionality has been removed from this version
+   - edit the JSON configuration file with your FTP and other parameters as needed
 
 3. run PyTAAA with the command: "python PyTAAA.py"
-   - the code updates quotes and re-runs every few hours. It runs un-interrupted for 2 weeks (duration can be changed in PyTAAA.params).
+   - the code updates quotes and re-runs every few hours. It runs un-interrupted for 2 weeks (duration can be changed in the configuration file).
    - on the 2nd trading day of the month, PyTAAA recommends new stock holdings
+   - status updates will be displayed in the console instead of being sent via email
    
 4. It's up to the user to decide if they want to do anything with the recommendations. This is designed and provided for entertainment only. The author does not accept and responsibility for anything done by others with the recommendations.
 
-5. To let the code know how to track a portfolio for you, manually update the stock holdings in "PyTAAA_holdings.params".
+5. To let the code know how to track a portfolio for you, manually update the stock holdings in the holdings configuration file.
 
 6. A web page is created in the folder listed in the json file with PyTAAA parameters ("webpage"). In Windows, you can double-click pyTAAAweb.html to see the latest status and holdings, as recommended by PyTAAA.
 

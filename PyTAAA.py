@@ -6,7 +6,7 @@ import os
 import time
 import urllib.request, urllib.parse, urllib.error
 import platform
-from functions.SendEmail import SendEmail
+# Email functionality removed
 from functions.WriteWebPage_pi import writeWebPage
 from functions.GetParams import (GetParams,
                                 GetHoldings,
@@ -34,13 +34,11 @@ except:
 
 computerName = platform.uname()[1]
 
-# Get Credentials for sending email
+# Get parameters (email functionality removed)
 params = GetParams()
 print("")
 print("params = ", params)
 print("")
-username = str(params['fromaddr']).split("@")[0]
-emailpassword = str(params['PW'])
 stockList = params['stockList']
 # get name of server used to download and serve quotes
 quote_server = params['quote_server']
@@ -49,7 +47,7 @@ try:
 except:
     ip = '0.0.0.0'
 print("Current ip address is ", ip)
-print("An email with updated analysis will be sent to ", params['toaddrs'], " every ", params['pausetime'], " seconds")
+print("Analysis will be updated every ", params['pausetime'], " seconds")
 print(params['pausetime'], " seconds is ", format(params['pausetime']/60/60., '2.1f'), " hours, or ",  \
                                             format(params['pausetime']/60/60/24., '3.1f'), " days.")
 print("")
@@ -262,7 +260,7 @@ def IntervalTask():
 
     elapsed_time_total = time.time() - start_time_total
 
-    # send an email with status and updates (tries up to 10 times for each call).
+    # prepare status and updates (email functionality removed).
     boldtext = "time is "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
     regulartext = message_text+"<br>elapsed time to update stock index companies from web "+format(elapsed_time_updateStockList,'6.2f')+" seconds"
     regulartext = regulartext+"<br>elapsed time to update stock index stock prices from web "+format(elapsed_time,'6.2f')+" seconds"
@@ -283,7 +281,7 @@ def IntervalTask():
     regulartext = regulartext+"<br><a href=../pyTAAA_SP500web/pyTAAAweb.html>PyTAAA using S&P 500</a>"
     regulartext = regulartext+"<br><a href=../pyTAAADL_web/pyTAAAweb.html>PyTAAADL using Nasdaq 100</a>"
 
-    # Customize and send email
+    # Prepare status message (email functionality removed)
     # - based on day of month and whether market is open or closed
     if lastDayOfMonth:
         subjecttext = "PyTAAA holdings update and trade suggestions"
@@ -296,10 +294,11 @@ def IntervalTask():
     print(trade_message != "<br>")
     if np.round(float(cumu_value_prior),2) != np.round(cumu_value,2) or trade_message != "<br>":
         headlinetext = "Regularly scheduled update. Market status: " + get_MarketOpenOrClosed()
-        SendEmail(username,emailpassword,params['toaddrs'],params['fromaddr'],subjecttext,regulartext,boldtext,headlinetext)
+        print("Status update available - ", headlinetext)
+        print("Subject: ", subjecttext)
     else:
         headlinetext = "Regularly scheduled update. Market status: " + get_MarketOpenOrClosed()
-        print(" No email required or sent -- no new information since last email...")
+        print(" No update required -- no new information since last update...")
         cumu_value_prior = cumu_value
 
 
@@ -324,13 +323,13 @@ if __name__ == '__main__':
     # Create a scheduler
     my_scheduler = scheduler.Scheduler()
 
-    # Add the mail task, a receipt is returned that can be used to drop the task from the scheduler
-    mail_task = scheduler.Task("Interval_Task",
+    # Add the update task, a receipt is returned that can be used to drop the task from the scheduler
+    update_task = scheduler.Task("Interval_Task",
                           datetime.datetime.now(),
                           scheduler.every_x_secs(params['pausetime']),
                           scheduler.RunUntilSuccess( func=IntervalTask, num_tries=1 ) )
 
-    mail_receipt = my_scheduler.schedule_task(mail_task)
+    update_receipt = my_scheduler.schedule_task(update_task)
 
     # Once started, the scheduler will identify the next task to run and execute it.
     my_scheduler.start()

@@ -14,7 +14,7 @@ np.set_printoptions(suppress=True, precision=2)
 
 ###
 ### Perform a check to see if the stock market is open
-### - purpose is to stop calculating and sending emails when nothing has changed
+### - purpose is to stop calculating and updating when nothing has changed
 ###
 
 def calculateTrades(
@@ -72,7 +72,7 @@ def calculateTrades(
 
     # get current prices for holdings
     #holdingsParams_currentPrice = LastQuotesForSymbolList( holdingsParams_symbols )
-    # Get Credentials for sending email
+    # Get parameters
     params = get_json_params(json_fn)
     json_dir = os.path.split(json_fn)[0]
     symbol_directory = os.path.join( json_dir, "symbols" )
@@ -319,7 +319,7 @@ def calculateTrades(
 
     ####################################################################
     ### prepare messages for stocks purchases and sales
-    ### - put informational messages in email
+    ### - put informational messages in output
     ### - if this is a trading day, put new holdings in file PyTAAA_holdings.params
     ####################################################################
     for i in range(len(trade_symbols)):
