@@ -423,8 +423,8 @@ def trade_today(json_fn, symbols_today, weight_today, price_today, verbose=False
         return
 
     if verbose:
-        print("\held_df:\n" + str(held_df))
-        print("\held_grouped_df:\n" + str(held_grouped_df))
+        print("\nheld_df:\n" + str(held_df))
+        print("\nheld_grouped_df:\n" + str(held_grouped_df))
 
     # calculate holdings value
     currentHoldingsValue = 0.
@@ -554,17 +554,48 @@ def trade_today(json_fn, symbols_today, weight_today, price_today, verbose=False
             buySellCost += BuySellFee
 
     # hold unchanged
-    hold = merged_df[merged_df['shares_diff'] == 0 ]
-    hold = hold[hold['shares_df1'] > 0]
-    hold = hold[hold["symbols"] != "CASH"]
-    if len(list(hold.symbols)) > 0:
-        for i, symbol in enumerate(list(hold.symbols)):
-            trade_symbols.append( symbol )
-            trade_shares.append(0)
-            trade_price.append(float(np.round(hold.price_df1.values[i],2)))
-            trade_buyprice.append(float(np.round(hold.buyprice_df1.values[i],2)))
-            trade_activity.append("hold")
-            buySellCost += BuySellFee
+    # hold = merged_df[merged_df['shares_diff'] == 0 ]
+    # hold = hold[hold['shares_df1'] > 0]
+    # hold = hold[hold["symbols"] != "CASH"]
+    # if len(list(hold.symbols)) > 0:
+    #     for i, symbol in enumerate(list(hold.symbols)):
+    #         trade_symbols.append( symbol )
+    #         trade_shares.append(0)
+    #         trade_price.append(float(np.round(hold.price_df1.values[i],2)))
+    #         trade_buyprice.append(float(np.round(hold.buyprice_df1.values[i],2)))
+    #         trade_activity.append("hold")
+    #         buySellCost += BuySellFee
+
+    # hold existing holding
+    holdsome = merged_df[merged_df['shares_diff'] == 0 ]
+    holdsome = holdsome[holdsome['shares_df1'] > 0]
+    holdsome = holdsome[holdsome['shares_df2'] > 0]
+    holdsome = holdsome[holdsome["symbols"] != "CASH"]
+
+    holdsome_held = held_df[held_df['symbols'].isin(holdsome['symbols'])]
+    holdsome = holdsome.set_index('symbols')
+
+    if len(list(holdsome_held.symbols)) > 0:
+        for i, symbol in enumerate(list(held_df.symbols)):
+
+            if symbol == "CASH":
+                continue
+
+            if symbol in list(holdsome.index):
+                held_df_row = held_df.iloc[i]
+
+                print("\n" + str(held_df_row))
+
+                trade_symbols.append(symbol)
+                trade_shares.append(0)
+                trade_buyprice.append(np.round(held_df_row["buyprice"],2))
+                trade_price.append(np.round(held_df_row["price"],2))
+                trade_activity.append("hold")
+
+                buySellCost += BuySellFee
+
+
+
 
     # handle cash
     symbol = "CASH"
@@ -578,6 +609,16 @@ def trade_today(json_fn, symbols_today, weight_today, price_today, verbose=False
             trade_activity.append("reduce")
     elif trade_shares[-1] == 0:
             trade_activity.append("hold")
+
+    # re-evaluate activity
+    trade_activity = []
+    for i in range(len(trade_shares)):
+        if trade_shares[i] > 0:
+                trade_activity.append("increase")
+        elif trade_shares[i] < 0:
+                trade_activity.append("reduce")
+        elif trade_shares[i] == 0:
+                trade_activity.append("hold")
 
     # put trades in dataframe
     trades_dict = {
@@ -604,16 +645,160 @@ def trade_today(json_fn, symbols_today, weight_today, price_today, verbose=False
 
     trades_df_wo_buy = trades_df[trades_df["activity"] != "buy"]
     # trades_df_wo_buy = held_df2[held_df2["activity"] != "buy"]
+    if verbose:
+        print("\nheld_df.columns:\n" + str(held_df.columns))
+        print("\nheld_df:\n" + str(held_df))
+        print("\ntrades_df_wo_buy.columns:\n" + str(trades_df_wo_buy.columns))
+        print("\ntrades_df_wo_buy:\n" + str(trades_df_wo_buy))
 
     try:
         # merged_trades_df = pd.merge(
         #     held_df, trades_df_wo_buy, on=['symbols','buyprice'], how='outer',
         #     suffixes=('_held', '_trade'), validate="one_to_one"
         # )
+
+        # merged_trades_df = pd.merge(
+        #     held_df, trades_df_wo_buy, on=['symbols','buyprice'], how='outer',
+        #     suffixes=('_held', '_trade'), validate="one_to_one"
+        # )
+
         merged_trades_df = pd.merge(
             held_df, trades_df_wo_buy, on=['symbols','buyprice'], how='outer',
-            suffixes=('_held', '_trade'), validate="one_to_one"
+            suffixes=('_held', '_trade')
         )
+
+        # fill in NaN's in merged_trades_df
+        nan_shares = merged_trades_df[pd.isna(merged_trades_df["activity"])]
+        nan_shares = nan_shares[nan_shares["symbols"] != "CASH"]
+
+        symbols_list = []
+        shares_held_list = []
+        buyprice_list = []
+        price_held_list = []
+        shares_trade_list = []
+        price_trade_list = []
+        activity_list = []
+        if len(list(nan_shares.symbols)) > 0:
+            for i, symbol in enumerate(list(nan_shares.symbols)):
+                df_row = trades_df[trades_df["symbols"] == symbol]
+                trades_df_shares = float(df_row["shares"].values[0])
+                trades_df_buyprice = float(df_row["buyprice"].values[0])
+                trades_df_price = float(df_row["price"].values[0])
+                trades_df_activity = str(df_row["activity"].values[0])
+
+                print(
+                    " symbol, trades_df_price, trades_df_price = " + \
+                    str((symbol, trades_df_shares, trades_df_activity, trades_df_buyprice, trades_df_price))
+                )
+
+                if trades_df_activity == "sell":
+                    # sell
+                    nan_row = nan_shares.iloc[i]
+                    nan_df_shares = int(nan_row["shares_held"])
+                    nan_df_buyprice = float(np.round(nan_row["buyprice"], 2))
+                    nan_df_price_held = trades_df_price
+                    nan_df_shares_trade = -nan_df_shares
+                    nan_df_price_trade = trades_df_price
+
+                    symbols_list.append(symbol)
+                    shares_held_list.append(nan_df_shares)
+                    buyprice_list.append(nan_df_buyprice)
+                    price_held_list.append(nan_df_price_held)
+                    shares_trade_list.append(nan_df_shares_trade)
+                    price_trade_list.append(nan_df_price_trade)
+                    activity_list.append(trades_df_activity)
+
+                elif trades_df_activity == "increase":
+                    # purchase more shares
+                    nan_row = nan_shares.iloc[i]
+                    nan_df_shares = int(nan_row["shares_held"])
+                    nan_df_buyprice = float(np.round(nan_row["buyprice"], 2))
+                    nan_df_price_held = trades_df_price
+                    nan_df_shares_trade = 0.0
+                    nan_df_price_trade = trades_df_price
+
+                    symbols_list.append(symbol)
+                    shares_held_list.append(nan_df_shares)
+                    buyprice_list.append(nan_df_buyprice)
+                    price_held_list.append(nan_df_price_held)
+                    shares_trade_list.append(nan_df_shares_trade)
+                    price_trade_list.append(nan_df_price_trade)
+                    activity_list.append(trades_df_activity)
+
+        # put in dict, then dataframe
+        nan_dict = {
+            "symbols": symbols_list,
+            "shares_held": shares_held_list,
+            "buyprice": buyprice_list,
+            "price_held": price_held_list,
+            "shares_trade": shares_trade_list,
+            "price_trade": price_trade_list,
+            "activity": activity_list,
+        }
+        yes_nan_df = pd.DataFrame(nan_dict)
+
+        # iterate through df with no NaNs.
+        # make "shares_trade" and "activity" consistent with values in df
+        no_nan_shares = merged_trades_df[~pd.isna(merged_trades_df["activity"])]
+
+        symbols_list = []
+        shares_held_list = []
+        buyprice_list = []
+        price_held_list = []
+        shares_trade_list = []
+        price_trade_list = []
+        activity_list = []
+        if len(list(no_nan_shares.symbols)) > 0:
+            for i, symbol in enumerate(list(no_nan_shares.symbols)):
+
+                nonan_df_row = no_nan_shares.iloc[i]
+
+                nonan_df_shares_held = float(nonan_df_row["shares_held"])
+                nonan_df_buyprice = float(nonan_df_row["buyprice"])
+                nonan_df_price_held = float(nonan_df_row["price_held"])
+                nonan_df_shares_trade = float(nonan_df_row["shares_trade"])
+                nonan_df_price_trade = str(nonan_df_row["price_trade"])
+                nonan_df_activity = str(nonan_df_row["activity"])
+
+                if nonan_df_activity == "reduce" and nonan_df_shares_trade == 0.0:
+                    nonan_df_activity = "hold"
+
+                if (
+                    nonan_df_activity == "sell" and \
+                    nonan_df_shares_trade < -nonan_df_shares_held
+                ):
+                    nonan_df_shares_trade = -nonan_df_shares_held
+
+                # if (
+                #     nonan_df_activity == "increase" and \
+                #     not np.isnan(nonan_df_shares_held)
+                # ):
+                #     nonan_df_shares_trade = 0.0
+
+
+                symbols_list.append(symbol)
+                shares_held_list.append(nonan_df_shares_held)
+                buyprice_list.append(nonan_df_buyprice)
+                price_held_list.append(nonan_df_price_held)
+                shares_trade_list.append(nonan_df_shares_trade)
+                price_trade_list.append(nonan_df_price_trade)
+                activity_list.append(nonan_df_activity)
+
+        # put in dict, then dataframe
+        no_nan_dict = {
+            "symbols": symbols_list,
+            "shares_held": shares_held_list,
+            "buyprice": buyprice_list,
+            "price_held": price_held_list,
+            "shares_trade": shares_trade_list,
+            "price_trade": price_trade_list,
+            "activity": activity_list,
+        }
+        no_nan_df = pd.DataFrame(no_nan_dict)
+
+        # merge the 2 processed df's
+        merged_trades_df = pd.concat([yes_nan_df, no_nan_df], ignore_index=True)
+
     except:
         print("\nheld_df:\n" + str(held_df))
         print("\ntrades_df_wo_buy:\n" + str(trades_df_wo_buy))
@@ -624,24 +809,28 @@ def trade_today(json_fn, symbols_today, weight_today, price_today, verbose=False
             "Merge keys are not unique in left dataset; not a one-to-one merge"
         )
         return
-    # set NaNs in shares to zero and compute number of shares after monthly update
-    merged_trades_df['shares_target'] = merged_trades_df[
+    # # set NaNs in shares to zero and compute number of shares after monthly update
+    # merged_trades_df['shares_target'] = merged_trades_df[
+    #     ['shares_held', 'shares_trade']
+    # ].fillna(0).sum(axis=1)
+
+    merged_trades_df2 = merged_trades_df.copy()
+    merged_trades_df2['shares_target'] = merged_trades_df2[
         ['shares_held', 'shares_trade']
     ].fillna(0).sum(axis=1)
 
-    # check and make corrections for mutiple held entries
-    merged_trades_grouped_df = merged_trades_df.groupby(
-            'symbols'
-        )['shares_target'].sum().reset_index()
+    # # check and make corrections for mutiple held entries
+    # merged_trades_grouped_df = merged_trades_df.groupby(
+    #         'symbols'
+    #     )['shares_target'].sum().reset_index()
     # merge grouped and ungrouped versions
-    merged_trades_df2 = merged_trades_df.copy()
-    revised_target_list = []
-    for _row_i in range(merged_trades_df.values.shape[0]):
-        _symb = merged_trades_df.iloc[_row_i, :]["symbols"]
-        _shares_target = merged_trades_grouped_df.loc[merged_trades_grouped_df["symbols"] == _symb]["shares_target"]
-        revised_target_list.append(_shares_target.values[0])
-    merged_trades_df2['shares_target'] = revised_target_list
-
+    # merged_trades_df2 = merged_trades_df.copy()
+    # revised_target_list = []
+    # for _row_i in range(merged_trades_df.values.shape[0]):
+    #     _symb = merged_trades_df.iloc[_row_i, :]["symbols"]
+    #     _shares_target = merged_trades_grouped_df.loc[merged_trades_grouped_df["symbols"] == _symb]["shares_target"]
+    #     revised_target_list.append(_shares_target.values[0])
+    # merged_trades_df2['shares_target'] = revised_target_list
 
     trades_df_only_buy = trades_df[trades_df["activity"] == "buy"]
 
@@ -653,22 +842,22 @@ def trade_today(json_fn, symbols_today, weight_today, price_today, verbose=False
     holdings_text = "stocks:      "
 
     # stocks that were held both last month and this month
-    for i, _symbol in enumerate(merged_trades_df2.loc[:, "symbols"]):
-        if merged_trades_df2.loc[i, "shares_target"] > 0.0:
+    for i, _symbol in enumerate(merged_trades_df2.loc[:]["symbols"]):
+        if merged_trades_df2.loc[i]["shares_target"] > 0.0:
             holdings_text = holdings_text + _symbol.ljust(8)
-    for i, _symbol in enumerate(trades_df_only_buy.loc[:, "symbols"]):
+    for i, _symbol in enumerate(trades_df_only_buy.loc[:]["symbols"]):
             holdings_text = holdings_text + _symbol.ljust(8)
     holdings_text = holdings_text + "\nshares:      "
-    for i, _share in enumerate(merged_trades_df2.loc[:, "shares_target"]):
-        if merged_trades_df2.loc[i, "shares_target"] > 0.0:
+    for i, _share in enumerate(merged_trades_df2.loc[:]["shares_target"]):
+        if merged_trades_df2.loc[i]["shares_target"] > 0.0:
             holdings_text = holdings_text + str(_share).ljust(8)
-    for i, _share in enumerate(trades_df_only_buy.loc[:, "shares"]):
+    for i, _share in enumerate(trades_df_only_buy.loc[:]["shares"]):
             holdings_text = holdings_text + str(_share).ljust(8)
     holdings_text = holdings_text + "\nbuyprice:    "
-    for i, _buyprice in enumerate(merged_trades_df2.loc[:, "buyprice"]):
-        if merged_trades_df2.loc[i, "shares_target"] > 0.0:
+    for i, _buyprice in enumerate(merged_trades_df2.loc[:]["buyprice"]):
+        if merged_trades_df2.loc[i]["shares_target"] > 0.0:
             holdings_text = holdings_text + str(np.round(_buyprice,2)).ljust(8)
-    for i, _buyprice in enumerate(trades_df_only_buy.loc[:, "buyprice"]):
+    for i, _buyprice in enumerate(trades_df_only_buy.loc[:]["buyprice"]):
             holdings_text = holdings_text + str(np.round(_buyprice,2)).ljust(8)
 
     print(holdings_text)
@@ -676,10 +865,10 @@ def trade_today(json_fn, symbols_today, weight_today, price_today, verbose=False
 
     # stocks that were held both last month and this month
     sell_text = ""
-    for i, _symbol in enumerate(trades_df.loc[:, "symbols"]):
+    for i, _symbol in enumerate(trades_df.loc[:]["symbols"]):
         if _symbol == "CASH":
             continue
-        if trades_df.loc[i, "shares"] >= 0.0:
+        if trades_df.loc[i]["shares"] >= 0.0:
             continue
 
         _sell_shares = trades_df.loc[i, "shares"]
@@ -693,13 +882,13 @@ def trade_today(json_fn, symbols_today, weight_today, price_today, verbose=False
         sell_text = sell_text + "\n"
 
     buy_text = ""
-    for i, _symbol in enumerate(trades_df.loc[:, "symbols"]):
+    for i, _symbol in enumerate(trades_df.loc[:]["symbols"]):
         if _symbol == "CASH":
             continue
-        if trades_df.loc[i, "shares"] <= 0.0:
+        if trades_df.loc[i]["shares"] <= 0.0:
             continue
-        _buy_shares = trades_df.loc[i, "shares"]
-        _buy_price = trades_df.loc[i, "price"]
+        _buy_shares = trades_df.loc[i]["shares"]
+        _buy_price = trades_df.loc[i]["price"]
         if verbose:
             print(" ... buy holdings symbol " + _symbol)
             print(" ... buy holdings shares " + str(_buy_shares))
