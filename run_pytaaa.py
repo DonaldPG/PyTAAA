@@ -26,7 +26,7 @@ print(sys.path)
 try:
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
 except:
-    os.chdir("/Users/donaldpg/PyProjects/PyTAAA.master")
+    os.chdir("/Users/donaldpg/PyProjects/PyTAAA.master-wip")
 
 
 def run_pytaaa(json_fn):
