@@ -1241,43 +1241,10 @@ def textmessageOutsideTrendChannel(symbols, adjClose, json_fn):
 
 #----------------------------------------------
 
-def SMA_2D(x,periods):
-    SMA = np.zeros( (x.shape[0],x.shape[1]), dtype=float)
-    for i in range( x.shape[1] ):
-        minx = max(0,i-periods)
-        SMA[:,i] = np.mean(x[:,minx:i+1],axis=-1)
-    return SMA
-
-# def hma_2D(x, periods):
-#     HMA = np.zeros((x.shape[0],x.shape[1]), dtype=float)
-#     for i in range(x.shape[0]):
-#         HMA[i,:] = hma(x[i,:], periods)
-#     return HMA
-
-#----------------------------------------------
-
-def despike_2D(x,periods,stddevThreshold=5.0):
-    # remove outliers from gradient of x (in 2nd dimension)
-    gainloss = np.ones((x.shape[0],x.shape[1]),dtype=float)
-    gainloss[:,1:] = x[:,1:] / x[:,:-1]
-    for i in range( 1,x.shape[1] ):
-        minx = max(0,i-periods)
-        Stddev = np.std(gainloss[:,minx:i],axis=-1)
-        Stddev *= stddevThreshold
-        Stddev += 1.
-        test = np.dstack( (Stddev, gainloss[:,i]) )
-        gainloss[:,i] = np.min( test, axis=-1)
-    gainloss[:,0] = x[:,0].copy()
-    value = np.cumprod(gainloss,axis=1)
-    return value
-
-
-#----------------------------------------------
-
 def SMA(x,periods):
     SMA = np.zeros( (x.shape[0]), dtype=float)
     for i in range( x.shape[0] ):
-        minx = max(0,i-periods)
+        minx = np.max((0,i-periods))
         SMA[i] = np.mean(x[minx:i+1],axis=-1)
     return SMA
 
@@ -1315,6 +1282,8 @@ def hma_pd(data, period):
     data: numpy array containing the price data
      - data should have shape data[num_companies, n_days]
     period: integer representing the HMA period
+
+    Note: the elapsed time for this function is 3x that for function "hma"
     """
     import pandas as pd
 
@@ -1340,6 +1309,7 @@ def hma_pd(data, period):
 
     return hma
 
+
 # # create random dataset to test hma
 # gain_loss = np.random.uniform(.95,1.05, (50,2500))
 # x_val = gain_loss * 1.0
@@ -1353,9 +1323,97 @@ def hma_pd(data, period):
 def SMS(x,periods):
     _SMS = np.zeros( (x.shape[0]), dtype=float)
     for i in range( x.shape[0] ):
-        minx = max(0,i-periods)
+        minx = np.max((0,i-periods))
         _SMS[i] = np.sum(x[minx:i+1],axis=-1)
     return _SMS
+
+
+def SMA_2D(x,periods):
+    SMA = np.zeros( (x.shape[0],x.shape[1]), dtype=float)
+    for i in range( x.shape[1] ):
+        minx = np.max((0,i-periods))
+        SMA[:,i] = np.mean(x[:,minx:i+1],axis=-1)
+    return SMA
+
+# def hma_2D(x, periods):
+#     HMA = np.zeros((x.shape[0],x.shape[1]), dtype=float)
+#     for i in range(x.shape[0]):
+#         HMA[i,:] = hma(x[i,:], periods)
+#     return HMA
+
+# def SMA_filtered_2D(x, periods, filt_min=-0.0125, filt_max=0.0125):
+#     SMA = np.zeros((x.shape[0], x.shape[1]), dtype=float)
+#     gainloss = np.zeros_like(x)
+#     gainloss[:,1:] = x[:,1:] / x[:,:-1]
+#     gainloss[np.isnan(x)] = 1.
+#     gainloss -= 1.0
+#     ii, jj =np.where((gainloss <= filt_min) | (gainloss >= filt_max))
+#     x_count = np.zeros_like(x, dtype='int')
+#     x_count[ii,jj] = 1
+#     x_count = np.cumsum(x_count, axis=-1)
+#     true_count = 0
+#     for i in range(x.shape[0]):
+#         indices = x_count[i,:]
+#         for j in range(1, x.shape[1]):
+#             end_indices = np.abs(indices - (indices[j]))
+#             periods_end = np.max((0, np.argmin(end_indices)))
+#             strt_indices = np.abs(indices - (indices[j] - periods))
+#             periods_beg = np.max((0, int(np.argmin(strt_indices))))
+#             if periods_end > periods_beg:
+#                 SMA[i, j] = np.mean(x[i, periods_beg:periods_end], axis=-1)
+#                 true_count += 1
+#     return SMA
+
+
+def SMA_filtered_2D(x, periods, filt_min=-0.0125, filt_max=0.0125):
+    fsma = np.zeros((x.shape[0], x.shape[1]), dtype=float)
+    gainloss = np.zeros_like(x)
+    gainloss[:,1:] = x[:,1:] / x[:,:-1]
+    gainloss[np.isnan(x)] = 1.
+    gainloss -= 1.0
+    ii, jj =np.where((gainloss <= filt_min) | (gainloss >= filt_max))
+    x_count = np.zeros_like(x, dtype='int')
+    x_count[ii,jj] = 1
+    x_count = np.cumsum(x_count, axis=-1) - 1
+    for i in range(x.shape[0]):
+        indices = x_count[i,:]
+        iii = np.where(indices[1:] != indices[:-1])[0] + 1
+        SMA_sparse = SMA(x[i,iii], periods)
+        if SMA_sparse.size > periods:
+            fsma[i, iii[0]:iii[-1]+1] = np.interp(
+                np.arange(iii[0], iii[-1]+1),
+                iii,
+                # x[i,iii]
+                SMA_sparse
+            )
+            fsma[i,:iii[0]+1] = SMA_sparse[0]
+            fsma[i,iii[-1]:] = SMA_sparse[-1]
+    return fsma
+
+'''
+plt.clf();plt.grid()
+plt.plot(x[0,:],'k-')
+plt.plot(np.arange(x.shape[1])[iii], x[0,iii], 'ro')
+plt.plot(fsma[0,:], 'b-')
+plt.plot(sma[0,:], 'g-')
+
+'''
+#----------------------------------------------
+
+def despike_2D(x,periods,stddevThreshold=5.0):
+    # remove outliers from gradient of x (in 2nd dimension)
+    gainloss = np.ones((x.shape[0],x.shape[1]),dtype=float)
+    gainloss[:,1:] = x[:,1:] / x[:,:-1]
+    for i in range( 1,x.shape[1] ):
+        minx = max(0,i-periods)
+        Stddev = np.std(gainloss[:,minx:i],axis=-1)
+        Stddev *= stddevThreshold
+        Stddev += 1.
+        test = np.dstack( (Stddev, gainloss[:,i]) )
+        gainloss[:,i] = np.min( test, axis=-1)
+    gainloss[:,0] = x[:,0].copy()
+    value = np.cumprod(gainloss,axis=1)
+    return value
 
 
 #----------------------------------------------
