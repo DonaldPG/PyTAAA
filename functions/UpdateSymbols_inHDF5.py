@@ -711,7 +711,7 @@ def UpdateHDF_yf(symbol_directory, symbols_file, json_fn):
         import yfinance as yf
 
         # Adjust timeout to a longer period
-        yf.shared._EXCHANGE_TIMEOUT = 10  # in seconds
+        yf.shared._EXCHANGE_TIMEOUT = 13  # in seconds
 
         # read symbols list
         # symbols = readSymbolList(filename, json_fn, verbose=True)
@@ -724,7 +724,7 @@ def UpdateHDF_yf(symbol_directory, symbols_file, json_fn):
         
         data = yf.download(
             symbols, start=start_date, end=end_date, auto_adjust=False,
-            repair=True, timeout=15
+            repair=True, timeout=20
         )
         try:
             # for multiple symbols
