@@ -2961,11 +2961,17 @@ def sharpeWeightedRank_2D(
     ## Hold values constant for calendar month (gains, ranks, deltaRanks)
     ########################################################################
 
-    from functions.readSymbols import read_symbols_list_web
+    try:
+        from functions.readSymbols import read_company_names_local
+        companySymbolList, companyNameList = read_company_names_local(
+            json_fn, verbose=False
+        )
+    except:
+        from functions.readSymbols import read_symbols_list_web    
+        companyNameList, companySymbolList = read_symbols_list_web(
+            json_fn, verbose=False
+        )
 
-    companyNameList, companySymbolList = read_symbols_list_web(
-        json_fn, verbose=False
-    )
     for ii in range(1,monthgainloss.shape[1]):
         if datearray[ii].month == datearray[ii-1].month:
             monthgainloss[:,ii] = monthgainloss[:,ii-1]
