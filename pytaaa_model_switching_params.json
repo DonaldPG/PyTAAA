@@ -70,7 +70,7 @@
         }
     },
     "monte_carlo": {
-        "max_iterations": 2500,
+        "max_iterations": 250,
         "min_iterations_for_exploit": 50,
         "trading_frequency": "monthly",
         "use_daily_close_only": true,
