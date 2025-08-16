@@ -246,9 +246,19 @@ def read_company_names_local(json_fn, verbose=False):
         symbols.append(s[0])
         company_names.append(s[1])
 
-    # ensure that there are no duplicate tickers
-    symbols = list( set( symbols ) )
-    company_names = list( set( company_names ) )
+    # ensure that there are no duplicate tickers while maintaining symbol-company correspondence
+    seen_symbols = set()
+    unique_symbols = []
+    unique_company_names = []
+    
+    for symbol, company_name in zip(symbols, company_names):
+        if symbol not in seen_symbols:
+            seen_symbols.add(symbol)
+            unique_symbols.append(symbol)
+            unique_company_names.append(company_name)
+    
+    symbols = unique_symbols
+    company_names = unique_company_names
 
     # print list of symbols
     if verbose:
@@ -523,86 +533,10 @@ def read_symbols_list_web(json_fn, verbose=True):
     elif "SP500_symbols".lower() in existing_symbols_file.lower():
 
         ###
+        ### Enhanced S&P 500 web scraping with multiple fallback strategies
         ### Query wikipedia.com for updated list of stocks in S&P 500 index.
         ### Return list with stock tickers.
         ###
-        #import urllib2
-        import urllib.request, urllib.error, urllib.parse
-        import requests
-        import re
-        from bs4 import BeautifulSoup
-        import os
-        import datetime
-        import unicodedata
-
-        ###
-        ### get symbol list from previous period
-        ###
-        # symbol_directory = os.path.join( os.getcwd(), "symbols" )
-
-        # symbol_file = "SP500_Symbols.txt"
-        # symbols_file = os.path.join( symbol_directory, symbol_file )
-        existing_symbols_file = get_symbols_file(json_fn)
-        symbol_directory, symbol_file = os.path.split(existing_symbols_file)
-
-        with open(existing_symbols_file, "r+") as f:
-            old_symbolList = f.readlines()
-        for i in range( len(old_symbolList) ) :
-            old_symbolList[i] = old_symbolList[i].replace("\n","")
-
-        ###
-        ### get current symbol list from wikipedia website
-        ###
-
-        # base_url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
-        # soup = BeautifulSoup( urllib.request.urlopen(base_url), "lxml" )
-        # t = soup.find(
-        #     "table",
-        #     {
-        #         "class" : "wikitable sortable sticky-header",
-        #         "id": "constituents"
-        #     }
-        # )
-
-        # print("... got web content")
-        # print("... ran beautiful soup on web content")
-
-        # symbolList = [] # store all of the records in this list
-        # companyNamesList = []
-        # data=[]
-        # n_cos = 0
-        # for row in t.find_all('tr'):
-        #     if str(row)==[]:
-        #         continue
-        #     col = row.find_all('td')
-        #     cols = row.find_all('td')
-        #     cols = [ele.text.strip() for ele in cols]
-        #     data.append([ele for ele in cols if ele])
-        #     if col==[]:
-        #         continue
-        #     company_name = data[-1][1].encode("utf8")
-        #     # if company_name[:3]=='MON':
-        #     #     break
-        #     company_name = unicodedata.normalize('NFD',data[-1][1]).encode('ascii', 'ignore').decode('ascii')
-        #     symbol_name = data[-1][0].encode("utf8").decode('ascii')
-        #     symbol_name = symbol_name.replace(".", "-")
-
-        #     #print(str(row)+"\n ...company_name = "+company_name+"\n ...symbol_name="+symbol_name+"\n")
-        #     print("  ...symbol_name=" + f'{symbol_name:<6}'+ " ...company_name = "+company_name)
-        #     companyNamesList.append(company_name)
-        #     symbolList.append(symbol_name)
-        #     n_cos += 1
-        # print("... retrieved " + str(n_cos) + " SP500 companies lists from internet")
-
-
-        ### -----------------
-        ### start of revised code
-        ### -----------------
-        ###
-        ### Query wikipedia.com for updated list of stocks in S&P 500 index.
-        ### Return list with stock tickers.
-        ###
-        #import urllib2
         import urllib.request, urllib.error, urllib.parse
         import requests
         import re
@@ -615,69 +549,203 @@ def read_symbols_list_web(json_fn, verbose=True):
         ### get symbol list from previous period
         ###
         symbol_directory = os.path.split(existing_symbols_file)[0]
-
         symbol_file = "SP500_Symbols.txt"
-        symbols_file = os.path.join( symbol_directory, symbol_file )
+        symbols_file = os.path.join(symbol_directory, symbol_file)
+        
         with open(symbols_file, "r+") as f:
             old_symbolList = f.readlines()
-        for i in range( len(old_symbolList) ) :
-            old_symbolList[i] = old_symbolList[i].replace("\n","")
+        for i in range(len(old_symbolList)):
+            old_symbolList[i] = old_symbolList[i].replace("\n", "")
 
         ###
-        ### get current symbol list from wikipedia website
+        ### Enhanced web scraping with multiple strategies
         ###
-        base_url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
-        soup = BeautifulSoup( urllib.request.urlopen(base_url), "lxml" )
-        t = soup.find(
-            "table",
-            {
-                "class" : "wikitable sortable sticky-header",
-                "id": "constituents"
+        def _scrape_sp500_robust():
+            """Enhanced S&P 500 scraping with multiple table selection strategies"""
+            base_url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
+            
+            # Add headers to avoid blocking
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
-        )
+            
+            # Try with headers first
+            try:
+                req = urllib.request.Request(base_url, headers=headers)
+                response = urllib.request.urlopen(req, timeout=15)
+                soup = BeautifulSoup(response.read(), "lxml")
+                print("... got web content (with headers)")
+            except:
+                # Fallback to basic request
+                soup = BeautifulSoup(urllib.request.urlopen(base_url), "lxml")
+                print("... got web content (basic request)")
+            
+            print("... ran beautiful soup on web content")
+            
+            # Try multiple table selection strategies in order of preference
+            table_selectors = [
+                # Original selector
+                {"class": "wikitable sortable sticky-header", "id": "constituents"},
+                # Backup selectors
+                {"id": "constituents"},
+                {"class": "wikitable sortable sticky-header"},
+                {"class": "wikitable sortable"},
+                {"class": "wikitable"},
+            ]
+            
+            t = None
+            selected_strategy = None
+            
+            for i, selector in enumerate(table_selectors):
+                t = soup.find("table", selector)
+                if t is not None:
+                    selected_strategy = f"Strategy {i+1}: {selector}"
+                    if verbose:
+                        print(f"... found table using {selected_strategy}")
+                    break
+            
+            # If still no table found, try content-based search
+            if t is None:
+                if verbose:
+                    print("... trying content-based table detection")
+                tables = soup.find_all("table")
+                for j, table in enumerate(tables):
+                    table_text = str(table).lower()
+                    # Look for S&P 500 specific content
+                    if any(keyword in table_text for keyword in ['symbol', 'ticker', 'security', 'gics', 'headquarters']):
+                        # Check if table has reasonable size (S&P 500 should have ~500 rows)
+                        rows = table.find_all('tr')
+                        if len(rows) > 100:  # Should have many rows for S&P 500
+                            t = table
+                            selected_strategy = f"Content-based detection (table {j+1}, {len(rows)} rows)"
+                            if verbose:
+                                print(f"... found table using {selected_strategy}")
+                            break
+            
+            # Enhanced error reporting before crash
+            if t is None:
+                print("ERROR: Failed to find S&P 500 table with any strategy")
+                if verbose:
+                    print("Available tables on page:")
+                    tables = soup.find_all("table")
+                    for i, table in enumerate(tables):
+                        table_classes = table.get('class', 'None')
+                        table_id = table.get('id', 'None')
+                        row_count = len(table.find_all('tr'))
+                        print(f"  Table {i+1}: {row_count} rows, classes: {table_classes}, id: {table_id}")
+                print("This will now crash as intended to alert you of the failure...")
+            else:
+                if verbose:
+                    print(f"... using table found with: {selected_strategy}")
+            
+            return t, selected_strategy
 
-        print("... got web content")
-        print("... ran beautiful soup on web content")
-
-        symbolList = [] # store all of the records in this list
+        # Get the table using enhanced scraping
+        t, strategy_used = _scrape_sp500_robust()
+        
+        # This will crash here if t is None, which is what you want
+        symbolList = []  # store all of the records in this list
         companyNamesList = []
-        data=[]
-        for row in t.find_all('tr'):
-            if str(row)==[]:
+        data = []
+        
+        if verbose:
+            print(f"... processing table rows (found using {strategy_used})")
+        
+        row_count = 0
+        processed_count = 0
+        
+        for row in t.find_all('tr'):  # This line will crash if t is None - as intended
+            if str(row) == []:
                 continue
+                
             col = row.find_all('td')
             cols = row.find_all('td')
             cols = [ele.text.strip() for ele in cols]
             data.append([ele for ele in cols if ele])
-            if col==[]:
+            row_count += 1
+            
+            if col == []:
                 continue
-            company_name = data[-1][0].encode("utf8")
-            # if company_name[:3]=='MON':
-            #     break
-            company_name = unicodedata.normalize('NFD',data[-1][1]).encode('ascii', 'ignore').decode('ascii')
-            symbol_name = data[-1][0].encode("utf8").decode('ascii')
-            symbol_name = symbol_name.replace(".", "-")
+                
+            # Skip if not enough columns
+            if len(data[-1]) < 2:
+                continue
+                
+            try:
+                # More robust data extraction - handle different column orders
+                if len(data[-1]) >= 2:
+                    # Standard format: Symbol, Company Name, ...
+                    symbol_name = data[-1][0]
+                    company_name = data[-1][1]
+                else:
+                    continue
+                
+                # Clean encoding issues more robustly
+                if isinstance(company_name, bytes):
+                    company_name = company_name.decode('utf-8', errors='ignore')
+                if isinstance(symbol_name, bytes):
+                    symbol_name = symbol_name.decode('utf-8', errors='ignore')
+                    
+                # Handle encoding for company name
+                try:
+                    company_name = unicodedata.normalize('NFD', str(company_name)).encode('ascii', 'ignore').decode('ascii')
+                except:
+                    company_name = str(company_name).encode('ascii', errors='ignore').decode('ascii')
+                
+                # Handle encoding for symbol name  
+                try:
+                    symbol_name = str(symbol_name).encode("utf8").decode('ascii')
+                except:
+                    symbol_name = str(symbol_name).encode('ascii', errors='ignore').decode('ascii')
+                    
+                symbol_name = symbol_name.replace(".", "-").strip()
+                
+                # Skip empty or header rows
+                if not symbol_name or symbol_name.lower() in ['symbol', 'ticker', '', 'company']:
+                    continue
+                    
+                # Basic validation - S&P 500 symbols should be reasonable
+                if len(symbol_name) > 6 or not symbol_name.replace('-', '').replace('.', '').isalnum():
+                    if verbose:
+                        print(f"... skipping suspicious symbol: '{symbol_name}'")
+                    continue
 
-            #print(str(row)+"\n ...company_name = "+company_name+"\n ...symbol_name="+symbol_name+"\n")
+                if verbose:
+                    print(
+                        " ...symbol_name="+'{0: <5}'.format(symbol_name) + \
+                        " ...company_name=" + company_name
+                    )
+                    
+                companyNamesList.append(company_name)
+                symbolList.append(symbol_name)
+                processed_count += 1
+                
+            except (IndexError, UnicodeDecodeError, AttributeError) as e:
+                if verbose:
+                    print(f"... error processing row {row_count}: {e}")
+                continue
+        
+        print(f"... retrieved {len(symbolList)} SP500 companies from internet ({processed_count} valid rows from {row_count} total rows)")
+        
+        # Sanity check - S&P 500 should have around 500 companies
+        if len(symbolList) < 400:
+            print(f"WARNING: Only found {len(symbolList)} symbols, expected ~500")
+            print("This may indicate a parsing problem but data will still be saved.")
             if verbose:
-                print(
-                    # "  ...symbol_name=" + symbol_name + \
-                    # " ...company_name = " + company_name
-                    " ...symbol_name="+'{0: <5}'.format(symbol_name) + \
-                    " ...company_name=" + company_name
-                )
-            companyNamesList.append(company_name)
-            symbolList.append(symbol_name)
-        print(f"... retrieved {len(symbolList)} SP500 companies lists from internet")
-
-        companyName_file = os.path.join( symbol_directory, "SP500_companyNames.txt" )
-        with open( companyName_file, "w" ) as f:
-            for i in range( len(symbolList) ) :
-                f.write( symbolList[i] + ";" + companyNamesList[i] + "\n" )
+                print("First 10 symbols found:", symbolList[:10])
+        elif len(symbolList) > 600:
+            print(f"WARNING: Found {len(symbolList)} symbols, expected ~500")
+            print("This may indicate duplicate entries or parsing issues.")
+        
+        # Save the results
+        companyName_file = os.path.join(symbol_directory, "SP500_companyNames.txt")
+        with open(companyName_file, "w") as f:
+            for i in range(len(symbolList)):
+                f.write(symbolList[i] + ";" + companyNamesList[i] + "\n")
         print("... wrote SP500_companyNames.txt")
 
         ### -----------------
-        ### end of revised code
+        ### end of enhanced code
         ### -----------------
 
     return companyNamesList, symbolList
