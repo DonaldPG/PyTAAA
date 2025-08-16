@@ -2,6 +2,8 @@ import os
 import numpy as np
 import configparser
 import json
+import re
+from typing import Tuple
 
 def from_config_file(config_filename):
     with open(config_filename, "r") as fid:
@@ -837,9 +839,11 @@ def GetIP( ):
     f = urllib.request.urlopen("http://www.canyouseeme.org/")
     html_doc = f.read().decode('utf-8')
     f.close()
-    m = re.search('(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)',html_doc)
+    m = re.search(r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
+                  r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
+                  r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
+                  r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)',html_doc)
     return m.group(0)
-
 
 def GetEdition( ):
     ######################
@@ -882,3 +886,50 @@ def GetSymbolsFile( ):
     symbols_file = os.path.join( symbol_directory, symbol_file )
 
     return symbols_file
+
+def parse_pytaaa_status(file_path: str) -> Tuple[list, list]:
+    """
+    Parse the PyTAAA_status.params file to extract date and portfolio value columns.
+
+    Args:
+        file_path (str): Path to the PyTAAA_status.params file.
+
+    Returns:
+        Tuple[list, list]: A tuple containing two lists: dates and portfolio values.
+    """
+    dates = []
+    portfolio_values = []
+
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"File not found: {file_path}")
+
+    with open(file_path, "r") as file:
+        for line in file:
+            parts = line.split()
+            if len(parts) < 4:
+                continue  # Skip lines that do not have enough columns
+            try:
+                dates.append(parts[0])
+                portfolio_values.append(float(parts[3]))
+            except ValueError as e:
+                print(f"Skipping line due to parsing error: {line.strip()}\nError: {e}")
+
+    return dates, portfolio_values
+
+def validate_model_choices(model_choices: dict) -> dict:
+    """
+    Validate the paths in the `model_choices` dictionary to ensure all required files are present.
+
+    Args:
+        model_choices (dict): A dictionary where keys are model names and values are file paths.
+
+    Returns:
+        dict: A dictionary with validation results for each model.
+    """
+    validation_results = {}
+    for model, path in model_choices.items():
+        if path:
+            validation_results[model] = os.path.exists(path)
+        else:
+            validation_results[model] = True  # Cash model has no file path
+    return validation_results

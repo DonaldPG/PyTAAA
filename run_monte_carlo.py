@@ -47,11 +47,17 @@ def print_progress(i: int, total: int, start_time: float) -> None:
     default='explore-exploit',
     help='Search strategy: explore-exploit (default, dynamic), explore (pure exploration), exploit (pure exploitation)'
 )
-def main(search: str) -> None:
+@click.option(
+    '--verbose',
+    is_flag=True,
+    help='Show detailed normalized score breakdown for each new best performance'
+)
+def main(search: str, verbose: bool) -> None:
     """Run Monte Carlo backtesting with actual or backtested portfolio values.
     
     Args:
         search: Search strategy to use for parameter exploration
+        verbose: Whether to show detailed normalized score breakdown
     """
     
     try:
@@ -98,7 +104,8 @@ def main(search: str) -> None:
             trading_frequency=trading_frequency,
             min_lookback=min_lookback,
             max_lookback=max_lookback,
-            search_mode=search
+            search_mode=search,
+            verbose=verbose
         )
         
         # Load previous state if available
@@ -137,10 +144,13 @@ def main(search: str) -> None:
         if os.path.exists(output_path):
             os.remove(output_path)
         
-        # Use the unified plotting function with custom save path
+        # Use consistent portfolio calculation for both stdout and plot
         if monte_carlo.best_portfolio_value is not None:
-            final_metrics = monte_carlo.compute_performance_metrics(monte_carlo.best_portfolio_value)
-            monte_carlo.create_monte_carlo_plot(monte_carlo.best_portfolio_value, final_metrics, output_path)
+            # Recalculate using best parameters for consistency with plot
+            best_lookbacks = monte_carlo.best_params.get('lookbacks', [50, 150, 250])
+            consistent_portfolio = monte_carlo._calculate_model_switching_portfolio(best_lookbacks)
+            final_metrics = monte_carlo.compute_performance_metrics(consistent_portfolio)
+            monte_carlo.create_monte_carlo_plot(consistent_portfolio, final_metrics, output_path)
         else:
             print("Warning: No best portfolio found to plot")
         
@@ -182,10 +192,15 @@ def main(search: str) -> None:
         print("-" * 40)
         initial_value = monte_carlo.best_portfolio_value[0]
         final_value = monte_carlo.best_portfolio_value[-1]
-        total_return = ((final_value / initial_value) - 1) * 100
+        
+        # Calculate annualized return instead of total return
+        num_days = len(monte_carlo.best_portfolio_value)
+        years = num_days / 252  # 252 trading days per year
+        annualized_return = ((final_value / initial_value) ** (1 / years) - 1) * 100
+        
         print(f"Initial Value: ${initial_value:,.2f}")
         print(f"Final Value: ${final_value:,.2f}")
-        print(f"Total Return: {total_return:.1f}%")
+        print(f"Average Annualized Gain: {annualized_return:.1f}%")
         print("-" * 40)
         print(f"Performance plot saved to: {output_path}")
         

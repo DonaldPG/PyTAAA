@@ -60,17 +60,15 @@
     "model_selection": {
         "n_lookbacks": 3,
         "performance_metrics": {
-            "gain_loss_weight": 1.0,
             "sharpe_ratio_weight": 1.0,
             "sortino_ratio_weight": 1.0,
             "max_drawdown_weight": 1.0,
             "avg_drawdown_weight": 1.0,
-            "daily_return_weight": 1.0,
-            "volatility_weight": 1.0
+            "annualized_return_weight": 1.0
         }
     },
     "monte_carlo": {
-        "max_iterations": 250,
+        "max_iterations": 125,
         "min_iterations_for_exploit": 50,
         "trading_frequency": "monthly",
         "use_daily_close_only": true,
@@ -82,5 +80,11 @@
             "actual": "PyTAAA_status.params",
             "backtested": "pyTAAAweb_backtestPortfolioValue.params"
         }
+    },
+    "recommendation_mode": {
+        "default_lookbacks": [47, 177, 178],
+        "output_format": "both",
+        "generate_plot": true,
+        "show_model_ranks": true
     }
 }
