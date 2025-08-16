@@ -44,13 +44,11 @@ def reset_interrupt():
 
 class PerformanceMetrics(NamedTuple):
     """Performance metrics for portfolio evaluation."""
-    gain_loss: float
     sharpe_ratio: float
     sortino_ratio: float
     max_drawdown: float
     avg_drawdown: float
-    daily_return: float
-    volatility: float
+    annualized_return: float
 
 try:
     import numba
@@ -78,36 +76,35 @@ def compute_rolling_max(arr: np.ndarray) -> np.ndarray:
     return result
 
 @jit(nopython=True) if HAS_NUMBA else lambda x: x
-def compute_metrics_fast(portfolio_values: np.ndarray) -> Tuple[float, float, float, float, float, float, float]:
+def compute_metrics_fast(portfolio_values: np.ndarray) -> Tuple[float, float, float, float, float]:
     """Optimized computation of performance metrics."""
     if len(portfolio_values) < 2:
-        return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+        return 0.0, 0.0, 0.0, 0.0, 0.0
     
     # Pre-allocate arrays
     n = len(portfolio_values)
-    daily_returns = np.zeros(n - 1)
     
-    # Calculate daily returns
-    for i in range(n - 1):
-        if portfolio_values[i] > 0:
-            daily_returns[i] = (portfolio_values[i + 1] / portfolio_values[i]) - 1
-    
-    # Basic metrics
-    gain_loss = ((portfolio_values[-1] / portfolio_values[0]) - 1) * 100 if portfolio_values[0] > 0 else 0.0
-    avg_daily_return = np.mean(daily_returns) * 100
-    volatility = np.std(daily_returns) * np.sqrt(252) * 100
+    # Calculate annualized return
+    start_price = portfolio_values[0]
+    end_price = portfolio_values[-1]
+    years = len(portfolio_values) / 252
+    annualized_return = (end_price / start_price) ** (1 / years) - 1
     
     # Sharpe ratio
-    sharpe = (avg_daily_return * np.sqrt(252) / volatility) if volatility > 0 else 0.0
+    daily_returns = np.diff(portfolio_values) / portfolio_values[:-1]
+    mean_return = np.mean(daily_returns)
+    std_dev_return = np.std(daily_returns)
+    std_dev_return *= np.sqrt(252) # annualize
+    # risk_free_rate = 0.02 / 252  # Convert annualized rate to daily
+    risk_free_rate = 0.0
+    sharpe = (annualized_return - risk_free_rate) / std_dev_return if std_dev_return > 0 else 0.0
+    # sharpe = (avg_daily_return * np.sqrt(252) / volatility) if volatility > 0 else 0.0
     
     # Sortino ratio
-    downside_returns = np.zeros(0)  # Initialize empty array
-    for ret in daily_returns:
-        if ret < 0:
-            downside_returns = np.append(downside_returns, ret)
-            
-    downside_vol = np.std(downside_returns) * np.sqrt(252) if len(downside_returns) > 0 else 1
-    sortino = (avg_daily_return * np.sqrt(252) / downside_vol) if downside_vol > 0 else 0.0
+    downside_returns = daily_returns[daily_returns < risk_free_rate]
+    downside_deviation = np.sqrt(np.mean(downside_returns**2)) if len(downside_returns) > 0 else 0
+    downside_deviation *= np.sqrt(252) # annualize
+    sortino = (annualized_return - risk_free_rate) / downside_deviation if downside_deviation > 0 else 1.0
     
     # Drawdown calculations
     cumulative_returns = np.zeros(len(daily_returns) + 1)
@@ -120,12 +117,13 @@ def compute_metrics_fast(portfolio_values: np.ndarray) -> Tuple[float, float, fl
     
     for i in range(len(cumulative_returns)):
         if rolling_max[i] > 0:
-            drawdowns[i] = ((cumulative_returns[i] - rolling_max[i]) / rolling_max[i]) * 100
+            drawdowns[i] = ((cumulative_returns[i] - rolling_max[i]) / rolling_max[i])
     
     max_dd = np.min(drawdowns)
     avg_dd = np.mean(drawdowns)
     
-    return gain_loss, sharpe, sortino, max_dd, avg_dd, avg_daily_return, volatility
+    # Return only 5 values: sharpe, sortino, max_dd, avg_dd, annualized_return
+    return sharpe, sortino, max_dd, avg_dd, annualized_return
 
 def compute_daily_metrics(portfolio_values: np.ndarray) -> PerformanceMetrics:
     """Compute comprehensive performance metrics for a portfolio using optimized calculations."""
@@ -157,17 +155,15 @@ def rank_models_fast(metric_values: np.ndarray) -> np.ndarray:
 def rank_models(metrics_list: List[PerformanceMetrics]) -> np.ndarray:
     """Rank models based on their performance metrics using optimized calculations."""
     n_models = len(metrics_list)
-    metric_arrays = np.zeros((7, n_models))
+    metric_arrays = np.zeros((5, n_models))  # Changed from 7 to 5 metrics
     
     for i, metrics in enumerate(metrics_list):
         metric_arrays[:, i] = [
-            metrics.gain_loss,
             metrics.sharpe_ratio,
             metrics.sortino_ratio,
-            -metrics.max_drawdown,  # Negative since higher is better
-            -metrics.avg_drawdown,  # Negative since higher is better
-            metrics.daily_return,
-            -metrics.volatility  # Negative since lower is better
+            metrics.max_drawdown,  # Negative since higher is better (less negative)
+            metrics.avg_drawdown,  # Negative since higher is better (less negative)
+            metrics.annualized_return
         ]
     
     return rank_models_fast(metric_arrays)
@@ -224,7 +220,8 @@ class MonteCarloBacktest:
         min_lookback: int = 20,
         max_lookback: int = 300,
         n_lookbacks: int = 3,
-        search_mode: str = "explore-exploit"
+        search_mode: str = "explore-exploit",
+        verbose: bool = False
     ) -> None:
         """Initialize Monte Carlo backtesting framework with permutation-invariant tracking.
         
@@ -238,6 +235,7 @@ class MonteCarloBacktest:
             max_lookback: Maximum lookback period in days
             n_lookbacks: Number of lookback periods to use
             search_mode: Search strategy - "explore-exploit" (default), "explore", or "exploit"
+            verbose: Whether to show detailed normalized score breakdown
         """
         self.iterations = iterations
         self.min_iterations_for_exploit = min_iterations_for_exploit
@@ -247,6 +245,7 @@ class MonteCarloBacktest:
         self.max_lookback = max_lookback
         self.n_lookbacks = n_lookbacks
         self.search_mode = search_mode
+        self.verbose = verbose  # Store verbose setting
         
         # Maps canonical tuple -> index in tracking arrays
         self.combination_indices: Dict[Tuple[int, ...], int] = {}
@@ -473,8 +472,10 @@ class MonteCarloBacktest:
                         portfolio_values[t] = portfolio_values[t-1] * model_return
                 
                 # Calculate performance metrics for this iteration
-                metrics = compute_daily_metrics(portfolio_values)
-                current_performance = metrics.sharpe_ratio
+                # Use consistent portfolio calculation method for both optimization and display
+                consistent_portfolio = self._calculate_model_switching_portfolio(current_lookbacks)
+                metrics_dict = self.compute_performance_metrics(consistent_portfolio)
+                current_performance = metrics_dict['normalized_score']
                 
                 # Update permutation-invariant tracking arrays
                 self._update_tracking_arrays(current_lookbacks, current_performance)
@@ -482,16 +483,15 @@ class MonteCarloBacktest:
                 # Track best performing portfolio
                 if current_performance > best_performance:
                     best_performance = current_performance
-                    self.best_portfolio_value = portfolio_values.copy()
+                    self.best_portfolio_value = consistent_portfolio.copy()  # Use consistent calculation
                     self.best_params = current_params.copy()
                     self.best_model_selections = current_selections.copy()
 
-                    # Display performance metrics
-                    metrics_dict = self.compute_performance_metrics(portfolio_values)
+                    # Display performance metrics using the same consistent calculation
                     self._print_best_parameters(metrics_dict)
 
-                    # Plot performance of the best portfolio
-                    self.plot_performance(portfolio_values, metrics_dict)
+                    # Plot performance using the same consistent portfolio
+                    self.plot_performance(consistent_portfolio, metrics_dict)
 
                 # Record model choice
                 top_models.append(current_model)
@@ -519,7 +519,7 @@ class MonteCarloBacktest:
         
         total_time = time.time() - start_time
         print(f"\nMonte Carlo simulation completed in {total_time/60:.1f} minutes")
-        print(f"Best Sharpe ratio: {best_performance:.2f}")
+        print(f"Best normalized score: {best_performance:.2f}")
         
         # Print final permutation-invariant statistics
         final_stats = self.get_permutation_statistics()
@@ -686,7 +686,7 @@ class MonteCarloBacktest:
         
         # Initialize rank storage
         models = list(self.portfolio_histories.keys())
-        all_ranks = np.zeros((len(models), 7 * len(lookbacks))) # 7 metrics × n_lookbacks
+        all_ranks = np.zeros((len(models), 5 * len(lookbacks))) # 5 metrics × n_lookbacks
         
         # Calculate metrics for each lookback period
         for i, lookback_period in enumerate(lookbacks):
@@ -711,17 +711,15 @@ class MonteCarloBacktest:
             
             # Store ranks with metric weights applied
             weights = np.array([
-                metric_weights['gain_loss_weight'],
-                metric_weights['sharpe_ratio_weight'],
-                metric_weights['sortino_ratio_weight'],
-                metric_weights['max_drawdown_weight'],
-                metric_weights['avg_drawdown_weight'],
-                metric_weights['daily_return_weight'],
-                metric_weights['volatility_weight']
+                metric_weights.get('sharpe_ratio_weight', 1.0),
+                metric_weights.get('sortino_ratio_weight', 1.0),
+                metric_weights.get('max_drawdown_weight', 1.0),
+                metric_weights.get('avg_drawdown_weight', 1.0),
+                metric_weights.get('annualized_return_weight', 1.0)
             ])
             
-            start_col = i * 7
-            all_ranks[:, start_col:start_col + 7] = period_ranks.T * weights[:, np.newaxis].T
+            start_col = i * 5  # Changed from 7 to 5
+            all_ranks[:, start_col:start_col + 5] = period_ranks.T * weights[:, np.newaxis].T
         
         # Calculate average rank across all metrics and lookbacks
         avg_ranks = np.mean(all_ranks, axis=1)
@@ -737,21 +735,62 @@ class MonteCarloBacktest:
             portfolio_values: Array of portfolio values over time
             
         Returns:
-            Dictionary containing performance metrics
+            Dictionary containing performance metrics including normalized_score
         """
+        # Check if this is a cash portfolio (constant values)
+        is_cash_portfolio = len(np.unique(portfolio_values)) == 1
+        
         metrics = compute_daily_metrics(portfolio_values)
         
-        return {
+        # Calculate basic metrics
+        basic_metrics = {
             'final_value': portfolio_values[-1],
-            'annual_return': ((portfolio_values[-1] / portfolio_values[0]) ** (252 / len(portfolio_values)) - 1) * 100,
+            'annual_return': ((portfolio_values[-1] / portfolio_values[0]) ** (252 / len(portfolio_values)) - 1),
             'sharpe_ratio': metrics.sharpe_ratio,
             'sortino_ratio': metrics.sortino_ratio,
             'max_drawdown': metrics.max_drawdown,
             'avg_drawdown': metrics.avg_drawdown
         }
+        
+        # For cash portfolios, set normalized_score to 0.0 (neutral baseline)
+        if is_cash_portfolio:
+            basic_metrics['normalized_score'] = 0.0
+        else:
+            # Define normalization parameters (excluding final_value from normalized score)
+            # Updated with more realistic standard deviations based on typical portfolio variations
+            central_values = {
+                'annual_return': .4537,
+                'sharpe_ratio': 1.44,
+                'sortino_ratio': 1.42,
+                'max_drawdown': -0.58,
+                'avg_drawdown': -0.115
+            }
+            
+            std_values = {
+                'annual_return': .074,
+                'sharpe_ratio': 0.17,   # Fixed: Changed from 0.005 to 0.05 (matches compute_performance_metrics)
+                'sortino_ratio': 0.21,
+                'max_drawdown': .069,
+                'avg_drawdown': .019
+            }
+            
+            # Calculate normalized metrics (excluding final_value)
+            normalized_metrics = {}
+            for metric_name in ['annual_return', 'sharpe_ratio', 'sortino_ratio', 'max_drawdown', 'avg_drawdown']:
+                raw_value = basic_metrics[metric_name]
+                central = central_values[metric_name]
+                std = std_values[metric_name]
+                normalized_metrics[metric_name] = (raw_value - central) / std
+            
+            # Calculate normalized average score (excluding final_value)
+            normalized_score = sum(normalized_metrics.values()) / len(normalized_metrics)
+            basic_metrics['normalized_score'] = normalized_score
+        
+        return basic_metrics
     
     def create_monte_carlo_plot(self, portfolio_values: np.ndarray, 
-                               metrics: dict, save_path: Optional[str] = None) -> None:
+                               metrics: dict, save_path: Optional[str] = None,
+                               custom_text: Optional[str] = None) -> None:
         """Create Monte Carlo optimization performance plot with model rankings.
         
         This unified function creates plots showing:
@@ -760,14 +799,26 @@ class MonteCarloBacktest:
         - Model rankings for current date and first weekday of month
         
         Args:
-            portfolio_values: Array of portfolio values over time
+            portfolio_values: Array of portfolio values over time (ignored, recalculated)
             metrics: Dictionary of performance metrics
             save_path: Optional path to save the plot (defaults to 'monte_carlo_best_performance.png')
+            custom_text: Optional custom text for upper subplot (if None, uses default text)
         """
         from calendar import monthrange
+        from datetime import date as date_type  # Import with alias to avoid conflicts
         
         if save_path is None:
             save_path = 'monte_carlo_best_performance.png'
+            
+        #############################################################################
+        # Calculate dynamic model-switching portfolio values
+        #############################################################################
+        # Use the best lookbacks to calculate the proper model-switching portfolio
+        lookbacks = self.best_params.get('lookbacks', [50, 150, 250])
+        model_switching_portfolio = self._calculate_model_switching_portfolio(lookbacks)
+        
+        # Recalculate metrics based on the model-switching portfolio
+        model_switching_metrics = self.compute_performance_metrics(model_switching_portfolio)
             
         #############################################################################
         # Create figure with subplot layout
@@ -795,8 +846,8 @@ class MonteCarloBacktest:
         
         model_to_color["cash"] = 'k'
         
-        # Plot Monte Carlo best portfolio
-        ax1.plot(date_index, portfolio_values, 
+        # Plot dynamic model-switching portfolio (the real Monte Carlo Best)
+        ax1.plot(date_index, model_switching_portfolio, 
                 'k-', linewidth=2, label='Monte Carlo Best')
         
         #############################################################################
@@ -830,147 +881,163 @@ class MonteCarloBacktest:
         ax1.tick_params(axis='x', which='major', labelsize=10, rotation=0)
         
         #############################################################################
-        # Add current date/time and lookback parameters
+        # Generate text content for upper subplot
         #############################################################################
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
-        lookbacks = self.best_params.get('lookbacks', [])
-        _lb_list = sorted(lookbacks) if isinstance(lookbacks, list) else lookbacks
-        lookback_text = f"Best parameters: lookbacks={_lb_list} days"
-        text_str = f"{current_time}\n{lookback_text}"
-        
-        #############################################################################
-        # Add model ranking information for current date and first weekday of month
-        #############################################################################
-        try:
-            # Get current date (August 2, 2025)
-            current_date = date(2025, 8, 2)
-            current_date_str = current_date.strftime("%Y-%m-%d")
+        if custom_text is not None:
+            # Use provided custom text
+            full_text = custom_text
+        else:
+            # Generate default text with current date/time and lookback parameters
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+            _lb_list = sorted(lookbacks) if isinstance(lookbacks, list) else lookbacks
+            lookback_text = f"Best parameters: lookbacks={_lb_list} days"
             
-            # Find first weekday of current month (August 2025)
-            year, month = 2025, 8
-            first_weekday = None
-            for day in range(1, monthrange(year, month)[1] + 1):
-                test_date = date(year, month, day)
-                if test_date.weekday() < 5:  # Monday=0, Friday=4
-                    first_weekday = test_date
-                    break
+            # Update text to show model-switching portfolio metrics
+            text_str = (f"{current_time}\n{lookback_text}\n"
+                       f"Model-switching portfolio:\n"
+                       f"  Final Value: ${model_switching_metrics['final_value']:,.0f}\n"
+                       f"  Annual Return: {model_switching_metrics['annual_return']*100:.1f}%\n"
+                       f"  Normalized Score: {model_switching_metrics['normalized_score']:.3f}")
             
-            if first_weekday:
-                first_weekday_str = first_weekday.strftime("%Y-%m-%d")
-            else:
-                first_weekday_str = "No weekday found"
-            
-            # Get model rankings for both dates if they exist in our data
-            ranking_text = ""
-            
-            # Find closest available date to current date
-            available_dates = [d for d in self.dates]
-            if available_dates:
-                # Find the most recent date <= current_date
-                closest_current = None
-                for d in reversed(available_dates):
-                    if d <= current_date:
-                        closest_current = d
+            #############################################################################
+            # Add model ranking information for current date and first weekday of month
+            #############################################################################
+            try:
+                # Get current date (August 2, 2025)
+                current_date = date_type(2025, 8, 2)
+                current_date_str = current_date.strftime("%Y-%m-%d")
+                
+                # Find first weekday of current month (August 2025)
+                year, month = 2025, 8
+                first_weekday = None
+                for day in range(1, monthrange(year, month)[1] + 1):
+                    test_date = date_type(year, month, day)
+                    if test_date.weekday() < 5:  # Monday=0, Friday=4
+                        first_weekday = test_date
                         break
                 
-                # Find closest date to first weekday of month
-                closest_first_weekday = None
                 if first_weekday:
+                    first_weekday_str = first_weekday.strftime("%Y-%m-%d")
+                else:
+                    first_weekday_str = "No weekday found"
+                
+                # Get model rankings for both dates if they exist in our data
+                ranking_text = ""
+                
+                # Find closest available date to current date
+                available_dates = [d for d in self.dates]
+                if available_dates:
+                    # Find the most recent date <= current_date
+                    closest_current = None
                     for d in reversed(available_dates):
-                        if d <= first_weekday:
-                            closest_first_weekday = d
+                        if d <= current_date:
+                            closest_current = d
                             break
-                
-                # Generate ranking text for current date
-                if closest_current and len(self.dates) > 1:
-                    current_idx = self.dates.index(closest_current)
-                    if current_idx > 0:
-                        try:
-                            # Get model rankings using current best lookbacks
-                            models = list(self.portfolio_histories.keys())
-                            lookback_period = max(lookbacks) if lookbacks else 60
-                            start_idx = max(0, current_idx - lookback_period)
-                            start_date = pd.Timestamp(self.dates[start_idx])
-                            end_date = pd.Timestamp(self.dates[current_idx - 1])
-                            
-                            # Calculate metrics and ranks
-                            metrics_list = []
-                            for model in models:
-                                if model == "cash":
-                                    portfolio_vals = np.ones(lookback_period) * 10000.0
-                                else:
-                                    portfolio_vals = self.portfolio_histories[model][start_date:end_date].values
-                                    if len(portfolio_vals) == 0:
+                    
+                    # Find closest date to first weekday of month
+                    closest_first_weekday = None
+                    if first_weekday:
+                        for d in reversed(available_dates):
+                            if d <= first_weekday:
+                                closest_first_weekday = d
+                                break
+                    
+                    # Generate ranking text for current date
+                    if closest_current and len(self.dates) > 1:
+                        current_idx = self.dates.index(closest_current)
+                        if current_idx > 0:
+                            try:
+                                # Get model rankings using current best lookbacks
+                                models = list(self.portfolio_histories.keys())
+                                lookback_period = max(lookbacks) if lookbacks else 60
+                                start_idx = max(0, current_idx - lookback_period)
+                                start_date = pd.Timestamp(self.dates[start_idx])
+                                end_date = pd.Timestamp(self.dates[current_idx - 1])
+                                
+                                # Calculate metrics and ranks
+                                metrics_list = []
+                                for model in models:
+                                    if model == "cash":
                                         portfolio_vals = np.ones(lookback_period) * 10000.0
+                                    else:
+                                        portfolio_vals = self.portfolio_histories[model][start_date:end_date].values
+                                        if len(portfolio_vals) == 0:
+                                            portfolio_vals = np.ones(lookback_period) * 10000.0
+                                    
+                                    model_metrics = compute_daily_metrics(portfolio_vals)
+                                    metrics_list.append(model_metrics)
                                 
-                                model_metrics = compute_daily_metrics(portfolio_vals)
-                                metrics_list.append(model_metrics)
-                            
-                            # Rank models by Sharpe ratio (primary metric)
-                            sharpe_scores = [m.sharpe_ratio for m in metrics_list]
-                            model_ranking = sorted(zip(models, sharpe_scores), key=lambda x: x[1], reverse=True)
-                            
-                            ranking_text += f"\n\nModel ranks on {closest_current.strftime('%Y-%m-%d')}:\n"
-                            for i, (model, score) in enumerate(model_ranking, 1):
-                                ranking_text += f"{i:>1}. {model:<13} {score:>7.3f}\n"
+                                # Rank models by normalized score (primary metric)
+                                normalized_scores = [self.compute_performance_metrics(portfolio_vals)['normalized_score'] 
+                                                   for portfolio_vals in [np.ones(lookback_period) * 10000.0 if model == "cash" 
+                                                                        else self.portfolio_histories[model][start_date:end_date].values 
+                                                                        for model in models]]
+                                model_ranking = sorted(zip(models, normalized_scores), key=lambda x: x[1], reverse=True)
                                 
-                        except Exception as e:
-                            ranking_text += f"\n\nModel ranks on {closest_current.strftime('%Y-%m-%d')}: [Error calculating]\n"
-                
-                # Generate ranking text for first weekday of month (if different from current)
-                if (closest_first_weekday and closest_first_weekday != closest_current and 
-                    len(self.dates) > 1):
-                    first_weekday_idx = self.dates.index(closest_first_weekday)
-                    if first_weekday_idx > 0:
-                        try:
-                            # Similar ranking calculation for first weekday
-                            models = list(self.portfolio_histories.keys())
-                            lookback_period = max(lookbacks) if lookbacks else 60
-                            start_idx = max(0, first_weekday_idx - lookback_period)
-                            start_date = pd.Timestamp(self.dates[start_idx])
-                            end_date = pd.Timestamp(self.dates[first_weekday_idx - 1])
-                            
-                            metrics_list = []
-                            for model in models:
-                                if model == "cash":
-                                    portfolio_vals = np.ones(lookback_period) * 10000.0
-                                else:
-                                    portfolio_vals = self.portfolio_histories[model][start_date:end_date].values
-                                    if len(portfolio_vals) == 0:
+                                ranking_text += f"\n\nModel ranks on {closest_current.strftime('%Y-%m-%d')}:\n"
+                                for i, (model, score) in enumerate(model_ranking, 1):
+                                    ranking_text += f"{i:>1}. {model:<13} {score:>7.3f}\n"
+                                    
+                            except Exception as e:
+                                ranking_text += f"\n\nModel ranks on {closest_current.strftime('%Y-%m-%d')}: [Error calculating]\n"
+                    
+                    # Generate ranking text for first weekday of month (if different from current)
+                    if (closest_first_weekday and closest_first_weekday != closest_current and 
+                        len(self.dates) > 1):
+                        first_weekday_idx = self.dates.index(closest_first_weekday)
+                        if first_weekday_idx > 0:
+                            try:
+                                # Similar ranking calculation for first weekday
+                                models = list(self.portfolio_histories.keys())
+                                lookback_period = max(lookbacks) if lookbacks else 60
+                                start_idx = max(0, first_weekday_idx - lookback_period)
+                                start_date = pd.Timestamp(self.dates[start_idx])
+                                end_date = pd.Timestamp(self.dates[first_weekday_idx - 1])
+                                
+                                metrics_list = []
+                                for model in models:
+                                    if model == "cash":
                                         portfolio_vals = np.ones(lookback_period) * 10000.0
+                                    else:
+                                        portfolio_vals = self.portfolio_histories[model][start_date:end_date].values
+                                        if len(portfolio_vals) == 0:
+                                            portfolio_vals = np.ones(lookback_period) * 10000.0
+                                    
+                                    model_metrics = compute_daily_metrics(portfolio_vals)
+                                    metrics_list.append(model_metrics)
                                 
-                                model_metrics = compute_daily_metrics(portfolio_vals)
-                                metrics_list.append(model_metrics)
-                            
-                            sharpe_scores = [m.sharpe_ratio for m in metrics_list]
-                            model_ranking = sorted(zip(models, sharpe_scores), key=lambda x: x[1], reverse=True)
-                            
-                            ranking_text += f"\n\nModel ranks on {closest_first_weekday.strftime('%Y-%m-%d')}:\n"
-                            for i, (model, score) in enumerate(model_ranking, 1):
-                                ranking_text += f"{i:>1}. {model:<13} {score:>7.3f}\n"
+                                normalized_scores = [self.compute_performance_metrics(portfolio_vals)['normalized_score'] 
+                                                   for portfolio_vals in [np.ones(lookback_period) * 10000.0 if model == "cash" 
+                                                                        else self.portfolio_histories[model][start_date:end_date].values 
+                                                                        for model in models]]
+                                model_ranking = sorted(zip(models, normalized_scores), key=lambda x: x[1], reverse=True)
                                 
-                        except Exception as e:
-                            ranking_text += f"\n\nModel ranks on {closest_first_weekday.strftime('%Y-%m-%d')}: [Error calculating]\n"
-            
-            # Combine all text
-            full_text = text_str + ranking_text
-            
-        except Exception as e:
-            # Fallback to original text if ranking calculation fails
-            full_text = text_str + f"\n[Model ranking unavailable: {str(e)}]"
+                                ranking_text += f"\n\nModel ranks on {closest_first_weekday.strftime('%Y-%m-%d')}:\n"
+                                for i, (model, score) in enumerate(model_ranking, 1):
+                                    ranking_text += f"{i:>1}. {model:<13} {score:>7.3f}\n"
+                                    
+                            except Exception as e:
+                                ranking_text += f"\n\nModel ranks on {closest_first_weekday.strftime('%Y-%m-%d')}: [Error calculating]\n"
+                
+                # Combine all text
+                full_text = text_str + ranking_text
+                
+            except Exception as e:
+                # Fallback to original text if ranking calculation fails
+                full_text = text_str + f"\n[Model ranking unavailable: {str(e)}]"
         
         # Position text in upper left with monospace font for proper table alignment
         ax1.text(0.02, 0.95, full_text,
                 transform=ax1.transAxes,
                 bbox=dict(facecolor='white', alpha=0.8, edgecolor='none'),
-                fontsize=8, verticalalignment='top',  # Reduced from 9 to 8
+                fontsize=7, verticalalignment='top',  # Reduced from 8 to 7
                 fontfamily='monospace')  # Use monospace font for table alignment
         
         # Add legend to main plot
         ax1.legend(loc='lower right', fontsize=8)
         
         #############################################################################
-        # Create model selection subplot (17% of space)
+        # Create model selection subplot (17% of space) showing actual switching
         #############################################################################
         ax2 = fig.add_subplot(gs[5, 0])
         
@@ -978,15 +1045,21 @@ class MonteCarloBacktest:
         unique_models = sorted(list(self.portfolio_histories.keys()))
         model_to_num = {model: i for i, model in enumerate(unique_models)}
         
-        # Get model selections over time
-        current_model = None
+        # Calculate model selections over time using the same logic as portfolio calculation
+        current_model = "cash"
         model_selections = []
-        for date_val in self.dates:
+        self.last_trade_date = None  # Reset for this calculation
+        
+        for t, date_val in enumerate(self.dates):
+            # Check if we should trade (monthly rebalancing)
             if self._should_trade(date_val):
-                current_model = self.best_model_selections.get(
-                    pd.Timestamp(date_val).strftime('%Y-%m-%d'), current_model
-                )
-            model_selections.append(current_model if current_model is not None else "cash")
+                # Select best model for this date using specified lookbacks
+                if t >= max(lookbacks):  # Ensure we have enough history
+                    current_model, _ = self._select_best_model(t, lookbacks=lookbacks)
+                else:
+                    current_model = "cash"  # Default to cash if insufficient history
+            
+            model_selections.append(current_model)
         
         # Convert to numeric values and plot
         numeric_selections = [model_to_num.get(model, -1) for model in model_selections]
@@ -1029,293 +1102,66 @@ class MonteCarloBacktest:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close()
 
-    def plot_performance(self, portfolio_values: np.ndarray, metrics: dict) -> None:
-        """Plot portfolio performance metrics and save visualization.
+    def _calculate_model_switching_portfolio(self, lookbacks: Optional[List[int]] = None) -> np.ndarray:
+        """Calculate portfolio values using dynamic model switching.
+        
+        This method simulates the model-switching strategy across all dates,
+        selecting the best model each month based on the specified lookbacks.
         
         Args:
-            portfolio_values: Array of portfolio values over time
-            metrics: Dictionary of performance metrics
-        """
-        # Use the unified plotting function
-        self.create_monte_carlo_plot(portfolio_values, metrics)
-
-    def _write_best_performance_to_csv(self, metrics: Dict[str, float]) -> None:
-        """Write best performance metrics to CSV file.
-        
-        Args:
-            metrics: Dictionary containing performance metrics
-        """
-        import csv
-        from datetime import datetime
-        import os
-
-        # Prepare data row
-        current_time = datetime.now()
-        lookbacks = self.best_params.get('lookbacks', [])
-        sorted_lookbacks = sorted(lookbacks) if isinstance(lookbacks, list) else lookbacks
-
-        # Define headers if file doesn't exist
-        headers = [
-            'date', 'time', 'final_value', 'annual_return', 'sharpe_ratio',
-            'sortino_ratio', 'max_drawdown', 'avg_drawdown'
-        ] + [f'lookback_{i+1}' for i in range(len(sorted_lookbacks))]
-
-        # Prepare row data
-        row_data = {
-            'date': current_time.strftime('%Y-%m-%d'),
-            'time': current_time.strftime('%H:%M:%S'),
-            'final_value': metrics['final_value'],
-            'annual_return': metrics['annual_return'],
-            'sharpe_ratio': metrics['sharpe_ratio'],
-            'sortino_ratio': metrics['sortino_ratio'],
-            'max_drawdown': metrics['max_drawdown'],
-            'avg_drawdown': metrics['avg_drawdown']
-        }
-        
-        # Add lookback values
-        for i, lb in enumerate(sorted_lookbacks):
-            row_data[f'lookback_{i+1}'] = lb
-
-        # Write to CSV
-        file_exists = os.path.exists(self.csv_filename)
-        with open(self.csv_filename, 'a', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=headers)
-            if not file_exists:
-                writer.writeheader()
-            writer.writerow(row_data)
-
-    def _print_best_parameters(self, metrics: Dict[str, float]) -> None:
-        """Print best parameters with sorted lookback list and write to CSV.
-        
-        Args:
-            metrics: Dictionary containing performance metrics
-        """
-        print("\n\n\nNew best portfolio return found. Performance Metrics:")
-        print(f"  Final Portfolio Value: ${int(metrics['final_value']):,}")
-        print(f"  Average Annual Return: {metrics['annual_return']:.1f}%")
-        print(f"  Sharpe Ratio: {metrics['sharpe_ratio']:.2f}")
-        print(f"  Sortino Ratio: {metrics['sortino_ratio']:.2f}")
-        print(f"  Maximum Drawdown: {metrics['max_drawdown']:.1f}%")
-        print(f"  Average Drawdown: {metrics['avg_drawdown']:.1f}%")
-        
-        # Get lookbacks and ensure it's a list before sorting
-        lookbacks = self.best_params.get('lookbacks', [])
-        sorted_lookbacks = sorted(lookbacks) if isinstance(lookbacks, list) else lookbacks
-        print(f"  Best parameters: lookbacks={sorted_lookbacks} days")
-
-        # Write metrics to CSV
-        self._write_best_performance_to_csv(metrics)
-
-    def _get_canonical_lookbacks(self, lookbacks: List[int]) -> Tuple[int, ...]:
-        """Convert lookbacks to canonical (sorted) form.
-        
-        Args:
-            lookbacks: List of lookback periods
-            
-        Returns:
-            Tuple of sorted lookback periods
-        """
-        return tuple(sorted(lookbacks))
-        
-    def _get_combination_index(self, canonical: Tuple[int, ...]) -> int:
-        """Get or create index for a canonical combination.
-        
-        Args:
-            canonical: Tuple of sorted lookback periods
-            
-        Returns:
-            Index for tracking arrays
-        """
-        if canonical not in self.combination_indices:
-            idx = len(self.combination_indices)
-            self.combination_indices[canonical] = idx
-            self.canonical_performance_scores.append(0.0)
-            self.canonical_visit_counts.append(0)
-            self.logger.info(f"New canonical combination: {canonical} -> index {idx}")
-        return self.combination_indices[canonical]
-    
-    def _update_tracking_arrays(self, lookbacks: List[int], score: float) -> None:
-        """Update performance tracking for a lookback combination.
-        
-        Args:
-            lookbacks: List of lookback periods (any order)
-            score: Performance score to record
-        """
-        canonical = self._get_canonical_lookbacks(lookbacks)
-        idx = self._get_combination_index(canonical)
-        
-        # Update tracking arrays
-        self.canonical_visit_counts[idx] += 1
-        old_score = self.canonical_performance_scores[idx]
-        n = self.canonical_visit_counts[idx]
-        
-        # Running average update
-        self.canonical_performance_scores[idx] = old_score + (score - old_score) / n
-        
-        self.logger.debug(f"Updated canonical {canonical}: score={score:.4f}, "
-                         f"avg_score={self.canonical_performance_scores[idx]:.4f}, visits={n}")
-        
-    def _get_random_lookbacks_exploration(self) -> List[int]:
-        """Generate random lookbacks for exploration strategy.
+            lookbacks: Lookback periods to use for model selection. 
+                      If None, uses best_params lookbacks.
         
         Returns:
-            List of random lookback periods
+            Array of portfolio values over time using model switching
         """
-        lookbacks = []
-        for _ in range(self.n_lookbacks):
-            lookback = random.randint(self.min_lookback, self.max_lookback)
-            lookbacks.append(lookback)
+        if lookbacks is None:
+            lookbacks = self.best_params.get('lookbacks', [50, 150, 250])
         
-        # Return sorted to maintain canonical form
-        return sorted(lookbacks)
-    
-    def _get_random_lookbacks_exploitation(self) -> List[int]:
-        """Generate lookbacks using exploitation strategy (UCB1).
+        if not lookbacks:
+            # Fallback to a reasonable default
+            lookbacks = [50, 150, 250]
         
-        Returns:
-            List of lookback periods based on UCB1 selection
-        """
-        if not self.canonical_visit_counts:
-            # Fallback to exploration if no data yet
-            return self._get_random_lookbacks_exploration()
+        n_dates = len(self.dates)
+        portfolio_values = np.zeros(n_dates)
+        portfolio_values[0] = 10000.0
+        current_model = "cash"
+        
+        # Reset trading state for this calculation
+        self.last_trade_date = None
+        
+        # Simulate trading through all dates
+        for t in range(1, n_dates):
+            date_val = self.dates[t]
+            prev_date_val = self.dates[t-1]
             
-        total_visits = sum(self.canonical_visit_counts)
-        if total_visits == 0:
-            return self._get_random_lookbacks_exploration()
+            # Convert date objects to pandas Timestamps for indexing
+            date = pd.Timestamp(date_val)
+            prev_date = pd.Timestamp(prev_date_val)
             
-        # Calculate UCB1 scores for each canonical combination
-        ucb_scores = []
-        exploration_weight = 1.0  # Can be made configurable
-        
-        for canonical, idx in self.combination_indices.items():
-            exploitation = self.canonical_performance_scores[idx]
-            exploration = exploration_weight * math.sqrt(
-                2 * math.log(total_visits) / max(1, self.canonical_visit_counts[idx])
-            )
-            ucb_score = exploitation + exploration
-            ucb_scores.append((ucb_score, canonical))
+            # Check if we should trade (monthly rebalancing)
+            if self._should_trade(date_val):
+                # Select best model for this date using specified lookbacks
+                if t >= max(lookbacks):  # Ensure we have enough history
+                    current_model, _ = self._select_best_model(t, lookbacks=lookbacks)
+                else:
+                    current_model = "cash"  # Default to cash if insufficient history
             
-        # Select best combination
-        if ucb_scores:
-            _, best_canonical = max(ucb_scores)
-            self.logger.debug(f"UCB1 selected canonical combination: {best_canonical}")
-            return list(best_canonical)
-        else:
-            return self._get_random_lookbacks_exploration()
-
-    def _calculate_theoretical_combinations(self) -> int:
-        """Calculate theoretical number of unique combinations possible.
+            # Update portfolio value based on current model
+            if current_model == "cash":
+                portfolio_values[t] = portfolio_values[t-1]
+            else:
+                try:
+                    model_return = (
+                        self.portfolio_histories[current_model][date] /
+                        self.portfolio_histories[current_model][prev_date]
+                    )
+                    portfolio_values[t] = portfolio_values[t-1] * model_return
+                except (KeyError, ZeroDivisionError):
+                    # Fallback to cash if model data is unavailable
+                    portfolio_values[t] = portfolio_values[t-1]
         
-        For n_lookbacks lookback periods chosen from min_lookback to max_lookback,
-        this calculates the number of unique sorted combinations possible.
-        
-        Returns:
-            Number of theoretical combinations
-        """
-        # Range of possible lookback values
-        range_size = self.max_lookback - self.min_lookback + 1
-        
-        # Calculate combinations with replacement (since lookbacks can be repeated)
-        # Formula: C(n + r - 1, r) where n = range_size, r = n_lookbacks
-        # This is equivalent to choosing n_lookbacks items from range_size options with replacement
-        from math import comb
-        try:
-            theoretical = comb(range_size + self.n_lookbacks - 1, self.n_lookbacks)
-        except (ValueError, OverflowError):
-            # Fallback for very large numbers or edge cases
-            theoretical = range_size ** self.n_lookbacks
-            
-        self.logger.debug(f"Theoretical combinations: {theoretical} "
-                         f"(range_size={range_size}, n_lookbacks={self.n_lookbacks})")
-        return theoretical
-
-    def select_lookbacks(self, exploration_weight: float = 1.0) -> List[int]:
-        """Select next lookback combination using UCB1 algorithm.
-        
-        Args:
-            exploration_weight: Weight for exploration term in UCB1
-            
-        Returns:
-            List of lookback periods to try next
-        """
-        total_visits = sum(self.canonical_visit_counts) if self.canonical_visit_counts else 0
-        if total_visits == 0:
-            # Start with evenly spaced lookbacks
-            lookbacks = [
-                self.min_lookback + 
-                i * (self.max_lookback - self.min_lookback) // (self.n_lookbacks - 1)
-                for i in range(self.n_lookbacks)
-            ]
-            return sorted(lookbacks)
-            
-        # Calculate UCB scores for each canonical combination
-        ucb_scores = []
-        for canonical, idx in self.combination_indices.items():
-            exploitation = self.canonical_performance_scores[idx]
-            exploration = exploration_weight * math.sqrt(
-                2 * math.log(total_visits) / max(1, self.canonical_visit_counts[idx])
-            )
-            ucb_scores.append((exploitation + exploration, canonical))
-            
-        # Select best combination
-        if ucb_scores:
-            _, best_canonical = max(ucb_scores)
-            return list(best_canonical)
-        else:
-            return self._get_random_lookbacks_exploration()
-
-    def get_permutation_statistics(self) -> Dict[str, Any]:
-        """Get statistics about permutation-invariant tracking efficiency.
-        
-        Returns:
-            Dictionary with tracking statistics
-        """
-        total_combinations = len(self.combination_indices)
-        total_visits = sum(self.canonical_visit_counts) if self.canonical_visit_counts else 0
-        
-        if total_combinations == 0:
-            return {
-                'total_canonical_combinations': 0,
-                'total_visits': 0,
-                'average_visits_per_combination': 0.0,
-                'most_visited_combination': None,
-                'best_performing_combination': None,
-                'efficiency_improvement': 'N/A - no data yet'
-            }
-        
-        # Find most visited and best performing combinations
-        max_visits_idx = np.argmax(self.canonical_visit_counts)
-        best_score_idx = np.argmax(self.canonical_performance_scores)
-        
-        most_visited_combination = None
-        best_performing_combination = None
-        
-        for canonical, idx in self.combination_indices.items():
-            if idx == max_visits_idx:
-                most_visited_combination = {
-                    'lookbacks': canonical,
-                    'visits': self.canonical_visit_counts[idx]
-                }
-            if idx == best_score_idx:
-                best_performing_combination = {
-                    'lookbacks': canonical,
-                    'score': self.canonical_performance_scores[idx],
-                    'visits': self.canonical_visit_counts[idx]
-                }
-        
-        # Calculate efficiency improvement factor
-        efficiency_improvement_factor = (
-            self._calculate_theoretical_combinations() / total_combinations
-        ) if total_combinations > 0 else float('inf')
-        
-        return {
-            'total_canonical_combinations': total_combinations,
-            'total_visits': total_visits,
-            'average_visits_per_combination': total_visits / total_combinations if total_combinations > 0 else 0.0,
-            'most_visited_combination': most_visited_combination,
-            'best_performing_combination': best_performing_combination,
-            'efficiency_improvement_factor': efficiency_improvement_factor
-        }
+        return portfolio_values
 
     def save_state(self, filename: str = "monte_carlo_state.pkl") -> None:
         """Save current Monte Carlo state to pickle file.
@@ -1411,3 +1257,482 @@ class MonteCarloBacktest:
         self.canonical_visit_counts.clear()
         self.equivalent_combinations_found = 0
         self.logger.info("State cleared")
+    
+    def _update_tracking_arrays(self, lookbacks: List[int], performance: float) -> None:
+        """Update tracking arrays for permutation-invariant exploration/exploitation.
+        
+        Args:
+            lookbacks: List of lookback periods used in this iteration
+            performance: Performance score achieved with these lookbacks
+        """
+        # Convert to canonical (sorted) form
+        canonical = self._get_canonical_lookbacks(lookbacks)
+        
+        if canonical in self.combination_indices:
+            # Update existing combination
+            idx = self.combination_indices[canonical]
+            self.canonical_visit_counts[idx] += 1
+            # Update performance with exponential moving average
+            alpha = 0.1  # Learning rate
+            self.canonical_performance_scores[idx] = (
+                (1 - alpha) * self.canonical_performance_scores[idx] + 
+                alpha * performance
+            )
+        else:
+            # Add new combination
+            idx = len(self.canonical_performance_scores)
+            self.combination_indices[canonical] = idx
+            self.canonical_performance_scores.append(performance)
+            self.canonical_visit_counts.append(1)
+
+    def _get_canonical_lookbacks(self, lookbacks: List[int]) -> Tuple[int, ...]:
+        """Convert lookbacks to canonical (sorted) tuple form."""
+        return tuple(sorted(lookbacks))
+
+    def _get_random_lookbacks_exploration(self) -> List[int]:
+        """Generate random lookbacks for exploration."""
+        lookbacks = []
+        for _ in range(self.n_lookbacks):
+            lookback = random.randint(self.min_lookback, self.max_lookback)
+            lookbacks.append(lookback)
+        return sorted(lookbacks)
+
+    def _get_random_lookbacks_exploitation(self) -> List[int]:
+        """Generate lookbacks using Upper Confidence Bound (UCB1) for exploitation."""
+        if not self.canonical_performance_scores:
+            return self._get_random_lookbacks_exploration()
+        
+        # Calculate UCB1 scores for all combinations
+        total_visits = sum(self.canonical_visit_counts)
+        ucb_scores = []
+        
+        for i, (score, visits) in enumerate(zip(self.canonical_performance_scores, self.canonical_visit_counts)):
+            if visits == 0:
+                ucb_score = float('inf')
+            else:
+                exploration_bonus = math.sqrt(2 * math.log(total_visits) / visits)
+                ucb_score = score + exploration_bonus
+            ucb_scores.append(ucb_score)
+        
+        # Select combination with highest UCB1 score
+        best_idx = np.argmax(ucb_scores)
+        canonical_combo = list(self.combination_indices.keys())[best_idx]
+        
+        # Convert back to list and add some noise
+        lookbacks = list(canonical_combo)
+        
+        # Add small amount of noise to avoid exact repetition
+        noise_scale = 0.1
+        for i in range(len(lookbacks)):
+            noise = random.uniform(-noise_scale * lookbacks[i], noise_scale * lookbacks[i])
+            lookbacks[i] = int(max(self.min_lookback, min(self.max_lookback, lookbacks[i] + noise)))
+        
+        return sorted(lookbacks)
+
+    def _log_best_parameters_to_csv(self, metrics: Dict[str, float]) -> None:
+        """Log best performing parameters to CSV file with timestamp.
+        
+        Args:
+            metrics: Dictionary containing performance metrics
+        """
+        import csv
+        import os
+        from datetime import datetime
+        
+        # Define CSV file path in root folder
+        csv_filename = "abacus_best_performers.csv"
+        csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), csv_filename)
+        
+        # Check if file exists to determine if header is needed
+        file_exists = os.path.exists(csv_path)
+        
+        # Get lookback periods and sort them
+        lookbacks = self.best_params.get('lookbacks', [])
+        sorted_lookbacks = sorted(lookbacks)
+        
+        # Pad lookbacks to ensure we have exactly 3 values
+        while len(sorted_lookbacks) < 3:
+            sorted_lookbacks.append(0)
+        
+        # Prepare data row
+        current_time = datetime.now()
+        row_data = {
+            'Date': current_time.strftime('%Y-%m-%d'),
+            'Time': current_time.strftime('%H:%M:%S'),
+            'Final Value': f"${metrics['final_value']:,.0f}",
+            'Annual Return': f"{metrics['annual_return']*100:.2f}%",
+            'Sharpe Ratio': f"{metrics['sharpe_ratio']:.5f}",
+            'Sortino Ratio': f"{metrics['sortino_ratio']:.3f}",
+            'Max Drawdown': f"{metrics['max_drawdown']*100:.2f}%",
+            'Avg Drawdown': f"{metrics['avg_drawdown']*100:.2f}%",
+            'Normalized Score': f"{metrics['normalized_score']:.3f}",
+            'Lookback Period 1': sorted_lookbacks[0],
+            'Lookback Period 2': sorted_lookbacks[1],
+            'Lookback Period 3': sorted_lookbacks[2]
+        }
+        
+        try:
+            # Write to CSV file
+            with open(csv_path, 'a', newline='', encoding='utf-8') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=row_data.keys())
+                
+                # Write header if file is new
+                if not file_exists:
+                    writer.writeheader()
+                
+                # Write data row
+                writer.writerow(row_data)
+                
+            print(f"Best parameters logged to: {csv_filename}")
+            
+        except Exception as e:
+            logger.error(f"Failed to write to CSV file {csv_path}: {str(e)}")
+            print(f"Warning: Could not log to CSV file: {str(e)}")
+
+    def debug_normalized_score(self, metrics: Dict[str, float]) -> None:
+        """Debug function to show individual normalized values for each statistic.
+        
+        Args:
+            metrics: Dictionary containing performance metrics
+        """
+        # Define normalization parameters (same as in compute_performance_metrics)
+        # central_values = {
+        #     'annual_return': 52.5,
+        #     'sharpe_ratio': 0.0,
+        #     'sortino_ratio': 0.0,
+        #     'max_drawdown': -60.3,
+        #     'avg_drawdown': -10.7
+        # }
+        
+        # std_values = {
+        #     'annual_return': 3.48,
+        #     'sharpe_ratio': 1.0,   # Fixed: Changed from 0.005 to 0.05 (matches compute_performance_metrics)
+        #     'sortino_ratio': 1.0,
+        #     'max_drawdown': 6.98,
+        #     'avg_drawdown': 1.42
+        # }
+        central_values = {
+            'annual_return': .4537,
+            'sharpe_ratio': 1.44,
+            'sortino_ratio': 1.42,
+            'max_drawdown': -0.58,
+            'avg_drawdown': -0.115
+        }
+        
+        std_values = {
+            'annual_return': .074,
+            'sharpe_ratio': 0.17,   # Fixed: Changed from 0.005 to 0.05 (matches compute_performance_metrics)
+            'sortino_ratio': 0.21,
+            'max_drawdown': .069,
+            'avg_drawdown': .019
+        }
+        print(f"\n" + "="*70)
+        print(f"NORMALIZED SCORE BREAKDOWN")
+        print(f"="*70)
+        print(f"Raw Values and Individual Normalized Scores:")
+        print(f"")
+        
+        total_normalized = 0.0
+        count = 0
+        
+        for metric_name in ['annual_return', 'sharpe_ratio', 'sortino_ratio', 'max_drawdown', 'avg_drawdown']:
+            raw_value = metrics[metric_name]
+            central = central_values[metric_name]
+            std = std_values[metric_name]
+            normalized = (raw_value - central) / std
+            total_normalized += normalized
+            count += 1
+            
+            print(f"{metric_name.replace('_', ' ').title():<15}: "
+                  f"Raw = {raw_value:>8.2f}, "
+                  f"Central = {central:>8.2f}, "
+                  f"Std = {std:>6.2f}, "
+                  f"Normalized = {normalized:>8.3f}")
+        
+        calculated_avg = total_normalized / count
+        
+        print(f"")
+        print(f"Sum of normalized values: {total_normalized:.3f}")
+        print(f"Count of metrics: {count}")
+        print(f"Calculated average: {calculated_avg:.3f}")
+        print(f"Reported normalized score: {metrics['normalized_score']:.3f}")
+        print(f"Difference: {abs(calculated_avg - metrics['normalized_score']):.6f}")
+        print(f"="*70)
+
+    def _print_best_parameters(self, metrics: Dict[str, float]) -> None:
+        """Print information about the best performing parameters found so far."""
+        lookbacks = self.best_params.get('lookbacks', [])
+        print(f"\n" + "="*50)
+        print(f"NEW BEST PERFORMANCE FOUND!")
+        print(f"="*50)
+        print(f"Final Value: ${metrics['final_value']:,.0f}")  # Added comma formatting
+        print(f"Annual Return: {metrics['annual_return']*100:.2f}%")
+        print(f"Sharpe Ratio: {metrics['sharpe_ratio']:.5f}")
+        print(f"Sortino Ratio: {metrics['sortino_ratio']:.3f}")
+        print(f"Max Drawdown: {metrics['max_drawdown']*100:.1f}%")
+        print(f"Avg Drawdown: {metrics['avg_drawdown']*100:.1f}%")
+        print(f"Normalized Score: {metrics['normalized_score']:.3f}")
+        print(f"Lookback periods: {sorted(lookbacks)} days")
+        print(f"="*50)
+        
+        # Only show debug breakdown if verbose mode is enabled
+        if self.verbose:
+            self.debug_normalized_score(metrics)
+        
+        # Log to CSV file
+        self._log_best_parameters_to_csv(metrics)
+
+    def plot_performance(self, portfolio_values: np.ndarray, metrics: Dict[str, float]) -> None:
+        """Create a plot of the current best performance."""
+        # Use the unified plotting function
+        self.create_monte_carlo_plot(portfolio_values, metrics)
+
+    def get_permutation_statistics(self) -> Dict[str, Any]:
+        """Get statistics about the permutation-invariant exploration/exploitation."""
+        if not self.canonical_performance_scores:
+            return {
+                'total_canonical_combinations': 0,
+                'total_visits': 0,
+                'average_visits_per_combination': 0.0,
+                'efficiency_improvement_factor': 1.0,
+                'best_performing_combination': None
+            }
+        
+        total_combinations = len(self.canonical_performance_scores)
+        total_visits = sum(self.canonical_visit_counts)
+        avg_visits = total_visits / total_combinations if total_combinations > 0 else 0.0
+        
+        # Calculate theoretical efficiency improvement
+        # This is the factor by which we've reduced the search space through permutation invariance
+        total_possible_permutations = math.factorial(self.n_lookbacks) if self.n_lookbacks <= 10 else float('inf')
+        efficiency_factor = total_possible_permutations / max(1, total_combinations)
+        
+        # Find best performing combination
+        best_combination = None
+        if self.canonical_performance_scores:
+            best_idx = np.argmax(self.canonical_performance_scores)
+            best_lookbacks = list(self.combination_indices.keys())[best_idx]
+            best_combination = {
+                'lookbacks': list(best_lookbacks),
+                'score': self.canonical_performance_scores[best_idx],
+                'visits': self.canonical_visit_counts[best_idx]
+            }
+        print(f"best_combination: {best_combination}")
+        return {
+            'total_canonical_combinations': total_combinations,
+            'total_visits': total_visits,
+            'average_visits_per_combination': avg_visits,
+            'efficiency_improvement_factor': efficiency_factor,
+            'best_performing_combination': best_combination
+        }
+
+    def create_monthly_performance_analysis(self, save_path: Optional[str] = None) -> None:
+        """Create monthly performance analysis plot with normalized scores.
+        
+        This function analyzes performance metrics on the first day of every month
+        and creates a dual subplot visualization showing:
+        - Upper subplot: Portfolio values over time for all models
+        - Lower subplot: Monthly normalized scores for non-cash models
+        
+        Args:
+            save_path: Optional path to save the plot (defaults to 'monthly_performance_analysis.png')
+        """
+        import matplotlib.pyplot as plt
+        import matplotlib.dates as mdates
+        import matplotlib.ticker as mticker
+        import pandas as pd
+        from calendar import monthrange
+        from datetime import date as date_type
+        
+        if save_path is None:
+            save_path = 'monthly_performance_analysis.png'
+            
+        print("Generating monthly performance analysis...")
+        
+        #############################################################################
+        # Find first day of each month in the date range
+        #############################################################################
+        monthly_dates = []
+        monthly_indices = []
+        
+        # Convert dates to proper format for analysis
+        date_objects = []
+        for d in self.dates:
+            if isinstance(d, date_type):
+                date_objects.append(d)
+            else:
+                date_objects.append(pd.to_datetime(d).date())
+        
+        # Find first trading day of each month
+        current_month = None
+        for i, date_obj in enumerate(date_objects):
+            if current_month != (date_obj.year, date_obj.month):
+                current_month = (date_obj.year, date_obj.month)
+                monthly_dates.append(date_obj)
+                monthly_indices.append(i)
+        
+        print(f"Found {len(monthly_dates)} monthly analysis points")
+        
+        #############################################################################
+        # Compute performance metrics for each model on monthly dates
+        #############################################################################
+        models = list(self.portfolio_histories.keys())
+        non_cash_models = [m for m in models if m != "cash"]
+        
+        # Initialize arrays for normalized scores
+        monthly_scores = {model: [] for model in non_cash_models}
+        monthly_date_objects = []
+        
+        # Use 60-day lookback for monthly analysis
+        lookback_period = 60
+        
+        for date_obj, date_idx in zip(monthly_dates, monthly_indices):
+            # Skip if insufficient history
+            if date_idx < lookback_period:
+                continue
+            
+            monthly_date_objects.append(date_obj)
+            
+            # Calculate metrics for each non-cash model
+            for model in non_cash_models:
+                start_idx = max(0, date_idx - lookback_period)
+                start_date = pd.Timestamp(self.dates[start_idx])
+                end_date = pd.Timestamp(self.dates[date_idx - 1])
+                
+                # Get portfolio values for the lookback period
+                portfolio_vals = self.portfolio_histories[model][start_date:end_date].values
+                
+                if len(portfolio_vals) == 0:
+                    # Fallback to constant values if no data
+                    portfolio_vals = np.ones(lookback_period) * 10000.0
+                
+                # Compute performance metrics
+                metrics = self.compute_performance_metrics(portfolio_vals)
+                monthly_scores[model].append(metrics['normalized_score'])
+        
+        print(f"Computed metrics for {len(monthly_date_objects)} monthly points")
+        
+        #############################################################################
+        # Create figure with subplot layout matching create_monte_carlo_plot
+        #############################################################################
+        fig = plt.figure(figsize=(12, 8))
+        gs = plt.GridSpec(6, 1)
+        
+        # Upper subplot for portfolio values (75% of space)
+        ax1 = fig.add_subplot(gs[0:4, 0])
+        
+        # Lower subplot for normalized scores (25% of space)
+        ax2 = fig.add_subplot(gs[4:6, 0])
+        
+        #############################################################################
+        # Plot portfolio values (upper subplot)
+        #############################################################################
+        colors = ['b', 'r', 'g', 'c', 'm']
+        model_to_color = {}
+        date_index = pd.DatetimeIndex(self.dates)
+        
+        # Plot historical values for each model
+        for (model, values), color in zip(self.portfolio_histories.items(), colors):
+            if model != "cash":
+                model_to_color[model] = color
+                start_value = values.iloc[0]
+                normalized_values = values * (10000.0 / start_value)
+                ax1.plot(date_index, normalized_values,
+                        color=color, alpha=0.7, label=f"{model}",
+                        linewidth=1.5)
+        
+        # Configure upper subplot styling
+        ax1.set_yscale('log')
+        ax1.grid(True, which='major', alpha=0.4, linewidth=0.8)
+        ax1.grid(True, which='minor', alpha=0.2, linewidth=0.5)
+        ax1.minorticks_on()
+        
+        # Configure date formatting - 5 year major, 1 year minor
+        ax1.xaxis.set_major_locator(mdates.YearLocator(5))
+        ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+        ax1.xaxis.set_minor_locator(mdates.YearLocator(1))
+        
+        ax1.set_title('Monthly Performance Analysis: Portfolio Values and Normalized Scores', 
+                     pad=20, fontsize=14)
+        ax1.set_xlabel('')  # Remove x-label from upper plot
+        ax1.set_ylabel('Portfolio Value ($)', fontsize=10)
+        
+        # Format y-axis
+        ax1.yaxis.set_major_formatter(
+            mticker.FuncFormatter(lambda x, _: f'${int(x):,}')
+        )
+        ax1.tick_params(axis='y', which='major', labelsize=8)
+        ax1.tick_params(axis='y', which='minor', labelsize=6)
+        ax1.tick_params(axis='x', which='major', labelsize=10, rotation=0)
+        
+        # Add legend
+        ax1.legend(loc='lower right', fontsize=8)
+        
+        #############################################################################
+        # Plot normalized scores (lower subplot)
+        #############################################################################
+        monthly_pd_dates = pd.DatetimeIndex(monthly_date_objects)
+        
+        # Plot normalized scores for each non-cash model
+        for model in non_cash_models:
+            if model in model_to_color and len(monthly_scores[model]) > 0:
+                ax2.plot(monthly_pd_dates, monthly_scores[model],
+                        color=model_to_color[model], marker='o', markersize=3,
+                        linewidth=1.5, alpha=0.8, label=f"{model}")
+        
+        # Configure lower subplot styling to match upper subplot
+        ax2.grid(True, which='major', alpha=0.4, linewidth=0.8)
+        ax2.grid(True, which='minor', alpha=0.2, linewidth=0.5)
+        ax2.minorticks_on()
+        
+        # Configure date formatting to match upper subplot
+        ax2.xaxis.set_major_locator(mdates.YearLocator(5))
+        ax2.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+        ax2.xaxis.set_minor_locator(mdates.YearLocator(1))
+        
+        # Set labels
+        ax2.set_xlabel('Date', fontsize=10)
+        ax2.set_ylabel('Normalized Score', fontsize=10)
+        
+        # Configure tick labels
+        ax2.tick_params(axis='y', which='major', labelsize=8)
+        ax2.tick_params(axis='y', which='minor', labelsize=6)
+        ax2.tick_params(axis='x', which='major', labelsize=10, rotation=0)
+        
+        # Add horizontal line at zero for reference
+        ax2.axhline(y=0, color='k', linestyle='--', alpha=0.3, linewidth=1)
+        
+        # Add legend
+        ax2.legend(loc='upper right', fontsize=7)
+        
+        #############################################################################
+        # Add summary text overlay
+        #############################################################################
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+        summary_text = (f"{current_time}\n"
+                       f"Monthly Performance Analysis\n"
+                       f"Lookback period: {lookback_period} days\n"
+                       f"Analysis points: {len(monthly_date_objects)} months\n"
+                       f"Models analyzed: {len(non_cash_models)} non-cash models")
+        
+        # Position text in upper left of upper subplot
+        ax1.text(0.02, 0.95, summary_text,
+                transform=ax1.transAxes,
+                bbox=dict(facecolor='white', alpha=0.8, edgecolor='none'),
+                fontsize=7, verticalalignment='top',
+                fontfamily='monospace')
+        
+        # Adjust layout and save
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        print(f"Monthly performance analysis plot saved to: {save_path}")
+        
+        # Return summary statistics
+        return {
+            'monthly_dates': monthly_date_objects,
+            'monthly_scores': monthly_scores,
+            'analysis_points': len(monthly_date_objects),
+            'models_analyzed': non_cash_models
+        }
