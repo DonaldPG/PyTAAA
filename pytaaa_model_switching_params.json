@@ -68,13 +68,13 @@
         }
     },
     "monte_carlo": {
-        "max_iterations": 125,
+        "max_iterations": 750,
         "min_iterations_for_exploit": 50,
         "trading_frequency": "monthly",
         "use_daily_close_only": true,
         "portfolio_rebalance_day": 1,
-        "min_lookback": 10,
-        "max_lookback": 400,
+        "min_lookback": 50,
+        "max_lookback": 200,
         "data_format": "backtested",
         "data_files": {
             "actual": "PyTAAA_status.params",
@@ -82,7 +82,7 @@
         }
     },
     "recommendation_mode": {
-        "default_lookbacks": [47, 177, 178],
+        "default_lookbacks": [20, 86, 177],
         "output_format": "both",
         "generate_plot": true,
         "show_model_ranks": true

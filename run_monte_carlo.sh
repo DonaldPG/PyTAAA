@@ -18,12 +18,13 @@
 
 # Function to display usage information
 show_usage() {
-    echo "Usage: $0 <number_of_runs> [search_strategy] [--verbose]"
+    echo "Usage: $0 <number_of_runs> [search_strategy] [--verbose] [--reset]"
     echo ""
     echo "Arguments:"
     echo "  number_of_runs    Number of Monte Carlo runs to execute (required)"
     echo "  search_strategy   Search strategy: explore, exploit, or explore-exploit (optional)"
     echo "  --verbose         Show detailed normalized score breakdown (optional)"
+    echo "  --reset           Reset saved state after each run (optional)"
     echo ""
     echo "Examples:"
     echo "  $0 5                       # Run 5 times with default strategy"
@@ -31,8 +32,11 @@ show_usage() {
     echo "  $0 3 exploit --verbose    # Run 3 times with exploitation and verbose output"
     echo "  $0 7 explore-exploit      # Run 7 times with dynamic strategy"
     echo "  $0 2 --verbose            # Run 2 times with default strategy and verbose output"
+    echo "  $0 5 --reset              # Run 5 times, resetting state after each run"
+    echo "  $0 3 explore --reset      # Run 3 times with exploration, resetting after each"
     echo ""
     echo "Note: Each run builds upon the previous state for continuous optimization."
+    echo "      Use --reset to start fresh exploration from each run."
 }
 
 # Check if help is requested
@@ -49,15 +53,19 @@ if [[ $# -lt 1 || $# -gt 3 ]]; then
     exit 1
 fi
 
-# Parse arguments to handle --verbose flag in any position
+# Parse arguments to handle --verbose and --reset flags in any position
 NUM_RUNS=""
 SEARCH_STRATEGY=""
 VERBOSE_FLAG=""
+RESET_FLAG=""
 
 for arg in "$@"; do
     case "$arg" in
         --verbose)
             VERBOSE_FLAG="--verbose"
+            ;;
+        --reset)
+            RESET_FLAG="--reset"
             ;;
         explore|exploit|explore-exploit)
             SEARCH_STRATEGY="$arg"
@@ -112,6 +120,7 @@ echo "=============================================================="
 echo "Number of runs: $NUM_RUNS"
 echo "Search strategy: ${SEARCH_STRATEGY:-default (explore-exploit)}"
 echo "Verbose mode: ${VERBOSE_FLAG:-disabled}"
+echo "Reset state after each run: ${RESET_FLAG:-disabled}"
 echo "Start time: $(date)"
 echo "Working directory: $(pwd)"
 echo "=============================================================="
@@ -149,6 +158,16 @@ for ((i=1; i<=NUM_RUNS; i++)); do
         SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
         echo ""
         echo "✓ Run $i completed successfully"
+        
+        # Reset saved state if --reset flag is provided
+        if [[ -n "$RESET_FLAG" ]]; then
+            echo "Resetting saved state for next run..."
+            if uv run python modify_saved_state.py reset --no-confirm --no-backup; then
+                echo "✓ State reset completed"
+            else
+                echo "⚠ State reset failed (continuing anyway)"
+            fi
+        fi
     else
         FAILURE_COUNT=$((FAILURE_COUNT + 1))
         echo ""
