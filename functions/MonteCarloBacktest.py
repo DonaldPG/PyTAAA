@@ -210,6 +210,116 @@ def _add_noise_to_lookbacks(lookbacks, bin_width, noise_scale=1.0,
     return noisy
 
 class MonteCarloBacktest:
+    # Define normalization parameters as class constants
+    # most recent set of values
+    CENTRAL_VALUES = {
+        'annual_return': 0.46,
+        'sharpe_ratio': 1.50,
+        'sortino_ratio': 1.475,
+        'max_drawdown': -0.53,
+        'avg_drawdown': -0.105
+    }
+    STD_VALUES = {
+        'annual_return': 0.040,
+        'sharpe_ratio': 0.16,
+        'sortino_ratio': 0.030,
+        'max_drawdown': 0.053,
+        'avg_drawdown': 0.011
+    }
+
+    # # revert to 1a set of values
+    # CENTRAL_VALUES = {
+    #     'annual_return': .4537,
+    #     'sharpe_ratio': 1.44,
+    #     'sortino_ratio': 1.42,
+    #     'max_drawdown': -0.58,
+    #     'avg_drawdown': -0.115
+    # }
+    # STD_VALUES = {
+    #     'annual_return': .074,
+    #     'sharpe_ratio': 0.05,   # Fixed: Changed from 0.005 to 0.05 (matches compute_performance_metrics)
+    #     'sortino_ratio': 0.21,
+    #     'max_drawdown': .069,
+    #     'avg_drawdown': .019
+    # }
+    # # revert to 2nd set of values
+    # CENTRAL_VALUES = {
+    #     'annual_return': .4537,
+    #     'sharpe_ratio': 1.44,
+    #     'sortino_ratio': 1.42,
+    #     'max_drawdown': -0.58,
+    #     'avg_drawdown': -0.115
+    # }
+    # STD_VALUES = {
+    #     'annual_return': .074,
+    #     'sharpe_ratio': 0.17,   # Fixed: Changed from 0.005 to 0.05 (matches compute_performance_metrics)
+    #     'sortino_ratio': 0.21,
+    #     'max_drawdown': .069,
+    #     'avg_drawdown': .019
+    # }
+
+    # # revert to 3rd set of values
+    # CENTRAL_VALUES = {
+    #     'annual_return': .4145,
+    #     'sharpe_ratio': 1.365,
+    #     'sortino_ratio': 1.31,
+    #     'max_drawdown': -0.556,
+    #     'avg_drawdown': -0.120
+    # }    
+    # STD_VALUES = {
+    #     'annual_return': .044,
+    #     'sharpe_ratio': 0.135,   # Fixed: Changed from 0.005 to 0.05 (matches compute_performance_metrics)
+    #     'sortino_ratio': 0.146,
+    #     'max_drawdown': .052,
+    #     'avg_drawdown': .016
+    # }
+
+    # focus mostly on sortino ratio
+    CENTRAL_VALUES = {
+        'annual_return': 0.46,
+        'sharpe_ratio': 1.50,
+        'sortino_ratio': 1.475,
+        'max_drawdown': -0.53,
+        'avg_drawdown': -0.105
+    }
+    STD_VALUES = {
+        'annual_return': 0.040,
+        'sharpe_ratio': 0.16,
+        'sortino_ratio': 0.010,
+        'max_drawdown': 0.053,
+        'avg_drawdown': 0.011
+    }
+
+    # randomly generated values (1st pass)
+    # CENTRAL_VALUES = {
+    #     'annual_return': np.random.choice([0.415, 0.425, 0.435, 0.445, 0.455, 0.465]),
+    #     'sharpe_ratio': np.random.choice([1.35, 1.45, 1.55]),
+    #     'sortino_ratio': np.random.choice([1.30, 1.35, 1.40, 1.45]),
+    #     'max_drawdown': np.random.choice([-0.58, -0.56, -0.54, -0.52]),
+    #     'avg_drawdown': np.random.choice([-0.125, -0.120, -0.115, -0.110, -0.105])
+    # }
+    # STD_VALUES = {
+    #     'annual_return': np.random.choice([0.020, 0.030, 0.040, 0.045, 0.050, 0.060]),
+    #     'sharpe_ratio': np.random.choice([0.135, 0.150, 0.165, 0.180, 0.200]),
+    #     'sortino_ratio': np.random.choice([0.120, 0.140, 0.160, 0.180]),
+    #     'max_drawdown': np.random.choice([0.05, 0.06, 0.07]),
+    #     'avg_drawdown': np.random.choice([0.010, 0.013, 0.016, 0.019])
+    # }
+    # randomly generated values (2nd pass)
+    CENTRAL_VALUES = {
+        'annual_return': np.random.choice([0.425, 0.435, 0.445, 0.455]),
+        'sharpe_ratio': np.random.choice([1.35, 1.45]),
+        'sortino_ratio': np.random.choice([1.30, 1.35, 1.40, 1.45]),
+        'max_drawdown': np.random.choice([-0.58, -0.56, -0.54]),
+        'avg_drawdown': np.random.choice([-0.125, -0.120, -0.115, -0.110, -0.105])
+    }
+    STD_VALUES = {
+        'annual_return': np.random.choice([0.020, 0.030, 0.040, 0.045, 0.050, 0.060]),
+        'sharpe_ratio': np.random.choice([0.135, 0.150, 0.165, 0.180, 0.200]),
+        'sortino_ratio': np.random.choice([0.120, 0.140, 0.160]),
+        'max_drawdown': np.random.choice([0.05, 0.06, 0.07]),
+        'avg_drawdown': np.random.choice([0.010, 0.013, 0.016, 0.019])
+    }
     def __init__(
         self,
         model_paths: Dict[str, str],
@@ -758,21 +868,8 @@ class MonteCarloBacktest:
         else:
             # Define normalization parameters (excluding final_value from normalized score)
             # Updated with more realistic standard deviations based on typical portfolio variations
-            central_values = {
-                'annual_return': .4537,
-                'sharpe_ratio': 1.44,
-                'sortino_ratio': 1.42,
-                'max_drawdown': -0.58,
-                'avg_drawdown': -0.115
-            }
-            
-            std_values = {
-                'annual_return': .074,
-                'sharpe_ratio': 0.17,   # Fixed: Changed from 0.005 to 0.05 (matches compute_performance_metrics)
-                'sortino_ratio': 0.21,
-                'max_drawdown': .069,
-                'avg_drawdown': .019
-            }
+            central_values = self.CENTRAL_VALUES
+            std_values = self.STD_VALUES
             
             # Calculate normalized metrics (excluding final_value)
             normalized_metrics = {}
@@ -1354,6 +1451,10 @@ class MonteCarloBacktest:
         while len(sorted_lookbacks) < 3:
             sorted_lookbacks.append(0)
         
+        # Get central and std values from class constants
+        central_values = self.CENTRAL_VALUES
+        std_values = self.STD_VALUES
+        
         # Prepare data row
         current_time = datetime.now()
         row_data = {
@@ -1368,7 +1469,17 @@ class MonteCarloBacktest:
             'Normalized Score': f"{metrics['normalized_score']:.3f}",
             'Lookback Period 1': sorted_lookbacks[0],
             'Lookback Period 2': sorted_lookbacks[1],
-            'Lookback Period 3': sorted_lookbacks[2]
+            'Lookback Period 3': sorted_lookbacks[2],
+            'Central Annual Return': central_values['annual_return'],
+            'Central Sharpe Ratio': central_values['sharpe_ratio'],
+            'Central Sortino Ratio': central_values['sortino_ratio'],
+            'Central Max Drawdown': central_values['max_drawdown'],
+            'Central Avg Drawdown': central_values['avg_drawdown'],
+            'Std Annual Return': std_values['annual_return'],
+            'Std Sharpe Ratio': std_values['sharpe_ratio'],
+            'Std Sortino Ratio': std_values['sortino_ratio'],
+            'Std Max Drawdown': std_values['max_drawdown'],
+            'Std Avg Drawdown': std_values['avg_drawdown']
         }
         
         try:
@@ -1411,21 +1522,38 @@ class MonteCarloBacktest:
         #     'max_drawdown': 6.98,
         #     'avg_drawdown': 1.42
         # }
-        central_values = {
-            'annual_return': .4537,
-            'sharpe_ratio': 1.44,
-            'sortino_ratio': 1.42,
-            'max_drawdown': -0.58,
-            'avg_drawdown': -0.115
-        }
+        # central_values = {
+        #     'annual_return': .4537,
+        #     'sharpe_ratio': 1.44,
+        #     'sortino_ratio': 1.42,
+        #     'max_drawdown': -0.58,
+        #     'avg_drawdown': -0.115
+        # }
         
-        std_values = {
-            'annual_return': .074,
-            'sharpe_ratio': 0.17,   # Fixed: Changed from 0.005 to 0.05 (matches compute_performance_metrics)
-            'sortino_ratio': 0.21,
-            'max_drawdown': .069,
-            'avg_drawdown': .019
-        }
+        # std_values = {
+        #     'annual_return': .074,
+        #     'sharpe_ratio': 0.17,   # Fixed: Changed from 0.005 to 0.05 (matches compute_performance_metrics)
+        #     'sortino_ratio': 0.21,
+        #     'max_drawdown': .069,
+        #     'avg_drawdown': .019
+        # }
+        # central_values = {
+        #     'annual_return': .4145,
+        #     'sharpe_ratio': 1.365,
+        #     'sortino_ratio': 1.31,
+        #     'max_drawdown': -0.556,
+        #     'avg_drawdown': -0.120
+        # }
+        
+        # std_values = {
+        #     'annual_return': .044,
+        #     'sharpe_ratio': 0.135,   # Fixed: Changed from 0.005 to 0.05 (matches compute_performance_metrics)
+        #     'sortino_ratio': 0.146,
+        #     'max_drawdown': .052,
+        #     'avg_drawdown': .016
+        # }
+        central_values = self.CENTRAL_VALUES
+        std_values = self.STD_VALUES
         print(f"\n" + "="*70)
         print(f"NORMALIZED SCORE BREAKDOWN")
         print(f"="*70)

@@ -4,6 +4,7 @@
 1. [Background and Context](#background-and-context)
 2. [Monte Carlo Parameter Search Methodology](#monte-carlo-parameter-search-methodology)
 3. [Model-Switching Operation for Monthly Trading](#model-switching-operation-for-monthly-trading)
+4. [Usage Examples and Shell Scripts](#usage-examples-and-shell-scripts)
 
 ---
 
@@ -377,13 +378,439 @@ The `monte_carlo_state.pkl` file contains:
 
 ---
 
-## Summary
+## Usage Examples and Shell Scripts
 
-The PyTAAA Model-Switching Trading System provides a sophisticated framework for optimizing and executing algorithmic trading strategies. The two-phase approach—Monte Carlo parameter optimization followed by monthly model recommendations—enables systematic and data-driven trading decisions while maintaining the flexibility for manual oversight and risk management.
+### Shell Script Runner (`run_monte_carlo.sh`)
 
-**Key Advantages:**
-- Systematic parameter optimization using advanced algorithms
-- Monthly rebalancing frequency reduces transaction costs
-- Multiple model selection provides diversification opportunities
-- Manual oversight maintains control over trading decisions
-- Robust state management ensures continuity across sessions
+The shell script provides an automated way to run multiple Monte Carlo optimization cycles with configurable parameters and state management.
+
+#### Basic Usage Examples
+
+```bash
+# Run 5 Monte Carlo cycles with default settings
+./run_monte_carlo.sh 5
+
+# Run 10 cycles with exploration strategy
+./run_monte_carlo.sh 10 explore
+
+# Run 3 cycles with exploitation strategy and verbose output
+./run_monte_carlo.sh 3 exploit --verbose
+
+# Run 7 cycles with dynamic explore-exploit strategy
+./run_monte_carlo.sh 7 explore-exploit
+
+# Run 2 cycles with verbose output (default strategy)
+./run_monte_carlo.sh 2 --verbose
+```
+
+#### State Management Examples
+
+```bash
+# Run 5 cycles, resetting state after each run (fresh exploration)
+./run_monte_carlo.sh 5 --reset
+
+# Run 3 cycles with exploration strategy, resetting after each
+./run_monte_carlo.sh 3 explore --reset
+
+# Combine verbose mode with state reset
+./run_monte_carlo.sh 2 exploit --verbose --reset
+```
+
+#### Advanced Combinations
+
+```bash
+# Long optimization run with state persistence
+./run_monte_carlo.sh 20 explore-exploit
+
+# Statistical analysis with independent runs
+./run_monte_carlo.sh 10 explore --reset
+
+# Parameter refinement with exploitation focus
+./run_monte_carlo.sh 15 exploit --verbose
+```
+
+### Individual Script Usage
+
+#### Monte Carlo Parameter Optimization
+
+```bash
+# Basic optimization with default settings
+uv run python run_monte_carlo.py
+
+# Use specific search strategies
+uv run python run_monte_carlo.py --search explore
+uv run python run_monte_carlo.py --search exploit
+uv run python run_monte_carlo.py --search explore-exploit
+
+# Enable detailed performance breakdown
+uv run python run_monte_carlo.py --verbose
+uv run python run_monte_carlo.py --search exploit --verbose
+```
+
+#### Model Recommendation Generation
+
+```bash
+# Generate recommendations for current date
+uv run python recommend_model.py
+
+# Use specific date for analysis
+uv run python recommend_model.py --date 2025-08-15
+
+# Custom lookback periods
+uv run python recommend_model.py --lookbacks "25,50,100"
+uv run python recommend_model.py --lookbacks "60,120,240"
+
+# Use Monte Carlo optimized parameters
+uv run python recommend_model.py --lookbacks use-saved
+
+# Combine date and optimized parameters
+uv run python recommend_model.py --date 2025-08-01 --lookbacks use-saved
+```
+
+#### State Management and Debugging
+
+```bash
+# Inspect current Monte Carlo state
+uv run python modify_saved_state.py inspect
+
+# View state from custom file
+uv run python modify_saved_state.py inspect --file custom_state.pkl
+
+# Remove problematic combinations
+uv run python modify_saved_state.py remove-lookback 150
+uv run python modify_saved_state.py remove-combination 50 150 250
+
+# Reset state (with confirmation)
+uv run python modify_saved_state.py reset
+
+# Reset state without backup or confirmation (for automation)
+uv run python modify_saved_state.py reset --no-backup --no-confirm
+
+# Reset specific file without confirmation
+uv run python modify_saved_state.py reset --file custom_state.pkl --no-confirm
+```
+
+### Workflow Examples
+
+#### Weekly Optimization Workflow
+
+```bash
+#!/bin/bash
+# Weekly parameter optimization with exploration focus
+
+echo "Starting weekly Monte Carlo optimization..."
+
+# Run exploration cycles for parameter discovery
+./run_monte_carlo.sh 10 explore --verbose
+
+# Follow with exploitation cycles for refinement
+./run_monte_carlo.sh 5 exploit --verbose
+
+# Generate final recommendations
+uv run python recommend_model.py --lookbacks use-saved
+
+echo "Weekly optimization completed"
+```
+
+#### Monthly Trading Workflow
+
+```bash
+#!/bin/bash
+# Monthly trading recommendation workflow
+
+MONTH_START=$(date -d "$(date +'%Y-%m-01')" +'%Y-%m-%d')
+
+echo "Generating monthly trading recommendations..."
+
+# Update parameters with recent exploration
+./run_monte_carlo.sh 3 explore-exploit --verbose
+
+# Generate month-start recommendations
+uv run python recommend_model.py --date "$MONTH_START" --lookbacks use-saved
+
+# Generate current date recommendations for comparison
+uv run python recommend_model.py --lookbacks use-saved
+
+echo "Monthly recommendations generated"
+```
+
+#### Comparative Analysis Workflow
+
+```bash
+#!/bin/bash
+# Compare different search strategies
+
+echo "Running comparative analysis of search strategies..."
+
+# Save current state
+cp monte_carlo_state.pkl monte_carlo_state.backup.pkl
+
+# Test pure exploration (with reset)
+echo "Testing pure exploration..."
+./run_monte_carlo.sh 5 explore --reset > exploration_results.log
+
+# Test pure exploitation
+echo "Testing pure exploitation..."
+./run_monte_carlo.sh 5 exploit --reset > exploitation_results.log
+
+# Test balanced approach
+echo "Testing explore-exploit..."
+./run_monte_carlo.sh 5 explore-exploit --reset > balanced_results.log
+
+# Restore original state
+mv monte_carlo_state.backup.pkl monte_carlo_state.pkl
+
+echo "Comparative analysis completed"
+```
+
+### Configuration Examples
+
+#### High-Performance Configuration
+
+```json
+{
+  "monte_carlo": {
+    "max_iterations": 1000,
+    "min_iterations_for_exploit": 100,
+    "trading_frequency": "monthly",
+    "min_lookback": 20,
+    "max_lookback": 500,
+    "data_format": "backtested"
+  },
+  "model_selection": {
+    "n_lookbacks": 3,
+    "performance_metrics": {
+      "sharpe_ratio_weight": 2.0,
+      "sortino_ratio_weight": 2.0,
+      "max_drawdown_weight": 1.5,
+      "avg_drawdown_weight": 1.0,
+      "annualized_return_weight": 1.5
+    }
+  }
+}
+```
+
+#### Conservative Configuration
+
+```json
+{
+  "monte_carlo": {
+    "max_iterations": 250,
+    "min_iterations_for_exploit": 50,
+    "trading_frequency": "monthly",
+    "min_lookback": 30,
+    "max_lookback": 200,
+    "data_format": "backtested"
+  },
+  "model_selection": {
+    "n_lookbacks": 3,
+    "performance_metrics": {
+      "max_drawdown_weight": 2.0,
+      "avg_drawdown_weight": 1.5,
+      "sharpe_ratio_weight": 1.0,
+      "sortino_ratio_weight": 1.0,
+      "annualized_return_weight": 0.5
+    }
+  }
+}
+```
+
+### Output Examples and Interpretation
+
+#### Monte Carlo Output
+
+```
+==============================================================
+Monte Carlo Loop Runner
+==============================================================
+Number of runs: 5
+Search strategy: explore-exploit
+Verbose mode: enabled
+Reset state after each run: disabled
+Start time: Sat Aug 17 10:30:00 PDT 2025
+Working directory: /Users/donaldpg/PyProjects/worktree/PyTAAA.master
+==============================================================
+
+--------------------------------------------------------------
+Starting Monte Carlo Run 1 of 5
+Time: Sat Aug 17 10:30:05 PDT 2025
+--------------------------------------------------------------
+Executing: uv run python run_monte_carlo.py --search explore-exploit --verbose
+
+Running 250 Monte Carlo iterations...
+Using 5 models over 8729 trading days
+Press Ctrl+C to stop early with current best result
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $2,847,891
+Annual Return: 45.23%
+Sharpe Ratio: 1.8942
+Sortino Ratio: 2.156
+Max Drawdown: -38.2%
+Avg Drawdown: -8.4%
+Normalized Score: 0.847
+Lookback periods: [67, 143, 289] days
+==================================================
+
+✓ Run 1 completed successfully
+Progress: 1/5 runs completed (1 successful, 0 failed)
+```
+
+#### Recommendation Output
+
+```
+============================================================
+MODEL RECOMMENDATION RESULTS
+============================================================
+Recommendation Parameters:
+  Lookback periods: [67, 143, 289] days (from saved state)
+  Target date: 2025-08-17 (Saturday)
+  First weekday of month: 2025-08-01 (Friday)
+
+----------------------------------------
+Model ranks on 2025-08-17:
+----------------------------------------
+1. naz100_hma     1.234
+2. sp500_hma      0.987
+3. naz100_pi      0.765
+4. naz100_pine    0.543
+5. cash          0.000
+
+Recommended model: naz100_hma
+
+----------------------------------------
+Model ranks on 2025-08-01:
+----------------------------------------
+1. sp500_hma      1.456
+2. naz100_hma     1.234
+3. naz100_pi      0.876
+4. naz100_pine    0.654
+5. cash          0.000
+
+Recommended model: sp500_hma
+
+============================================================
+RECOMMENDATION SUMMARY
+============================================================
+Current date recommendation: naz100_hma (score: 1.234)
+Month start recommendation: sp500_hma (score: 1.456)
+Analysis based on optimized parameters from Monte Carlo search
+Review recommendations and manually update portfolio holdings
+============================================================
+```
+
+### Performance Monitoring
+
+#### Log File Analysis
+
+```bash
+# Monitor real-time progress
+tail -f monte_carlo_run.log
+
+# View exploitation statistics
+grep "Exploitation rate" monte_carlo_exploitation.log
+
+# Check for errors
+grep "ERROR\|WARNING" *.log
+
+# View best performance history
+grep "NEW BEST PERFORMANCE" monte_carlo_run.log
+```
+
+#### State Analysis
+
+```bash
+# View top performing combinations
+uv run python modify_saved_state.py inspect | head -20
+
+# Count total combinations explored
+uv run python modify_saved_state.py inspect | grep "Total canonical combinations"
+
+# Check efficiency improvement
+uv run python modify_saved_state.py inspect | grep "improvement factor"
+```
+
+### Troubleshooting Examples
+
+#### Common Issues and Solutions
+
+```bash
+# Issue: No previous state file
+# Solution: Initialize with exploration
+./run_monte_carlo.sh 1 explore
+
+# Issue: Corrupted state file
+# Solution: Reset state and restart
+uv run python modify_saved_state.py reset --no-backup
+./run_monte_carlo.sh 5 explore-exploit
+
+# Issue: Insufficient data for lookbacks
+# Solution: Use smaller lookback ranges
+uv run python recommend_model.py --lookbacks "20,40,80"
+
+# Issue: Memory issues with large state files
+# Solution: Clean up old combinations
+uv run python modify_saved_state.py remove-lookback 500
+```
+
+#### Data Validation
+
+```bash
+# Check data file existence and format
+for model in naz100_pine naz100_hma naz100_pi sp500_hma; do
+    file="/Users/donaldpg/pyTAAA_data/$model/data_store/pyTAAAweb_backtestPortfolioValue.params"
+    if [ -f "$file" ]; then
+        echo "$model: $(wc -l < "$file") lines"
+        head -3 "$file"
+        echo "---"
+    else
+        echo "$model: FILE MISSING"
+    fi
+done
+```
+
+### Best Practices Summary
+
+#### For Development and Testing
+
+```bash
+# Development cycle with frequent resets
+./run_monte_carlo.sh 3 explore --reset --verbose
+
+# Testing with different strategies
+for strategy in explore exploit explore-exploit; do
+    echo "Testing $strategy..."
+    ./run_monte_carlo.sh 2 $strategy --reset > "test_$strategy.log"
+done
+```
+
+#### For Production Use
+
+```bash
+# Weekly optimization (persistent state)
+./run_monte_carlo.sh 15 explore-exploit --verbose
+
+# Monthly recommendations with optimized parameters
+uv run python recommend_model.py --lookbacks use-saved
+
+# Backup state before major changes
+cp monte_carlo_state.pkl "monte_carlo_state.backup_$(date +%Y%m%d).pkl"
+```
+
+#### For Analysis and Research
+
+```bash
+# Generate independent parameter sets for comparison
+./run_monte_carlo.sh 10 explore --reset > independent_run_1.log
+./run_monte_carlo.sh 10 explore --reset > independent_run_2.log
+./run_monte_carlo.sh 10 explore --reset > independent_run_3.log
+
+# Long-term parameter evolution study
+./run_monte_carlo.sh 50 explore-exploit --verbose > evolution_study.log
+```
+
+This comprehensive set of examples covers all major usage patterns and provides practical guidance for both development and production use of the PyTAAA Model-Switching Trading System.
+
+---
