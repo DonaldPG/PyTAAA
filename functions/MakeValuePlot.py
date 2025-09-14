@@ -157,6 +157,27 @@ def makeValuePlot(json_fn):
             verticalalignment='top'
         )
 
+    #############
+    # Add abacus switch annotation if output folder includes 'abacus'
+    #############
+    if "abacus" in webpage_dir.lower():
+        abacus_switch_date = datetime.datetime(2025, 8, 1)
+        abacus_value_index = np.argmin(np.abs(sortedDailyDate-abacus_switch_date))
+        plt.plot(
+            [abacus_switch_date, abacus_switch_date],
+            [sortedDailyValue[abacus_value_index]//2., sortedDailyValue.max()],
+            'g--', lw=1.0
+        )
+        plt.text(
+            abacus_switch_date, sortedDailyValue[abacus_value_index]//2.,
+            "switch to abacus switching",
+            rotation=90,
+            horizontalalignment = 'left',
+            verticalalignment='top',
+            color='green',
+            fontsize=9
+        )
+
     plt.xlim((date[0],date[-1]+datetime.timedelta(10) ))
     plt.title("pyTAAA Value History Plot ("+edition+" edition)")
     # put text line with most recent date at bottom of plot

@@ -183,7 +183,7 @@ def writeWebPage(
         makeDailyMonteCarloBacktest,
     )
 
-    from functions.GetParams import get_json_params, get_symbols_file
+    from functions.GetParams import get_json_params, get_symbols_file, get_web_output_dir
 
     # message body preliminaries
     message = """<!DOCTYPE html>
@@ -282,28 +282,76 @@ def writeWebPage(
                                           + format(last_symbols_price[i],'7.2f')
     rankingsMessage = rankingsMessage + "<br>"
     """
+    print("... writeWebPage: current valuation table added to message ")
 
     ##########################################
     # read valuations status file and make plot
     ##########################################
     json_folder = os.path.split(json_fn)[0]
     figure_htmlText = makeValuePlot(json_fn)
-
+    message = message + figure_htmlText
 
     ##########################################
-    # write text for trading method back-test and insert plot
+    # Insert abacus model switching explanation and plot before uptrending plot
     ##########################################
-
+    
     figure2path = "PyTAAA_backtest.png"
     figure2_htmlText = "<div id='rank_table_container'>\n<br><h3>Original Monte-carlo Backtest plot</h3>\n"
     figure2_htmlText = figure2_htmlText + "\nHeavy black line is back-tested performance for model. Black shaded area shows performance with different modeling parameters.\n"
     figure2_htmlText = figure2_htmlText + "\n<br>Heavy red line is for equal-weighted basket of current Naz100 stocks. Red shaded area shows performance of individual stocks.\n"
     figure2_htmlText = figure2_htmlText + "\n<br>Lower graph shows number of up-trending stocks.\n"
     figure2_htmlText = figure2_htmlText + '''<br><img src="'''+figure2path+'''" alt="PyTAAA backtest by DonaldPG" width="850" height="500"><br><br>\n'''
+    # message = message + figure2_htmlText
+    print("... writeWebPage: backtest plot added to message ")
+
 
     figure3path = "PyTAAA_backtest_updated.png"
-    figure2_htmlText = figure2_htmlText + "\n<br><h3>Monte-carlo Backtest plot after 1 year of 'Forward Testing'</h3>\n"
-    figure2_htmlText = figure2_htmlText + '''<br><img src="'''+figure3path+'''" alt="PyTAAA backtest by DonaldPG" width="850" height="500"><br><br>\n</div>'''
+    figure3_htmlText = "\n<br><h3>Monte-carlo Backtest plot after 1 year of 'Forward Testing'</h3>\n"
+    figure3_htmlText = figure3_htmlText + '''<br><img src="'''+figure3path+'''" alt="PyTAAA backtest by DonaldPG" width="850" height="500"><br><br>\n</div>'''
+    # message = message + figure3_htmlText
+    print("... writeWebPage: backtest (updated) plot added to message ")
+
+
+    ##########################################
+    # add plot and explanation of abacus model-swithcing method
+    ##########################################
+    params = get_json_params(json_fn)
+    # webpage_dir = params.get("web_output_dir", "./pyTAAA_web")
+    webpage_dir = get_web_output_dir(json_fn)
+    rec_plot_relpath = "recommendation_plot.png"
+    rec_plot_abspath = os.path.abspath(os.path.join(webpage_dir, rec_plot_relpath))
+    print(f" ... rec_plot_abspath = {rec_plot_abspath}")
+    print(f" ... webpage_dir = {webpage_dir}")
+    print(f" ... os.path.isfile(rec_plot_abspath) = {os.path.isfile(rec_plot_abspath)}")
+
+    add_abacus_plot = False
+    if (
+        os.path.isfile(rec_plot_abspath)
+    ):
+        # Copy plot to web output dir if not already present
+        try:
+            if not os.path.isfile(os.path.join(webpage_dir, rec_plot_relpath)):
+                shutil.copy2(rec_plot_abspath, webpage_dir)
+            add_abacus_plot = True
+        except Exception as e:
+            print(f"Warning: Could not copy recommendation plot: {e}")
+            add_abacus_plot = False
+    print(f" ... add_abacus_plot = {add_abacus_plot}")
+    # Explanatory text (2-3 sentences)
+    abacus_explanation = (
+        "<br><h3>Model Switching Recommendations</h3>\n"
+        "PyTAAA's abacus model switching system dynamically selects the "
+        "best-performing trading model each month by analyzing recent performance "
+        "across multiple strategies. This approach aims to maximize returns and "
+        "manage risk by automatically adapting to changing market conditions. "
+        "The plot below shows the most recent model recommendations and their performance."\
+        "<br><img src=\"recommendation_plot.png\" alt=\"Model Switching Recommendations\" "
+        "width=\"850\" height=\"500\"><br>\n"
+    )
+
+    if add_abacus_plot:
+        message = message + abacus_explanation
+        print("... writeWebPage: abacus plot added ")
 
 
     ##########################################
@@ -311,13 +359,24 @@ def writeWebPage(
     ##########################################
 
     figure4_htmlText = makeUptrendingPlot(json_fn)
+    print("... writeWebPage: uptrending stocks status plot created ")
+    message = message + figure4_htmlText
 
+
+    ##########################################
+    # Combine plots and explanation
+    ##########################################
+    # if add_abacus_plot:
+    #     message = message + figure_htmlText + abacus_explanation + figure4_htmlText
+    # else:
+    #     message = message + figure_htmlText + figure4_htmlText
 
     ##########################################
     # read performance dispersion status file and make plot
     ##########################################
 
     figure5_htmlText = makeTrendDispersionPlot(json_fn)
+    print("... writeWebPage: performance dispersion plot created ")
 
 
     ##########################################
@@ -325,6 +384,7 @@ def writeWebPage(
     ##########################################
 
     figure5aa_htmlText = makeNewHighsAndLowsPlot(json_fn)
+    print("... writeWebPage: new highs and lows plot created ")
 
 
     ##########################################
@@ -332,6 +392,7 @@ def writeWebPage(
     ##########################################
 
     figure5a_htmlText = makeDailyChannelOffsetSignal(json_fn)
+    print("... writeWebPage: daily channel offset signal plot created ")
 
 
     ##########################################
@@ -339,6 +400,7 @@ def writeWebPage(
     ##########################################
 
     figure6_htmlText = makeDailyMonteCarloBacktest(json_fn)
+    print("... writeWebPage: monte carlo backtest plot created ")
 
     """
     ##########################################
@@ -363,7 +425,7 @@ def writeWebPage(
     except:
         print(" Error: unable to read updates from pyTAAAweb_RankList.txt")
         print("")
-
+    print("... writeWebPage: current rankings table added to message ")
 
     ##########################################
     # add table with Nasdaq100 index exchanges to message
@@ -419,7 +481,7 @@ def writeWebPage(
                                           + "</td><td>"+ticker \
                                           + "</td></tr>\n"
     indexExchangesMessage = indexExchangesMessage + "</table></div>"
-
+    print("... writeWebPage: current index exchanges table added to message ")
 
     ##########################################
     # Create an updated html page
@@ -434,15 +496,11 @@ def writeWebPage(
             f.write(figure5_htmlText)
             f.write(figure5aa_htmlText)
             f.write(figure6_htmlText)
-            """
-            try:
-                f.write(figure7_htmlText)
-            except:
-                pass
-            """
+            # f.write(figure7_htmlText)
             f.write(rankingMessage)
             f.write(indexExchangesMessage)
             f.write(figure2_htmlText)
+            f.write(figure3_htmlText)
         print(" Successfully wrote updates to pyTAAAweb html ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"))
         print("")
     except :

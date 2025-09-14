@@ -362,7 +362,6 @@ def plotRecentPerfomance3(
     for i in range(1,len(datearray)):
         #h, _ = np.histogram(np.log10(MonteCarloPortfolioValues[:,i]), bins=y_bins, density=True)
         h, _ = np.histogram(np.log10(MonteCarloPortfolioValues[:,i]), bins=y_bins, density=True)
-        h /= h.sum()
         # reverse so big numbers become small(and print out black)
         h = 1. - h
         # set range to [.5,1.]
@@ -1863,7 +1862,7 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
         # for iter==randomtrials-1, results are used for backtest plots on webpage.
         if 0 < iter < randomtrials-1 :
             print("\n\n\n")
-            print("*********************************\nUsing pyTAAApi parameters +/- 20% .....\n")
+            print("*********************************\nUsing pyTAAA parameters +/- 20% .....\n")
             params = get_json_params(json_fn)
             monthsToHold = params['monthsToHold']
             numberStocksTraded = params['numberStocksTraded']
@@ -3238,7 +3237,16 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
             holdmonthscountnorm = holdmonthscount*1.
             if holdmonthscountnorm[holdmonthscountnorm > 0].shape[0] > 0:
                 holdmonthscountnorm -= holdmonthscountnorm[holdmonthscountnorm > 0].min()
-                holdmonthscountnorm /= holdmonthscountnorm.max()
+                #############
+                # Normalize holdmonthscountnorm, avoiding division by zero warnings.
+                #############
+                max_val = holdmonthscountnorm.max()
+                holdmonthscountnorm = np.divide(
+                    holdmonthscountnorm,
+                    max_val,
+                    out=np.zeros_like(holdmonthscountnorm),
+                    where=max_val != 0
+                )
             holdmonthscountint = np.round(holdmonthscountnorm*40).astype('int')
             holdmonthscountint[np.isnan(holdmonthscountint)] =0
             for ii in range(len(holdMonths)):

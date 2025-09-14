@@ -275,12 +275,70 @@ def generate_recommendation_output(monte_carlo: MonteCarloBacktest,
     return plot_text
 
 
+def display_parameters_info(monte_carlo: MonteCarloBacktest, 
+                          lookbacks: List[int],
+                          model_switching_portfolio: np.ndarray) -> None:
+    """Display detailed parameter information to stdout.
+    
+    Args:
+        monte_carlo: Monte Carlo backtesting instance
+        lookbacks: List of lookback periods used
+        model_switching_portfolio: Portfolio values array
+    """
+    print("\n" + "="*70)
+    print("PARAMETERS SUMMARY")
+    print("="*70)
+    
+    # Display lookback periods
+    print(f"\nLookback Periods:")
+    print(f"  Values: {sorted(lookbacks)} days")
+    print(f"  Count: {len(lookbacks)} periods")
+    
+    # Display combined normalization parameters table
+    print(f"\nNormalization Parameters:")
+    print(f"  {'Metric':<18} {'Central Value':<14} {'Std Deviation':<14}")
+    print(f"  {'-'*18} {'-'*14} {'-'*14}")
+    
+    central_values = monte_carlo.CENTRAL_VALUES
+    std_values = monte_carlo.STD_VALUES
+    
+    for metric in central_values.keys():
+        central_val = central_values[metric]
+        std_val = std_values[metric]
+        
+        metric_name = metric.replace('_', ' ').title()
+        
+        if metric in ['annual_return', 'max_drawdown', 'avg_drawdown']:
+            print(f"  {metric_name:<18} {central_val:>13.1%} {std_val:>13.1%}")
+        else:
+            print(f"  {metric_name:<18} {central_val:>13.3f} {std_val:>13.3f}")
+    
+    # Display final portfolio value and key metrics
+    print(f"\nFinal Portfolio Results:")
+    final_value = model_switching_portfolio[-1]
+    initial_value = model_switching_portfolio[0]
+    
+    print(f"  Initial Value        : ${initial_value:>12,.2f}")
+    print(f"  Final Value          : ${final_value:>12,.2f}")
+    
+    # Calculate and display annualized return
+    years = len(model_switching_portfolio) / 252  # 252 trading days per year
+    if years > 0:
+        annualized_return = ((final_value / initial_value) ** (1 / years)) - 1
+        print(f"  Annualized Return    : {annualized_return:>11.1%}")
+        print(f"  Time Period          : {years:>11.1f} years")
+    
+    print("="*70)
+
+
 @click.command()
 @click.option('--date', default=None, 
               help='Specific date for recommendation (YYYY-MM-DD), defaults to today')
 @click.option('--lookbacks', default=None, 
               help='Lookback periods: comma-separated values like "25,50,100" or "use-saved" for Monte Carlo results')
-def main(date: Optional[str], lookbacks: Optional[str]) -> None:
+@click.option('--json', 'json_config_path', default=None,
+              help='Path to JSON configuration file for centralized settings')
+def main(date: Optional[str], lookbacks: Optional[str], json_config_path: Optional[str]) -> None:
     """Generate model recommendation for specified date or today.
     
     This tool generates model recommendations for manual trading decisions
@@ -292,8 +350,20 @@ def main(date: Optional[str], lookbacks: Optional[str]) -> None:
         logger.info("Starting model recommendation generation")
         print("Starting model recommendation generation...")
         
-        # Load configuration
-        config_path = 'pytaaa_model_switching_params.json'
+        # Determine configuration source and load config
+        if json_config_path:
+            print(f"Using JSON configuration: {json_config_path}")
+            config_path = json_config_path
+            # Use JSON configuration functions for centralized values
+            from functions.GetParams import get_web_output_dir, get_central_std_values
+            web_output_dir = get_web_output_dir(json_config_path)
+            normalization_values = get_central_std_values(json_config_path)
+        else:
+            # Use legacy configuration
+            config_path = 'pytaaa_model_switching_params.json'
+            web_output_dir = None
+            normalization_values = None
+            
         if not os.path.exists(config_path):
             raise FileNotFoundError(f"Configuration file not found: {config_path}")
             
@@ -326,15 +396,34 @@ def main(date: Optional[str], lookbacks: Optional[str]) -> None:
             'backtested': 'pyTAAAweb_backtestPortfolioValue.params'
         })
         
-        # Configure model paths
-        base_folder = "/Users/donaldpg/pyTAAA_data"
-        model_choices = {
-            "cash": "",
-            "naz100_pine": f"{base_folder}/naz100_pine/data_store/{data_files[data_format]}",
-            "naz100_hma": f"{base_folder}/naz100_hma/data_store/{data_files[data_format]}",
-            "naz100_pi": f"{base_folder}/naz100_pi/data_store/{data_files[data_format]}",
-            "sp500_hma": f"{base_folder}/sp500_hma/data_store/{data_files[data_format]}",
-        }
+        # Configure model paths - use JSON config if available
+        if json_config_path and 'models' in config:
+            # Use JSON configuration for model paths
+            models_config = config['models']
+            base_folder = models_config.get('base_folder', '/Users/donaldpg/pyTAAA_data')
+            model_choices = {}
+            
+            for model_name, path_template in models_config.get('model_choices', {}).items():
+                if path_template == "":  # Cash model
+                    model_choices[model_name] = ""
+                else:
+                    # Replace placeholders in path template
+                    data_file = data_files[data_format]
+                    model_path = path_template.format(
+                        base_folder=base_folder,
+                        data_file=data_file
+                    )
+                    model_choices[model_name] = model_path
+        else:
+            # Use legacy hard-coded paths
+            base_folder = "/Users/donaldpg/pyTAAA_data"
+            model_choices = {
+                "cash": "",
+                "naz100_pine": f"{base_folder}/naz100_pine/data_store/{data_files[data_format]}",
+                "naz100_hma": f"{base_folder}/naz100_hma/data_store/{data_files[data_format]}",
+                "naz100_pi": f"{base_folder}/naz100_pi/data_store/{data_files[data_format]}",
+                "sp500_hma": f"{base_folder}/sp500_hma/data_store/{data_files[data_format]}",
+            }
         
         print(f"\nInitializing model recommendation system...")
         print(f"Using {'actual' if data_format == 'actual' else 'backtested'} portfolio values")
@@ -346,8 +435,15 @@ def main(date: Optional[str], lookbacks: Optional[str]) -> None:
             trading_frequency=monte_carlo_config.get('trading_frequency', 'monthly'),
             min_lookback=monte_carlo_config.get('min_lookback', 10),
             max_lookback=monte_carlo_config.get('max_lookback', 400),
-            search_mode='exploit'  # Use exploitation for recommendations
+            search_mode='exploit',  # Use exploitation for recommendations
+            json_config=config
         )
+        
+        # Apply JSON normalization values if available by updating class constants
+        if normalization_values:
+            monte_carlo.CENTRAL_VALUES = normalization_values['central_values']
+            monte_carlo.STD_VALUES = normalization_values['std_values']
+            print(f"Applied JSON normalization values to Monte Carlo instance")
         
         # Load previous state if available for context
         state_file = "monte_carlo_state.pkl"
@@ -361,9 +457,24 @@ def main(date: Optional[str], lookbacks: Optional[str]) -> None:
             target_date, first_weekday
         )
         
+        # Calculate model-switching portfolio for parameters display
+        model_switching_portfolio = monte_carlo._calculate_model_switching_portfolio(recommendation_lookbacks)
+        
+        # Display detailed parameter information
+        display_parameters_info(monte_carlo, recommendation_lookbacks, model_switching_portfolio)
+        
         # Generate plot if requested
         if config['recommendation_mode'].get('generate_plot', True):
             print(f"\nGenerating recommendation plot...")
+            
+            # Determine output path - use JSON web_output_dir if available
+            if web_output_dir:
+                os.makedirs(web_output_dir, exist_ok=True)
+                output_path = os.path.join(web_output_dir, "recommendation_plot.png")
+                print(f"Saving plot to: {output_path}")
+            else:
+                output_path = "recommendation_plot.png"
+                print(f"Saving plot to: {output_path}")
             
             # For recommendation mode, create a plot using existing portfolio data
             try:
@@ -438,8 +549,8 @@ def main(date: Optional[str], lookbacks: Optional[str]) -> None:
                                     start_date = pd.Timestamp(monte_carlo.dates[start_idx])
                                     end_date = pd.Timestamp(monte_carlo.dates[date_idx - 1])
                                     
-                                    # Calculate metrics and ranks
-                                    metrics_list = []
+                                    # Calculate normalized scores for ranking
+                                    normalized_scores = []
                                     for model in models:
                                         if model == "cash":
                                             portfolio_vals = np.ones(lookback_period) * 10000.0
@@ -448,17 +559,6 @@ def main(date: Optional[str], lookbacks: Optional[str]) -> None:
                                             if len(portfolio_vals) == 0:
                                                 portfolio_vals = np.ones(lookback_period) * 10000.0
                                         
-                                        from functions.MonteCarloBacktest import compute_daily_metrics
-                                        model_metrics = compute_daily_metrics(portfolio_vals)
-                                        metrics_list.append(model_metrics)
-                                    
-                                    # Rank models by normalized score instead of Sharpe ratio
-                                    normalized_scores = []
-                                    for model, portfolio_vals in zip(models, [np.ones(lookback_period) * 10000.0 if model == "cash" 
-                                                                             else monte_carlo.portfolio_histories[model][start_date:end_date].values 
-                                                                             for model in models]):
-                                        if len(portfolio_vals) == 0:
-                                            portfolio_vals = np.ones(lookback_period) * 10000.0
                                         normalized_score = monte_carlo.compute_performance_metrics(portfolio_vals)['normalized_score']
                                         normalized_scores.append(normalized_score)
                                     
@@ -471,14 +571,12 @@ def main(date: Optional[str], lookbacks: Optional[str]) -> None:
                             except Exception as e:
                                 recommendation_text += f"\nRecommendation for {recommendation_date.strftime('%Y-%m-%d')}: Error\n"
                     
-                    output_path = "recommendation_plot.png"
                     monte_carlo.create_monte_carlo_plot(
                         model_switching_portfolio,
                         sample_metrics, 
                         output_path,
                         custom_text=recommendation_text
                     )
-                    print(f"Plot saved to: {output_path}")
                 else:
                     print("No portfolio data available for plotting")
             except Exception as e:
