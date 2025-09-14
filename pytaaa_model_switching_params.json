@@ -61,20 +61,27 @@
         "n_lookbacks": 3,
         "performance_metrics": {
             "sharpe_ratio_weight": 1.0,
-            "sortino_ratio_weight": 1.0,
+            "sortino_ratio_weight": 2.0,
             "max_drawdown_weight": 1.0,
             "avg_drawdown_weight": 1.0,
-            "annualized_return_weight": 1.0
+            "annualized_return_weight": 5.0
         }
+    },
+    "metric_blending": {
+        "enabled": true,
+        "full_period_weight": 0.20,
+        "focus_period_weight": 0.80,
+        "focus_period_start": "2020-01-01",
+        "focus_period_end": "2025-09-11"
     },
     "monte_carlo": {
         "max_iterations": 750,
-        "min_iterations_for_exploit": 50,
+        "min_iterations_for_exploit": 350,
         "trading_frequency": "monthly",
         "use_daily_close_only": true,
         "portfolio_rebalance_day": 1,
-        "min_lookback": 50,
-        "max_lookback": 200,
+        "min_lookback": 20,
+        "max_lookback": 300,
         "data_format": "backtested",
         "data_files": {
             "actual": "PyTAAA_status.params",
@@ -86,5 +93,6 @@
         "output_format": "both",
         "generate_plot": true,
         "show_model_ranks": true
-    }
+    },
+    "web_output_dir": "/Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web"
 }

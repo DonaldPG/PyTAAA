@@ -1933,6 +1933,9 @@ def sharpeWeightedRank_2D(
     elif stockList == 'SP500':
         # currentSymbolList,_,_ = get_SP500List(symbols_file)
         currentSymbolList = read_symbols_list_local(json_fn)
+    else:
+        # Default fallback for other stock lists
+        currentSymbolList = read_symbols_list_local(json_fn)
     # elif stockList == 'ETF':
     #     currentSymbolList,_,_ = get_ETFList()
 
@@ -2838,6 +2841,9 @@ def sharpeWeightedRank_2D(
     elif stockList == 'SP500':
         # currentSymbolList,_,_ = get_SP500List(symbols_file)
         currentSymbolList = read_symbols_list_local(json_fn)
+    else:
+        # Default fallback for other stock lists
+        currentSymbolList = read_symbols_list_local(json_fn)
     # elif stockList == 'ETF':
     #     currentSymbolList,_,_ = get_ETFList()
 
@@ -3384,7 +3390,7 @@ def sharpeWeightedRank_2D(
                         companyName = companyNameList[symbolIndex]
                     except:
                         companyName = ""
-                    # print((" ...at line 2193: companyName = "+companyName))
+                    print((" ...at line 2193: companyName = "+companyName))
                     #pe = str(getQuote(symbols[j])['PE'][0])
                     pe = peList[j]
                     pagetext_byRecentGainRank = pagetext_byRecentGainRank +"<br><p> </p><p> </p><p> </p><br>"+\
@@ -3587,7 +3593,8 @@ def sharpeWeightedRank_2D(
                                "median P/E = "+format(medianPE,'5.1f')+"</p></h3><font face='courier new' size=4>\n\n"
 
         rank_text = hypothetical_trades_html + avg_performance_text + rank_text + "</table></div>\n"
-        # rank_text = avg_performance_text + rank_text + "</table></div>\n"
+
+        print(" ... rank_text = " + str(rank_text))
 
         json_dir = os.path.split(json_fn)[0]
         p_store = get_performance_store(json_fn)

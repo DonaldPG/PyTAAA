@@ -1,0 +1,385 @@
+2025-08-23 22:18:45 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-23 22:18:57 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-23 22:20:17 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-23 22:20:22 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-23 22:29:28 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-23 22:29:32 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-23 23:33:20 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-23 23:33:20 - PyTAAA.__main__ - ERROR - Model recommendation failed: MonteCarloBacktest.__init__() got an unexpected keyword argument 'normalization_values'
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 376, in main
+    monte_carlo = MonteCarloBacktest(
+                  ^^^^^^^^^^^^^^^^^^^
+TypeError: MonteCarloBacktest.__init__() got an unexpected keyword argument 'normalization_values'
+2025-08-23 23:33:55 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:33:55 - PyTAAA.recommend_model - ERROR - File not found: [Errno 2] No such file or directory: '/nonexistent/path.json'
+2025-08-23 23:33:55 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:33:55 - PyTAAA.recommend_model - ERROR - Model recommendation failed: unsupported format string passed to MagicMock.__format__
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 393, in main
+    plot_text = generate_recommendation_output(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 186, in generate_recommendation_output
+    plot_text += f"  Final Value: ${sample_metrics['final_value']:,.0f}\n"
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unsupported format string passed to MagicMock.__format__
+2025-08-23 23:33:55 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:33:55 - PyTAAA.recommend_model - ERROR - Model recommendation failed: MonteCarloBacktest.__init__() got an unexpected keyword argument 'normalization_values'
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 376, in main
+    monte_carlo = MonteCarloBacktest(
+                  ^^^^^^^^^^^^^^^^^^^
+TypeError: MonteCarloBacktest.__init__() got an unexpected keyword argument 'normalization_values'
+2025-08-23 23:33:55 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:33:55 - PyTAAA.recommend_model - ERROR - Model recommendation failed: Expecting value: line 1 column 13 (char 12)
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 303, in main
+    web_output_dir = get_web_output_dir(json_config_path)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/functions/GetParams.py", line 86, in get_web_output_dir
+    config = json.load(json_file)
+             ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/__init__.py", line 293, in load
+    return loads(fp.read(),
+           ^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 13 (char 12)
+2025-08-23 23:33:55 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:33:55 - PyTAAA.recommend_model - ERROR - Model recommendation failed: "'model_selection' section not found in JSON configuration"
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 304, in main
+    normalization_values = get_central_std_values(json_config_path)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/functions/GetParams.py", line 116, in get_central_std_values
+    raise KeyError("'model_selection' section not found in JSON configuration")
+KeyError: "'model_selection' section not found in JSON configuration"
+2025-08-23 23:34:37 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:34:37 - PyTAAA.recommend_model - INFO - Model recommendation generation completed successfully
+2025-08-23 23:34:37 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:34:37 - PyTAAA.recommend_model - ERROR - File not found: [Errno 2] No such file or directory: '/nonexistent/path.json'
+2025-08-23 23:34:37 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:34:37 - PyTAAA.recommend_model - INFO - Model recommendation generation completed successfully
+2025-08-23 23:34:37 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:34:37 - PyTAAA.recommend_model - ERROR - Model recommendation failed: unsupported format string passed to MagicMock.__format__
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 393, in main
+    plot_text = generate_recommendation_output(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 186, in generate_recommendation_output
+    plot_text += f"  Final Value: ${sample_metrics['final_value']:,.0f}\n"
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unsupported format string passed to MagicMock.__format__
+2025-08-23 23:34:37 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:34:37 - PyTAAA.recommend_model - ERROR - Model recommendation failed: MonteCarloBacktest.__init__() got an unexpected keyword argument 'normalization_values'
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 376, in main
+    monte_carlo = MonteCarloBacktest(
+                  ^^^^^^^^^^^^^^^^^^^
+TypeError: MonteCarloBacktest.__init__() got an unexpected keyword argument 'normalization_values'
+2025-08-23 23:34:37 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:34:37 - PyTAAA.recommend_model - ERROR - Model recommendation failed: Expecting value: line 1 column 13 (char 12)
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 303, in main
+    web_output_dir = get_web_output_dir(json_config_path)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/functions/GetParams.py", line 86, in get_web_output_dir
+    config = json.load(json_file)
+             ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/__init__.py", line 293, in load
+    return loads(fp.read(),
+           ^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 13 (char 12)
+2025-08-23 23:34:37 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:34:37 - PyTAAA.recommend_model - ERROR - Model recommendation failed: "'model_selection' section not found in JSON configuration"
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 304, in main
+    normalization_values = get_central_std_values(json_config_path)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/functions/GetParams.py", line 116, in get_central_std_values
+    raise KeyError("'model_selection' section not found in JSON configuration")
+KeyError: "'model_selection' section not found in JSON configuration"
+2025-08-23 23:34:52 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-23 23:34:52 - PyTAAA.__main__ - ERROR - Model recommendation failed: MonteCarloBacktest.__init__() got an unexpected keyword argument 'normalization_values'
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 376, in main
+    monte_carlo = MonteCarloBacktest(
+                  ^^^^^^^^^^^^^^^^^^^
+TypeError: MonteCarloBacktest.__init__() got an unexpected keyword argument 'normalization_values'
+2025-08-23 23:38:01 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:38:01 - PyTAAA.recommend_model - INFO - Model recommendation generation completed successfully
+2025-08-23 23:38:01 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:38:01 - PyTAAA.recommend_model - ERROR - File not found: [Errno 2] No such file or directory: '/nonexistent/path.json'
+2025-08-23 23:38:01 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:38:01 - PyTAAA.recommend_model - INFO - Model recommendation generation completed successfully
+2025-08-23 23:38:01 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:38:01 - PyTAAA.recommend_model - ERROR - Model recommendation failed: unsupported format string passed to MagicMock.__format__
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 393, in main
+    plot_text = generate_recommendation_output(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 186, in generate_recommendation_output
+    plot_text += f"  Final Value: ${sample_metrics['final_value']:,.0f}\n"
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unsupported format string passed to MagicMock.__format__
+2025-08-23 23:38:01 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:38:01 - PyTAAA.recommend_model - ERROR - Model recommendation failed: MonteCarloBacktest.__init__() got an unexpected keyword argument 'normalization_values'
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 376, in main
+    monte_carlo = MonteCarloBacktest(
+                  ^^^^^^^^^^^^^^^^^^^
+TypeError: MonteCarloBacktest.__init__() got an unexpected keyword argument 'normalization_values'
+2025-08-23 23:38:01 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:38:01 - PyTAAA.recommend_model - ERROR - Model recommendation failed: Expecting value: line 1 column 13 (char 12)
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 303, in main
+    web_output_dir = get_web_output_dir(json_config_path)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/functions/GetParams.py", line 86, in get_web_output_dir
+    config = json.load(json_file)
+             ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/__init__.py", line 293, in load
+    return loads(fp.read(),
+           ^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 13 (char 12)
+2025-08-23 23:38:01 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:38:01 - PyTAAA.recommend_model - ERROR - Model recommendation failed: "'model_selection' section not found in JSON configuration"
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 304, in main
+    normalization_values = get_central_std_values(json_config_path)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/functions/GetParams.py", line 116, in get_central_std_values
+    raise KeyError("'model_selection' section not found in JSON configuration")
+KeyError: "'model_selection' section not found in JSON configuration"
+2025-08-23 23:38:12 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:38:12 - PyTAAA.recommend_model - INFO - Model recommendation generation completed successfully
+2025-08-23 23:38:12 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:38:12 - PyTAAA.recommend_model - ERROR - File not found: [Errno 2] No such file or directory: '/nonexistent/path.json'
+2025-08-23 23:38:12 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:38:12 - PyTAAA.recommend_model - INFO - Model recommendation generation completed successfully
+2025-08-23 23:38:12 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:38:12 - PyTAAA.recommend_model - ERROR - Model recommendation failed: unsupported format string passed to MagicMock.__format__
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 393, in main
+    plot_text = generate_recommendation_output(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 186, in generate_recommendation_output
+    plot_text += f"  Final Value: ${sample_metrics['final_value']:,.0f}\n"
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unsupported format string passed to MagicMock.__format__
+2025-08-23 23:38:12 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:38:12 - PyTAAA.recommend_model - ERROR - Model recommendation failed: MonteCarloBacktest.__init__() got an unexpected keyword argument 'normalization_values'
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 376, in main
+    monte_carlo = MonteCarloBacktest(
+                  ^^^^^^^^^^^^^^^^^^^
+TypeError: MonteCarloBacktest.__init__() got an unexpected keyword argument 'normalization_values'
+2025-08-23 23:38:12 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:38:12 - PyTAAA.recommend_model - ERROR - Model recommendation failed: Expecting value: line 1 column 13 (char 12)
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 303, in main
+    web_output_dir = get_web_output_dir(json_config_path)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/functions/GetParams.py", line 86, in get_web_output_dir
+    config = json.load(json_file)
+             ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/__init__.py", line 293, in load
+    return loads(fp.read(),
+           ^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 13 (char 12)
+2025-08-23 23:38:12 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:38:12 - PyTAAA.recommend_model - ERROR - Model recommendation failed: "'model_selection' section not found in JSON configuration"
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 304, in main
+    normalization_values = get_central_std_values(json_config_path)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/functions/GetParams.py", line 116, in get_central_std_values
+    raise KeyError("'model_selection' section not found in JSON configuration")
+KeyError: "'model_selection' section not found in JSON configuration"
+2025-08-23 23:39:41 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-23 23:39:41 - PyTAAA.__main__ - ERROR - Model recommendation failed: MonteCarloBacktest.__init__() got an unexpected keyword argument 'normalization_values'
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 376, in main
+    monte_carlo = MonteCarloBacktest(
+                  ^^^^^^^^^^^^^^^^^^^
+TypeError: MonteCarloBacktest.__init__() got an unexpected keyword argument 'normalization_values'
+2025-08-23 23:42:05 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-23 23:42:10 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-23 23:43:44 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-23 23:43:49 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-23 23:43:58 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:43:58 - PyTAAA.recommend_model - INFO - Model recommendation generation completed successfully
+2025-08-23 23:43:58 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:43:58 - PyTAAA.recommend_model - ERROR - File not found: [Errno 2] No such file or directory: '/nonexistent/path.json'
+2025-08-23 23:43:58 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:43:58 - PyTAAA.recommend_model - INFO - Model recommendation generation completed successfully
+2025-08-23 23:43:58 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:43:58 - PyTAAA.recommend_model - ERROR - Model recommendation failed: unsupported format string passed to MagicMock.__format__
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 398, in main
+    plot_text = generate_recommendation_output(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 186, in generate_recommendation_output
+    plot_text += f"  Final Value: ${sample_metrics['final_value']:,.0f}\n"
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unsupported format string passed to MagicMock.__format__
+2025-08-23 23:43:58 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:44:03 - PyTAAA.recommend_model - INFO - Model recommendation generation completed successfully
+2025-08-23 23:44:03 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:44:03 - PyTAAA.recommend_model - ERROR - Model recommendation failed: Expecting value: line 1 column 13 (char 12)
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 303, in main
+    web_output_dir = get_web_output_dir(json_config_path)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/functions/GetParams.py", line 86, in get_web_output_dir
+    config = json.load(json_file)
+             ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/__init__.py", line 293, in load
+    return loads(fp.read(),
+           ^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 13 (char 12)
+2025-08-23 23:44:03 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:44:03 - PyTAAA.recommend_model - ERROR - Model recommendation failed: "'model_selection' section not found in JSON configuration"
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 304, in main
+    normalization_values = get_central_std_values(json_config_path)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/functions/GetParams.py", line 116, in get_central_std_values
+    raise KeyError("'model_selection' section not found in JSON configuration")
+KeyError: "'model_selection' section not found in JSON configuration"
+2025-08-23 23:50:25 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:50:25 - PyTAAA.recommend_model - INFO - Model recommendation generation completed successfully
+2025-08-23 23:50:25 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:50:25 - PyTAAA.recommend_model - ERROR - File not found: [Errno 2] No such file or directory: '/nonexistent/path.json'
+2025-08-23 23:50:25 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:50:25 - PyTAAA.recommend_model - INFO - Model recommendation generation completed successfully
+2025-08-23 23:50:25 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:50:25 - PyTAAA.recommend_model - ERROR - Model recommendation failed: unsupported format string passed to MagicMock.__format__
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 398, in main
+    plot_text = generate_recommendation_output(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 186, in generate_recommendation_output
+    plot_text += f"  Final Value: ${sample_metrics['final_value']:,.0f}\n"
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unsupported format string passed to MagicMock.__format__
+2025-08-23 23:50:25 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:50:29 - PyTAAA.recommend_model - INFO - Model recommendation generation completed successfully
+2025-08-23 23:50:29 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:50:29 - PyTAAA.recommend_model - ERROR - Model recommendation failed: Expecting value: line 1 column 13 (char 12)
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 303, in main
+    web_output_dir = get_web_output_dir(json_config_path)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/functions/GetParams.py", line 86, in get_web_output_dir
+    config = json.load(json_file)
+             ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/__init__.py", line 293, in load
+    return loads(fp.read(),
+           ^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/json/decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 13 (char 12)
+2025-08-23 23:50:29 - PyTAAA.recommend_model - INFO - Starting model recommendation generation
+2025-08-23 23:50:29 - PyTAAA.recommend_model - ERROR - Model recommendation failed: "'model_selection' section not found in JSON configuration"
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 304, in main
+    normalization_values = get_central_std_values(json_config_path)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/functions/GetParams.py", line 116, in get_central_std_values
+    raise KeyError("'model_selection' section not found in JSON configuration")
+KeyError: "'model_selection' section not found in JSON configuration"
+2025-08-23 23:55:33 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-23 23:55:38 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-23 23:56:44 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-23 23:56:49 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-24 13:37:36 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-24 13:37:43 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-24 13:38:24 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-24 13:38:32 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-24 13:44:59 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-24 13:45:08 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-24 13:45:38 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-24 13:45:46 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-24 13:50:41 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-24 13:50:49 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-24 13:50:58 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-24 13:51:00 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-24 13:51:08 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-24 13:51:09 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-24 14:51:37 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-24 14:51:37 - PyTAAA.__main__ - ERROR - Model recommendation failed: "'normalization' section not found in model_selection"
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 360, in main
+    normalization_values = get_central_std_values(json_config_path)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/functions/GetParams.py", line 120, in get_central_std_values
+    raise KeyError("'normalization' section not found in model_selection")
+KeyError: "'normalization' section not found in model_selection"
+2025-08-24 14:52:09 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-24 14:52:16 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-24 14:54:12 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-24 14:54:19 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-24 14:57:30 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-24 14:57:30 - PyTAAA.__main__ - ERROR - Model recommendation failed: "'normalization' section not found in model_selection"
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/recommend_model.py", line 360, in main
+    normalization_values = get_central_std_values(json_config_path)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/functions/GetParams.py", line 120, in get_central_std_values
+    raise KeyError("'normalization' section not found in model_selection")
+KeyError: "'normalization' section not found in model_selection"
+2025-08-24 15:02:02 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-24 15:02:09 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-24 23:05:52 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-24 23:05:58 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-24 23:14:46 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-24 23:14:52 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-08-24 23:26:36 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-08-24 23:26:42 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully
+2025-09-02 23:16:16 - PyTAAA.__main__ - INFO - Starting model recommendation generation
+2025-09-02 23:16:20 - PyTAAA.__main__ - INFO - Model recommendation generation completed successfully

@@ -25,6 +25,8 @@ show_usage() {
     echo "  search_strategy   Search strategy: explore, exploit, or explore-exploit (optional)"
     echo "  --verbose         Show detailed normalized score breakdown (optional)"
     echo "  --reset           Reset saved state after each run (optional)"
+    echo "  --json=<path>     Specify JSON configuration file path (optional)"
+    echo "  --randomize       Use randomized normalization values (optional)"
     echo ""
     echo "Examples:"
     echo "  $0 5                       # Run 5 times with default strategy"
@@ -34,6 +36,9 @@ show_usage() {
     echo "  $0 2 --verbose            # Run 2 times with default strategy and verbose output"
     echo "  $0 5 --reset              # Run 5 times, resetting state after each run"
     echo "  $0 3 explore --reset      # Run 3 times with exploration, resetting after each"
+    echo "  $0 4 --json=config.json   # Run 4 times with JSON configuration file"
+    echo "  $0 2 --randomize          # Run 2 times with randomized normalization values"
+    echo "  $0 3 exploit --randomize  # Run 3 times with exploitation and randomization"
     echo ""
     echo "Note: Each run builds upon the previous state for continuous optimization."
     echo "      Use --reset to start fresh exploration from each run."
@@ -45,19 +50,21 @@ if [[ "$1" == "-h" || "$1" == "--help" ]]; then
     exit 0
 fi
 
-# Validate number of arguments
-if [[ $# -lt 1 || $# -gt 3 ]]; then
+# Validate number of arguments - Allow up to 5 arguments for all combinations
+if [[ $# -lt 1 || $# -gt 5 ]]; then
     echo "Error: Invalid number of arguments"
     echo ""
     show_usage
     exit 1
 fi
 
-# Parse arguments to handle --verbose and --reset flags in any position
+# Parse arguments to handle --verbose, --reset, --json, and --randomize flags in any position
 NUM_RUNS=""
 SEARCH_STRATEGY=""
 VERBOSE_FLAG=""
 RESET_FLAG=""
+JSON_FLAG=""
+RANDOMIZE_FLAG=""
 
 for arg in "$@"; do
     case "$arg" in
@@ -67,11 +74,24 @@ for arg in "$@"; do
         --reset)
             RESET_FLAG="--reset"
             ;;
+        --json=*)
+            JSON_FLAG="$arg"  # Preserve the full --json=path format
+            ;;
+        --json)
+            # Handle --json as separate argument (next arg should be path)
+            JSON_FLAG="--json"
+            ;;
+        --randomize)
+            RANDOMIZE_FLAG="--randomize"
+            ;;
         explore|exploit|explore-exploit)
             SEARCH_STRATEGY="$arg"
             ;;
         *)
-            if [[ -z "$NUM_RUNS" ]]; then
+            # Check if this might be a JSON path following --json
+            if [[ "$JSON_FLAG" == "--json" && -z "$NUM_RUNS" ]]; then
+                JSON_FLAG="--json $arg"
+            elif [[ -z "$NUM_RUNS" ]]; then
                 NUM_RUNS="$arg"
             else
                 echo "Error: Unknown argument '$arg'"
@@ -121,6 +141,8 @@ echo "Number of runs: $NUM_RUNS"
 echo "Search strategy: ${SEARCH_STRATEGY:-default (explore-exploit)}"
 echo "Verbose mode: ${VERBOSE_FLAG:-disabled}"
 echo "Reset state after each run: ${RESET_FLAG:-disabled}"
+echo "JSON configuration: ${JSON_FLAG:-none}"
+echo "Randomize normalization: ${RANDOMIZE_FLAG:-disabled}"
 echo "Start time: $(date)"
 echo "Working directory: $(pwd)"
 echo "=============================================================="
@@ -139,7 +161,7 @@ for ((i=1; i<=NUM_RUNS; i++)); do
     echo "Time: $(date)"
     echo "--------------------------------------------------------------"
     
-    # Build command with optional search strategy and verbose flag
+    # Build command with optional search strategy, verbose flag, JSON flag, and randomize flag
     CMD="uv run python run_monte_carlo.py"
     
     if [[ -n "$SEARCH_STRATEGY" ]]; then
@@ -148,6 +170,14 @@ for ((i=1; i<=NUM_RUNS; i++)); do
     
     if [[ -n "$VERBOSE_FLAG" ]]; then
         CMD="$CMD $VERBOSE_FLAG"
+    fi
+
+    if [[ -n "$JSON_FLAG" ]]; then
+        CMD="$CMD $JSON_FLAG"
+    fi
+
+    if [[ -n "$RANDOMIZE_FLAG" ]]; then
+        CMD="$CMD $RANDOMIZE_FLAG"
     fi
     
     echo "Executing: $CMD"

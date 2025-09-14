@@ -1,0 +1,95 @@
+no display found. Using non-interactive Agg backend
+no display found. Using non-interactive Agg backend
+['/Users/donaldpg/PyProjects/worktree2/PyTAAA', '/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python311.zip', '/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11', '/Users/donaldpg/.local/share/uv/python/cpython-3.11.11-macos-aarch64-none/lib/python3.11/lib-dynload', '/Users/donaldpg/PyProjects/worktree2/PyTAAA/.venv/lib/python3.11/site-packages']
+=== Daily Abacus Portfolio Update ===
+Configuration file: abacus_combined_PyTAAA_status.params.json
+Timestamp: 2025-08-24 22:18:48
+
+Active trading model: naz100_hma
+Using data source: /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols.txt
+
+--- PyTAAA Update Process ---
+Email Section:
+{'From': 'donaldpg@gmail.com', 'To': 'donpg1@yahoo.com', 'PW': 'tRa-u2as3ube', 'IPaddress': '98.201.234.203'}
+
+Text from Email Section:
+{'phoneEmail': '8322440788@tmomail.net', 'send_texts': False}
+
+FTP Section:
+{'hostname': 'piDonaldPG', 'remoteIP': '192.168.1.10', 'username': 'pipyTAAA', 'password': 'pyTAAA012345', 'remotepath': '/var/www/mysite/pyTAAA_naz100pi/'}
+
+Stock Server Section:
+{'quote_download_server': 'Donalds-MacBook-Pro.local_NO'}
+
+Setup Section:
+{'runtime': '1 days', 'pausetime': '24 hours'}
+
+Valuation Section:
+{'symbols_file': '/Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols.txt', 'stockList': 'Naz100', 'uptrendSignalMethod': 'HMAs', 'numberStocksTraded': 7, 'monthsToHold': 1, 'LongPeriod': 600, 'stddevThreshold': 8.714, 'MA1': 176, 'MA2': 8, 'MA3': 11, 'sma2factor': 1.536, 'rankThresholdPct': 0.133, 'riskDownside_min': 0.467, 'riskDownside_max': 9.027, 'longShort_mindays': 5, 'longShort_maxdays': 18, 'longShort_percent': 0.985, 'longShort_longinc': 15, 'narrowDays_min': 6.0, 'narrowDays_max': 40.2, 'mediumDays_min': 25.2, 'mediumDays_max': 38.3, 'wideDays_min': 75.2, 'wideDays_max': 512.3, 'lowPct': 17, 'hiPct': 84, 'trade_cost': 7.95, 'minperiod': 4, 'maxperiod': 12, 'incperiod': 3, 'numdaysinfit': 50, 'numdaysinfit2': 15, 'offset': 7, 'performance_store': '/Users/donaldpg/pyTAAA_data/naz100_hma/data_store', 'webpage': '/Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web'}
+Current ip address is  68.37.131.181
+An email with updated analysis will be sent to  donpg1@yahoo.com  every  86400  seconds
+ ...inside GetHoldings...  p_store =  /Users/donaldpg/pyTAAA_data/naz100_hma/data_store
+
+
+********************************************************
+ ...inside GetParams/GetHoldings...
+                                       MATCH ... i, symbol, rank =  0 AEP AEP 6
+                                       MATCH ... i, symbol, rank =  1 APP APP 1
+                                       MATCH ... i, symbol, rank =  2 CASH CASH 48
+                                       MATCH ... i, symbol, rank =  3 COST COST 3
+                                       MATCH ... i, symbol, rank =  4 EA EA 10
+                                       MATCH ... i, symbol, rank =  5 MELI MELI 9
+                                       MATCH ... i, symbol, rank =  6 META META 2
+                                       MATCH ... i, symbol, rank =  7 MSFT MSFT 4
+
+
+********************************************************
+
+current Holdings :
+stocks:  ['AEP', 'APP', 'CASH', 'COST', 'EA', 'MELI', 'META', 'MSFT']
+shares:  ['244.0', '60.0', '3528.0', '24.0', '192.0', '4.0', '27.0', '22.0']
+buyprice:  ['113.58', '379.17', '1.0', '952.52', '157.08', '2375.92', '750.01', '524.11']
+current ranks:  ['6', '1', '48', '3', '10', '9', '2', '4']
+cumulativecashin:  10000
+
+hourOfDay, daily_update_done = 22 False
+  ...platform:  Darwin arm64 Donalds-MacBook-Pro.local
+Could not place web files on server...
+Stock quote updating disabled due to _NO suffix in quote_server setting
+
+   . inside run_taaa: UpdateHDF_yf completed...
+  . inside run_taaa: symbol_dirctory/Users/donaldpg/pyTAAA_data/Naz100/symbols
+  . inside run_taaa: symbol_fileNaz100_Symbols.txt
+
+
+ ... inside PortfolioPerformanceCalcs...
+   . symbol_directory = /Users/donaldpg/pyTAAA_data/Naz100/symbols
+   . symbol_file = Naz100_Symbols.txt
+   . json_dir = /var/folders/wx/yncxmnn91k79nkxq40vz95l00000gn/T
+   . filename for loadQuotes_fromHDF = /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols.txt
+file name for symbols =  _Naz100_Symbols_
+file type for symbols =  .txt
+ ... inside loadQuotes_fromHDF
+   . json_fn = /var/folders/wx/yncxmnn91k79nkxq40vz95l00000gn/T/daily_abacus_temp_bhl1_4ax.json
+
+
+symbol_directory =  /Users/donaldpg/pyTAAA_data/Naz100/symbols
+symbols_file =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols.txt
+shortname, extension =  Naz100_Symbols .txt
+hdf5filename =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols_.hdf5
+ ...inside loadQuotes_fromHDF ... top of 'try' block
+ ...inside loadQuotes_fromHDF ... 'try' block begin processing dates
+ ...date format =  <class 'str'> object
+ ...date[0] =  1991-01-02
+ ...date_newformat =  1991-01-02
+ ...dates format =  <class 'numpy.ndarray'> object
+ ...dates[0] =  1991-01-02
+ ...date[-1] =  2025-08-22  after format conversion:  <class 'datetime.date'>
+ ...inside loadQuotes_fromHDF ... 'try' block successful
+ ...inside loadQuotes_fromHDF ... which_block =  try
+ ... inside computeSignal2D ... 
+ params =  {'fromaddr': 'donaldpg@gmail.com', 'toaddrs': 'donpg1@yahoo.com', 'toSMS': '8322440788@tmomail.net', 'send_texts': False, 'PW': 'tRa-u2as3ube', 'runtime': 86400, 'pausetime': 86400, 'quote_server': 'Donalds-MacBook-Pro.local_NO', 'numberStocksTraded': 7, 'trade_cost': 7.95, 'monthsToHold': 1, 'LongPeriod': 600, 'stddevThreshold': 8.714, 'MA1': 176, 'MA2': 8, 'MA3': 11, 'MA2offset': 3, 'MA2factor': 1.536, 'rankThresholdPct': 0.133, 'riskDownside_min': 0.467, 'riskDownside_max': 9.027, 'narrowDays': [6.0, 40.2], 'mediumDays': [25.2, 38.3], 'wideDays': [75.2, 512.3], 'uptrendSignalMethod': 'HMAs', 'lowPct': 17, 'hiPct': 84, 'minperiod': 4, 'maxperiod': 12, 'incperiod': 3, 'numdaysinfit': 50, 'numdaysinfit2': 15, 'offset': 7, 'stockList': 'Naz100', 'symbols_file': '/Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols.txt'}
+  ...using 3 HMA's (hull moving average) for signal2D
+
+
+ ...calculating signal2D using 'HMAs' method...

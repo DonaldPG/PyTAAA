@@ -1,0 +1,12 @@
+{
+    "web_output_dir": "/Users/donaldpg/pyTAAA_data/test_output",
+    "model_selection": {
+        "normalization": {
+            "central_values": {
+                "annual_return": 0.445,
+                "sharpe_ratio": 1.450
+            }
+            // Missing comma and malformed structure
+        }
+    }
+}

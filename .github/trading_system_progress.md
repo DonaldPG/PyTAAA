@@ -13,6 +13,7 @@
 - [x] Multiple trading models running in parallel
 - [x] Flexible data format support for both actual and backtested portfolio values
 - [x] Permutation-invariant lookback optimization system
+- [x] Unified plotting system with enhanced formatting
 
 ### Data Format Flexibility Implementation
 1. Portfolio Value Formats
@@ -28,12 +29,69 @@
 3. Performance Metrics Display
    - [x] Final Portfolio Value (with comma formatting)
    - [x] Average Annual Return
-   - [x] **Normalized Score** (composite performance metric excluding final value)
    - [x] Sharpe Ratio (0% risk-free rate)
    - [x] Sortino Ratio (0% risk-free rate)
    - [x] Maximum Drawdown
    - [x] Average Drawdown
    - [x] Best parameters tracking
+
+### Unified Monte Carlo Plotting System 🆕 **August 2025**
+
+#### Problem Identified
+The Monte Carlo backtesting system had approximately 120 lines of duplicated plotting code across multiple methods, creating:
+- **Code Maintenance Issues**: Changes required in multiple locations
+- **Inconsistent Formatting**: Different plot appearances across functions
+- **Development Friction**: Difficult to implement consistent improvements
+- **Testing Complexity**: Multiple plotting paths to validate
+
+#### Solution Implemented
+**Completed**: Full consolidation of plotting functionality into a single, enhanced `create_monte_carlo_plot()` method
+
+1. **Code Consolidation**
+   - Eliminated ~120 lines of duplicate plotting code
+   - Single source of truth for all Monte Carlo plot generation
+   - Unified function used by both `plot_performance()` and `run_monte_carlo.py`
+   - Maintainable architecture for future enhancements
+
+2. **Enhanced Plot Formatting**
+   - **X-axis Grid Intervals**: 5-year major intervals, 1-year minor intervals
+   - **Date Label Formatting**: Horizontal year-only labels (e.g., "2000", "2005")
+   - **Consistent Grid Styling**: Major/minor grids match between upper and lower subplots
+   - **Professional Appearance**: Reduced font sizes and improved spacing
+
+3. **Model Ranking Integration**
+   - **Table-Formatted Rankings**: Properly aligned model performance tables
+   - **Monospace Font**: Ensures perfect table alignment in text boxes
+   - **Multiple Time Periods**: Rankings for current date and first weekday of month
+   - **Right-Aligned Numbers**: Professional formatting for Sharpe ratio scores
+   - **Blank Line Spacing**: Improved readability with proper text formatting
+
+4. **Technical Implementation Details**
+   ```python
+   # Example of enhanced formatting
+   ranking_text += f"{i:>1}. {model:<13} {score:>7.3f}\n"
+   
+   # Monospace font for table alignment
+   ax1.text(0.02, 0.95, full_text, fontfamily='monospace')
+   
+   # Consistent date formatting
+   ax1.xaxis.set_major_locator(mdates.YearLocator(5))
+   ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+   ```
+
+#### Benefits Achieved
+- **Code Maintainability**: Single function for all plotting reduces maintenance burden
+- **Consistent Appearance**: All plots now have identical, professional formatting
+- **Enhanced Readability**: Improved font sizes, spacing, and table alignment
+- **Development Efficiency**: Future plot improvements only need implementation in one location
+- **Professional Quality**: Publication-ready plots with proper grid intervals and formatting
+
+#### Technical Quality Improvements
+- **Zero Breaking Changes**: All existing interfaces preserved
+- **Backward Compatibility**: Existing code continues to work without modification
+- **Enhanced Documentation**: Clear docstrings and parameter descriptions
+- **Error Handling**: Robust fallbacks for edge cases in plot generation
+- **Type Safety**: Full type annotations for all parameters
 
 ### Permutation-Invariant Lookback Optimization (Completed August 2025)
 
@@ -139,6 +197,7 @@ The original Monte Carlo system treated different orderings of the same lookback
    - [x] UCB1 algorithm enhanced for canonical combinations
    - [x] Dynamic memory allocation for discovered combinations
    - [x] Comprehensive efficiency monitoring and logging
+   - [x] Unified plotting system with enhanced formatting
    
 2. Parameter Configuration
    - [ ] Define parameter ranges
@@ -184,6 +243,52 @@ The original Monte Carlo system treated different orderings of the same lookback
    - [ ] Production readiness review
 
 ## Recent Achievements (August 2025)
+
+### Unified Monte Carlo Plotting System 🆕 **August 2025**
+**Completed**: Full consolidation of ~120 lines of duplicated plotting code into a single, enhanced function
+
+**Problem Solved**: Multiple plotting methods with inconsistent formatting and duplicated code made maintenance difficult and resulted in inconsistent plot appearance across the system.
+
+**Technical Achievement**: Created a unified `create_monte_carlo_plot()` method that serves as the single source of truth for all Monte Carlo visualization needs, with significantly enhanced formatting and professional appearance.
+
+**Implementation Details**:
+1. **Code Consolidation**
+   - Eliminated approximately 120 lines of duplicate plotting code
+   - Single `create_monte_carlo_plot()` method handles all visualization
+   - Both `plot_performance()` and `run_monte_carlo.py` use unified function
+   - Zero breaking changes to existing interfaces
+
+2. **Enhanced Plot Formatting**
+   - **X-axis Grid System**: 5-year major intervals, 1-year minor intervals for both subplots
+   - **Date Formatting**: Clean horizontal year labels (e.g., "2000", "2005") 
+   - **Font Size Optimization**: Reduced Y-axis label fonts by 2 points (10→8, 8→6)
+   - **Consistent Styling**: Identical grid appearance between upper and lower subplots
+
+3. **Model Ranking Tables**
+   - **Professional Formatting**: Right-aligned Sharpe ratio scores with proper spacing
+   - **Monospace Font**: Ensures perfect table alignment in plot text boxes
+   - **Table Structure**: `{rank:>1}. {model:<13} {score:>7.3f}` formatting
+   - **Improved Readability**: Blank lines before "Model ranks" sections
+
+4. **Multiple Time Period Analysis**
+   - Rankings displayed for current date (August 2, 2025)
+   - Additional rankings for first weekday of current month
+   - Comprehensive model performance comparison at key time points
+   - Error handling for missing data periods
+
+**Benefits Achieved**:
+- **Maintainability**: Future plot improvements only require changes in one location
+- **Consistency**: All Monte Carlo plots now have identical, professional appearance
+- **Readability**: Enhanced font sizes, spacing, and table alignment improve user experience
+- **Development Efficiency**: Simplified testing and validation with single plotting path
+- **Professional Quality**: Publication-ready plots with proper formatting standards
+
+**Technical Quality**:
+- Zero breaking changes to existing codebase
+- Comprehensive type annotations and documentation
+- Robust error handling for edge cases
+- Backward compatible with all existing interfaces
+- Enhanced readability through consistent formatting standards
 
 ### Configurable Search Strategy System 🆕 **August 2025**
 **Completed**: Full implementation of user-configurable exploration vs exploitation strategies
@@ -305,164 +410,65 @@ The original Monte Carlo system treated different orderings of the same lookback
 - Clean signal handler registration and cleanup
 - Compatible with existing state persistence system
 
-### Monte Carlo State Management Utility 🆕 **August 2025**
-**Completed**: Full implementation of state inspection and modification utility for development and debugging
+## Next Steps Tracking
+1. Parameter Optimization
+   - [x] Implement permutation-invariant tracking system
+   - [x] Add comprehensive efficiency monitoring
+   - [x] Implement robust interrupt handling with state preservation
+   - [x] Implement configurable search strategy system
+   - [x] Consolidate plotting functionality with enhanced formatting
+   - [ ] Begin broader parameter space optimization
+   - [ ] Add data format support validation
 
-**Problem Solved**: Previously, developers had no way to inspect or modify the saved Monte Carlo state, making it difficult to debug optimization issues, remove problematic parameter combinations, or reset learning progress when needed.
+2. Development Infrastructure
+   - [x] Create interrupt handling test infrastructure
+   - [x] Create configurable search strategy interface
+   - [x] Implement unified plotting system
+   - [ ] Set up automated testing
+   - [ ] Create progress dashboard
+   - [ ] Implement monitoring
 
-**Technical Achievement**: Implemented a comprehensive command-line utility (`modify_saved_state.py`) that provides safe, user-friendly access to Monte Carlo state data with full backup protection and validation.
+3. Data Format Support
+   - [x] Add format validation
+   - [x] Implement conversion utilities
+   - [x] Test format compatibility
 
-**Implementation Details**:
-1. **State Inspection Capabilities**
-   ```bash
-   # View complete state overview with top performers
-   uv run python modify_saved_state.py inspect
-   
-   # Inspect custom state file
-   uv run python modify_saved_state.py inspect --file custom_state.pkl
-   ```
-   - Displays all canonical combinations with performance scores and visit counts
-   - Shows top 10 performing combinations ranked by score
-   - Provides metadata including timestamps and configuration parameters
-   - Professional table formatting for easy analysis
+4. Review Process
+   - [x] Complete permutation-invariant system review
+   - [x] Complete interrupt handling system review
+   - [x] Complete search strategy system review
+   - [x] Complete unified plotting system review
+   - [ ] Schedule weekly reviews for remaining components
+   - [ ] Track format-specific issues
+   - [ ] Monitor performance metrics
 
-2. **Selective State Modification**
-   ```bash
-   # Remove all combinations containing specific lookback value
-   uv run python modify_saved_state.py remove-lookback 150
-   
-   # Remove specific combination
-   uv run python modify_saved_state.py remove-combination 50 150 250
-   
-   # Complete state reset
-   uv run python modify_saved_state.py reset
-   ```
-   - Targeted removal of problematic parameter combinations
-   - Automatic index rebuilding to maintain data integrity
-   - Confirmation prompts for all destructive operations
-   - Progress reporting before and after modifications
+## User Experience Improvements Summary (August 2025)
 
-3. **Safety and Backup Features**
-   - Automatic backup creation before any modifications (timestamped)
-   - `--no-backup` option for advanced users when appropriate
-   - Proper error handling for file operations and data validation
-   - Click-based interface with comprehensive help text
+### Before Improvements
+- **Unresponsive Controls**: Ctrl+C had no effect during Monte Carlo runs
+- **Lost Progress**: Force termination required, losing hours of computation
+- **Development Friction**: Testing iterations were slow and frustrating
+- **Unreliable State**: No guarantee of state preservation on interruption
+- **Fixed Strategy**: No control over exploration vs exploitation approach
+- **Inconsistent Plots**: Multiple plotting methods with different formatting
+- **Code Duplication**: ~120 lines of duplicated plotting code
 
-4. **Data Integrity Management**
-   - Maintains canonical form consistency after modifications
-   - Rebuilds performance score and visit count arrays properly
-   - Preserves state file format and structure
-   - Updates timestamps for modification tracking
+### After Improvements
+- **Immediate Response**: Ctrl+C responds within 1-2 seconds maximum
+- **Zero Progress Loss**: All computational work and learning preserved
+- **Smooth Development**: Fast iteration cycles with reliable interruption
+- **Confident Operation**: Reliable control over long-running processes
+- **State Integrity**: Guaranteed state preservation and proper cleanup
+- **Strategic Flexibility**: User-configurable optimization strategies 🆕
+- **Professional Plots**: Unified, consistently formatted visualizations 🆕
+- **Enhanced Readability**: Properly aligned tables and optimized font sizes 🆕
 
-**Benefits Achieved**:
-- **Development Efficiency**: Easy debugging of optimization issues and parameter exploration
-- **State Management**: Fine-grained control over accumulated learning data
-- **Problem Resolution**: Quick removal of problematic combinations that may cause issues
-- **Data Analysis**: Comprehensive view of optimization progress and top performers
-- **Safe Operations**: All modifications protected by automatic backups and confirmations
-- **User Experience**: Professional command-line interface with clear feedback
-
-**Technical Quality**:
-- Full type safety with proper annotations throughout
-- Comprehensive error handling for edge cases
-- Clean Click-based CLI with grouped commands and options
-- Proper file operation safety with backup mechanisms
-- Backward compatible with existing state file format
-
-### Unified Plotting System and Recommendation Framework 🆕 **August 2025**
-**Completed**: Full implementation of unified plotting infrastructure with recommendation-specific functionality
-
-**Problem Solved**: Previously, plotting functionality was duplicated across multiple scripts, creating maintenance overhead and inconsistent visualizations. The `recommend_model.py` and `run_monte_carlo.py` scripts had separate plotting implementations that were difficult to maintain and update consistently.
-
-**Technical Achievement**: Implemented a single, unified plotting method that serves both Monte Carlo optimization and model recommendation use cases while providing customizable text content for different contexts.
-
-**Implementation Details**:
-1. **Unified `create_monte_carlo_plot()` Method**
-   - Single plotting function in `MonteCarloBacktest` class serves all use cases
-   - Consistent visual styling across all plot outputs
-   - Professional formatting with proper grid intervals and date formatting
-   - Enhanced table alignment using monospace fonts
-
-2. **Custom Text Content Support**
-   - Added `custom_text` parameter to allow context-specific information
-   - `recommend_model.py` provides recommendation-specific text content
-   - `run_monte_carlo.py` uses default Monte Carlo optimization text
-   - Maintains identical visual infrastructure while showing appropriate information
-
-3. **Enhanced Plot Features**
-   - Dynamic model-switching portfolio calculation for accurate visualization
-   - Two-subplot layout: portfolio performance (83%) and model selection timeline (17%)
-   - Professional grid system with major/minor gridlines
-   - Consistent date formatting: 5-year major ticks, 1-year minor ticks
-   - Proper legend positioning and font size optimization
-
-4. **Recommendation Plot Functionality**
-   - Shows target date and first weekday of month recommendations
-   - Displays model rankings with Sharpe ratio scores
-   - Includes recommendation analysis parameters and lookback periods
-   - Provides model-switching portfolio performance metrics
-   - Maintains same visual quality as Monte Carlo optimization plots
-
-5. **Code Quality Improvements**
-   - Eliminated ~120 lines of duplicated plotting code
-   - Single source of truth for all visualization logic
-   - Reduced maintenance overhead through unified implementation
-   - Enhanced error handling and date type safety
-
-**Benefits Achieved**:
-- **Code Maintainability**: Single plotting implementation reduces maintenance by 50%
-- **Visual Consistency**: All plots now use identical formatting and styling
-- **Development Efficiency**: Changes to plotting logic automatically apply to all use cases
-- **Professional Quality**: Enhanced formatting with proper grid intervals and fonts
-- **Flexibility**: Same infrastructure supports both optimization and recommendation contexts
-- **User Experience**: Consistent, professional visualizations across all system outputs
-
-**Technical Quality**:
-- Zero breaking changes to existing interfaces
-- Proper type safety with date alias handling to avoid conflicts
-- Comprehensive error handling for edge cases
-- Backward compatible with existing plot generation workflows
-- Enhanced table formatting with monospace fonts for proper alignment
-
-### Model Recommendation System Enhancement 🆕 **August 2025**
-**Completed**: Full integration of recommendation system with unified plotting infrastructure
-
-**Problem Solved**: The recommendation system previously had plotting issues and inconsistent visualization compared to the Monte Carlo optimization system. Users needed a reliable way to generate model recommendations with professional-quality plots.
-
-**Technical Achievement**: Successfully integrated the recommendation system with the unified plotting infrastructure while maintaining recommendation-specific functionality and text content.
-
-**Implementation Details**:
-1. **Recommendation-Specific Plot Content**
-   - Custom text overlay showing target date and recommendation analysis
-   - Model rankings with Sharpe ratio scores for specific dates
-   - Lookback period analysis results
-   - Model-switching portfolio performance using recommendation parameters
-
-2. **Date Handling Improvements**
-   - Fixed `isinstance()` conflicts by importing `date` with proper alias
-   - Robust date type checking throughout recommendation workflow
-   - Proper handling of target date and first weekday calculations
-
-3. **Integration with Monte Carlo Infrastructure**
-   - Uses same model-switching portfolio calculation logic
-   - Leverages existing performance metrics computation
-   - Maintains state persistence and parameter handling
-   - Compatible with all existing Monte Carlo features
-
-4. **Professional Output Quality**
-   - Generates `recommendation_plot.png` with same quality as optimization plots
-   - Consistent formatting and styling across all system outputs
-   - Clear recommendation information presented in organized format
-
-**Benefits Achieved**:
-- **Reliable Recommendations**: Robust system for generating model recommendations
-- **Professional Visualizations**: High-quality plots for recommendation analysis
-- **Consistent User Experience**: Same visual quality across optimization and recommendation
-- **Integrated Workflow**: Seamless integration with existing Monte Carlo infrastructure
-- **Error-Free Operation**: Resolved all plotting and date handling issues
-
-**Technical Quality**:
-- Proper error handling and type safety
-- Clean integration with existing codebase
-- Zero breaking changes to recommendation functionality
-- Enhanced robustness through unified infrastructure
+### Impact on Development Workflow
+- **Testing Efficiency**: Reduced testing cycle time from hours to minutes
+- **Parameter Exploration**: Safe exploration of large parameter spaces
+- **Resource Management**: Proper cleanup and state management
+- **User Experience**: Professional-grade responsiveness and control
+- **Research Capability**: Systematic comparison of optimization approaches 🆕
+- **Experimental Design**: Quick strategy switching for algorithmic analysis 🆕
+- **Visualization Quality**: Publication-ready plots with consistent formatting 🆕
+- **Code Maintainability**: Single source of truth for all plotting functionality 🆕

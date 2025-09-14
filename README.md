@@ -1,5 +1,3 @@
-
-
 ##### Usage:
 
 1. create an hdf file that holds stock quotes
@@ -19,6 +17,24 @@
 5. To let the code know how to track a portfolio for you, manually update the stock holdings in "PyTAAA_holdings.params".
 
 6. A web page is created in the folder listed in the json file with PyTAAA parameters ("webpage"). In Windows, you can double-click pyTAAAweb.html to see the latest status and holdings, as recommended by PyTAAA.
+
+
+##### Model Switching Abacus Method:
+
+• **Dynamic Portfolio Optimization**: Advanced model switching system that dynamically selects between multiple trading models (NAZ100, SP500) based on performance metrics
+
+• **Monte Carlo Backtesting**: Uses statistical simulation to optimize lookback periods and model selection parameters through thousands of iterations
+
+• **Normalized Performance Scoring**: Evaluates models using normalized metrics (Sharpe ratio, Sortino ratio, drawdown) to make objective switching decisions
+
+• **Monthly Rebalancing**: Automatically evaluates and switches between stock universes on the first weekday of each month
+
+• **Centralized JSON Configuration**: All entry points now use a single JSON configuration file for data locations, model parameters, and output directories
+
+• **Entry Points Available**:
+  - `recommend_model.py` - generate trading recommendations
+  - `run_monte_carlo.py` - optimize model parameters  
+  - `run_monte_carlo.sh` - shell wrapper script
 
 
 ##### Notes:

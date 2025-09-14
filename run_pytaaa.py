@@ -102,9 +102,12 @@ def run_pytaaa(json_fn):
     print("hourOfDay, daily_update_done =", hourOfDay, daily_update_done)
     if quote_server != computerName:
         copy_updated_quotes()
-    if not daily_update_done :
-        if  quote_server == computerName:
+    if not daily_update_done:
+        # Check if quote server has _NO suffix to disable updates
+        if quote_server == computerName and not quote_server.endswith('_NO'):
             UpdateHDF_yf(symbol_directory, symbols_file, json_fn)
+        elif quote_server.endswith('_NO'):
+            print("Stock quote updating disabled due to _NO suffix in quote_server setting")
         if hourOfDay > 15:
             daily_update_done = True
     marketOpen, lastDayOfMonth = CheckMarketOpen()
