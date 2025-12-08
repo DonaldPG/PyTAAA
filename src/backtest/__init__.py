@@ -1,17 +1,8 @@
 """
-PyTAAA Backtest package.
+Backtest package for PyTAAA trading system.
 
-Contains modules for Monte Carlo backtesting and trading system optimization.
-
-Modules:
-    config: Configuration classes for trading constants, backtest parameters,
-            and file paths.
-    metrics: Performance metrics calculations (CAGR, Sharpe, drawdown).
-    monte_carlo: Monte Carlo simulation and parameter generation.
-    signals: Signal generation using percentile channels and moving averages.
-    portfolio: Portfolio value calculations and rebalancing logic.
-    plotting: Visualization and plot generation.
-    io: File I/O operations for CSV and JSON handling.
+This package contains modules for backtesting configuration,
+Monte Carlo simulations, and visualization.
 """
 
 from src.backtest.config import (
@@ -19,9 +10,27 @@ from src.backtest.config import (
     BacktestConfig,
     FilePathConfig,
 )
+from src.backtest.plotting import (
+    BacktestPlotter,
+    calculate_plot_range,
+    get_y_position,
+    format_performance_metrics,
+    create_monte_carlo_histogram,
+    plot_signal_diagnostic,
+    plot_lower_panel,
+)
 
 __all__ = [
+    # Configuration
     "TradingConstants",
-    "BacktestConfig", 
+    "BacktestConfig",
     "FilePathConfig",
+    # Plotting
+    "BacktestPlotter",
+    "calculate_plot_range",
+    "get_y_position",
+    "format_performance_metrics",
+    "create_monte_carlo_histogram",
+    "plot_signal_diagnostic",
+    "plot_lower_panel",
 ]

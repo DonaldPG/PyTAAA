@@ -30,6 +30,15 @@ from src.backtest.config import (
     BacktestConfig,
     FilePathConfig,
 )
+from src.backtest.plotting import (
+    BacktestPlotter,
+    calculate_plot_range,
+    get_y_position,
+    format_performance_metrics,
+    create_monte_carlo_histogram,
+    plot_signal_diagnostic,
+    plot_lower_panel,
+)
 
 import platform
 from functions.SendEmail import SendEmail
