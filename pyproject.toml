@@ -5,6 +5,7 @@ description = "Tactical Asset Allocation Advisor"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "bottleneck>=1.6.0",
     "bs4>=0.0.2",
     "click>=8.1.8",
     "cryptography>=44.0.1",
@@ -24,3 +25,12 @@ dependencies = [
     "tables>=3.10.2",
     "yfinance>=0.2.52",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
