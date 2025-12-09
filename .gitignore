@@ -1,0 +1,34 @@
+# images & plot files
+pyTAAA_web/*.png
+*.png
+
+# stock data
+symbols/
+
+# Logs
+logs/
+*.log
+
+# Environment variables
+.env
+
+# python environment
+.venv/
+3rd_env/
+my_env/
+
+# compiled python
+__pycache__
+*.pyc
+*bak*
+*.backup
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Generated/temp files
+cluster.params
+agentic_prompt.txt
+finviz_*.html
+finviz_delisted_cache.json
