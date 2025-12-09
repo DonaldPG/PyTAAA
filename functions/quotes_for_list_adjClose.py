@@ -1001,59 +1001,109 @@ def get_pe_google( symbol ):
     return quote
 
 
-def get_pe_finviz( symbol, verbose=False ):
-    ' use finviz to get calculated P/E ratios '
+def get_pe_finviz(symbol: str, verbose: bool = False) -> float:
+    """
+    Use finviz to get calculated P/E ratios for a given symbol.
+    Handles errors gracefully and returns np.nan for unavailable data.
+
+    Args:
+        symbol: The stock ticker symbol.
+        verbose: If True, print detailed output.
+
+    Returns:
+        The P/E ratio as a float, or np.nan if unavailable.
+    """
     import numpy as np
     import bs4 as bs
     import requests
     import os
     import csv
+    import time
+    import logging
+
+    logger = logging.getLogger(__name__)
 
     try:
-        # Get source table
-        url = 'https://finviz.com/quote.ashx?t='+symbol.upper()
-        r = requests.get(url)
-        html = r .text
-        soup = bs.BeautifulSoup(html, 'lxml')
-        table = soup.find('table', class_= 'snapshot-table2')
-
-        # Split by row and extract values
+        url = "https://finviz.com/quote.ashx?t=" + symbol.upper()
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/115.0.0.0 Safari/537.36"
+            )
+        }
+        r = requests.get(url, headers=headers)
+        
+        # Handle rate limiting
+        if r.status_code == 429:
+            logger.warning(f"Rate limited by finviz for {symbol}. Sleeping and retrying...")
+            time.sleep(5)
+            r = requests.get(url, headers=headers)
+        
+        # Handle HTTP 404 and other errors gracefully
+        if r.status_code == 404:
+            logger.warning(f"HTTP 404 from finviz for {symbol} - symbol may be delisted")
+            if verbose:
+                print(f"HTTP 404 from finviz for {symbol}")
+            return np.nan
+        elif r.status_code != 200:
+            logger.warning(f"HTTP {r.status_code} from finviz for {symbol}")
+            if verbose:
+                print(f"HTTP {r.status_code} from finviz for {symbol}")
+            return np.nan
+            
+        html = r.text
+        soup = bs.BeautifulSoup(html, "lxml")
+        table = soup.find("table", class_="snapshot-table2")
+        
+        if table is None:
+            logger.warning(f"Could not find snapshot-table2 in finviz HTML for {symbol}")
+            if verbose:
+                print(f"Could not find data table for {symbol}")
+            return np.nan
+            
         values = []
-        for tr in table.find_all('tr')[1:3]:
-            td = tr.find_all('td')[1]
+        for tr in table.find_all("tr")[1:3]:
+            td = tr.find_all("td")[1]
             value = td.text
-
-            #Convert to numeric
-            if 'B' in value:
-                value = value.replace('B',"")
+            if "B" in value:
+                value = value.replace("B", "")
                 value = float(value.strip())
                 value = value * 1000000000
                 values.append(value)
-
-            elif 'M' in value:
-                value = value.replace('M',"")
+            elif "M" in value:
+                value = value.replace("M", "")
                 value = float(value.strip())
                 value = value * 1000000
                 values.append(value)
-
-            #Account for blank values
             else:
                 values.append(0)
-
-        #Append to respective lists
+                
         market_cap = values[0]
         earnings = values[1]
-        if float(earnings) != 0.:
+        
+        if float(earnings) != 0.0:
             pe = market_cap / earnings
         else:
             pe = np.nan
-    except:
-        market_cap = 0.
-        earnings = 0.
-        pe = np.nan
-    if verbose:
-        print(symbol+' market cap, earnings, P/E = '+str(market_cap)+', '+str(earnings)+', '+str(pe))
-    return pe
+            
+        if verbose:
+            print(f"{symbol} market cap, earnings, P/E = {market_cap}, {earnings}, {pe}")
+        return pe
+        
+    except ValueError as e:
+        # Handle specific parsing errors
+        if "could not convert string to float" in str(e):
+            logger.warning(f"Failed to parse P/E data for {symbol}: {e}")
+            if verbose:
+                print(f"Failed to fetch P/E for {symbol}: {e}")
+        return np.nan
+    except Exception as exc:
+        # Handle all other exceptions gracefully
+        logger.warning(f"Failed to fetch P/E for {symbol}: {exc}")
+        if verbose:
+            print(f"Failed to fetch P/E for {symbol}: {exc}")
+        return np.nan
 
 
 def get_SectorAndIndustry_google( symbol ):
@@ -1226,3 +1276,602 @@ def LastQuotesForList( symbols_list ):
 
     print("attempts, sysmbols_list,quotelist =", attempt, symbols_list, quotelist)
     return quotelist
+
+
+def diagnose_finviz_format(symbol: str = "AAPL", save_html: bool = True) -> dict:
+    """
+    Diagnostic function to check current Finviz webpage format.
+    
+    Args:
+        symbol: Stock symbol to test (default: AAPL - a reliable stock)
+        save_html: Whether to save the HTML for manual inspection
+        
+    Returns:
+        Dictionary with diagnostic information about the webpage format
+    """
+    import numpy as np
+    import bs4 as bs
+    import requests
+    import os
+    import datetime
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    print(f"############### Diagnosing Finviz format for {symbol} ###############")
+    
+    try:
+        url = f"https://finviz.com/quote.ashx?t={symbol.upper()}"
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/115.0.0.0 Safari/537.36"
+            )
+        }
+        
+        print(f"Fetching URL: {url}")
+        r = requests.get(url, headers=headers)
+        print(f"HTTP Status Code: {r.status_code}")
+        
+        if r.status_code != 200:
+            return {
+                "status": "error",
+                "http_code": r.status_code,
+                "message": f"HTTP {r.status_code} error"
+            }
+        
+        html = r.text
+        print(f"HTML length: {len(html)} characters")
+        
+        # Save HTML for manual inspection if requested
+        if save_html:
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"finviz_{symbol}_{timestamp}.html"
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(html)
+            print(f"HTML saved to: {filename}")
+        
+        soup = bs.BeautifulSoup(html, "lxml")
+        
+        # Check for various table formats Finviz might use
+        tables_found = {}
+        
+        # Original format we expect
+        table_snapshot2 = soup.find("table", class_="snapshot-table2")
+        tables_found["snapshot-table2"] = table_snapshot2 is not None
+        
+        # Alternative table formats to check
+        table_formats = [
+            ("table", {"class": "snapshot-table"}),
+            ("table", {"class": "fullview-title"}),
+            ("div", {"class": "snapshot-td2"}),
+            ("div", {"class": "quote-price"}),
+            ("table", {"id": "js-quote-summary"}),
+            ("div", {"class": "quote-summary"}),
+        ]
+        
+        for tag, attrs in table_formats:
+            element = soup.find(tag, attrs)
+            key = f"{tag}_{list(attrs.values())[0]}"
+            tables_found[key] = element is not None
+            if element:
+                print(f"Found element: {tag} with {attrs}")
+        
+        # Look for P/E related text in the HTML
+        pe_mentions = html.lower().count("p/e")
+        ratio_mentions = html.lower().count("ratio")
+        print(f"P/E mentions in HTML: {pe_mentions}")
+        print(f"Ratio mentions in HTML: {ratio_mentions}")
+        
+        # Try to find all tables and their classes
+        all_tables = soup.find_all("table")
+        table_classes = []
+        for table in all_tables:
+            if table.get("class"):
+                table_classes.extend(table.get("class"))
+        
+        print(f"All table classes found: {set(table_classes)}")
+        
+        # Check if we can find the expected data structure
+        diagnostic_result = {
+            "status": "success",
+            "http_code": r.status_code,
+            "html_length": len(html),
+            "pe_mentions": pe_mentions,
+            "ratio_mentions": ratio_mentions,
+            "tables_found": tables_found,
+            "table_classes": list(set(table_classes)),
+            "snapshot_table2_exists": table_snapshot2 is not None
+        }
+        
+        # Try to extract data using current method
+        if table_snapshot2:
+            print("snapshot-table2 found - testing data extraction...")
+            try:
+                values = []
+                for tr in table_snapshot2.find_all("tr")[1:3]:
+                    td = tr.find_all("td")[1]
+                    value = td.text
+                    values.append(value)
+                    print(f"Extracted value: '{value}'")
+                
+                diagnostic_result["extracted_values"] = values
+                diagnostic_result["extraction_success"] = True
+                
+            except Exception as e:
+                print(f"Data extraction failed: {e}")
+                diagnostic_result["extraction_success"] = False
+                diagnostic_result["extraction_error"] = str(e)
+        else:
+            print("snapshot-table2 NOT FOUND - format may have changed")
+            diagnostic_result["extraction_success"] = False
+            diagnostic_result["extraction_error"] = "snapshot-table2 not found"
+        
+        return diagnostic_result
+        
+    except Exception as e:
+        logger.error(f"Diagnostic failed for {symbol}: {e}")
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
+
+def get_pe_finviz_with_diagnostics(symbol: str, verbose: bool = False) -> float:
+    """
+    Enhanced version of get_pe_finviz with detailed format checking.
+    
+    Args:
+        symbol: The stock ticker symbol
+        verbose: If True, print detailed diagnostic output
+        
+    Returns:
+        The P/E ratio as a float, or np.nan if unavailable
+    """
+    import numpy as np
+    import bs4 as bs
+    import requests
+    import time
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        url = f"https://finviz.com/quote.ashx?t={symbol.upper()}"
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/115.0.0.0 Safari/537.36"
+            )
+        }
+        
+        if verbose:
+            print(f"Fetching {symbol} from: {url}")
+            
+        r = requests.get(url, headers=headers)
+        
+        # Handle rate limiting
+        if r.status_code == 429:
+            logger.warning(f"Rate limited by finviz for {symbol}. Sleeping and retrying...")
+            if verbose:
+                print(f"Rate limited for {symbol}, waiting 5 seconds...")
+            time.sleep(5)
+            r = requests.get(url, headers=headers)
+        
+        # Handle HTTP errors gracefully
+        if r.status_code == 404:
+            logger.warning(f"HTTP 404 from finviz for {symbol} - symbol may be delisted")
+            if verbose:
+                print(f"HTTP 404 from finviz for {symbol}")
+            return np.nan
+        elif r.status_code != 200:
+            logger.warning(f"HTTP {r.status_code} from finviz for {symbol}")
+            if verbose:
+                print(f"HTTP {r.status_code} from finviz for {symbol}")
+            return np.nan
+            
+        html = r.text
+        soup = bs.BeautifulSoup(html, "lxml")
+        
+        if verbose:
+            print(f"HTML length: {len(html)} characters")
+            
+        # Try original format first
+        table = soup.find("table", class_="snapshot-table2")
+        
+        if table is None:
+            if verbose:
+                print("snapshot-table2 not found, checking alternative formats...")
+                
+            # Try alternative table formats
+            alternative_selectors = [
+                ("table", {"class": "snapshot-table"}),
+                ("div", {"class": "snapshot-td2"}),
+                ("table", {"class": "fullview-title"}),
+            ]
+            
+            for tag, attrs in alternative_selectors:
+                table = soup.find(tag, attrs)
+                if table:
+                    if verbose:
+                        print(f"Found alternative format: {tag} with {attrs}")
+                    break
+            
+            if table is None:
+                logger.warning(f"Could not find any data table for {symbol} - format may have changed")
+                if verbose:
+                    print(f"No recognized data table found for {symbol}")
+                    # Show available table classes for debugging
+                    all_tables = soup.find_all("table")
+                    if all_tables:
+                        print("Available table classes:")
+                        for i, t in enumerate(all_tables[:5]):  # Show first 5 tables
+                            print(f"  Table {i}: {t.get('class', 'no class')}")
+                return np.nan
+                
+        # Try to extract P/E data
+        try:
+            values = []
+            for tr in table.find_all("tr")[1:3]:
+                td = tr.find_all("td")[1]
+                value = td.text.strip()
+                if verbose:
+                    print(f"Raw value extracted: '{value}'")
+                
+                if "B" in value:
+                    value = value.replace("B", "")
+                    value = float(value.strip()) * 1000000000
+                    values.append(value)
+                elif "M" in value:
+                    value = value.replace("M", "")
+                    value = float(value.strip()) * 1000000
+                    values.append(value)
+                else:
+                    try:
+                        values.append(float(value))
+                    except ValueError:
+                        if verbose:
+                            print(f"Could not parse value: '{value}'")
+                        values.append(0)
+                        
+            if len(values) >= 2:
+                market_cap = values[0]
+                earnings = values[1]
+                
+                if float(earnings) != 0.0:
+                    pe = market_cap / earnings
+                else:
+                    pe = np.nan
+                    
+                if verbose:
+                    print(f"{symbol}: market_cap={market_cap}, earnings={earnings}, P/E={pe}")
+                return pe
+            else:
+                if verbose:
+                    print(f"Insufficient data extracted for {symbol}")
+                return np.nan
+                
+        except Exception as e:
+            logger.warning(f"Data extraction failed for {symbol}: {e}")
+            if verbose:
+                print(f"Data extraction failed for {symbol}: {e}")
+            return np.nan
+        
+    except ValueError as e:
+        # Handle specific parsing errors
+        if "could not convert string to float" in str(e):
+            logger.warning(f"Failed to parse P/E data for {symbol}: {e}")
+            if verbose:
+                print(f"Failed to parse P/E data for {symbol}: {e}")
+        return np.nan
+    except Exception as exc:
+        # Handle all other exceptions gracefully
+        logger.warning(f"Failed to fetch P/E for {symbol}: {exc}")
+        if verbose:
+            print(f"Failed to fetch P/E for {symbol}: {exc}")
+        return np.nan
+
+
+def get_pe_finviz_with_smart_limiting(symbol: str, verbose: bool = False, 
+                                      global_state: dict = None) -> float:
+    """
+    Enhanced P/E fetching with smart error limiting and caching.
+    
+    Args:
+        symbol: The stock ticker symbol
+        verbose: If True, print detailed output
+        global_state: Dictionary to track global state across calls
+        
+    Returns:
+        The P/E ratio as a float, or np.nan if unavailable or limit reached
+    """
+    import numpy as np
+    import bs4 as bs
+    import requests
+    import time
+    import logging
+    import os
+    import json
+    from datetime import datetime, timedelta
+    
+    logger = logging.getLogger(__name__)
+    
+    # Initialize global state if not provided
+    if global_state is None:
+        global_state = {
+            'consecutive_errors': 0,
+            'total_requests': 0,
+            'rate_limit_count': 0,
+            'delisted_cache_file': 'finviz_delisted_cache.json',
+            'delisted_symbols': set(),
+            'last_request_time': 0,
+            'backoff_delay': 1
+        }
+    
+    # Load delisted symbols cache
+    if os.path.exists(global_state['delisted_cache_file']):
+        try:
+            with open(global_state['delisted_cache_file'], 'r') as f:
+                cache_data = json.load(f)
+                global_state['delisted_symbols'] = set(cache_data.get('symbols', []))
+                if verbose:
+                    print(f"Loaded {len(global_state['delisted_symbols'])} known delisted symbols from cache")
+        except Exception as e:
+            logger.warning(f"Could not load delisted cache: {e}")
+    
+    # Check if symbol is in delisted cache
+    if symbol.upper() in global_state['delisted_symbols']:
+        if verbose:
+            print(f"{symbol} is in delisted cache - skipping")
+        return np.nan
+    
+    # Check consecutive error limit
+    if global_state['consecutive_errors'] >= 10:
+        logger.warning("Stopping P/E fetching after 10 consecutive errors")
+        if verbose:
+            print("Stopping P/E fetching after 10 consecutive errors")
+        return np.nan
+    
+    # Check total rate limit count
+    if global_state['rate_limit_count'] >= 5:
+        logger.warning("Stopping P/E fetching after 5 rate limits")
+        if verbose:
+            print("Stopping P/E fetching after 5 rate limits")
+        return np.nan
+    
+    # Implement smart delays between requests
+    current_time = time.time()
+    time_since_last = current_time - global_state['last_request_time']
+    
+    # Minimum delay between requests (increases with rate limits)
+    min_delay = global_state['backoff_delay']
+    if time_since_last < min_delay:
+        sleep_time = min_delay - time_since_last
+        if verbose:
+            print(f"Waiting {sleep_time:.1f}s before next request...")
+        time.sleep(sleep_time)
+    
+    global_state['last_request_time'] = time.time()
+    global_state['total_requests'] += 1
+    
+    try:
+        url = f"https://finviz.com/quote.ashx?t={symbol.upper()}"
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/115.0.0.0 Safari/537.36"
+            )
+        }
+        
+        if verbose:
+            print(f"Fetching {symbol} (#{global_state['total_requests']})...")
+            
+        r = requests.get(url, headers=headers, timeout=10)
+        
+        # Handle rate limiting with exponential backoff
+        if r.status_code == 429:
+            global_state['rate_limit_count'] += 1
+            global_state['backoff_delay'] = min(global_state['backoff_delay'] * 2, 30)  # Cap at 30s
+            
+            logger.warning(f"Rate limited by finviz for {symbol} ({global_state['rate_limit_count']}/5). "
+                          f"Increasing delay to {global_state['backoff_delay']}s")
+            if verbose:
+                print(f"Rate limited for {symbol}, waiting {global_state['backoff_delay']}s...")
+            
+            time.sleep(global_state['backoff_delay'])
+            
+            # Retry once
+            r = requests.get(url, headers=headers, timeout=10)
+            
+            if r.status_code == 429:
+                global_state['consecutive_errors'] += 1
+                return np.nan
+        
+        # Handle HTTP 404 - symbol delisted
+        if r.status_code == 404:
+            logger.warning(f"HTTP 404 from finviz for {symbol} - symbol may be delisted")
+            if verbose:
+                print(f"HTTP 404 from finviz for {symbol}")
+            
+            # Add to delisted cache
+            global_state['delisted_symbols'].add(symbol.upper())
+            _save_delisted_cache(global_state)
+            
+            global_state['consecutive_errors'] += 1
+            return np.nan
+            
+        elif r.status_code != 200:
+            logger.warning(f"HTTP {r.status_code} from finviz for {symbol}")
+            if verbose:
+                print(f"HTTP {r.status_code} from finviz for {symbol}")
+            global_state['consecutive_errors'] += 1
+            return np.nan
+            
+        # Successfully got data - reset consecutive error count
+        global_state['consecutive_errors'] = 0
+        
+        # Reduce backoff delay on success
+        if global_state['backoff_delay'] > 1:
+            global_state['backoff_delay'] = max(global_state['backoff_delay'] * 0.8, 1)
+            
+        html = r.text
+        soup = bs.BeautifulSoup(html, "lxml")
+        table = soup.find("table", class_="snapshot-table2")
+        
+        if table is None:
+            logger.warning(f"Could not find snapshot-table2 in finviz HTML for {symbol}")
+            if verbose:
+                print(f"Could not find data table for {symbol}")
+            return np.nan
+            
+        values = []
+        for tr in table.find_all("tr")[1:3]:
+            td = tr.find_all("td")[1]
+            value = td.text.strip()
+            
+            if "B" in value:
+                value = value.replace("B", "")
+                value = float(value.strip()) * 1000000000
+                values.append(value)
+            elif "M" in value:
+                value = value.replace("M", "")
+                value = float(value.strip()) * 1000000
+                values.append(value)
+            else:
+                try:
+                    values.append(float(value))
+                except ValueError:
+                    values.append(0)
+                    
+        if len(values) >= 2:
+            market_cap = values[0]
+            earnings = values[1]
+            
+            if float(earnings) != 0.0:
+                pe = market_cap / earnings
+            else:
+                pe = np.nan
+                
+            if verbose:
+                print(f"{symbol}: market_cap={market_cap}, earnings={earnings}, P/E={pe}")
+            return pe
+        else:
+            if verbose:
+                print(f"Insufficient data extracted for {symbol}")
+            return np.nan
+        
+    except requests.exceptions.Timeout:
+        logger.warning(f"Timeout fetching {symbol}")
+        if verbose:
+            print(f"Timeout fetching {symbol}")
+        global_state['consecutive_errors'] += 1
+        return np.nan
+        
+    except ValueError as e:
+        if "could not convert string to float" in str(e):
+            logger.warning(f"Failed to parse P/E data for {symbol}: {e}")
+            if verbose:
+                print(f"Failed to parse P/E data for {symbol}: {e}")
+        global_state['consecutive_errors'] += 1
+        return np.nan
+        
+    except Exception as exc:
+        logger.warning(f"Failed to fetch P/E for {symbol}: {exc}")
+        if verbose:
+            print(f"Failed to fetch P/E for {symbol}: {exc}")
+        global_state['consecutive_errors'] += 1
+        return np.nan
+
+
+def _save_delisted_cache(global_state: dict) -> None:
+    """Save delisted symbols cache to disk."""
+    import logging
+    
+    try:
+        from datetime import datetime
+        import json
+        
+        cache_data = {
+            'symbols': list(global_state['delisted_symbols']),
+            'last_updated': datetime.now().isoformat()
+        }
+        with open(global_state['delisted_cache_file'], 'w') as f:
+            json.dump(cache_data, f, indent=2)
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"Could not save delisted cache: {e}")
+
+
+def get_pe_finviz_batch(symbols: list, verbose: bool = False, 
+                       max_symbols: int = 50) -> dict:
+    """
+    Fetch P/E ratios for a batch of symbols with smart rate limiting.
+    
+    Args:
+        symbols: List of stock symbols
+        verbose: If True, print detailed output
+        max_symbols: Maximum number of symbols to process before stopping
+        
+    Returns:
+        Dictionary mapping symbols to P/E ratios
+    """
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    # Shared state across all requests
+    global_state = {
+        'consecutive_errors': 0,
+        'total_requests': 0,
+        'rate_limit_count': 0,
+        'delisted_cache_file': 'finviz_delisted_cache.json',
+        'delisted_symbols': set(),
+        'last_request_time': 0,
+        'backoff_delay': 1
+    }
+    
+    results = {}
+    processed_count = 0
+    
+    print(f"############### Starting P/E batch fetch for {len(symbols)} symbols ###############")
+    
+    for i, symbol in enumerate(symbols):
+        if processed_count >= max_symbols:
+            print(f"Reached maximum symbol limit ({max_symbols}), stopping...")
+            break
+            
+        if global_state['consecutive_errors'] >= 10:
+            print(f"Stopping after 10 consecutive errors")
+            break
+            
+        if global_state['rate_limit_count'] >= 5:
+            print(f"Stopping after 5 rate limits")
+            break
+        
+        if verbose:
+            print(f"Processing {symbol} ({i+1}/{len(symbols)})...")
+        
+        pe_ratio = get_pe_finviz_with_smart_limiting(symbol, verbose=False, global_state=global_state)
+        results[symbol] = pe_ratio
+        processed_count += 1
+        
+        # Progress update every 10 symbols
+        if (i + 1) % 10 == 0:
+            success_count = sum(1 for v in results.values() if not (v != v))  # Count non-NaN values
+            print(f"Progress: {i+1}/{len(symbols)} symbols processed, "
+                  f"{success_count} successful, "
+                  f"{global_state['consecutive_errors']} consecutive errors, "
+                  f"{global_state['rate_limit_count']} rate limits")
+    
+    # Final summary
+    success_count = sum(1 for v in results.values() if not (v != v))  # Count non-NaN values
+    print(f"############### Batch complete ###############")
+    print(f"Total processed: {processed_count}")
+    print(f"Successful P/E fetches: {success_count}")
+    print(f"Failed/delisted: {processed_count - success_count}")
+    print(f"Rate limits hit: {global_state['rate_limit_count']}")
+    print(f"Cached delisted symbols: {len(global_state['delisted_symbols'])}")
+    
+    return results

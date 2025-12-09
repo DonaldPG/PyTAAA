@@ -240,33 +240,70 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
     return quotes_df
 
 
-def get_pe(ticker):
-
-    from urllib.request import urlopen
-    from bs4 import BeautifulSoup
+def get_pe_finviz_with_error_limit(symbol: str, verbose: bool = False, 
+                                   error_counter: dict = None) -> float:
+    """
+    Wrapper for get_pe_finviz that implements error counting and stops after 5 consecutive errors.
+    
+    Args:
+        symbol: The stock ticker symbol.
+        verbose: If True, print detailed output.
+        error_counter: Dictionary to track consecutive error count (mutable for persistence).
+        
+    Returns:
+        The P/E ratio as a float, or np.nan if unavailable or error limit reached.
+    """
     import numpy as np
-
-    try:
-        url2 = 'http://finance.google.com/finance?q=NASDAQ%3A'+ticker
-        text_soup = BeautifulSoup(urlopen(url2).read(), 'lxml') #read in
-
-        pe = np.nan
-        titles = text_soup.findAll('td', {'class': 'key'})
-        for title in titles:
-            if 'P/E' in title.text:
-                pe_text =  [td.text for td in title.findNextSiblings(attrs={'class': 'val'}) if td.text]
-                pe = float(pe_text[0].split("\n")[0])
-    except:
-        pe = np.nan
-
-    print(" switch to get_pe in quotes_for_list_adjClose.py")
-    return pe
+    import logging
+    from functions.quotes_for_list_adjClose import get_pe_finviz
+    
+    logger = logging.getLogger(__name__)
+    
+    # Initialize error counter if not provided
+    if error_counter is None:
+        error_counter = {'count': 0}
+    
+    # Check if we've hit the error limit
+    if error_counter['count'] >= 5:
+        logger.warning("Stopping P/E fetching after 5 consecutive errors")
+        if verbose:
+            print("Stopping P/E fetching after 5 consecutive errors")
+        return np.nan
+    
+    # Try to get P/E ratio
+    pe_ratio = get_pe_finviz(symbol, verbose)
+    
+    # Check if we got a valid result
+    if np.isnan(pe_ratio):
+        error_counter['count'] += 1
+        if verbose and error_counter['count'] <= 5:
+            print(f"Error count: {error_counter['count']}/5")
+    else:
+        # Reset error counter on successful fetch
+        error_counter['count'] = 0
+    
+    return pe_ratio
 
 
 def get_pe(ticker):
-
-    from functions.quotes_for_list_adjClose import get_pe_finviz
-    return get_pe_finviz(ticker, verbose=True)
+    """
+    Get P/E ratio with smart error handling and automatic stopping after limits.
+    Uses caching and exponential backoff to minimize Finviz requests.
+    """
+    # Use a module-level state to persist across calls
+    if not hasattr(get_pe, 'global_state'):
+        get_pe.global_state = {
+            'consecutive_errors': 0,
+            'total_requests': 0,
+            'rate_limit_count': 0,
+            'delisted_cache_file': 'finviz_delisted_cache.json',
+            'delisted_symbols': set(),
+            'last_request_time': 0,
+            'backoff_delay': 1
+        }
+    
+    from functions.quotes_for_list_adjClose import get_pe_finviz_with_smart_limiting
+    return get_pe_finviz_with_smart_limiting(ticker, verbose=True, global_state=get_pe.global_state)
 
 
 def get_quote_and_pe(ticker):
