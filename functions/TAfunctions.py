@@ -1887,11 +1887,168 @@ def move_martin_2D(adjClose,period):
 
 #----------------------------------------------
 
+def apply_weight_constraints(
+    weights: np.ndarray,
+    max_weight_factor: float = 3.0,
+    min_weight_factor: float = 0.3,
+    absolute_max_weight: float = 0.9,
+    max_iterations: int = 20,
+    tolerance: float = 1e-6,
+    verbose: bool = False
+) -> np.ndarray:
+    """
+    Apply min/max weight constraints to portfolio weights.
+
+    Constraints are relative to equal weights. For example, with 4 stocks
+    having equal weights of 0.25 each:
+    - max_weight_factor=3.0 means max weight = 3.0 * 0.25 = 0.75
+    - min_weight_factor=0.3 means min weight = 0.3 * 0.25 = 0.075
+
+    Uses iterative capping/redistribution to maintain sum-to-one constraint.
+
+    Parameters
+    ----------
+    weights : np.ndarray
+        1D array of portfolio weights (should sum to 1.0).
+    max_weight_factor : float
+        Maximum weight as multiple of equal weight (default 3.0).
+    min_weight_factor : float
+        Minimum weight as multiple of equal weight (default 0.3).
+    absolute_max_weight : float
+        Hard cap on maximum weight regardless of factor (default 0.9).
+    max_iterations : int
+        Maximum iterations for convergence (default 20).
+    tolerance : float
+        Convergence tolerance for weight changes (default 1e-6).
+    verbose : bool
+        Print debug information (default False).
+
+    Returns
+    -------
+    np.ndarray
+        Constrained weights that sum to 1.0.
+    """
+    # Handle edge cases.
+    if weights is None or len(weights) == 0:
+        return weights
+
+    # Count stocks with non-zero weights.
+    non_zero_mask = weights > 0
+    n_selected = np.sum(non_zero_mask)
+
+    if n_selected == 0:
+        return weights
+
+    if n_selected == 1:
+        # Single stock gets 100% weight, no constraints needed.
+        return weights
+
+    # Calculate equal weight and constraint bounds.
+    equal_weight = 1.0 / n_selected
+    max_weight = min(max_weight_factor * equal_weight, absolute_max_weight)
+    min_weight = min_weight_factor * equal_weight
+
+    # Ensure min_weight doesn't exceed max_weight.
+    if min_weight >= max_weight:
+        min_weight = max_weight * 0.5
+        if verbose:
+            print(f" ... Warning: min_weight adjusted to {min_weight:.4f}")
+
+    # Validate that constraints are feasible.
+    if n_selected * min_weight > 1.0:
+        min_weight = 1.0 / n_selected - tolerance
+        if verbose:
+            print(f" ... Warning: min_weight reduced to {min_weight:.4f}")
+
+    if n_selected * max_weight < 1.0:
+        max_weight = 1.0 / n_selected + tolerance
+        if verbose:
+            print(f" ... Warning: max_weight increased to {max_weight:.4f}")
+
+    if verbose:
+        print(f" ... Applying weight constraints:")
+        print(f" ... n_selected={n_selected}, equal_weight={equal_weight:.4f}")
+        print(f" ... max_weight={max_weight:.4f}, min_weight={min_weight:.4f}")
+
+    # Work with a copy of the weights.
+    constrained = weights.copy()
+
+    # Iterative capping and redistribution.
+    for iteration in range(max_iterations):
+        prev_weights = constrained.copy()
+
+        # Step 1: Cap weights exceeding max_weight.
+        excess = 0.0
+        for i in range(len(constrained)):
+            if constrained[i] > max_weight:
+                excess += constrained[i] - max_weight
+                constrained[i] = max_weight
+
+        # Redistribute excess to weights below max.
+        if excess > 0:
+            below_max_mask = (constrained < max_weight) & (constrained > 0)
+            n_below_max = np.sum(below_max_mask)
+            if n_below_max > 0:
+                redistribution = excess / n_below_max
+                for i in range(len(constrained)):
+                    if below_max_mask[i]:
+                        constrained[i] += redistribution
+
+        # Step 2: Raise weights below min_weight.
+        deficit = 0.0
+        for i in range(len(constrained)):
+            if 0 < constrained[i] < min_weight:
+                deficit += min_weight - constrained[i]
+                constrained[i] = min_weight
+
+        # Reduce deficit from weights above min.
+        if deficit > 0:
+            above_min_mask = (constrained > min_weight)
+            total_above_min = np.sum(constrained[above_min_mask]) - \
+                np.sum(above_min_mask) * min_weight
+            if total_above_min > 0:
+                for i in range(len(constrained)):
+                    if above_min_mask[i]:
+                        reducible = constrained[i] - min_weight
+                        reduction = deficit * (reducible / total_above_min)
+                        constrained[i] -= reduction
+
+        # Normalize to ensure sum = 1.0.
+        weight_sum = np.sum(constrained)
+        if weight_sum > 0:
+            constrained = constrained / weight_sum
+
+        # Check for convergence.
+        max_change = np.max(np.abs(constrained - prev_weights))
+        if max_change < tolerance:
+            if verbose:
+                print(f" ... Converged after {iteration + 1} iterations")
+            break
+
+    # Final validation and cleanup.
+    constrained = np.clip(constrained, 0.0, absolute_max_weight)
+
+    # Final normalization.
+    weight_sum = np.sum(constrained)
+    if weight_sum > 0 and weight_sum != 1.0:
+        constrained = constrained / weight_sum
+
+    if verbose:
+        print(f" ... Final weights: min={constrained[constrained > 0].min():.4f}, "
+              f"max={constrained.max():.4f}, sum={np.sum(constrained):.6f}")
+
+    return constrained
+
+
+#----------------------------------------------
+
 def sharpeWeightedRank_2D(
         json_fn, datearray, symbols, adjClose, signal2D, signal2D_daily,
         LongPeriod, rankthreshold, riskDownside_min, riskDownside_max,
         rankThresholdPct, stddevThreshold=4.,
-        is_backtest=True, makeQCPlots=False, verbose=False
+        is_backtest=True, makeQCPlots=False, verbose=False,
+        max_weight_factor=3.0, min_weight_factor=0.3,
+        absolute_max_weight=0.9, apply_constraints=True
 ):
     """
     Calculate Sharpe-weighted rankings for portfolio allocation.
@@ -1902,8 +2059,21 @@ def sharpeWeightedRank_2D(
     3. Risk-adjusted returns
     4. Signal strength from signal2D
     
-    Returns:
-        monthgainlossweight: Portfolio weights for each stock over time
+    Parameters
+    ----------
+    max_weight_factor : float
+        Maximum weight as multiple of equal weight (default 3.0).
+    min_weight_factor : float
+        Minimum weight as multiple of equal weight (default 0.3).
+    absolute_max_weight : float
+        Hard cap on maximum weight (default 0.9).
+    apply_constraints : bool
+        Whether to apply weight constraints (default True).
+    
+    Returns
+    -------
+    monthgainlossweight : np.ndarray
+        Portfolio weights for each stock over time [stocks, dates].
     """
     import numpy as np
     try:
@@ -1918,7 +2088,12 @@ def sharpeWeightedRank_2D(
         print(" ... Inside sharpeWeightedRank_2D")
         print(f" ... adjClose shape: {adjClose.shape}")
         print(f" ... LongPeriod: {LongPeriod}, rankthreshold: {rankthreshold}")
+        if apply_constraints:
+            print(f" ... Weight constraints: max_factor={max_weight_factor}, "
+                  f"min_factor={min_weight_factor}, abs_max={absolute_max_weight}")
 
+    # ...existing code for gainloss calculation through weight assignment...
+    
     # Calculate gain/loss ratios
     gainloss = np.ones((adjClose.shape[0], adjClose.shape[1]), dtype=float)
     gainloss[:, 1:] = adjClose[:, 1:] / adjClose[:, :-1]
@@ -2025,6 +2200,21 @@ def sharpeWeightedRank_2D(
                 # Same month - maintain previous weights
                 monthgainlossweight[:, j] = monthgainlossweight[:, j-1]
 
+    # Apply weight constraints if enabled
+    if apply_constraints:
+        if verbose:
+            print(" ... Applying weight constraints to all time periods")
+        
+        for j in range(adjClose.shape[1]):
+            # Apply constraints to each column (time period)
+            monthgainlossweight[:, j] = apply_weight_constraints(
+                monthgainlossweight[:, j],
+                max_weight_factor=max_weight_factor,
+                min_weight_factor=min_weight_factor,
+                absolute_max_weight=absolute_max_weight,
+                verbose=(verbose and j == adjClose.shape[1] - 1)
+            )
+
     # Ensure weights sum to 1 and handle NaNs
     for j in range(adjClose.shape[1]):
         weights_sum = np.sum(monthgainlossweight[:, j])
@@ -2053,400 +2243,6 @@ def sharpeWeightedRank_2D(
     return monthgainlossweight
 
 #----------------------------------------------
-
-def MAA_WeightedRank_2D(
-        json_fn, datearray, symbols, adjClose ,signal2D ,signal2D_daily,
-        LongPeriod,numberStocksTraded,
-        wR, wC, wV, wS, stddevThreshold=4.
-):
-
-    # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
-    # rankthreshold --     # select this many funds with best recent performance
-
-    import numpy as np
-    import nose
-    import os
-    import sys
-    from matplotlib import pylab as plt
-    import matplotlib.gridspec as gridspec
-    try:
-        import bottleneck as bn
-        from bn import rankdata as rd
-    except:
-        import scipy.stats.mstats as bn
-
-    from functions.GetParams import get_json_params
-    params = get_json_params(json_fn)
-    stockList = params['stockList']
-
-    adjClose_despike = despike_2D( adjClose, LongPeriod, stddevThreshold=stddevThreshold )
-
-    gainloss = np.ones((adjClose.shape[0],adjClose.shape[1]),dtype=float)
-    #gainloss[:,1:] = adjClose[:,1:] / adjClose[:,:-1]
-    gainloss[:,1:] = adjClose_despike[:,1:] / adjClose_despike[:,:-1]  ## experimental
-    gainloss[isnan(gainloss)]=1.
-
-    # convert signal2D to contain either 1 or 0 for weights
-    signal2D -= signal2D.min()
-    signal2D *= signal2D.max()
-
-    ############################
-    ###
-    ### filter universe of stocks to exclude all that have return < 0
-    ### - needed for correlation to "equal weight index" (EWI)
-    ### - EWI is daily gain/loss percentage
-    ###
-    ############################
-
-    EWI  = np.zeros( adjClose.shape[1], 'float' )
-    EWI_count  = np.zeros( adjClose.shape[1], 'int' )
-    for jj in np.arange(LongPeriod,adjClose.shape[1]) :
-        for ii in range(adjClose.shape[0]):
-            if signal2D_daily[ii,jj] == 1:
-                EWI[jj] += gainloss[ii,jj]
-                EWI_count[jj] += 1
-    EWI = EWI/EWI_count
-    EWI[np.isnan(EWI)] = 1.0
-
-    ############################
-    ###
-    ### compute correlation to EWI
-    ### - each day, for each stock
-    ### - not needed for stocks on days with return < 0
-    ###
-    ############################
-
-    corrEWI  = np.zeros( adjClose.shape, 'float' )
-    for jj in np.arange(LongPeriod,adjClose.shape[1]) :
-        for ii in range(adjClose.shape[0]):
-            start_date = max( jj - LongPeriod, 0 )
-            if adjClose_despike[ii,jj] > adjClose_despike[ii,start_date]:
-                corrEWI[ii,jj] = normcorrcoef(gainloss[ii,start_date:jj]-1.,EWI[start_date:jj]-1.)
-                if corrEWI[ii,jj] <0:
-                    corrEWI[ii,jj] = 0.
-
-    ############################
-    ###
-    ### compute weights
-    ### - each day, for each stock
-    ### - set to 0. for stocks on days with return < 0
-    ###
-    ############################
-
-    weights  = np.zeros( adjClose.shape, 'float' )
-    for jj in np.arange(LongPeriod,adjClose.shape[1]) :
-        for ii in range(adjClose.shape[0]):
-            start_date = max( jj - LongPeriod, 0 )
-            returnForPeriod = (adjClose_despike[ii,jj]/adjClose_despike[ii,start_date])-1.
-            if returnForPeriod  < 0.:
-                returnForPeriod = 0.
-            volatility = np.std(adjClose_despike[ii,start_date:jj])
-            weights[ii,jj] = ( returnForPeriod**wR * (1.-corrEWI[ii,jj])**wC / volatility**wV ) **wS
-
-    weights[np.isnan(weights)] = 0.0
-
-    # make duplicate of weights for adjusting using crashProtection
-    CPweights = weights.copy()
-    CP_cashWeight = np.zeros(adjClose.shape[1], 'float' )
-    for jj in np.arange(adjClose.shape[1]) :
-        weightsToday = weights[:,jj]
-        CP_cashWeight[jj] = float(len(weightsToday[weightsToday==0.])) / len(weightsToday)
-
-    ############################
-    ###
-    ### compute weights ranking and keep best
-    ### 'best' are numberStocksTraded*%risingStocks
-    ### - weights need to sum to 100%
-    ###
-    ############################
-
-    weightRank = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=int)
-
-    weightRank = bn.rankdata(weights,axis=0)
-    # reverse the ranks (low ranks are biggest gainers)
-    maxrank = np.max(weightRank)
-    weightRank -= maxrank-1
-    weightRank *= -1
-    weightRank += 2
-
-    # set top 'numberStocksTraded' to have weights sum to 1.0
-    for jj in np.arange(adjClose.shape[1]) :
-        ranksToday = weightRank[:,jj].copy()
-        weightsToday = weights[:,jj].copy()
-        weightsToday[ranksToday > numberStocksTraded] = 0.
-        if np.sum(weightsToday) > 0.:
-            weights[:,jj] = weightsToday / np.sum(weightsToday)
-        else:
-            weights[:,jj] = 1./len(weightsToday)
-
-    # set CASH to have weight based on CrashProtection
-    cash_index = symbols.index("CASH")
-    for jj in np.arange(adjClose.shape[1]) :
-        CPweights[ii,jj] = CP_cashWeight[jj]
-        weightRank[ii,jj] = 0
-        ranksToday = weightRank[:,jj].copy()
-        weightsToday = CPweights[:,jj].copy()
-        weightsToday[ranksToday > numberStocksTraded] = 0.
-        if np.sum(weightsToday) > 0.:
-            CPweights[:,jj] = weightsToday / np.sum(weightsToday)
-        else:
-            CPweights[:,jj] = 1./len(weightsToday)
-
-    # hold weights constant for month
-    for jj in np.arange(LongPeriod,adjClose.shape[1]) :
-        start_date = max( jj - LongPeriod, 0 )
-        yesterdayMonth = datearray[jj-1].month
-        todayMonth = datearray[jj].month
-        if todayMonth == yesterdayMonth:
-            weights[:,jj] = weights[:,jj-1]
-            CPweights[:,jj] = CPweights[:,jj-1]
-
-    # input symbols and company names from text file
-    json_dir = os.path.split(json_fn)[0]
-    if stockList == 'Naz100':
-        companyName_file = os.path.join( json_dir, "symbols",  "companyNames.txt" )
-    elif stockList == 'SP500':
-        companyName_file = os.path.join( json_dir, "symbols",  "SP500_companyNames.txt" )
-    with open( companyName_file, "r" ) as f:
-        companyNames = f.read()
-
-    print("\n\n\n")
-    companyNames = companyNames.split("\n")
-    ii = companyNames.index("")
-    del companyNames[ii]
-    companySymbolList  = []
-    companyNameList = []
-    for iname,name in enumerate(companyNames):
-        name = name.replace("amp;", "")
-        testsymbol, testcompanyName = name.split(";")
-        companySymbolList.append(format(testsymbol,'5s'))
-        companyNameList.append(testcompanyName)
-
-    # print list showing current rankings and weights
-    # - symbol
-    # - rank (at begining of month)
-    # - rank (most recent trading day)
-    # - weight from sharpe ratio
-    # - price
-    import os
-    rank_text = "<div id='rank_table_container'><h3>"+"<p>Current stocks, with ranks, weights, and prices are :</p></h3><font face='courier new' size=3><table border='1'> \
-               </td><td>Rank (today) \
-               </td><td>Symbol \
-               </td><td>Company \
-               </td><td>Weight \
-               </td><td>CP Weight \
-               </td><td>Price  \
-               </td><td>Trend  \
-               </td></tr>\n"
-    for i, isymbol in enumerate(symbols):
-        for j in range(len(symbols)):
-            if int( weightRank[j,-1] ) == i :
-                if signal2D_daily[j,-1] == 1.:
-                    trend = 'up'
-                else:
-                    trend = 'down'
-
-                # search for company name
-                try:
-                    symbolIndex = companySymbolList.index(format(symbols[j],'5s'))
-                    companyName = companyNameList[symbolIndex]
-                except:
-                    companyName = ""
-
-                rank_text = rank_text + \
-                       "<tr><td>" + format(weightRank[j,-1],'6.0f')  + \
-                       "<td>" + format(symbols[j],'5s')  + \
-                       "<td>" + format(companyName,'15s')  + \
-                       "<td>" + format(weights[j,-1],'5.03f') + \
-                       "<td>" + format(CPweights[j,-1],'5.03f') + \
-                       "<td>" + format(adjClose[j,-1],'6.2f')  + \
-                       "<td>" + trend  + \
-                       "</td></tr>  \n"
-    rank_text = rank_text + "</table></div>\n"
-
-    print("leaving function MAA_WeightedRank_2D...")
-
-    """
-    print " symbols = ", symbols
-    print " weights = ", weights[:,-1]
-    print " CPweights = ", CPweights[:,-1]
-
-    print " number NaNs in weights = ", weights[np.isnan(weights)].shape
-    print " number NaNs in CPweights = ", CPweights[np.isnan(CPweights)].shape
-
-    print " NaNs in monthgainlossweight = ", weights[np.isnan(weights)].shape
-    testsum = np.sum(weights,axis=0)
-    print " testsum shape, min, and max = ", testsum.shape, testsum.min(), testsum.max()
-    """
-
-    return weights, CPweights
-
-
-#----------------------------------------------
-def UnWeightedRank_2D(datearray,adjClose,signal2D,LongPeriod,rankthreshold,riskDownside_min,riskDownside_max,rankThresholdPct):
-
-    # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
-    # rankthreshold --     # select this many funds with best recent performance
-
-    import numpy as np
-    import nose
-    try:
-        import bottleneck as bn
-        from bn import rankdata as rd
-    except:
-        import scipy.stats.mstats as bn
-
-
-    gainloss = np.ones((adjClose.shape[0],adjClose.shape[1]),dtype=float)
-    gainloss[:,1:] = adjClose[:,1:] / adjClose[:,:-1]
-    gainloss[isnan(gainloss)]=1.
-
-    # convert signal2D to contain either 1 or 0 for weights
-    signal2D -= signal2D.min()
-    signal2D *= signal2D.max()
-
-    # apply signal to daily gainloss
-    gainloss = gainloss * signal2D
-    gainloss[gainloss == 0] = 1.0
-
-    value = 10000. * np.cumprod(gainloss,axis=1)
-
-    # calculate gainloss over period of "LongPeriod" days
-    monthgainloss = np.ones((adjClose.shape[0],adjClose.shape[1]),dtype=float)
-    monthgainloss[:,LongPeriod:] = adjClose[:,LongPeriod:] / adjClose[:,:-LongPeriod]
-    monthgainloss[isnan(monthgainloss)]=1.
-
-    monthgainlossweight = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
-
-    rankweight = 1./rankthreshold
-
-    ########################################################################
-    ## Calculate change in rank of active stocks each day (without duplicates as ties)
-    ########################################################################
-    monthgainlossRank = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=int)
-    monthgainlossPrevious = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
-    monthgainlossPreviousRank = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=int)
-
-    monthgainlossRank = bn.rankdata(monthgainloss,axis=0)
-    # reverse the ranks (low ranks are biggest gainers)
-    maxrank = np.max(monthgainlossRank)
-    monthgainlossRank -= maxrank-1
-    monthgainlossRank *= -1
-    monthgainlossRank += 2
-
-    monthgainlossPrevious[:,LongPeriod:] = monthgainloss[:,:-LongPeriod]
-    monthgainlossPreviousRank = bn.rankdata(monthgainlossPrevious,axis=0)
-    # reverse the ranks (low ranks are biggest gainers)
-    maxrank = np.max(monthgainlossPreviousRank)
-    monthgainlossPreviousRank -= maxrank-1
-    monthgainlossPreviousRank *= -1
-    monthgainlossPreviousRank += 2
-
-    # weight deltaRank for best and worst performers differently
-    rankoffsetchoice = rankthreshold
-    delta = -(monthgainlossRank - monthgainlossPreviousRank ) / (monthgainlossRank + rankoffsetchoice)
-
-    # if rank is outside acceptable threshold, set deltarank to zero so stock will not be chosen
-    #  - remember that low ranks are biggest gainers
-    rankThreshold = (1. - rankThresholdPct) * ( monthgainlossRank.max() - monthgainlossRank.min() )
-    for ii in range(monthgainloss.shape[0]):
-        for jj in range(monthgainloss.shape[1]):
-            if monthgainloss[ii,jj] > rankThreshold :
-                delta[ii,jj] = -monthgainloss.shape[0]/2
-
-    deltaRank = bn.rankdata(delta,axis=0)
-    # reverse the ranks (low deltaRank have the fastest improving rank)
-    maxrank = np.max(deltaRank)
-    deltaRank -= maxrank-1
-    deltaRank *= -1
-    deltaRank += 2
-
-    for ii in range(monthgainloss.shape[1]):
-        if deltaRank[:,ii].min() == deltaRank[:,ii].max():
-            deltaRank[:,ii] = 0.
-
-    ########################################################################
-    ## Hold values constant for calendar month (gains, ranks, deltaRanks)
-    ########################################################################
-
-    for ii in np.arange(1,monthgainloss.shape[1]):
-        if datearray[ii].month == datearray[ii-1].month:
-            monthgainloss[:,ii] = monthgainloss[:,ii-1]
-            deltaRank[:,ii] = deltaRank[:,ii-1]
-
-    ########################################################################
-    ## Calculate number of active stocks each day
-    ########################################################################
-
-    # TODO: activeCount can be computed before loop to save CPU cycles
-    # count number of unique values
-    activeCount = np.zeros(adjClose.shape[1],dtype=float)
-    for ii in np.arange(0,monthgainloss.shape[0]):
-        firsttradedate = np.argmax( np.clip( np.abs( gainloss[ii,:]-1. ), 0., .00001 ) )
-        activeCount[firsttradedate:] += 1
-
-    minrank = np.min(deltaRank,axis=0)
-    maxrank = np.max(deltaRank,axis=0)
-    # convert rank threshold to equivalent percent of rank range
-
-    rankthresholdpercentequiv = np.round(float(rankthreshold)*(activeCount-minrank+1)/adjClose.shape[0])
-    ranktest = deltaRank <= rankthresholdpercentequiv
-
-    ########################################################################
-    ### calculate equal weights for ranks below threshold
-    ########################################################################
-
-    elsecount = 0
-    elsedate  = 0
-    for ii in np.arange(1,monthgainloss.shape[1]) :
-        if activeCount[ii] > minrank[ii] and rankthresholdpercentequiv[ii] > 0:
-            for jj in range(value.shape[0]):
-                test = deltaRank[jj,ii] <= rankthresholdpercentequiv[ii]
-                if test == True :
-                    monthgainlossweight[jj,ii]  = 1./rankthresholdpercentequiv[ii]
-                else:
-                    monthgainlossweight[jj,ii]  = 0.
-        elif activeCount[ii] == 0 :
-            monthgainlossweight[:,ii]  *= 0.
-            monthgainlossweight[:,ii]  += 1./adjClose.shape[0]
-        else :
-            elsedate = datearray[ii]
-            elsecount += 1
-            monthgainlossweight[:,ii]  = 1./activeCount[ii]
-
-    aaa = np.sum(monthgainlossweight,axis=0)
-
-    print("")
-    print(" invoking correction to monthgainlossweight.....")
-    print("")
-    # find first date with number of stocks trading (rankthreshold) + 2
-    activeCountAboveMinimum = activeCount
-    activeCountAboveMinimum += -rankthreshold + 2
-    firstTradeDate = np.argmax( np.clip( activeCountAboveMinimum, 0 , 1 ) )
-    for ii in np.arange(firstTradeDate,monthgainloss.shape[1]) :
-        if np.sum(monthgainlossweight[:,ii]) == 0:
-            for kk in range(rankthreshold):
-                indexHighDeltaRank = np.argmin(deltaRank[:,ii]) # remember that best performance is lowest deltaRank
-                monthgainlossweight[indexHighDeltaRank,ii]  = 1./rankthreshold
-                deltaRank[indexHighDeltaRank,ii] = 1000.
-
-
-    print(" weights calculation else clause encountered :",elsecount," times. last date encountered is ",elsedate)
-    rankweightsum = np.sum(monthgainlossweight,axis=0)
-
-    monthgainlossweight[isnan(monthgainlossweight)] = 0.  # changed result from 1 to 0
-
-    monthgainlossweight = monthgainlossweight / np.sum(monthgainlossweight,axis=0)
-    monthgainlossweight[isnan(monthgainlossweight)] = 0.  # changed result from 1 to 0
-
-    return monthgainlossweight
-
-
-
-
-
-
-
 
 def hurst(X):
     """ Compute the Hurst exponent of X. If the output H=0.5,the behavior

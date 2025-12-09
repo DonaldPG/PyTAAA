@@ -248,6 +248,17 @@ def run_single_monte_carlo_realization(
         uptrendSignalMethod = params.get('uptrendSignalMethod', 'percentileChannels')
         sma_filt_val = params.get('sma_filt_val', 0.02)
         
+        # Extract weight constraint parameters directly from realization_params
+        # to ensure we use the randomly generated values, not defaults
+        max_weight_factor = realization_params.get('max_weight_factor', 3.0)
+        min_weight_factor = realization_params.get('min_weight_factor', 0.3)
+        absolute_max_weight = realization_params.get('absolute_max_weight', 0.9)
+        apply_constraints = realization_params.get('apply_constraints', True)
+        
+        print(f" ... Weight params from realization_params: "
+              f"max={max_weight_factor:.3f}, min={min_weight_factor:.3f}, "
+              f"abs_max={absolute_max_weight:.3f}")
+        
         # Validate critical parameters
         if None in [monthsToHold, numberStocksTraded, LongPeriod, stddevThreshold, 
                    rankThresholdPct, riskDownside_min, riskDownside_max]:
@@ -279,7 +290,12 @@ def run_single_monte_carlo_realization(
             monthsToHold, numberStocksTraded, LongPeriod, stddevThreshold,
             MA1, MA2, MA2offset, sma2factor, rankThresholdPct,
             riskDownside_min, riskDownside_max, lowPct, hiPct,
-            uptrendSignalMethod, sma_filt_val, iter_num, verbose
+            uptrendSignalMethod, sma_filt_val, iter_num,
+            max_weight_factor=max_weight_factor,
+            min_weight_factor=min_weight_factor,
+            absolute_max_weight=absolute_max_weight,
+            apply_constraints=apply_constraints,
+            verbose=verbose
         )
         
         if results is None:
@@ -319,7 +335,10 @@ def execute_single_backtest(
     monthsToHold, numberStocksTraded, LongPeriod, stddevThreshold,
     MA1, MA2, MA2offset, sma2factor, rankThresholdPct,
     riskDownside_min, riskDownside_max, lowPct, hiPct,
-    uptrendSignalMethod, sma_filt_val, iter_num, verbose=False
+    uptrendSignalMethod, sma_filt_val, iter_num,
+    max_weight_factor=3.0, min_weight_factor=0.3,
+    absolute_max_weight=0.9, apply_constraints=True,
+    verbose=False
 ):
     """
     Execute the core backtest logic for a single realization.
@@ -411,13 +430,30 @@ def execute_single_backtest(
     # Compute portfolio weights using sharpeWeightedRank_2D
     #############################################################################
     
+    # Use weight constraint parameters passed to this function (no hardcoding)
+    print(f" ... Weight constraint parameters for realization {iter_num}:")
+    print(f" ...   max_weight_factor = {max_weight_factor}")
+    print(f" ...   min_weight_factor = {min_weight_factor}")
+    print(f" ...   absolute_max_weight = {absolute_max_weight}")
+    print(f" ...   apply_constraints = {apply_constraints}")
+    print(f" ...   numberStocksTraded = {numberStocksTraded}")
+    if numberStocksTraded > 0:
+        equal_weight = 1.0 / numberStocksTraded
+        print(f" ...   equal_weight (1/numberStocksTraded) = {equal_weight:.4f}")
+        print(f" ...   max_weight = {min(equal_weight * max_weight_factor, absolute_max_weight):.4f}")
+        print(f" ...   min_weight = {equal_weight * min_weight_factor:.4f}")
+    
     try:
         monthgainlossweight = sharpeWeightedRank_2D(
             json_fn, datearray, symbols, adjClose, signal2D, signal2D_daily,
             LongPeriod, numberStocksTraded,
             riskDownside_min, riskDownside_max, rankThresholdPct,
             stddevThreshold=stddevThreshold,
-            makeQCPlots=False
+            makeQCPlots=False,
+            max_weight_factor=max_weight_factor,
+            min_weight_factor=min_weight_factor,
+            absolute_max_weight=absolute_max_weight,
+            apply_constraints=apply_constraints
         )
         print(f" ... Generated weights with shape: {monthgainlossweight.shape}")
         
@@ -522,6 +558,80 @@ def random_triangle(low=0.0, mid=0.5, high=1.0, size=1):
     else:
         return ((uni + tri) / 2.0)
 
+
+def print_even_year_selections(
+    datearray: list,
+    symbols: list,
+    monthgainlossweight: np.ndarray,
+    iter_num: int
+) -> None:
+    """
+    Print stocks selected at the beginning of every even-numbered year.
+
+    Displays one line per date showing the date, selected stock list,
+    and each stock's fraction of total value. Fractions sum to 1.0.
+
+    Args:
+        datearray: Array of dates corresponding to each column.
+        symbols: List of stock symbols.
+        monthgainlossweight: 2D array of portfolio weights (stocks x dates).
+        iter_num: Current iteration number for header display.
+    """
+    # Print for every random trial (removed iter_num != 0 check)
+    print("")
+    print("=" * 80)
+    print(f"STOCK SELECTIONS AT BEGINNING OF EVEN-NUMBERED YEARS (Trial {iter_num})")
+    print("=" * 80)
+
+    # Track years already printed to avoid duplicates
+    printed_years = set()
+
+    for ii in range(1, len(datearray)):
+        current_date = datearray[ii]
+        prev_date = datearray[ii - 1]
+
+        # Check if this is the first trading day of an even-numbered year
+        if (current_date.year != prev_date.year and
+                current_date.year % 2 == 0):
+
+            # Skip if already printed this year
+            if current_date.year in printed_years:
+                continue
+            printed_years.add(current_date.year)
+
+            # Get weights for this date
+            weights = monthgainlossweight[:, ii]
+
+            # Find stocks with non-zero weights
+            selected_indices = np.where(weights > 0)[0]
+
+            if len(selected_indices) == 0:
+                print(f"{current_date}: No stocks selected")
+                continue
+
+            # Build list of (symbol, weight) tuples
+            selected_stocks = []
+            for idx in selected_indices:
+                selected_stocks.append((symbols[idx], weights[idx]))
+
+            # Sort by weight descending
+            selected_stocks.sort(key=lambda x: x[1], reverse=True)
+
+            # Calculate sum of weights for verification
+            weight_sum = sum(w for _, w in selected_stocks)
+
+            # Format stock list with weights
+            stock_list = ", ".join(
+                [f"{sym}:{wt:.4f}" for sym, wt in selected_stocks]
+            )
+
+            # Print the line
+            print(f"{current_date}: [{stock_list}] Sum={weight_sum:.4f}")
+
+    print("=" * 80)
+    print("")
+
+
 # initialize interactive plotting
 #plt.ion()
 
@@ -623,7 +733,7 @@ elif basename == "cmg_symbols.txt" :
     plotmax = 1.e7     # maximum value for plot (figure 3)
     holdMonths = [3,4,6,12]
 else :
-    runnum = 'run2506'
+    runnum = 'run2507'
     plotmax = 1.e9     # maximum value for plot (figure 3)
     holdMonths = [1,2,3,4,6,12]
 
@@ -732,6 +842,9 @@ column_text = "run,trial, \
               MA2,  \
               MA3,  \
               volatility min,volatility max, \
+              max_weight_factor, \
+              min_weight_factor, \
+              absolute_max_weight, \
               Portfolio Final Value,\
               stddevThreshold, \
               sma2factor, \
@@ -835,8 +948,17 @@ for iter in range(randomtrials):
     lowPct = random.uniform(10.0, 30.0)   # Lower percentile threshold
     hiPct = random.uniform(70.0, 90.0)    # Upper percentile threshold
     
+    # Generate random weight constraint parameters for this trial
+    max_weight_factor = random.triangular(2.0, 3.0, 5.0)
+    min_weight_factor = random.triangular(0.1, 0.3, 0.5)
+    absolute_max_weight = random.triangular(0.7, 0.9, 1.0)
+    apply_constraints = True
+    
     print("")
     print("months to hold = ",holdMonths,monthsToHold)
+    print(f"weight constraints: max_factor={max_weight_factor:.3f}, "
+          f"min_factor={min_weight_factor:.3f}, "
+          f"abs_max={absolute_max_weight:.3f}")
     print("")
 
     riskDownside_min = random.triangular(.2,.25,.3)
@@ -969,7 +1091,11 @@ for iter in range(randomtrials):
         'lowPct': lowPct,
         'hiPct': hiPct,
         'uptrendSignalMethod': 'percentileChannels',
-        'sma_filt_val': sma_filt_val
+        'sma_filt_val': sma_filt_val,
+        'max_weight_factor': max_weight_factor,
+        'min_weight_factor': min_weight_factor,
+        'absolute_max_weight': absolute_max_weight,
+        'apply_constraints': apply_constraints
     }
 
     #############################################################################
@@ -1027,7 +1153,8 @@ for iter in range(randomtrials):
     # Continue with existing analysis and statistics code
     #############################################################################
     
-    # ...existing code...
+    # Print stocks selected at the beginning of even-numbered years
+    print_even_year_selections(datearray, symbols, monthgainlossweight, iter)
 
     ########################################################################
     ### gather statistics on number of uptrending stocks
@@ -1958,7 +2085,7 @@ for iter in range(randomtrials):
     if 2>1:
         plot_fn = os.path.join(
             outfiledir,
-            "Naz100-fSMAs_montecarlo_" + \
+            "sp500_pctChannel_montecarlo_" + \
             str(dateForFilename) + "__" + \
             str(runnum) + "__" + \
             format(iter,'03d') + ".png"
@@ -2028,6 +2155,9 @@ for iter in range(randomtrials):
                   str(MA2)+","+   \
                   str(MA2+MA2offset)+","+   \
                   str(riskDownside_min)+","+str(riskDownside_max)+","+   \
+                  format(max_weight_factor,'5.3f')+","+   \
+                  format(min_weight_factor,'5.3f')+","+   \
+                  format(absolute_max_weight,'5.3f')+","+   \
                   str(FinalTradedPortfolioValue[iter])+','+   \
                   format(stddevThreshold,'5.3f')+","+  \
                   format(sma2factor,'5.3f')+","+  \
