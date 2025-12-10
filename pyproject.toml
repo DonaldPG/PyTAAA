@@ -23,6 +23,7 @@ dependencies = [
     "scipy>=1.15.1",
     "spyder>=6.0.4",
     "tables>=3.10.2",
+    "tqdm>=4.67.1",
     "yfinance>=0.2.52",
 ]
 
