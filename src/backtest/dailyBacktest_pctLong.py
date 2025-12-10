@@ -96,7 +96,7 @@ def plotRecentPerfomance3(
     MA2 = params['MA2']
     MA3 = params['MA3']
     MA2offset = params['MA3'] - params['MA2']
-    sma2factor = params['MA2factor']
+    sma2factor = params['sma2factor']
     rankThresholdPct = params['rankThresholdPct']
     riskDownside_min = params['riskDownside_min']
     riskDownside_max = params['riskDownside_max']
@@ -677,7 +677,7 @@ def plotRecentPerfomance2(
     MA2 = params['MA2']
     MA3 = params['MA3']
     MA2offset = params['MA3'] - params['MA2']
-    sma2factor = params['MA2factor']
+    sma2factor = params['sma2factor']
     rankThresholdPct = params['rankThresholdPct']
     riskDownside_min = params['riskDownside_min']
     riskDownside_max = params['riskDownside_max']
@@ -1159,7 +1159,7 @@ def plotRecentPerfomance(
     MA2 = params['MA2']
     MA3 = params['MA3']
     MA2offset = params['MA3'] - params['MA2']
-    sma2factor = params['MA2factor']
+    sma2factor = params['sma2factor']
     rankThresholdPct = params['rankThresholdPct']
     riskDownside_min = params['riskDownside_min']
     riskDownside_max = params['riskDownside_max']
@@ -1814,14 +1814,14 @@ def dailyBacktest_pctLong(params, json_fn, verbose=False, return_results=False, 
         MA2 = int(params['MA2'])
         MA3 = int(params['MA3'])
         MA2offset = int(params['MA3']) - MA2
-        sma2factor = params['MA2factor']
+        sma2factor = params['sma2factor']
         rankThresholdPct = params['rankThresholdPct']
         riskDownside_min = params['riskDownside_min']
         riskDownside_max = params['riskDownside_max']
 
-        narrowDays = params['narrowDays']
-        mediumDays = params['mediumDays']
-        wideDays = params['wideDays']
+        narrowDays = params.get('narrowDays', [int(params.get('narrowDays_min', 5)), int(params.get('narrowDays_min', 5))+1, int(params.get('narrowDays_min', 5))+2])
+        mediumDays = params.get('mediumDays', [int(params.get('mediumDays_min', 20)), int(params.get('mediumDays_min', 20))+5, int(params.get('mediumDays_min', 20))+10])
+        wideDays = params.get('wideDays', [int(params.get('wideDays_min', 60)), int(params.get('wideDays_min', 60))+20, int(params.get('wideDays_min', 60))+40])
 
         lowPct = float(params['lowPct'])
         hiPct = float(params['hiPct'])
@@ -1844,7 +1844,7 @@ def dailyBacktest_pctLong(params, json_fn, verbose=False, return_results=False, 
             MA2 = int(params['MA2'])
             MA3 = int(params['MA3'])
             MA2offset = params['MA3'] - params['MA2']
-            sma2factor = params['MA2factor']
+            sma2factor = params['sma2factor']
             rankThresholdPct = params['rankThresholdPct']
             riskDownside_min = params['riskDownside_min']
             riskDownside_max = params['riskDownside_max']
