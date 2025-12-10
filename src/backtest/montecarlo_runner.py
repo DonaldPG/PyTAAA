@@ -45,7 +45,8 @@ def run_montecarlo(
     
     # Load base params
     with open(base_json_fn, 'r') as f:
-        base_params = json.load(f)
+        full_config = json.load(f)
+        base_params = full_config.get('Valuation', full_config)
     
     # Run trials with progress bar
     for trial in tqdm(range(n_trials), desc="Running Monte Carlo trials"):
