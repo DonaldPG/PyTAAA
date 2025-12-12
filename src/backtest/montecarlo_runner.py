@@ -10,7 +10,7 @@ from typing import Dict, List, Any, Optional
 import numpy as np
 from tqdm import tqdm
 
-from src.backtest.montecarlo import MonteCarloBacktest
+from src.backtest.montecarlo import MonteCarloBacktest, create_temporary_json
 from src.backtest.dailyBacktest_pctLong import dailyBacktest_pctLong
 
 
@@ -47,32 +47,83 @@ def run_montecarlo(
     with open(base_json_fn, 'r') as f:
         full_config = json.load(f)
         base_params = full_config.get('Valuation', full_config)
-    
+
+    # add run identifier using current date and time as "run_" + YYYYMMDD_HHMM
+    from datetime import datetime
+    run_id = "run_" + datetime.now().strftime("%Y%m%d_%H%M")
+
+    # Define CSV fieldnames
+    fieldnames = [
+        "run","trial",
+        "Number stocks","monthsToHold","LongPeriod","MA1","MA2","MA3",
+        "volatility min","volatility max",
+        "stddevThreshold","sma2factor","rank Threshold (%)","sma_filt_val",
+        "Portfolio Final Value","Portfolio std","Portfolio Sharpe",
+        "begin date for recent performance",
+        "Portfolio Ann Gain - recent","Portfolio Sharpe - recent",
+        "B&H Ann Gain - recent","B&H Sharpe - recent",
+        "Sharpe 15 Yr","Sharpe 10 Yr","Sharpe 5 Yr","Sharpe 3 Yr","Sharpe 2 Yr","Sharpe 1 Yr",
+        "Avg Return 15 Yr","Avg Return 10 Yr","Avg Return 5 Yr","Avg Return 3 Yr","Avg Return 2 Yr","Avg Return 1 Yr",
+        "CAGR 15 Yr","CAGR 10 Yr","CAGR 5 Yr","CAGR 3 Yr","CAGR 2 Yr","CAGR 1 Yr",
+        "Avg Drawdown 15 Yr","Avg Drawdown 10 Yr","Avg Drawdown 5 Yr","Avg Drawdown 3 Yr","Avg Drawdown 2 Yr","Avg Drawdown 1 Yr",
+        "beatBuyHoldTest","beatBuyHoldTest2"
+    ]
+
+    # ### TODO: ------------------------------ remove this code block later - start
+    # print(
+    #     "\n\n\n ... inside run_montecarlo"
+    #     "\n   . Base parameters for Monte Carlo trials:"
+    # )
+    # for key, value in base_params.items():
+    #     print(f"   {key}: {value}")
+    # print("\n\n\n")
+    # ### TODO: ------------------------------ remove this code block later - end
+
     # Run trials with progress bar
     for trial in tqdm(range(n_trials), desc="Running Monte Carlo trials"):
         # Generate random parameters for this trial
-        trial_params = mc_backtest.generate_random_params(trial)
+        trial_params = mc_backtest.generate_random_params(
+            trial,
+            base_params.get('uptrendSignalMethod', 'percentileChannels')
+        )
+        trial_params['trial'] = trial
+        trial_params['run_id'] = run_id
         
         # Merge with base params
         params = {**base_params, **trial_params}
-        
+        temp_trial_json = create_temporary_json(
+            base_json_fn,
+            params,
+            trial
+        )
+
+        ### TODO: ------------------------------ remove this code block later - start
+        print(
+            "\n   . Base parameters for Monte Carlo trial:"
+        )
+        for key, value in trial_params.items():
+            print(f"   {key}: trial_params {value}, base_params {base_params.get(key)}")
+        print("\n\n\n")
+        ### TODO: ------------------------------ remove this code block later - end 
+       
         # Run backtest
         try:
-            result = dailyBacktest_pctLong(params, base_json_fn, return_results=True, plot=plot_individual)
+            result = dailyBacktest_pctLong(
+                params, temp_trial_json, return_results=True, plot=plot_individual
+            )
             result['trial'] = trial
             results.append(result)
+            
+            # Append result to CSV
+            mode = 'w' if trial == 0 else 'a'
+            with open(output_csv, mode, newline='') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                if trial == 0:
+                    writer.writeheader()
+                writer.writerow(result)
         except Exception as e:
             print(f"Error in trial {trial}: {e}")
             continue
-    
-    # Write results to CSV
-    if results:
-        fieldnames = list(results[0].keys())
-        with open(output_csv, 'w', newline='') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            for result in results:
-                writer.writerow(result)
     
     return results
 

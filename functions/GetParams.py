@@ -18,6 +18,9 @@ def get_symbols_file(json_fn):
     ##  Import list of symbols to process.
     ##
 
+    print("\n... inside functions.GetParams.get_symbols_file ...")
+    print("   . json_fn = ", json_fn)
+
     params = get_json_params(json_fn)
     stockList = params['stockList']
 
@@ -32,6 +35,8 @@ def get_symbols_file(json_fn):
         elif stockList == 'SP500':
             symbol_file = "SP500_Symbols.txt"
         symbols_file = os.path.join( symbol_directory, symbol_file )
+
+    print("   . symbols_file = ", symbols_file)
 
     return symbols_file
 
@@ -154,8 +159,13 @@ def get_json_params(json_fn, verbose=False):
     ### Input parameters from json file with multiple sections
     ######################
 
+    print("\n... inside functions.GetParams.get_json_params ...")
+    print("   . json_fn = ", json_fn, type(json_fn))
+
     with open(json_fn, 'r') as json_file:
         config = json.load(json_file)
+
+    print("   . config loaded...", json_fn)
 
     # Access and print different sections
     email_section = config.get('Email')
@@ -189,13 +199,17 @@ def get_json_params(json_fn, verbose=False):
 
     toaddrs = config.get("Email")["To"]
     fromaddr = config.get("Email")["From"]
-    toSMS = config.get("Text_from_email")["phoneEmail"]
-    send_texts = config.get("Text_from_email")["send_texts"]
+    toSMS = config.get("Text")["phoneEmail"]
+    send_texts = config.get("Text")["send_texts"]
     pw = config.get("Email")["PW"]
     runtime = config.get("Setup")["runtime"]
     pausetime = config.get("Setup")["pausetime"]
 
-    quote_server = config.get("stock_server")["quote_download_server"]
+    quote_server = config.get("Stock Server")["quote_download_server"]
+
+    if verbose:
+        print("   . runtime = ", runtime)
+        print("   . pausetime = ", pausetime)
 
     if len(runtime) == 1:
         runtime.join('days')
@@ -288,6 +302,163 @@ def get_json_params(json_fn, verbose=False):
 
     params['stockList'] = config.get("Valuation")["stockList"]
     params['symbols_file'] = config.get("Valuation")["symbols_file"]
+
+    return params
+
+
+def get_json_params(json_fn, verbose=False):
+    ######################
+    ### Rewritten Input parameters from json file with multiple sections using json package
+    ######################
+
+    print("\n... inside rewritten functions.GetParams.get_json_params ...")
+    print("   . json_fn = ", json_fn)
+    print(" ... json file exists: ", os.path.exists(json_fn))
+
+    with open(json_fn, 'r') as json_file:
+        config = json.load(json_file)
+
+    # Access sections directly
+    email_section = config.get('Email', {})
+    text_from_email_section = config.get('Text_from_email', {})
+    ftp_section = config.get('FTP', {})
+    stock_server_section = config.get('stock_server', {})
+    setup_section = config.get('Setup', {})
+    valuation_section = config.get('Valuation', {})
+
+    if verbose:
+        print("Email Section:")
+        print(email_section)
+        print("\nText from Email Section:")
+        print(text_from_email_section)
+        print("\nFTP Section:")
+        print(ftp_section)
+        print("\nStock Server Section:")
+        print(stock_server_section)
+        print("\nSetup Section:")
+        print(setup_section)
+        print("\nValuation Section:")
+        print(valuation_section)
+
+    # set default values
+    params = {}
+
+    # Email params
+    params['fromaddr'] = email_section.get('From', '')
+    params['toaddrs'] = email_section.get('To', '')
+    params['PW'] = email_section.get('PW', '')
+
+    if verbose:
+        print(".  . params['PW'] = " + str(params['PW']))
+
+    # Text params
+    params['toSMS'] = text_from_email_section.get('phoneEmail', '')
+    send_texts = text_from_email_section.get('send_texts', False)
+    params['send_texts'] = send_texts if isinstance(send_texts, bool) else str(send_texts).lower() == 'true'
+
+    # Setup params
+    runtime_str = setup_section.get('runtime', '1 days')
+    pausetime_str = setup_section.get('pausetime', '1 hours')
+
+    if verbose:
+        print(".  . pausetime_str = ", pausetime_str)
+
+    # Parse runtime
+    runtime_parts = runtime_str.split()
+    if len(runtime_parts) == 2:
+        runtime_value = int(runtime_parts[0])
+        runtime_unit = runtime_parts[1]
+        if runtime_unit == 'seconds':
+            factor = 1
+        elif runtime_unit == 'minutes':
+            factor = 60
+        elif runtime_unit == 'hours':
+            factor = 3600
+        elif runtime_unit == 'days':
+            factor = 86400
+        elif runtime_unit == 'months':
+            factor = 2592000  # approx
+        elif runtime_unit == 'years':
+            factor = 31536000  # approx
+        else:
+            factor = 86400
+        params['runtime'] = runtime_value * factor
+    else:
+        params['runtime'] = 86400  # default 1 day
+
+    if verbose:
+        print(".  . params['runtime'] = " + str(params['runtime']))
+
+    # Parse pausetime
+    pausetime_parts = pausetime_str.split()
+    if len(pausetime_parts) == 2:
+        pausetime_value = int(pausetime_parts[0])
+        pausetime_unit = pausetime_parts[1]
+        if pausetime_unit == 'seconds':
+            factor = 1
+        elif pausetime_unit == 'minutes':
+            factor = 60
+        elif pausetime_unit == 'hours':
+            factor = 3600
+        elif pausetime_unit == 'days':
+            factor = 86400
+        elif pausetime_unit == 'months':
+            factor = 2592000
+        elif pausetime_unit == 'years':
+            factor = 31536000
+        else:
+            factor = 3600
+        params['pausetime'] = pausetime_value * factor
+    else:
+        params['pausetime'] = 3600  # default 1 hour
+
+    # Stock server
+    params['quote_server'] = stock_server_section.get('quote_download_server', '')
+
+    # Valuation params
+    params['numberStocksTraded'] = valuation_section.get('numberStocksTraded', 5)
+    params['trade_cost'] = valuation_section.get('trade_cost', 0.005)
+    params['monthsToHold'] = valuation_section.get('monthsToHold', 3)
+    params['LongPeriod'] = valuation_section.get('LongPeriod', 200)
+    params['stddevThreshold'] = valuation_section.get('stddevThreshold', 5.0)
+    params['MA1'] = valuation_section.get('MA1', 100)
+    params['MA2'] = valuation_section.get('MA2', 20)
+    params['MA3'] = valuation_section.get('MA3', 120)
+    params['MA2offset'] = params['MA3'] - params['MA2']
+    params['MA2factor'] = valuation_section.get('sma2factor', 2.0)
+    params['rankThresholdPct'] = valuation_section.get('rankThresholdPct', 0.2)
+    params['riskDownside_min'] = valuation_section.get('riskDownside_min', 0.5)
+    params['riskDownside_max'] = valuation_section.get('riskDownside_max', 10.0)
+
+    # Days params
+    params['narrowDays'] = valuation_section.get('narrowDays', [
+        valuation_section.get('narrowDays_min', 5),
+        valuation_section.get('narrowDays_max', 7)
+    ])
+    params['mediumDays'] = valuation_section.get('mediumDays', [
+        valuation_section.get('mediumDays_min', 20),
+        valuation_section.get('mediumDays_max', 30)
+    ])
+    params['wideDays'] = valuation_section.get('wideDays', [
+        valuation_section.get('wideDays_min', 60),
+        valuation_section.get('wideDays_max', 100)
+    ])
+
+    params['uptrendSignalMethod'] = valuation_section.get('uptrendSignalMethod', 'percentileChannels')
+    params['lowPct'] = valuation_section.get('lowPct', 20.0)
+    params['hiPct'] = valuation_section.get('hiPct', 80.0)
+
+    params['minperiod'] = valuation_section.get('minperiod', 10)
+    params['maxperiod'] = valuation_section.get('maxperiod', 100)
+    params['incperiod'] = valuation_section.get('incperiod', 10)
+    params['numdaysinfit'] = valuation_section.get('numdaysinfit', 100)
+    params['numdaysinfit2'] = valuation_section.get('numdaysinfit2', 200)
+    params['offset'] = valuation_section.get('offset', 0)
+
+    params['stockList'] = valuation_section.get('stockList', 'Naz100')
+    params['symbols_file'] = valuation_section.get('symbols_file', '')
+
+    print("   . params loaded successfully...")
 
     return params
 

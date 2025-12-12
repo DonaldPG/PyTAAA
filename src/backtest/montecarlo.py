@@ -156,12 +156,17 @@ class MonteCarloBacktest:
         self.best_params: Optional[Dict[str, Any]] = None
         self.best_sharpe: float = -np.inf
     
-    def generate_random_params(self, iteration: int) -> Dict[str, Any]:
+    def generate_random_params(
+            self,
+            iteration: int,
+            uptrendSignalMethod: str
+        ) -> Dict[str, Any]:
         """
         Generate random parameters for a Monte Carlo trial.
         
         Args:
             iteration: Current iteration number.
+            uptrendSignalMethod: The uptrend signal method to use ('SMAs', 'HMAs', or 'percentileChannels').
             
         Returns:
             Dictionary of randomly generated parameters.
@@ -169,41 +174,70 @@ class MonteCarloBacktest:
         from random import choice
         
         # Use triangular distributions for better parameter exploration.
-        params = {
-            "numberStocksTraded": choice([5, 6, 6, 7, 7, 8, 8]),
-            "monthsToHold": choice([1, 1, 1, 1, 1, 1, 1, 1, 1, 2]),
-            "LongPeriod": int(random_triangle(low=190, mid=370, high=550)),
-            "stddevThreshold": random_triangle(low=5.0, mid=7.50, high=10.0),
-            "MA1": int(random_triangle(low=75, mid=151, high=300)),
-            "MA2": int(random_triangle(low=10, mid=20, high=50)),
-            "sma2factor": random_triangle(low=1.65, mid=2.5, high=2.75),
-            "rankThresholdPct": random_triangle(low=0.14, mid=0.20, high=0.26),
-            "riskDownside_min": random_triangle(low=0.50, mid=0.70, high=0.90),
-            "riskDownside_max": random_triangle(low=8.0, mid=10.0, high=13.0),
-            "sma_filt_val": random_triangle(low=0.010, mid=0.015, high=0.0225),
-            "lowPct": np.random.uniform(10.0, 30.0),
-            "hiPct": np.random.uniform(70.0, 90.0),
-            "uptrendSignalMethod": "percentileChannels",
-        }
-        
-        # Calculate MA2offset based on MA1 and MA2.
-        ma1 = params["MA1"]
-        ma2 = params["MA2"]
-        params["MA2offset"] = int(
-            random_triangle(
-                low=(ma1 - ma2) // 20,
-                mid=(ma1 - ma2) // 15,
-                high=(ma1 - ma2) // 10
+        if uptrendSignalMethod == 'SMAs' or uptrendSignalMethod == 'HMAs':
+            params = {
+                "numberStocksTraded": choice([5, 6, 6, 7, 7, 8, 8]),
+                "monthsToHold": choice([1, 1, 1, 1, 1, 1, 1, 1, 1, 2]),
+                "LongPeriod": int(random_triangle(low=190, mid=370, high=550)),
+                "stddevThreshold": random_triangle(low=5.0, mid=7.50, high=10.0),
+                "MA1": int(random_triangle(low=75, mid=151, high=300)),
+                "MA2": int(random_triangle(low=10, mid=20, high=50)),
+                "sma2factor": random_triangle(low=1.65, mid=2.5, high=2.75),
+                "rankThresholdPct": random_triangle(low=0.14, mid=0.20, high=0.26),
+                "riskDownside_min": random_triangle(low=0.50, mid=0.70, high=0.90),
+                "riskDownside_max": random_triangle(low=8.0, mid=10.0, high=13.0),
+                "sma_filt_val": random_triangle(low=0.010, mid=0.015, high=0.0225),
+                "lowPct": np.random.uniform(10.0, 30.0),
+                "hiPct": np.random.uniform(70.0, 90.0),
+                "uptrendSignalMethod": uptrendSignalMethod,
+                "trade_cost": 0.0,
+            }
+
+            # Calculate MA2offset based on MA1 and MA2.
+            ma1 = params["MA1"]
+            ma2 = params["MA2"]
+            params["MA2offset"] = int(
+                random_triangle(
+                    low=(ma1 - ma2) // 20,
+                    mid=(ma1 - ma2) // 15,
+                    high=(ma1 - ma2) // 10
+                )
             )
-        )
-        params["MA3"] = ma2 + params["MA2offset"]
-        
-        # Ensure valid parameter ranges.
-        params["MA2"] = max(params["MA2"], 3)
-        params["MA1"] = max(params["MA1"], params["MA2"] + 1)
-        
+            params["MA3"] = ma2 + params["MA2offset"]
+            
+            # Ensure valid parameter ranges.
+            params["MA2"] = max(params["MA2"], 3)
+            params["MA1"] = max(params["MA1"], params["MA2"] + 1)
+
+        if uptrendSignalMethod == 'percentileChannels':
+            # MA1 should be less than MA2 in this method
+            _MA1 = int(random_triangle(low=25, mid=50, high=120))
+            _MA2 = _MA1 + int(random_triangle(low=20, mid=50, high=75))
+            params = {
+                "numberStocksTraded": choice([5, 6, 6, 7, 7, 8, 8]),
+                "monthsToHold": choice([1, 1, 1, 1, 1, 1, 1, 1, 1, 2]),
+                "LongPeriod": int(random_triangle(low=190, mid=370, high=550)),
+                "stddevThreshold": random_triangle(low=5.0, mid=7.50, high=10.0),
+                "MA1": _MA1,
+                "MA2": _MA2,
+                "sma2factor": random_triangle(low=1.65, mid=2.5, high=2.75),
+                "rankThresholdPct": random_triangle(low=0.14, mid=0.20, high=0.26),
+                "riskDownside_min": random_triangle(low=0.50, mid=0.70, high=0.90),
+                "riskDownside_max": random_triangle(low=8.0, mid=10.0, high=13.0),
+                "sma_filt_val": random_triangle(low=0.010, mid=0.015, high=0.0225),
+                "lowPct": np.random.uniform(10.0, 30.0),
+                "hiPct": np.random.uniform(70.0, 90.0),
+                "uptrendSignalMethod": uptrendSignalMethod,
+                "trade_cost": 0.0,
+            }
+
+            # Calculate MA2offset based on MA1 and MA2.
+            params["MA2offset"] = _MA2 - _MA1
+            params["MA3"] = _MA2 + params["MA2offset"]
+            
         return params
-    
+
+
     def generate_variation_params(
         self,
         base_params: Dict[str, Any],
