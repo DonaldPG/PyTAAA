@@ -102,7 +102,7 @@ Functions for running Monte Carlo simulations to optimize trading strategy param
 **`MonteCarloBacktest`**
 - Manages Monte Carlo simulation execution
 - Methods:
-  - `generate_random_params(iteration)` - Generate random parameters
+  - `generate_random_params(iteration, uptrendSignalMethod)` - Generate random parameters
   - `generate_variation_params(base_params, param_to_vary)` - Vary single parameter
   - `update_best_result(params, sharpe)` - Track best performing parameters
 
@@ -123,7 +123,7 @@ mc = MonteCarloBacktest(
 )
 
 # Generate random parameters
-params = mc.generate_random_params(iteration=0)
+params = mc.generate_random_params(iteration=0, uptrendSignalMethod='percentileChannels')
 
 # Calculate Sharpe ratio
 sharpe = calculate_sharpe_ratio(daily_gains)
