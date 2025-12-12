@@ -22,9 +22,11 @@ def get_symbols_file(json_fn):
     stockList = params['stockList']
 
     if "symbols_file" in params.keys():
+        print(" ... found symbols_file in params ... ")
         symbols_file = params["symbols_file"]
     else:
         # read list of symbols from disk.
+        print(" ... did not find symbols_file in params ... ")
         top_dir = os.path.split(json_fn)[0]
         symbol_directory = os.path.join( top_dir, "symbols" )
         if stockList == 'Naz100':
@@ -154,6 +156,10 @@ def get_json_params(json_fn, verbose=False):
     ### Input parameters from json file with multiple sections
     ######################
 
+    print("\n... inside GetParams.get_json_params ...")
+    print("   . json_fn = ", json_fn)
+    print(" ... json file exists: ", os.path.exists(json_fn))
+
     with open(json_fn, 'r') as json_file:
         config = json.load(json_file)
 
@@ -164,6 +170,20 @@ def get_json_params(json_fn, verbose=False):
     stock_server_section = config.get('stock_server')
     setup_section = config.get('Setup')
     valuation_section = config.get('Valuation')
+
+    # Handle flat config (no sections)
+    if valuation_section is None:
+        valuation_section = config
+    if email_section is None:
+        email_section = config
+    if text_from_email_section is None:
+        text_from_email_section = config
+    if ftp_section is None:
+        ftp_section = config
+    if stock_server_section is None:
+        stock_server_section = config
+    if setup_section is None:
+        setup_section = config
 
     if verbose:
         print("Email Section:")
@@ -187,15 +207,15 @@ def get_json_params(json_fn, verbose=False):
     # set default values
     params = {}
 
-    toaddrs = config.get("Email")["To"]
-    fromaddr = config.get("Email")["From"]
-    toSMS = config.get("Text_from_email")["phoneEmail"]
-    send_texts = config.get("Text_from_email")["send_texts"]
-    pw = config.get("Email")["PW"]
-    runtime = config.get("Setup")["runtime"]
-    pausetime = config.get("Setup")["pausetime"]
+    toaddrs = email_section.get("To", "")
+    fromaddr = email_section.get("From", "")
+    toSMS = text_from_email_section.get("phoneEmail", "")
+    send_texts = text_from_email_section.get("send_texts", False)
+    pw = email_section.get("PW", "")
+    runtime = setup_section.get("runtime", "1 days")
+    pausetime = setup_section.get("pausetime", "1 hours")
 
-    quote_server = config.get("stock_server")["quote_download_server"]
+    quote_server = stock_server_section.get("quote_download_server", "")
 
     if len(runtime) == 1:
         runtime.join('days')
@@ -250,44 +270,201 @@ def get_json_params(json_fn, verbose=False):
     params['runtime'] = max_uptime
     params['pausetime'] = seconds_between_runs
     params['quote_server'] = quote_server
-    params['numberStocksTraded'] = int(config.get("Valuation")["numberStocksTraded"])
-    params['trade_cost'] = float(config.get("Valuation")["trade_cost"])
-    params['monthsToHold'] = int(config.get("Valuation")["monthsToHold"])
-    params['LongPeriod'] = int( config.get("Valuation")["LongPeriod"])
-    params['stddevThreshold'] = float( config.get("Valuation")["stddevThreshold"])
-    params['MA1'] = int( config.get("Valuation")["MA1"])
-    params['MA2'] = int( config.get("Valuation")["MA2"])
-    params['MA3'] = int( config.get("Valuation")["MA3"])
+    params['numberStocksTraded'] = int(valuation_section.get("numberStocksTraded", 5))
+    params['trade_cost'] = float(valuation_section.get("trade_cost", 0.005))
+    params['monthsToHold'] = int(valuation_section.get("monthsToHold", 3))
+    params['LongPeriod'] = int(valuation_section.get("LongPeriod", 200))
+    params['stddevThreshold'] = float(valuation_section.get("stddevThreshold", 5.0))
+    params['MA1'] = int(valuation_section.get("MA1", 100))
+    params['MA2'] = int(valuation_section.get("MA2", 20))
+    params['MA3'] = int(valuation_section.get("MA3", 120))
     params['MA2offset'] = params['MA3'] - params['MA2']
-    params['MA2factor'] = float( config.get("Valuation")["sma2factor"])
-    params['rankThresholdPct'] = float( config.get("Valuation")["rankThresholdPct"])
-    params['riskDownside_min'] = float( config.get("Valuation")["riskDownside_min"])
-    params['riskDownside_max'] = float( config.get("Valuation")["riskDownside_max"])
-    params['narrowDays'] = [
-        float(config.get("Valuation")["narrowDays_min"]),
-        float(config.get("Valuation")["narrowDays_max"])
-    ]
-    params['mediumDays'] = [
-        float(config.get("Valuation")["mediumDays_min"]),
-        float(config.get("Valuation")["mediumDays_max"])
-    ]
-    params['wideDays'] = [
-        float(config.get("Valuation")["wideDays_min"]),
-        float(config.get("Valuation")["wideDays_max"])
-    ]
-    params['uptrendSignalMethod'] = config.get("Valuation")["uptrendSignalMethod"]
-    params['lowPct'] = config.get("Valuation")["lowPct"]
-    params['hiPct'] = config.get("Valuation")["hiPct"]
+    params['MA2factor'] = float(valuation_section.get("sma2factor", 2.0))
+    params['rankThresholdPct'] = float(valuation_section.get("rankThresholdPct", 0.2))
+    params['riskDownside_min'] = float(valuation_section.get("riskDownside_min", 0.5))
+    params['riskDownside_max'] = float(valuation_section.get("riskDownside_max", 10.0))
+    params['narrowDays'] = valuation_section.get('narrowDays', [
+        float(valuation_section.get("narrowDays_min", 5)),
+        float(valuation_section.get("narrowDays_max", 7))
+    ])
+    params['mediumDays'] = valuation_section.get('mediumDays', [
+        float(valuation_section.get("mediumDays_min", 20)),
+        float(valuation_section.get("mediumDays_max", 30))
+    ])
+    params['wideDays'] = valuation_section.get('wideDays', [
+        float(valuation_section.get("wideDays_min", 60)),
+        float(valuation_section.get("wideDays_max", 100))
+    ])
+    params['uptrendSignalMethod'] = valuation_section.get("uptrendSignalMethod", "percentileChannels")
+    params['lowPct'] = valuation_section.get("lowPct", 20.0)
+    params['hiPct'] = valuation_section.get("hiPct", 80.0)
 
-    params['minperiod'] = int( config.get("Valuation")["minperiod"])
-    params['maxperiod'] = int( config.get("Valuation")["maxperiod"])
-    params['incperiod'] = int( config.get("Valuation")["incperiod"])
-    params['numdaysinfit'] = int( config.get("Valuation")["numdaysinfit"])
-    params['numdaysinfit2'] = int( config.get("Valuation")["numdaysinfit2"])
-    params['offset'] = int( config.get("Valuation")["offset"])
+    params['minperiod'] = int(valuation_section.get("minperiod", 10))
+    params['maxperiod'] = int(valuation_section.get("maxperiod", 100))
+    params['incperiod'] = int(valuation_section.get("incperiod", 10))
+    params['numdaysinfit'] = int(valuation_section.get("numdaysinfit", 100))
+    params['numdaysinfit2'] = int(valuation_section.get("numdaysinfit2", 200))
+    params['offset'] = int(valuation_section.get("offset", 0))
 
-    params['stockList'] = config.get("Valuation")["stockList"]
-    params['symbols_file'] = config.get("Valuation")["symbols_file"]
+    params['stockList'] = valuation_section.get("stockList", "Naz100")
+    params['symbols_file'] = valuation_section.get("symbols_file", "")
+
+    return params
+
+
+def get_json_params(json_fn, verbose=False):
+    ######################
+    ### Rewritten Input parameters from json file with multiple sections using json package
+    ######################
+
+    print("\n... inside rewritten src.backtest.functionsGetParams.get_json_params ...")
+    print("   . json_fn = ", json_fn)
+    print(" ... json file exists: ", os.path.exists(json_fn))
+
+    with open(json_fn, 'r') as json_file:
+        config = json.load(json_file)
+
+    # Access sections directly
+    email_section = config.get('Email', {})
+    text_from_email_section = config.get('Text_from_email', {})
+    ftp_section = config.get('FTP', {})
+    stock_server_section = config.get('stock_server', {})
+    setup_section = config.get('Setup', {})
+    valuation_section = config.get('Valuation', {})
+
+    if verbose:
+        print("Email Section:")
+        print(email_section)
+        print("\nText from Email Section:")
+        print(text_from_email_section)
+        print("\nFTP Section:")
+        print(ftp_section)
+        print("\nStock Server Section:")
+        print(stock_server_section)
+        print("\nSetup Section:")
+        print(setup_section)
+        print("\nValuation Section:")
+        print(valuation_section)
+
+    # set default values
+    params = {}
+
+    # Email params
+    params['fromaddr'] = email_section.get('From', '')
+    params['toaddrs'] = email_section.get('To', '')
+    params['PW'] = email_section.get('PW', '')
+
+    if verbose:
+        print(".  . params['PW'] = " + str(params['PW']))
+
+    # Text params
+    params['toSMS'] = text_from_email_section.get('phoneEmail', '')
+    send_texts = text_from_email_section.get('send_texts', False)
+    params['send_texts'] = send_texts if isinstance(send_texts, bool) else str(send_texts).lower() == 'true'
+
+    # Setup params
+    runtime_str = setup_section.get('runtime', '1 days')
+    pausetime_str = setup_section.get('pausetime', '1 hours')
+
+    if verbose:
+        print(".  . pausetime_str = ", pausetime_str)
+
+    # Parse runtime
+    runtime_parts = runtime_str.split()
+    if len(runtime_parts) == 2:
+        runtime_value = int(runtime_parts[0])
+        runtime_unit = runtime_parts[1]
+        if runtime_unit == 'seconds':
+            factor = 1
+        elif runtime_unit == 'minutes':
+            factor = 60
+        elif runtime_unit == 'hours':
+            factor = 3600
+        elif runtime_unit == 'days':
+            factor = 86400
+        elif runtime_unit == 'months':
+            factor = 2592000  # approx
+        elif runtime_unit == 'years':
+            factor = 31536000  # approx
+        else:
+            factor = 86400
+        params['runtime'] = runtime_value * factor
+    else:
+        params['runtime'] = 86400  # default 1 day
+
+    if verbose:
+        print(".  . params['runtime'] = " + str(params['runtime']))
+
+    # Parse pausetime
+    pausetime_parts = pausetime_str.split()
+    if len(pausetime_parts) == 2:
+        pausetime_value = int(pausetime_parts[0])
+        pausetime_unit = pausetime_parts[1]
+        if pausetime_unit == 'seconds':
+            factor = 1
+        elif pausetime_unit == 'minutes':
+            factor = 60
+        elif pausetime_unit == 'hours':
+            factor = 3600
+        elif pausetime_unit == 'days':
+            factor = 86400
+        elif pausetime_unit == 'months':
+            factor = 2592000
+        elif pausetime_unit == 'years':
+            factor = 31536000
+        else:
+            factor = 3600
+        params['pausetime'] = pausetime_value * factor
+    else:
+        params['pausetime'] = 3600  # default 1 hour
+
+    # Stock server
+    params['quote_server'] = stock_server_section.get('quote_download_server', '')
+
+    # Valuation params
+    params['numberStocksTraded'] = valuation_section.get('numberStocksTraded', 5)
+    params['trade_cost'] = valuation_section.get('trade_cost', 0.005)
+    params['monthsToHold'] = valuation_section.get('monthsToHold', 3)
+    params['LongPeriod'] = valuation_section.get('LongPeriod', 200)
+    params['stddevThreshold'] = valuation_section.get('stddevThreshold', 5.0)
+    params['MA1'] = valuation_section.get('MA1', 100)
+    params['MA2'] = valuation_section.get('MA2', 20)
+    params['MA3'] = valuation_section.get('MA3', 120)
+    params['MA2offset'] = params['MA3'] - params['MA2']
+    params['MA2factor'] = valuation_section.get('sma2factor', 2.0)
+    params['rankThresholdPct'] = valuation_section.get('rankThresholdPct', 0.2)
+    params['riskDownside_min'] = valuation_section.get('riskDownside_min', 0.5)
+    params['riskDownside_max'] = valuation_section.get('riskDownside_max', 10.0)
+
+    # Days params
+    params['narrowDays'] = valuation_section.get('narrowDays', [
+        valuation_section.get('narrowDays_min', 5),
+        valuation_section.get('narrowDays_max', 7)
+    ])
+    params['mediumDays'] = valuation_section.get('mediumDays', [
+        valuation_section.get('mediumDays_min', 20),
+        valuation_section.get('mediumDays_max', 30)
+    ])
+    params['wideDays'] = valuation_section.get('wideDays', [
+        valuation_section.get('wideDays_min', 60),
+        valuation_section.get('wideDays_max', 100)
+    ])
+
+    params['uptrendSignalMethod'] = valuation_section.get('uptrendSignalMethod', 'percentileChannels')
+    params['lowPct'] = valuation_section.get('lowPct', 20.0)
+    params['hiPct'] = valuation_section.get('hiPct', 80.0)
+
+    params['minperiod'] = valuation_section.get('minperiod', 10)
+    params['maxperiod'] = valuation_section.get('maxperiod', 100)
+    params['incperiod'] = valuation_section.get('incperiod', 10)
+    params['numdaysinfit'] = valuation_section.get('numdaysinfit', 100)
+    params['numdaysinfit2'] = valuation_section.get('numdaysinfit2', 200)
+    params['offset'] = valuation_section.get('offset', 0)
+
+    params['stockList'] = valuation_section.get('stockList', 'Naz100')
+    params['symbols_file'] = valuation_section.get('symbols_file', '')
+
+    print("   . params loaded successfully...")
 
     return params
 

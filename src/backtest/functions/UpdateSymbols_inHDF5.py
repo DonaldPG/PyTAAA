@@ -50,7 +50,7 @@ def loadQuotes_fromHDF(symbols_file, json_fn):
         listname = "TAA-Symbols"
     elif shortname == "cmg_symbols" :
         listname = "CMG-Symbols"
-    elif shortname.lower() == "Naz100_Symbols" .lower():
+    elif shortname == "Naz100_Symbols_":
         listname = "Naz100_Symbols"
     elif shortname == "biglist" :
         listname = "biglist-Symbols"
@@ -69,8 +69,8 @@ def loadQuotes_fromHDF(symbols_file, json_fn):
     print(" ... inside loadQuotes_fromHDF")
     print("   . json_fn = " + json_fn)
 
-    symbols_fn = get_symbols_file(json_fn)
-    hdf_folder = os.path.split(symbols_fn)[0]
+    symbols_fn = symbols_file
+    hdf_folder = os.path.split(symbols_file)[0]
     hdf5filename = os.path.join(hdf_folder, listname + "_.hdf5")
     
     # hdf5_directory = directory_name
@@ -1268,7 +1268,7 @@ def createHDF(hdf5_directory, symbol_file, listname, json_fn):
     today = datetime.date.today()
     lastdate = today
 
-    filename = os.path.join( symbol_directory, symbol_file )
+    filename = os.path.join( symbol_directory, os.path.basename(symbol_file) )
     print("filename with list of symbols = ", filename)
 
     adjClose, symbols, datearray = arrayFromQuotesForList(
