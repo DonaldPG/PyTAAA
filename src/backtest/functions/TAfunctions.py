@@ -835,7 +835,7 @@ def recentSharpeWithAndWithoutGap(x,numdaysinfit=28,numdaysinfit2=20, offset=3):
 '''
 #----------------------------------------------
 
-def recentSharpeWithAndWithoutGap(x,numdaysinfit=504,offset_factor=.4):
+def recentSharpeWithAndWithoutGap(x,numdaysinfit=504,offset_factor=.4, verbose=False, fast_mode=False):
 
     from math import sqrt
     from scipy.stats import gmean
@@ -852,7 +852,8 @@ def recentSharpeWithAndWithoutGap(x,numdaysinfit=504,offset_factor=.4):
 
     # calculate number of loops
     sharpeList = []
-    for i in range(1,25):
+    max_i = 3 if fast_mode else 25
+    for i in range(1, max_i):
         if i == 1:
             numdaysStart = numdaysinfit
             numdaysEnd = int(numdaysStart * offset_factor + .5)
@@ -869,14 +870,16 @@ def recentSharpeWithAndWithoutGap(x,numdaysinfit=504,offset_factor=.4):
         numdays = numdaysStart - numdaysEnd
         offset = numdaysEnd
         if offset > 0:
-            print("i,start,end = ", i, -(numdays+offset)+1, -offset+1)
+            if verbose:
+                print("i,start,end = ", i, -(numdays+offset)+1, -offset+1)
             gainloss_period = x[-(numdays+offset)+1:-offset+1] / x[-(numdays+offset):-offset]
             gainloss_period[np.isnan(gainloss_period)] = 1.
 
             # sharpe ratio in period with a gap
             sharpe = ( gmean(gainloss_period)**252 -1. ) / ( np.std(gainloss_period)*sqrt(252) )
         else:
-            print("i,start,end = ", i, -numdays+1, 0)
+            if verbose:
+                print("i,start,end = ", i, -numdays+1, 0)
             # calculate gain or loss over the period without a gap
             gainloss_period = x[-numdays+1:] / x[-numdays:-1]
             gainloss_period[np.isnan(gainloss_period)] = 1.
@@ -887,7 +890,8 @@ def recentSharpeWithAndWithoutGap(x,numdaysinfit=504,offset_factor=.4):
         if numdaysStart/2 < 20:
             break
 
-    print("sharpeList = ", sharpeList)
+    if verbose:
+        print("sharpeList = ", sharpeList)
     sharpeList = np.array(sharpeList)
     for i,isharpe in enumerate(sharpeList):
         if i == len(sharpeList)-1:
@@ -896,7 +900,8 @@ def recentSharpeWithAndWithoutGap(x,numdaysinfit=504,offset_factor=.4):
         else:
             if isharpe==np.nan:
                 sharpeList[i] = 0.
-    print("sharpeList = ", sharpeList)
+    if verbose:
+        print("sharpeList = ", sharpeList)
 
     crossplot_rotationAngle = 33. * np.pi/180.
     for i,isharpe in enumerate(sharpeList):
@@ -909,7 +914,8 @@ def recentSharpeWithAndWithoutGap(x,numdaysinfit=504,offset_factor=.4):
         else:
             sharpe_pair = [sharpe2periods,sharpeList[i]]
         sharpe2periods = sharpe_pair[0]*np.sin(crossplot_rotationAngle) + sharpe_pair[1]*np.cos(crossplot_rotationAngle)
-        print("i, sharpe_pair, combined = " + str((i, sharpe_pair, sharpe2periods)))
+        if verbose:
+            print("i, sharpe_pair, combined = " + str((i, sharpe_pair, sharpe2periods)))
 
     return sharpe2periods
 
@@ -2710,7 +2716,7 @@ def sharpeWeightedRank_2D(
         LongPeriod, rankthreshold,
         riskDownside_min, riskDownside_max,
         rankThresholdPct, stddevThreshold=4.,
-        is_backtest=True, makeQCPlots=False, verbose=False
+        is_backtest=True, makeQCPlots=False, verbose=False, fast_mode=False
 ):
 
     # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
@@ -3154,10 +3160,12 @@ def sharpeWeightedRank_2D(
                                                               numdaysinfit=params['numdaysinfit'],
                                                               offset=params['offset'])
 
-            print("\nsymbol = ", symbols[i])
-            sharpe2periods = recentSharpeWithAndWithoutGap(adjClose[i,:])
+            if verbose:
+                print("\nsymbol = ", symbols[i])
+            sharpe2periods = recentSharpeWithAndWithoutGap(adjClose[i,:], verbose=verbose, fast_mode=fast_mode)
 
-            print(" ... performing PctChannelTest: symbol = ",format(isymbol,'5s'), "  numStdDevs = ", format(numStdDevs,'6.1f'))
+            if verbose:
+                print(" ... performing PctChannelTest: symbol = ",format(isymbol,'5s'), "  numStdDevs = ", format(numStdDevs,'6.1f'))
             channelGainsLosses.append(format(channelGainLoss,'6.1%'))
             stdevsAboveChannel.append(format(numStdDevs,'6.1f'))
             floatChannelGainsLosses.append(channelGainLoss)
@@ -3165,7 +3173,8 @@ def sharpeWeightedRank_2D(
             ChannelPct_text = ChannelPct_text + format(pctChannel-1.,'6.1%')
             sharpeRatio.append(format(sharpe2periods,'6.1f'))
             floatSharpeRatio.append(sharpe2periods)
-            print("isymbol,floatSharpeRatio = ", isymbol,floatSharpeRatio[-1])
+            if verbose:
+                print("isymbol,floatSharpeRatio = ", isymbol,floatSharpeRatio[-1])
 
             channelComboGainLoss = recentTrendComboGain(adjClose[i,:],
                                                               datearray,

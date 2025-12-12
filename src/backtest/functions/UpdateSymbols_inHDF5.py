@@ -94,6 +94,8 @@ def loadQuotes_fromHDF(symbols_file, json_fn):
         date = quote.index
         symbols = list(quote.columns.values)
         print(" ...inside loadQuotes_fromHDF ... 'try' block begin processing dates")
+        import datetime                         ### TODO: remove this line later
+        start_time = datetime.datetime.now()    ### TODO: remove this line later
         dates=[]
         for i in range(len(date)):
             if i == 0:
@@ -132,6 +134,8 @@ def loadQuotes_fromHDF(symbols_file, json_fn):
         print(" ...inside loadQuotes_fromHDF ... 'except' block finished")
         which_block = 'except'
     print(" ...inside loadQuotes_fromHDF ... which_block = ", which_block)
+    end_time = datetime.datetime.now()      ### TODO: remove this line later
+    print(" ... loadQuotes_fromHDF time taken = ", str(end_time - start_time))  ### TODO: remove this line later
     return x, symbols, dates, quote, listname
 
 
@@ -771,7 +775,7 @@ def UpdateHDF_yf(symbol_directory, symbols_file, json_fn):
 
     # locate symbols added to list that aren't in HDF5 file
     # symbols_in_list = readSymbolList(filename, json_fn, verbose=False)
-    _, symbols_in_list = read_symbols_list_web(json_fn, verbose=True)
+    _, symbols_in_list = read_symbols_list_web(json_fn, verbose=False)
     #symbols_in_HDF5 = list(quote.columns.values)
     #new_symbols = [x for x in symbols_in_list if x  not in symbols_in_HDF5]
     symbols_in_HDF5 = [str(s) for s in quote.columns.values]

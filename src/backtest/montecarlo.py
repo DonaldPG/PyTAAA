@@ -49,6 +49,7 @@ def random_triangle(
 def create_temporary_json(
     base_json_fn: str,
     realization_params: Dict[str, Any],
+    run_id: str,
     iter_num: int
 ) -> str:
     """
@@ -96,7 +97,7 @@ def create_temporary_json(
     
     # Create temporary file.
     temp_dir = os.path.dirname(base_json_fn)
-    temp_json_fn = os.path.join(temp_dir, f"temp_realization_{iter_num}.json")
+    temp_json_fn = os.path.join(temp_dir, f"temp_realization_{run_id}_{iter_num}.json")
     
     # Write temporary JSON file.
     try:
@@ -225,8 +226,8 @@ class MonteCarloBacktest:
                 "riskDownside_min": random_triangle(low=0.50, mid=0.70, high=0.90),
                 "riskDownside_max": random_triangle(low=8.0, mid=10.0, high=13.0),
                 "sma_filt_val": random_triangle(low=0.010, mid=0.015, high=0.0225),
-                "lowPct": np.random.uniform(10.0, 30.0),
-                "hiPct": np.random.uniform(70.0, 90.0),
+                "lowPct": np.random.uniform(7.0, 35.0),
+                "hiPct": np.random.uniform(65.0, 97.0),
                 "uptrendSignalMethod": uptrendSignalMethod,
                 "trade_cost": 0.0,
             }

@@ -1580,7 +1580,7 @@ def plotRecentPerfomance3(
 
 
 def dailyBacktest_pctLong(
-        params, json_fn, verbose=False, return_results=False, plot=False
+        params, json_fn, verbose=False, return_results=False, plot=False, fast_mode=False
 ):
 
     # import time, threading
@@ -1652,7 +1652,7 @@ def dailyBacktest_pctLong(
 
     print(" ... do_montecarlo = ", do_montecarlo)
     print(" ... randomtrials = ", randomtrials)
-    print(f" ... iter0 = {iter0:04d}")
+    print(" ... iter0 = ", iter0)
 
     ##
     ##  Import list of symbols to process.
@@ -1838,7 +1838,7 @@ def dailyBacktest_pctLong(
         if iter%1==0:
             print("")
             print("")
-            print(f" random trial:  {iter + iter0:04d}")
+            print(" random trial:  ", iter + iter0)
 
         monthsToHold = params['monthsToHold']
         numberStocksTraded = params['numberStocksTraded']
@@ -2178,7 +2178,9 @@ def dailyBacktest_pctLong(
             rankThresholdPct,
             stddevThreshold=stddevThreshold,
             is_backtest=True,
-            makeQCPlots=plot
+            makeQCPlots=plot,
+            verbose=verbose,
+            fast_mode=fast_mode
         )
 
         print("here I am........")
@@ -2279,8 +2281,9 @@ def dailyBacktest_pctLong(
         index = 3780
         if monthvalue.shape[1] < 3780: index = monthvalue.shape[1]
 
-        PortfolioValue = np.sum(monthvalue,axis=0)
+        PortfolioValue = np.mean(monthvalue,axis=0)
         PortfolioDailyGains = PortfolioValue[1:] / PortfolioValue[:-1]
+        Sharpe20Yr = ( gmean(PortfolioDailyGains[-5040:])**252 -1. ) / ( np.std(PortfolioDailyGains[-5040:])*sqrt(252) )
         Sharpe15Yr = ( gmean(PortfolioDailyGains[-index:])**252 -1. ) / ( np.std(PortfolioDailyGains[-index:])*sqrt(252) )
         Sharpe10Yr = ( gmean(PortfolioDailyGains[-2520:])**252 -1. ) / ( np.std(PortfolioDailyGains[-2520:])*sqrt(252) )
         Sharpe5Yr = ( gmean(PortfolioDailyGains[-1260:])**252 -1. ) / ( np.std(PortfolioDailyGains[-1260:])*sqrt(252) )
@@ -2294,6 +2297,7 @@ def dailyBacktest_pctLong(
 
         print("15 year : ",index,PortfolioValue[-1], PortfolioValue[-index],datearray[-index])
 
+        Return20Yr = (PortfolioValue[-1] / PortfolioValue[-5040])**(1/20.)
         Return15Yr = (PortfolioValue[-1] / PortfolioValue[-index])**(252./index)
         Return10Yr = (PortfolioValue[-1] / PortfolioValue[-2520])**(1/10.)
         Return5Yr = (PortfolioValue[-1] / PortfolioValue[-1260])**(1/5.)
@@ -2324,6 +2328,7 @@ def dailyBacktest_pctLong(
                 geometric_mean = overall_ratio
             return arithmetic_mean, geometric_mean
 
+        arithmetic_mean_20, geometric_mean_20 = calculate_annual_means(20)
         arithmetic_mean_15, geometric_mean_15 = calculate_annual_means(15)
         arithmetic_mean_10, geometric_mean_10 = calculate_annual_means(10)
         arithmetic_mean_5, geometric_mean_5 = calculate_annual_means(5)
@@ -2335,6 +2340,7 @@ def dailyBacktest_pctLong(
         for jj in range(PortfolioValue.shape[0]):
             MaxPortfolioValue[jj] = max(MaxPortfolioValue[jj-1],PortfolioValue[jj])
         PortfolioDrawdown = PortfolioValue / MaxPortfolioValue - 1.
+        Drawdown20Yr = np.mean(PortfolioDrawdown[-5040:])
         Drawdown15Yr = np.mean(PortfolioDrawdown[-index:])
         Drawdown10Yr = np.mean(PortfolioDrawdown[-2520:])
         Drawdown5Yr = np.mean(PortfolioDrawdown[-1260:])
@@ -2368,6 +2374,7 @@ def dailyBacktest_pctLong(
 
             BuyHoldPortfolioValue = np.mean(value,axis=0)
             BuyHoldDailyGains = BuyHoldPortfolioValue[1:] / BuyHoldPortfolioValue[:-1]
+            BuyHoldSharpe20Yr = ( gmean(BuyHoldDailyGains[-5040:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-5040:])*sqrt(252) )
             BuyHoldSharpe15Yr = ( gmean(BuyHoldDailyGains[-index:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-index:])*sqrt(252) )
             BuyHoldSharpe10Yr = ( gmean(BuyHoldDailyGains[-2520:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-2520:])*sqrt(252) )
             BuyHoldSharpe5Yr  = ( gmean(BuyHoldDailyGains[-1126:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-1260:])*sqrt(252) )
@@ -2377,6 +2384,7 @@ def dailyBacktest_pctLong(
             BuyHoldSharpe6Mo  = ( gmean(BuyHoldDailyGains[-126:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-126:])*sqrt(252) )
             BuyHoldSharpe3Mo  = ( gmean(BuyHoldDailyGains[-63:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-63:])*sqrt(252) )
             BuyHoldSharpe1Mo  = ( gmean(BuyHoldDailyGains[-21:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-21:])*sqrt(252) )
+            BuyHoldReturn20Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-5040])**(1/20.)
             BuyHoldReturn15Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-index])**(252./index)
             BuyHoldReturn10Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-2520])**(1/10.)
             BuyHoldReturn5Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-1260])**(1/5.)
@@ -2390,6 +2398,7 @@ def dailyBacktest_pctLong(
                 MaxBuyHoldPortfolioValue[jj] = max(MaxBuyHoldPortfolioValue[jj-1],BuyHoldPortfolioValue[jj])
 
             BuyHoldPortfolioDrawdown = BuyHoldPortfolioValue / MaxBuyHoldPortfolioValue - 1.
+            BuyHoldDrawdown20Yr = np.mean(BuyHoldPortfolioDrawdown[-5040:])
             BuyHoldDrawdown15Yr = np.mean(BuyHoldPortfolioDrawdown[-index:])
             BuyHoldDrawdown10Yr = np.mean(BuyHoldPortfolioDrawdown[-2520:])
             BuyHoldDrawdown5Yr = np.mean(BuyHoldPortfolioDrawdown[-1260:])
@@ -2402,18 +2411,21 @@ def dailyBacktest_pctLong(
 
         print("")
         print("")
+        print("Sharpe20Yr, BuyHoldSharpe20Yr = ", Sharpe20Yr, BuyHoldSharpe20Yr)
         print("Sharpe15Yr, BuyHoldSharpe15Yr = ", Sharpe15Yr, BuyHoldSharpe15Yr)
         print("Sharpe10Yr, BuyHoldSharpe10Yr = ", Sharpe10Yr, BuyHoldSharpe10Yr)
         print("Sharpe5Yr, BuyHoldSharpe5Yr =   ", Sharpe5Yr, BuyHoldSharpe5Yr)
         print("Sharpe3Yr, BuyHoldSharpe3Yr =   ", Sharpe3Yr, BuyHoldSharpe3Yr)
         print("Sharpe2Yr, BuyHoldSharpe2Yr =   ", Sharpe2Yr, BuyHoldSharpe2Yr)
         print("Sharpe1Yr, BuyHoldSharpe1Yr =   ", Sharpe1Yr, BuyHoldSharpe1Yr)
+        print("Return20Yr, BuyHoldReturn20Yr = ", Return20Yr, BuyHoldReturn20Yr)
         print("Return15Yr, BuyHoldReturn15Yr = ", Return15Yr, BuyHoldReturn15Yr)
         print("Return10Yr, BuyHoldReturn10Yr = ", Return10Yr, BuyHoldReturn10Yr)
         print("Return5Yr, BuyHoldReturn5Yr =   ", Return5Yr, BuyHoldReturn5Yr)
         print("Return3Yr, BuyHoldReturn3Yr =   ", Return3Yr, BuyHoldReturn3Yr)
         print("Return2Yr, BuyHoldReturn2Yr =   ", Return2Yr, BuyHoldReturn2Yr)
         print("Return1Yr, BuyHoldReturn1Yr =   ", Return1Yr, BuyHoldReturn1Yr)
+        print("Drawdown20Yr, BuyHoldDrawdown20Yr = ", Drawdown20Yr, BuyHoldDrawdown20Yr)
         print("Drawdown15Yr, BuyHoldDrawdown15Yr = ", Drawdown15Yr, BuyHoldDrawdown15Yr)
         print("Drawdown10Yr, BuyHoldDrawdown10Yr = ", Drawdown10Yr, BuyHoldDrawdown10Yr)
         print("Drawdown5Yr, BuyHoldDrawdown5Yr =   ", Drawdown5Yr, BuyHoldDrawdown5Yr)
@@ -2424,36 +2436,47 @@ def dailyBacktest_pctLong(
         if iter == 0:
             beatBuyHoldCount = 0
             beatBuyHold2Count = 0
-        beatBuyHoldTest = ( (Sharpe15Yr-BuyHoldSharpe15Yr)/15. + \
+        beatBuyHoldTest = ( (Sharpe20Yr-BuyHoldSharpe20Yr)/20. + \
+                            (Sharpe15Yr-BuyHoldSharpe15Yr)/15. + \
                             (Sharpe10Yr-BuyHoldSharpe10Yr)/10. + \
                             (Sharpe5Yr-BuyHoldSharpe5Yr)/5. + \
                             (Sharpe3Yr-BuyHoldSharpe3Yr)/3. + \
                             (Sharpe2Yr-BuyHoldSharpe2Yr)/2. + \
-                            (Sharpe1Yr-BuyHoldSharpe1Yr)/1. ) / (1/15. + 1/10.+1/5.+1/3.+1/2.+1)
+                            (Sharpe1Yr-BuyHoldSharpe1Yr)/1. ) / (1/20. + 1/15. + 1/10.+1/5.+1/3.+1/2.+1)
         if beatBuyHoldTest > 0. :
             beatBuyHoldCount += 1
 
         beatBuyHoldTest2 = 0
+        if Return20Yr > BuyHoldReturn20Yr: beatBuyHoldTest2 += 1
         if Return15Yr > BuyHoldReturn15Yr: beatBuyHoldTest2 += 1
         if Return10Yr > BuyHoldReturn10Yr: beatBuyHoldTest2 += 1
         if Return5Yr  > BuyHoldReturn5Yr:  beatBuyHoldTest2 += 1
         if Return3Yr  > BuyHoldReturn3Yr:  beatBuyHoldTest2 += 1.5
         if Return2Yr  > BuyHoldReturn2Yr:  beatBuyHoldTest2 += 2
         if Return1Yr  > BuyHoldReturn1Yr:  beatBuyHoldTest2 += 2.5
+        if Return20Yr > 0: beatBuyHoldTest2 += 1
         if Return15Yr > 0: beatBuyHoldTest2 += 1
         if Return10Yr > 0: beatBuyHoldTest2 += 1
         if Return5Yr  > 0: beatBuyHoldTest2 += 1
         if Return3Yr  > 0: beatBuyHoldTest2 += 1.5
         if Return2Yr  > 0: beatBuyHoldTest2 += 2
         if Return1Yr  > 0: beatBuyHoldTest2 += 2.5
+        if Drawdown20Yr > BuyHoldDrawdown20Yr: beatBuyHoldTest2 += 1
         if Drawdown15Yr > BuyHoldDrawdown15Yr: beatBuyHoldTest2 += 1
         if Drawdown10Yr > BuyHoldDrawdown10Yr: beatBuyHoldTest2 += 1
         if Drawdown5Yr  > BuyHoldDrawdown5Yr:  beatBuyHoldTest2 += 1
         if Drawdown3Yr  > BuyHoldDrawdown3Yr:  beatBuyHoldTest2 += 1.5
         if Drawdown2Yr  > BuyHoldDrawdown2Yr:  beatBuyHoldTest2 += 2
         if Drawdown1Yr  > BuyHoldDrawdown1Yr:  beatBuyHoldTest2 += 2.5
+        if Sharpe20Yr > BuyHoldSharpe20Yr: beatBuyHoldTest2 += 1
+        if Sharpe15Yr > BuyHoldSharpe15Yr: beatBuyHoldTest2 += 1
+        if Sharpe10Yr > BuyHoldSharpe10Yr: beatBuyHoldTest2 += 1
+        if Sharpe5Yr > BuyHoldSharpe5Yr: beatBuyHoldTest2 += 1
+        if Sharpe3Yr > BuyHoldSharpe3Yr: beatBuyHoldTest2 += 1.5
+        if Sharpe2Yr > BuyHoldSharpe2Yr: beatBuyHoldTest2 += 2
+        if Sharpe1Yr > BuyHoldSharpe1Yr: beatBuyHoldTest2 += 2.5
         # make it a ratio ranging from 0 to 1
-        beatBuyHoldTest2 /= 27
+        beatBuyHoldTest2 /= 40
 
         if beatBuyHoldTest2 > .60 :
             print("found monte carlo trial that beats BuyHold (test2)...")
@@ -2576,6 +2599,7 @@ def dailyBacktest_pctLong(
 
         PortfolioValue = np.average(monthvalueVariablePctInvest,axis=0)
         PortfolioDailyGains = PortfolioValue[1:] / PortfolioValue[:-1]
+        VarPctSharpe20Yr = ( gmean(PortfolioDailyGains[-5040:])**252 -1. ) / ( np.std(PortfolioDailyGains[-5040:])*sqrt(252) )
         VarPctSharpe15Yr = ( gmean(PortfolioDailyGains[-index:])**252 -1. ) / ( np.std(PortfolioDailyGains[-index:])*sqrt(252) )
         VarPctSharpe10Yr = ( gmean(PortfolioDailyGains[-2520:])**252 -1. ) / ( np.std(PortfolioDailyGains[-2520:])*sqrt(252) )
         VarPctSharpe5Yr = ( gmean(PortfolioDailyGains[-1260:])**252 -1. ) / ( np.std(PortfolioDailyGains[-1260:])*sqrt(252) )
@@ -2585,6 +2609,7 @@ def dailyBacktest_pctLong(
 
         print("15 year : ",index,PortfolioValue[-1], PortfolioValue[-index],datearray[-index])
 
+        VarPctReturn20Yr = (PortfolioValue[-1] / PortfolioValue[-5040])**(1/20.)
         VarPctReturn15Yr = (PortfolioValue[-1] / PortfolioValue[-index])**(252./index)
         VarPctReturn10Yr = (PortfolioValue[-1] / PortfolioValue[-2520])**(1/10.)
         VarPctReturn5Yr = (PortfolioValue[-1] / PortfolioValue[-1260])**(1/5.)
@@ -2596,6 +2621,7 @@ def dailyBacktest_pctLong(
         for jj in range(PortfolioValue.shape[0]):
             MaxPortfolioValue[jj] = max(MaxPortfolioValue[jj-1],PortfolioValue[jj])
         PortfolioDrawdown = PortfolioValue / MaxPortfolioValue - 1.
+        VarPctDrawdown20Yr = np.mean(PortfolioDrawdown[-5040:])
         VarPctDrawdown15Yr = np.mean(PortfolioDrawdown[-index:])
         VarPctDrawdown10Yr = np.mean(PortfolioDrawdown[-2520:])
         VarPctDrawdown5Yr = np.mean(PortfolioDrawdown[-1260:])
@@ -2604,27 +2630,38 @@ def dailyBacktest_pctLong(
         VarPctDrawdown1Yr = np.mean(PortfolioDrawdown[-252:])
 
 
-        beatBuyHoldTestVarPct = ( (VarPctSharpe15Yr-BuyHoldSharpe15Yr)/15. + \
+        beatBuyHoldTestVarPct = ( (VarPctSharpe20Yr-BuyHoldSharpe20Yr)/20. + \
+                                (VarPctSharpe15Yr-BuyHoldSharpe15Yr)/15. + \
                                 (VarPctSharpe10Yr-BuyHoldSharpe10Yr)/10. + \
                                 (VarPctSharpe5Yr-BuyHoldSharpe5Yr)/5. + \
                                 (VarPctSharpe3Yr-BuyHoldSharpe3Yr)/3. + \
                                 (VarPctSharpe2Yr-BuyHoldSharpe2Yr)/2. + \
-                                (VarPctSharpe1Yr-BuyHoldSharpe1Yr)/1. ) / (1/15. + 1/10.+1/5.+1/3.+1/2.+1)
+                                (VarPctSharpe1Yr-BuyHoldSharpe1Yr)/1. ) / (1/20. + 1/15. + 1/10.+1/5.+1/3.+1/2.+1)
 
 
         beatBuyHoldTest2VarPct = 0
+        if VarPctSharpe20Yr > BuyHoldSharpe20Yr: beatBuyHoldTest2VarPct += 1
+        if VarPctSharpe15Yr > BuyHoldSharpe15Yr: beatBuyHoldTest2VarPct += 1
+        if VarPctSharpe10Yr > BuyHoldSharpe10Yr: beatBuyHoldTest2VarPct += 1
+        if VarPctSharpe5Yr > BuyHoldSharpe5Yr: beatBuyHoldTest2VarPct += 1
+        if VarPctSharpe3Yr > BuyHoldSharpe3Yr: beatBuyHoldTest2VarPct += 1.5
+        if VarPctSharpe2Yr > BuyHoldSharpe2Yr: beatBuyHoldTest2VarPct += 2
+        if VarPctSharpe1Yr > BuyHoldSharpe1Yr: beatBuyHoldTest2VarPct += 2.5
+        if VarPctReturn20Yr > BuyHoldReturn20Yr: beatBuyHoldTest2VarPct += 1
         if VarPctReturn15Yr > BuyHoldReturn15Yr: beatBuyHoldTest2VarPct += 1
         if VarPctReturn10Yr > BuyHoldReturn10Yr: beatBuyHoldTest2VarPct += 1
         if VarPctReturn5Yr  > BuyHoldReturn5Yr:  beatBuyHoldTest2VarPct += 1
         if VarPctReturn3Yr  > BuyHoldReturn3Yr:  beatBuyHoldTest2VarPct += 1.5
         if VarPctReturn2Yr  > BuyHoldReturn2Yr:  beatBuyHoldTest2VarPct += 2
         if VarPctReturn1Yr  > BuyHoldReturn1Yr:  beatBuyHoldTest2VarPct += 2.5
+        if VarPctReturn20Yr > 0: beatBuyHoldTest2VarPct += 1
         if VarPctReturn15Yr > 0: beatBuyHoldTest2VarPct += 1
         if VarPctReturn10Yr > 0: beatBuyHoldTest2VarPct += 1
         if VarPctReturn5Yr  > 0: beatBuyHoldTest2VarPct += 1
         if VarPctReturn3Yr  > 0: beatBuyHoldTest2VarPct += 1.5
         if VarPctReturn2Yr  > 0: beatBuyHoldTest2VarPct += 2
         if VarPctReturn1Yr  > 0: beatBuyHoldTest2VarPct += 2.5
+        if VarPctDrawdown20Yr > BuyHoldDrawdown20Yr: beatBuyHoldTest2VarPct += 1
         if VarPctDrawdown15Yr > BuyHoldDrawdown15Yr: beatBuyHoldTest2VarPct += 1
         if VarPctDrawdown10Yr > BuyHoldDrawdown10Yr: beatBuyHoldTest2VarPct += 1
         if VarPctDrawdown5Yr  > BuyHoldDrawdown5Yr:  beatBuyHoldTest2VarPct += 1
@@ -2632,7 +2669,7 @@ def dailyBacktest_pctLong(
         if VarPctDrawdown2Yr  > BuyHoldDrawdown2Yr:  beatBuyHoldTest2VarPct += 2
         if VarPctDrawdown1Yr  > BuyHoldDrawdown1Yr:  beatBuyHoldTest2VarPct += 2.5
         # make it a ratio ranging from 0 to 1
-        beatBuyHoldTest2VarPct /= 27
+        beatBuyHoldTest2VarPct /= 40
 
 
         # """
@@ -3033,6 +3070,7 @@ def dailyBacktest_pctLong(
                       fVPortfolioSharpe
 
         plt.title( title_text, fontsize = 9 )
+        fSharpe20Yr = format(Sharpe20Yr,'5.2f')
         fSharpe15Yr = format(Sharpe15Yr,'5.2f')
         fSharpe10Yr = format(Sharpe10Yr,'5.2f')
         fSharpe5Yr = format(Sharpe5Yr,'5.2f')
@@ -3042,6 +3080,7 @@ def dailyBacktest_pctLong(
         fSharpe6Mo = format(Sharpe6Mo,'5.2f')
         fSharpe3Mo = format(Sharpe3Mo,'5.2f')
         fSharpe1Mo = format(Sharpe1Mo,'5.2f')
+        fReturn20Yr = format(Return20Yr,'5.2f')
         fReturn15Yr = format(Return15Yr,'5.2f')
         fReturn10Yr = format(Return10Yr,'5.2f')
         fReturn5Yr = format(Return5Yr,'5.2f')
@@ -3051,6 +3090,7 @@ def dailyBacktest_pctLong(
         fReturn6Mo = format(Return6Mo,'5.2f')
         fReturn3Mo = format(Return3Mo,'5.2f')
         fReturn1Mo = format(Return1Mo,'5.2f')
+        fDrawdown20Yr = format(Drawdown20Yr,'.1%')
         fDrawdown15Yr = format(Drawdown15Yr,'.1%')
         fDrawdown10Yr = format(Drawdown10Yr,'.1%')
         fDrawdown5Yr = format(Drawdown5Yr,'.1%')
@@ -3067,25 +3107,29 @@ def dailyBacktest_pctLong(
         plt.text( 50, 1500, symbols_file, fontsize=8 )
         plt.text( 50, 2500, "Backtested on "+datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"), fontsize=7.5 )
         plt.text(50,1000*10**(.95*plotrange),'Period Sharpe AvgProfit  Avg DD',fontsize=7.5)
-        plt.text(50,1000*10**(.91*plotrange),'15 Yr '+fSharpe15Yr+'  '+fReturn15Yr+'  '+fDrawdown15Yr,fontsize=8)
-        plt.text(50,1000*10**(.87*plotrange),'10 Yr '+fSharpe10Yr+'  '+fReturn10Yr+'  '+fDrawdown10Yr,fontsize=8)
-        plt.text(50,1000*10**(.83*plotrange),' 5 Yr  '+fSharpe5Yr+'  '+fReturn5Yr+'  '+fDrawdown5Yr,fontsize=8)
-        plt.text(50,1000*10**(.79*plotrange),' 3 Yr  '+fSharpe3Yr+'  '+fReturn3Yr+'  '+fDrawdown3Yr,fontsize=8)
-        plt.text(50,1000*10**(.75*plotrange),' 2 Yr  '+fSharpe2Yr+'  '+fReturn2Yr+'  '+fDrawdown2Yr,fontsize=8)
-        plt.text(50,1000*10**(.71*plotrange),' 1 Yr  '+fSharpe1Yr+'  '+fReturn1Yr+'  '+fDrawdown1Yr,fontsize=8)
+        plt.text(50,1000*10**(.91*plotrange),'20 Yr '+fSharpe20Yr+'  '+fReturn20Yr+'  '+fDrawdown20Yr,fontsize=8)
+        plt.text(50,1000*10**(.87*plotrange),'15 Yr '+fSharpe15Yr+'  '+fReturn15Yr+'  '+fDrawdown15Yr,fontsize=8)
+        plt.text(50,1000*10**(.83*plotrange),'10 Yr '+fSharpe10Yr+'  '+fReturn10Yr+'  '+fDrawdown10Yr,fontsize=8)
+        plt.text(50,1000*10**(.79*plotrange),' 5 Yr  '+fSharpe5Yr+'  '+fReturn5Yr+'  '+fDrawdown5Yr,fontsize=8)
+        plt.text(50,1000*10**(.75*plotrange),' 3 Yr  '+fSharpe3Yr+'  '+fReturn3Yr+'  '+fDrawdown3Yr,fontsize=8)
+        plt.text(50,1000*10**(.71*plotrange),' 2 Yr  '+fSharpe2Yr+'  '+fReturn2Yr+'  '+fDrawdown2Yr,fontsize=8)
+        plt.text(50,1000*10**(.67*plotrange),' 1 Yr  '+fSharpe1Yr+'  '+fReturn1Yr+'  '+fDrawdown1Yr,fontsize=8)
 
+        fVSharpe20Yr = format(VarPctSharpe20Yr,'5.2f')
         fVSharpe15Yr = format(VarPctSharpe15Yr,'5.2f')
         fVSharpe10Yr = format(VarPctSharpe10Yr,'5.2f')
         fVSharpe5Yr = format(VarPctSharpe5Yr,'5.2f')
         fVSharpe3Yr = format(VarPctSharpe3Yr,'5.2f')
         fVSharpe2Yr = format(VarPctSharpe2Yr,'5.2f')
         fVSharpe1Yr = format(VarPctSharpe1Yr,'5.2f')
+        fVReturn20Yr = format(VarPctReturn20Yr,'5.2f')
         fVReturn15Yr = format(VarPctReturn15Yr,'5.2f')
         fVReturn10Yr = format(VarPctReturn10Yr,'5.2f')
         fVReturn5Yr = format(VarPctReturn5Yr,'5.2f')
         fVReturn3Yr = format(VarPctReturn3Yr,'5.2f')
         fVReturn2Yr = format(VarPctReturn2Yr,'5.2f')
         fVReturn1Yr = format(VarPctReturn1Yr,'5.2f')
+        fVDrawdown20Yr = format(VarPctDrawdown20Yr,'.1%')
         fVDrawdown15Yr = format(VarPctDrawdown15Yr,'.1%')
         fVDrawdown10Yr = format(VarPctDrawdown10Yr,'.1%')
         fVDrawdown5Yr = format(VarPctDrawdown5Yr,'.1%')
@@ -3094,25 +3138,26 @@ def dailyBacktest_pctLong(
         fVDrawdown1Yr = format(VarPctDrawdown1Yr,'.1%')
 
         plt.text(1500,1000*10**(.95*plotrange),'Period Sharpe AvgProfit  Avg DD',fontsize=7.5,color='b')
-        plt.text(1500,1000*10**(.91*plotrange),'15 Yr '+fVSharpe15Yr+'  '+fVReturn15Yr+'  '+fVDrawdown15Yr,fontsize=8,color='b')
-        plt.text(1500,1000*10**(.87*plotrange),'10 Yr '+fVSharpe10Yr+'  '+fVReturn10Yr+'  '+fVDrawdown10Yr,fontsize=8,color='b')
-        plt.text(1500,1000*10**(.83*plotrange),' 5 Yr  '+fVSharpe5Yr+'  '+fVReturn5Yr+'  '+fVDrawdown5Yr,fontsize=8,color='b')
-        plt.text(1500,1000*10**(.79*plotrange),' 3 Yr  '+fVSharpe3Yr+'  '+fVReturn3Yr+'  '+fVDrawdown3Yr,fontsize=8,color='b')
-        plt.text(1500,1000*10**(.75*plotrange),' 2 Yr  '+fVSharpe2Yr+'  '+fVReturn2Yr+'  '+fVDrawdown2Yr,fontsize=8,color='b')
-        plt.text(1500,1000*10**(.71*plotrange),' 1 Yr  '+fVSharpe1Yr+'  '+fVReturn1Yr+'  '+fVDrawdown1Yr,fontsize=8,color='b')
+        plt.text(1500,1000*10**(.91*plotrange),'20 Yr '+fVSharpe20Yr+'  '+fVReturn20Yr+'  '+fVDrawdown20Yr,fontsize=8,color='b')
+        plt.text(1500,1000*10**(.87*plotrange),'15 Yr '+fVSharpe15Yr+'  '+fVReturn15Yr+'  '+fVDrawdown15Yr,fontsize=8,color='b')
+        plt.text(1500,1000*10**(.83*plotrange),'10 Yr '+fVSharpe10Yr+'  '+fVReturn10Yr+'  '+fVDrawdown10Yr,fontsize=8,color='b')
+        plt.text(1500,1000*10**(.79*plotrange),' 5 Yr  '+fVSharpe5Yr+'  '+fVReturn5Yr+'  '+fVDrawdown5Yr,fontsize=8,color='b')
+        plt.text(1500,1000*10**(.75*plotrange),' 3 Yr  '+fVSharpe3Yr+'  '+fVReturn3Yr+'  '+fVDrawdown3Yr,fontsize=8,color='b')
+        plt.text(1500,1000*10**(.71*plotrange),' 2 Yr  '+fVSharpe2Yr+'  '+fVReturn2Yr+'  '+fVDrawdown2Yr,fontsize=8,color='b')
+        plt.text(1500,1000*10**(.67*plotrange),' 1 Yr  '+fVSharpe1Yr+'  '+fVReturn1Yr+'  '+fVDrawdown1Yr,fontsize=8,color='b')
 
         if beatBuyHoldTest > 0. :
-            plt.text(50,1000*10**(.65*plotrange),format(beatBuyHoldTest2,'.2%')+'  beats BuyHold...')
+            plt.text(50,1000*10**(.59*plotrange),format(beatBuyHoldTest2,'.2%')+'  beats BuyHold...')
         else:
-            plt.text(50,1000*10**(.65*plotrange),format(beatBuyHoldTest2,'.2%'))
+            plt.text(50,1000*10**(.59*plotrange),format(beatBuyHoldTest2,'.2%'))
 
         if beatBuyHoldTestVarPct > 0. :
-            plt.text(50,1000*10**(.59*plotrange),format(beatBuyHoldTest2VarPct,'.2%')+'  beats BuyHold...',color='b')
+            plt.text(50,1000*10**(.55*plotrange),format(beatBuyHoldTest2VarPct,'.2%')+'  beats BuyHold...',color='b')
         else:
-            plt.text(50,1000*10**(.59*plotrange),format(beatBuyHoldTest2VarPct,'.2%'),color='b'
+            plt.text(50,1000*10**(.55*plotrange),format(beatBuyHoldTest2VarPct,'.2%'),color='b'
             )
 
-        plt.text(50,1000*10**(.54*plotrange),last_symbols_text,fontsize=8)
+        plt.text(50,1000*10**(.49*plotrange),last_symbols_text,fontsize=8)
         plt.plot(BuyHoldPortfolioValue,lw=3,c='r')
         plt.plot(np.mean(monthvalue,axis=0),lw=4,c='k')
         plt.plot(np.mean(monthvalueVariablePctInvest,axis=0),lw=2,c='b')
@@ -3225,7 +3270,7 @@ def dailyBacktest_pctLong(
         print(" ... datearray[-1] = ", str(datearray[-1]))
         last_date = datearray[-1] if isinstance(datearray, np.ndarray) else datearray
         last_date = datearray[-1] if type(datearray) == list else datearray
-        csv_text = str(last_date)+","+str(iter)+","+    \
+        csv_text = str(runnum)+","+str(iter)+","+    \
                       str(numberStocksTraded)+","+   \
                       str(monthsToHold)+","+  \
                       str(LongPeriod)+","+   \
@@ -3237,7 +3282,7 @@ def dailyBacktest_pctLong(
                       str(lowPct)+","+   \
                       str(hiPct)+","+   \
                       str(riskDownside_min)+","+str(riskDownside_max)+","+   \
-                      format(np.average(monthvalue[:,-1]), "10.0f")+','+   \
+                      "{:,}".format(int(np.average(monthvalue,axis=0)[-1]))+","+   \
                       format(sma2factor,'5.3f')+","+  \
                       format(rankThresholdPct,'.1%')+","+  \
                       str(np.std(PortfolioDailyGains)*sqrt(252))+','+   \
@@ -3247,6 +3292,7 @@ def dailyBacktest_pctLong(
                       str(Portfoliosharpefromtargetdate)+','+   \
                       str(BHannualgainfromtargetdate)+','+   \
                       str(BHsharpefromtargetdate)+","+   \
+                      fSharpe20Yr+","+   \
                       fSharpe15Yr+","+   \
                       fSharpe10Yr+","+   \
                       fSharpe5Yr+","+   \
@@ -3256,6 +3302,7 @@ def dailyBacktest_pctLong(
                       fSharpe6Mo+","+   \
                       fSharpe3Mo+","+   \
                       fSharpe1Mo+","+   \
+                      fReturn20Yr+","+   \
                       fReturn15Yr+","+   \
                       fReturn10Yr+","+   \
                       fReturn5Yr+","+   \
@@ -3265,6 +3312,7 @@ def dailyBacktest_pctLong(
                       fReturn6Mo+","+   \
                       fReturn3Mo+","+   \
                       fReturn1Mo+","+   \
+                      fDrawdown20Yr+","+   \
                       fDrawdown15Yr+","+   \
                       fDrawdown10Yr+","+   \
                       fDrawdown5Yr+","+   \
@@ -3276,6 +3324,7 @@ def dailyBacktest_pctLong(
                       fDrawdown1Mo+","+   \
                       format(beatBuyHoldTest,'5.3f')+","+\
                       format(beatBuyHoldTest2,'.2%')+","+\
+                      format(beatBuyHoldTest2VarPct,'.2%')+","+\
                       str(paramNumberToVary)+\
                       " \n"
         csv_text = csv_text.replace(" ","")
@@ -3441,37 +3490,55 @@ def dailyBacktest_pctLong(
             'MA3': MA3,
             'volatility min': riskDownside_min,
             'volatility max': riskDownside_max,
-            'Portfolio Final Value': PortfolioValue[-1],
             'stddevThreshold': stddevThreshold,
             'sma2factor': sma2factor,
             'rank Threshold (%)': rankThresholdPct*100,
             'sma_filt_val': MA2offset,
+            'uptrendSignalMethod': uptrendSignalMethod,
+            'MA2offset': MA2offset,
+            'lowPct': lowPct,
+            'hiPct': hiPct,
+            'narrowDays_min': narrowDays[0],
+            'narrowDays_max': narrowDays[1],
+            'mediumDays_min': mediumDays[0],
+            'mediumDays_max': mediumDays[1],
+            'wideDays_min': wideDays[0],
+            'wideDays_max': wideDays[1],
+            'incperiod': params['incperiod'],
+            'numdaysinfit': params['numdaysinfit'],
+            'offset': params['offset'],
+            'riskDownside_min': riskDownside_min,
+            'riskDownside_max': riskDownside_max,
+            'Portfolio Final Value': TradedPortfolioValue[-1],
             'Portfolio std': np.std(PortfolioDailyGains)*sqrt(252),
             'Portfolio Sharpe': Sharpe15Yr,
-            #'begin date for recent performance': f"{datearray[indexRealtimeStart][0]}-{datearray[indexRealtimeStart][1]:02d}-{datearray[indexRealtimeStart][2]:02d}",
             'begin date for recent performance': str(datearray[indexRealtimeStart]),
             'Portfolio Ann Gain - recent': Return3Yr,
             'Portfolio Sharpe - recent': Sharpe3Yr,
             'B&H Ann Gain - recent': BuyHoldReturn3Yr,
             'B&H Sharpe - recent': BuyHoldSharpe3Yr,
+            'Sharpe 20 Yr': Sharpe20Yr,
             'Sharpe 15 Yr': Sharpe15Yr,
             'Sharpe 10 Yr': Sharpe10Yr,
             'Sharpe 5 Yr': Sharpe5Yr,
             'Sharpe 3 Yr': Sharpe3Yr,
             'Sharpe 2 Yr': Sharpe2Yr,
             'Sharpe 1 Yr': Sharpe1Yr,
+            'Avg Return 20 Yr': arithmetic_mean_20,
             'Avg Return 15 Yr': arithmetic_mean_15,
             'Avg Return 10 Yr': arithmetic_mean_10,
             'Avg Return 5 Yr': arithmetic_mean_5,
             'Avg Return 3 Yr': arithmetic_mean_3,
             'Avg Return 2 Yr': arithmetic_mean_2,
             'Avg Return 1 Yr': arithmetic_mean_1,
+            'CAGR 20 Yr': geometric_mean_20,
             'CAGR 15 Yr': geometric_mean_15,
             'CAGR 10 Yr': geometric_mean_10,
             'CAGR 5 Yr': geometric_mean_5,
             'CAGR 3 Yr': geometric_mean_3,
             'CAGR 2 Yr': geometric_mean_2,
             'CAGR 1 Yr': geometric_mean_1,
+            'Avg Drawdown 20 Yr': Drawdown20Yr,
             'Avg Drawdown 15 Yr': Drawdown15Yr,
             'Avg Drawdown 10 Yr': Drawdown10Yr,
             'Avg Drawdown 5 Yr': Drawdown5Yr,
@@ -3480,10 +3547,11 @@ def dailyBacktest_pctLong(
             'Avg Drawdown 1 Yr': Drawdown1Yr,
             'beatBuyHoldTest': beatBuyHoldTest,
             'beatBuyHoldTest2': beatBuyHoldTest2,
+            'beatBuyHoldTest2 VarPct': beatBuyHoldTest2VarPct,
         }
 
     if plot:
-        png_fn = f'PyTAAA_monteCarloBacktestFull_{runnum}_{iter + iter0:04d}'
+        png_fn = f'PyTAAA_monteCarloBacktestFull_{runnum}_{(iter + iter0):04d}'
     plotRecentPerfomance3( 0, datearray,
                           symbols,
                           value,
@@ -3501,7 +3569,7 @@ def dailyBacktest_pctLong(
                           numberStocksUpTrendingBeatBuyHold,
                           png_fn, json_fn)
 
-    png_fn = f'PyTAAA_monteCarloBacktestRecent_{runnum}_{iter + iter0:04d}'
+    png_fn = f'PyTAAA_monteCarloBacktestRecent_{runnum}_{(iter + iter0):04d}'
     plotRecentPerfomance3( indexRealtimeStart, datearray,
                           symbols,
                           value,
