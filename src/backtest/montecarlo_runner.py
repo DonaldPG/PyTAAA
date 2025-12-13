@@ -70,6 +70,7 @@ def run_montecarlo(
         "Portfolio Ann Gain - recent","Portfolio Sharpe - recent",
         "B&H Ann Gain - recent","B&H Sharpe - recent",
         "Sharpe 20 Yr","Sharpe 15 Yr","Sharpe 10 Yr","Sharpe 5 Yr","Sharpe 3 Yr","Sharpe 2 Yr","Sharpe 1 Yr",
+        "Sortino 20 Yr","Sortino 15 Yr","Sortino 10 Yr","Sortino 5 Yr","Sortino 3 Yr","Sortino 2 Yr","Sortino 1 Yr",
         "Avg Return 20 Yr","Avg Return 15 Yr","Avg Return 10 Yr","Avg Return 5 Yr","Avg Return 3 Yr","Avg Return 2 Yr","Avg Return 1 Yr",
         "CAGR 20 Yr","CAGR 15 Yr","CAGR 10 Yr","CAGR 5 Yr","CAGR 3 Yr","CAGR 2 Yr","CAGR 1 Yr",
         "Avg Drawdown 20 Yr","Avg Drawdown 15 Yr","Avg Drawdown 10 Yr","Avg Drawdown 5 Yr","Avg Drawdown 3 Yr","Avg Drawdown 2 Yr","Avg Drawdown 1 Yr",
@@ -115,26 +116,26 @@ def run_montecarlo(
         ### TODO: ------------------------------ remove this code block later - end 
        
         # Run backtest
-        try:
-            result = dailyBacktest_pctLong(
-                params, temp_trial_json,
-                verbose=False, return_results=True,
-                plot=plot_individual, fast_mode=True
-            )
-            result['trial'] = trial
-            results.append(result)
-            
-            # Append result to CSV
-            # mode = 'a' if trial == 0 else 'a'
-            mode = 'a'
-            with open(output_csv, mode, newline='') as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                if trial == 0:
-                    writer.writeheader()
-                writer.writerow(result)
-        except Exception as e:
-            print(f"Error in trial {trial}: {e}")
-            continue
+        # try:
+        result = dailyBacktest_pctLong(
+            params, temp_trial_json,
+            verbose=False, return_results=True,
+            plot=plot_individual, fast_mode=True
+        )
+        result['trial'] = trial
+        results.append(result)
+        
+        # Append result to CSV
+        # mode = 'a' if trial == 0 else 'a'
+        mode = 'a'
+        with open(output_csv, mode, newline='') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            if trial == 0:
+                writer.writeheader()
+            writer.writerow(result)
+        # except Exception as e:
+        #     print(f"Error in trial {trial}: {e}")
+        #     continue
     
     return results
 

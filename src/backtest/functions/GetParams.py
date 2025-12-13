@@ -10,7 +10,7 @@ def from_config_file(config_filename):
     return params
 
 
-def get_symbols_file(json_fn):
+def get_symbols_file(json_fn, verbose=False):
     ######################
     ### get filename where list of symbols is stored
     ######################
@@ -22,11 +22,13 @@ def get_symbols_file(json_fn):
     stockList = params['stockList']
 
     if "symbols_file" in params.keys():
-        print(" ... found symbols_file in params ... ")
+        if verbose:
+            print(" ... found symbols_file in params ... ")
         symbols_file = params["symbols_file"]
     else:
         # read list of symbols from disk.
-        print(" ... did not find symbols_file in params ... ")
+        if verbose:
+            print(" ... did not find symbols_file in params ... ")
         top_dir = os.path.split(json_fn)[0]
         symbol_directory = os.path.join( top_dir, "symbols" )
         if stockList == 'Naz100':
@@ -156,9 +158,10 @@ def get_json_params(json_fn, verbose=False):
     ### Input parameters from json file with multiple sections
     ######################
 
-    print("\n... inside GetParams.get_json_params ...")
-    print("   . json_fn = ", json_fn)
-    print(" ... json file exists: ", os.path.exists(json_fn))
+    if verbose:
+        print("\n... inside GetParams.get_json_params ...")
+        print("   . json_fn = ", json_fn)
+        print(" ... json file exists: ", os.path.exists(json_fn))
 
     with open(json_fn, 'r') as json_file:
         config = json.load(json_file)
@@ -317,9 +320,10 @@ def get_json_params(json_fn, verbose=False):
     ### Rewritten Input parameters from json file with multiple sections using json package
     ######################
 
-    print("\n... inside rewritten src.backtest.functionsGetParams.get_json_params ...")
-    print("   . json_fn = ", json_fn)
-    print(" ... json file exists: ", os.path.exists(json_fn))
+    if verbose:
+        print("\n... inside rewritten src.backtest.functionsGetParams.get_json_params ...")
+        print("   . json_fn = ", json_fn)
+        print(" ... json file exists: ", os.path.exists(json_fn))
 
     with open(json_fn, 'r') as json_file:
         config = json.load(json_file)
@@ -464,7 +468,8 @@ def get_json_params(json_fn, verbose=False):
     params['stockList'] = valuation_section.get('stockList', 'Naz100')
     params['symbols_file'] = valuation_section.get('symbols_file', '')
 
-    print("   . params loaded successfully...")
+    if verbose:
+        print("   . params loaded successfully...")
 
     return params
 

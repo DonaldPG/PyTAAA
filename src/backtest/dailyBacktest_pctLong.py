@@ -2316,6 +2316,15 @@ def dailyBacktest_pctLong(
         Sharpe1Mo = ( gmean(PortfolioDailyGains[-21:])**252 -1. ) / ( np.std(PortfolioDailyGains[-21:])*sqrt(252) )
         PortfolioSharpe[iter] = ( gmean(PortfolioDailyGains)**252 -1. ) / ( np.std(PortfolioDailyGains)*sqrt(252) )
 
+        # Sortino ratios
+        Sortino20Yr = ( gmean(PortfolioDailyGains[-5040:])**252 -1. ) / ( np.std(PortfolioDailyGains[-5040:][PortfolioDailyGains[-5040:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-5040:] < 0) else np.nan
+        Sortino15Yr = ( gmean(PortfolioDailyGains[-index:])**252 -1. ) / ( np.std(PortfolioDailyGains[-index:][PortfolioDailyGains[-index:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-index:] < 0) else np.nan
+        Sortino10Yr = ( gmean(PortfolioDailyGains[-2520:])**252 -1. ) / ( np.std(PortfolioDailyGains[-2520:][PortfolioDailyGains[-2520:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-2520:] < 0) else np.nan
+        Sortino5Yr = ( gmean(PortfolioDailyGains[-1260:])**252 -1. ) / ( np.std(PortfolioDailyGains[-1260:][PortfolioDailyGains[-1260:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-1260:] < 0) else np.nan
+        Sortino3Yr = ( gmean(PortfolioDailyGains[-756:])**252 -1. ) / ( np.std(PortfolioDailyGains[-756:][PortfolioDailyGains[-756:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-756:] < 0) else np.nan
+        Sortino2Yr = ( gmean(PortfolioDailyGains[-504:])**252 -1. ) / ( np.std(PortfolioDailyGains[-504:][PortfolioDailyGains[-504:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-504:] < 0) else np.nan
+        Sortino1Yr = ( gmean(PortfolioDailyGains[-252:])**252 -1. ) / ( np.std(PortfolioDailyGains[-252:][PortfolioDailyGains[-252:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-252:] < 0) else np.nan
+
         print("15 year : ",index,PortfolioValue[-1], PortfolioValue[-index],datearray[-index])
 
         Return20Yr = (PortfolioValue[-1] / PortfolioValue[-5040])**(1/20.)
@@ -2405,6 +2414,14 @@ def dailyBacktest_pctLong(
             BuyHoldSharpe6Mo  = ( gmean(BuyHoldDailyGains[-126:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-126:])*sqrt(252) )
             BuyHoldSharpe3Mo  = ( gmean(BuyHoldDailyGains[-63:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-63:])*sqrt(252) )
             BuyHoldSharpe1Mo  = ( gmean(BuyHoldDailyGains[-21:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-21:])*sqrt(252) )
+            # BuyHold Sortino ratios
+            BuyHoldSortino20Yr = ( gmean(BuyHoldDailyGains[-5040:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-5040:][BuyHoldDailyGains[-5040:] < 0])*sqrt(252) ) if np.any(BuyHoldDailyGains[-5040:] < 0) else np.nan
+            BuyHoldSortino15Yr = ( gmean(BuyHoldDailyGains[-index:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-index:][BuyHoldDailyGains[-index:] < 0])*sqrt(252) ) if np.any(BuyHoldDailyGains[-index:] < 0) else np.nan
+            BuyHoldSortino10Yr = ( gmean(BuyHoldDailyGains[-2520:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-2520:][BuyHoldDailyGains[-2520:] < 0])*sqrt(252) ) if np.any(BuyHoldDailyGains[-2520:] < 0) else np.nan
+            BuyHoldSortino5Yr = ( gmean(BuyHoldDailyGains[-1260:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-1260:][BuyHoldDailyGains[-1260:] < 0])*sqrt(252) ) if np.any(BuyHoldDailyGains[-1260:] < 0) else np.nan
+            BuyHoldSortino3Yr = ( gmean(BuyHoldDailyGains[-756:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-756:][BuyHoldDailyGains[-756:] < 0])*sqrt(252) ) if np.any(BuyHoldDailyGains[-756:] < 0) else np.nan
+            BuyHoldSortino2Yr = ( gmean(BuyHoldDailyGains[-504:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-504:][BuyHoldDailyGains[-504:] < 0])*sqrt(252) ) if np.any(BuyHoldDailyGains[-504:] < 0) else np.nan
+            BuyHoldSortino1Yr = ( gmean(BuyHoldDailyGains[-252:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-252:][BuyHoldDailyGains[-252:] < 0])*sqrt(252) ) if np.any(BuyHoldDailyGains[-252:] < 0) else np.nan
             BuyHoldReturn20Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-5040])**(1/20.)
             BuyHoldReturn15Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-index])**(252./index)
             BuyHoldReturn10Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-2520])**(1/10.)
@@ -2439,6 +2456,13 @@ def dailyBacktest_pctLong(
         print("Sharpe3Yr, BuyHoldSharpe3Yr =   ", Sharpe3Yr, BuyHoldSharpe3Yr)
         print("Sharpe2Yr, BuyHoldSharpe2Yr =   ", Sharpe2Yr, BuyHoldSharpe2Yr)
         print("Sharpe1Yr, BuyHoldSharpe1Yr =   ", Sharpe1Yr, BuyHoldSharpe1Yr)
+        print("Sortino20Yr, BuyHoldSortino20Yr = ", Sortino20Yr, BuyHoldSortino20Yr)
+        print("Sortino15Yr, BuyHoldSortino15Yr = ", Sortino15Yr, BuyHoldSortino15Yr)
+        print("Sortino10Yr, BuyHoldSortino10Yr = ", Sortino10Yr, BuyHoldSortino10Yr)
+        print("Sortino5Yr, BuyHoldSortino5Yr =   ", Sortino5Yr, BuyHoldSortino5Yr)
+        print("Sortino3Yr, BuyHoldSortino3Yr =   ", Sortino3Yr, BuyHoldSortino3Yr)
+        print("Sortino2Yr, BuyHoldSortino2Yr =   ", Sortino2Yr, BuyHoldSortino2Yr)
+        print("Sortino1Yr, BuyHoldSortino1Yr =   ", Sortino1Yr, BuyHoldSortino1Yr)
         print("Return20Yr, BuyHoldReturn20Yr = ", Return20Yr, BuyHoldReturn20Yr)
         print("Return15Yr, BuyHoldReturn15Yr = ", Return15Yr, BuyHoldReturn15Yr)
         print("Return10Yr, BuyHoldReturn10Yr = ", Return10Yr, BuyHoldReturn10Yr)
@@ -2496,6 +2520,13 @@ def dailyBacktest_pctLong(
         if Sharpe3Yr > BuyHoldSharpe3Yr: beatBuyHoldTest2 += 1.5
         if Sharpe2Yr > BuyHoldSharpe2Yr: beatBuyHoldTest2 += 2
         if Sharpe1Yr > BuyHoldSharpe1Yr: beatBuyHoldTest2 += 2.5
+        if Sortino20Yr > BuyHoldSortino20Yr: beatBuyHoldTest2 += 1
+        if Sortino15Yr > BuyHoldSortino15Yr: beatBuyHoldTest2 += 1
+        if Sortino10Yr > BuyHoldSortino10Yr: beatBuyHoldTest2 += 1
+        if Sortino5Yr > BuyHoldSortino5Yr: beatBuyHoldTest2 += 1
+        if Sortino3Yr > BuyHoldSortino3Yr: beatBuyHoldTest2 += 1.5
+        if Sortino2Yr > BuyHoldSortino2Yr: beatBuyHoldTest2 += 2
+        if Sortino1Yr > BuyHoldSortino1Yr: beatBuyHoldTest2 += 2.5
         # make it a ratio ranging from 0 to 1
         beatBuyHoldTest2 /= 40
 
@@ -2628,6 +2659,15 @@ def dailyBacktest_pctLong(
         VarPctSharpe2Yr = ( gmean(PortfolioDailyGains[-504:])**252 -1. ) / ( np.std(PortfolioDailyGains[-504:])*sqrt(252) )
         VarPctSharpe1Yr = ( gmean(PortfolioDailyGains[-252:])**252 -1. ) / ( np.std(PortfolioDailyGains[-252:])*sqrt(252) )
 
+        # VarPct Sortino ratios
+        VarPctSortino20Yr = ( gmean(PortfolioDailyGains[-5040:])**252 -1. ) / ( np.std(PortfolioDailyGains[-5040:][PortfolioDailyGains[-5040:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-5040:] < 0) else np.nan
+        VarPctSortino15Yr = ( gmean(PortfolioDailyGains[-index:])**252 -1. ) / ( np.std(PortfolioDailyGains[-index:][PortfolioDailyGains[-index:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-index:] < 0) else np.nan
+        VarPctSortino10Yr = ( gmean(PortfolioDailyGains[-2520:])**252 -1. ) / ( np.std(PortfolioDailyGains[-2520:][PortfolioDailyGains[-2520:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-2520:] < 0) else np.nan
+        VarPctSortino5Yr = ( gmean(PortfolioDailyGains[-1260:])**252 -1. ) / ( np.std(PortfolioDailyGains[-1260:][PortfolioDailyGains[-1260:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-1260:] < 0) else np.nan
+        VarPctSortino3Yr = ( gmean(PortfolioDailyGains[-756:])**252 -1. ) / ( np.std(PortfolioDailyGains[-756:][PortfolioDailyGains[-756:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-756:] < 0) else np.nan
+        VarPctSortino2Yr = ( gmean(PortfolioDailyGains[-504:])**252 -1. ) / ( np.std(PortfolioDailyGains[-504:][PortfolioDailyGains[-504:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-504:] < 0) else np.nan
+        VarPctSortino1Yr = ( gmean(PortfolioDailyGains[-252:])**252 -1. ) / ( np.std(PortfolioDailyGains[-252:][PortfolioDailyGains[-252:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-252:] < 0) else np.nan
+
         print("15 year : ",index,PortfolioValue[-1], PortfolioValue[-index],datearray[-index])
 
         VarPctReturn20Yr = (PortfolioValue[-1] / PortfolioValue[-5040])**(1/20.)
@@ -2668,6 +2708,13 @@ def dailyBacktest_pctLong(
         if VarPctSharpe3Yr > BuyHoldSharpe3Yr: beatBuyHoldTest2VarPct += 1.5
         if VarPctSharpe2Yr > BuyHoldSharpe2Yr: beatBuyHoldTest2VarPct += 2
         if VarPctSharpe1Yr > BuyHoldSharpe1Yr: beatBuyHoldTest2VarPct += 2.5
+        if VarPctSortino20Yr > BuyHoldSortino20Yr: beatBuyHoldTest2VarPct += 1
+        if VarPctSortino15Yr > BuyHoldSortino15Yr: beatBuyHoldTest2VarPct += 1
+        if VarPctSortino10Yr > BuyHoldSortino10Yr: beatBuyHoldTest2VarPct += 1
+        if VarPctSortino5Yr > BuyHoldSortino5Yr: beatBuyHoldTest2VarPct += 1
+        if VarPctSortino3Yr > BuyHoldSortino3Yr: beatBuyHoldTest2VarPct += 1.5
+        if VarPctSortino2Yr > BuyHoldSortino2Yr: beatBuyHoldTest2VarPct += 2
+        if VarPctSortino1Yr > BuyHoldSortino1Yr: beatBuyHoldTest2VarPct += 2.5
         if VarPctReturn20Yr > BuyHoldReturn20Yr: beatBuyHoldTest2VarPct += 1
         if VarPctReturn15Yr > BuyHoldReturn15Yr: beatBuyHoldTest2VarPct += 1
         if VarPctReturn10Yr > BuyHoldReturn10Yr: beatBuyHoldTest2VarPct += 1
@@ -3540,9 +3587,9 @@ def dailyBacktest_pctLong(
             'mediumDays_max': mediumDays[1],
             'wideDays_min': wideDays[0],
             'wideDays_max': wideDays[1],
-            'incperiod': params['incperiod'],
-            'numdaysinfit': params['numdaysinfit'],
-            'offset': params['offset'],
+            'incperiod': params.get('incperiod', 3),
+            'numdaysinfit': params.get('numdaysinfit', 50),
+            'offset': params.get('offset', 7),
             'riskDownside_min': riskDownside_min,
             'riskDownside_max': riskDownside_max,
             'Portfolio Final Value': TradedPortfolioValue[-1],
@@ -3560,6 +3607,13 @@ def dailyBacktest_pctLong(
             'Sharpe 3 Yr': Sharpe3Yr,
             'Sharpe 2 Yr': Sharpe2Yr,
             'Sharpe 1 Yr': Sharpe1Yr,
+            'Sortino 20 Yr': Sortino20Yr,
+            'Sortino 15 Yr': Sortino15Yr,
+            'Sortino 10 Yr': Sortino10Yr,
+            'Sortino 5 Yr': Sortino5Yr,
+            'Sortino 3 Yr': Sortino3Yr,
+            'Sortino 2 Yr': Sortino2Yr,
+            'Sortino 1 Yr': Sortino1Yr,
             'Avg Return 20 Yr': arithmetic_mean_20,
             'Avg Return 15 Yr': arithmetic_mean_15,
             'Avg Return 10 Yr': arithmetic_mean_10,
