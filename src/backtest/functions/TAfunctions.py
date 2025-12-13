@@ -529,6 +529,7 @@ def percentileChannel_2D(x,minperiod,maxperiod,incperiod,lowPct,hiPct):
         periods = np.arange(minperiod,maxperiod,incperiod)
     elif minperiod > maxperiod and incperiod > 0:
         periods = np.arange(maxperiod,minperiod,incperiod)
+    print(" periods = ", str(periods))
     minchannel = np.zeros( (x.shape[0],x.shape[1]), dtype=float)
     maxchannel = np.zeros( (x.shape[0],x.shape[1]), dtype=float)
     for i in range( x.shape[1] ):
@@ -835,7 +836,13 @@ def recentSharpeWithAndWithoutGap(x,numdaysinfit=28,numdaysinfit2=20, offset=3):
 '''
 #----------------------------------------------
 
-def recentSharpeWithAndWithoutGap(x,numdaysinfit=504,offset_factor=.4, verbose=False, fast_mode=False):
+def recentSharpeWithAndWithoutGap(
+    x,
+    numdaysinfit=504,
+    offset_factor=.4,
+    verbose=False,
+    fast_mode=False
+    ):
 
     from math import sqrt
     from scipy.stats import gmean
@@ -843,6 +850,12 @@ def recentSharpeWithAndWithoutGap(x,numdaysinfit=504,offset_factor=.4, verbose=F
     ###
     ### - Cmpute sharpe ratio for recent prices with gap of 'offset' recent days
     ### - Compute 2nd sharpe ratio for recent prices recent days
+
+    if verbose:
+        print(" ... inside src/backtest/functions/TAfunctions.recentSharpeWithAndWithoutGap ... ")
+        print(f"   . Parameters: numdaysinfit={numdaysinfit}, offset_factor={offset_factor}, verbose={verbose}, fast_mode={fast_mode}")
+    import datetime ### TODO: remove this line
+    start_time = datetime.datetime.now()      ### TODO: remove this line
 
     # calculate dpgchannel for all stocks in x
     # - x[stock_number,date]
@@ -916,6 +929,10 @@ def recentSharpeWithAndWithoutGap(x,numdaysinfit=504,offset_factor=.4, verbose=F
         sharpe2periods = sharpe_pair[0]*np.sin(crossplot_rotationAngle) + sharpe_pair[1]*np.cos(crossplot_rotationAngle)
         if verbose:
             print("i, sharpe_pair, combined = " + str((i, sharpe_pair, sharpe2periods)))
+
+    end_time = datetime.datetime.now()      ### TODO: remove this line
+    if verbose:                             ### TODO: remove this line
+        print("   . recentSharpeWithAndWithoutGap took ", str(end_time - start_time))   ### TODO: remove this line        
 
     return sharpe2periods
 

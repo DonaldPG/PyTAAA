@@ -1625,6 +1625,15 @@ def dailyBacktest_pctLong(
     print("\n\n ... dailyBacktest_pctLong parameters:")
     pprint.pprint(params)
 
+    start_time_init = datetime.datetime.now()
+
+    elapsed_init = 0.0
+    elapsed_data = 0.0
+    elapsed_signal = 0.0
+    elapsed_loop = 0.0
+    elapsed_metrics = 0.0
+    elapsed_plot = 0.0
+
     # number of monte carlo scenarios
     randomtrials = 31
     randomtrials = 12
@@ -1645,10 +1654,12 @@ def dailyBacktest_pctLong(
         randomtrials = 1
         iter0 = params['trial']
         do_montecarlo = False
+        makeQCPlots = False
     else:
         print("\n\n\n ... 'trial' NOT in params ... Do monte carlo")
         iter0 = 0
         do_montecarlo = True
+        makeQCPlots = False
 
     print(" ... do_montecarlo = ", do_montecarlo)
     print(" ... randomtrials = ", randomtrials)
@@ -1678,6 +1689,9 @@ def dailyBacktest_pctLong(
     # filename = os.path.join( os.getcwd(), 'symbols', 'Naz100_Symbols.txt' )
     # '''
 
+    elapsed_init = (datetime.datetime.now() - start_time_init).total_seconds()
+    start_time_data = datetime.datetime.now()
+
     ###############################################################################################
     ###  UpdateHDF5( symbols_directory, symbols_file )  ### assume hdf is already up to date
     adjClose, symbols, datearray, _, _ = loadQuotes_fromHDF(symbols_file, json_fn)
@@ -1697,6 +1711,10 @@ def dailyBacktest_pctLong(
         adjClose[ii,:] = interpolate(adjClose[ii,:])
         adjClose[ii,:] = cleantobeginning(adjClose[ii,:])
         adjClose[ii,:] = cleantoend(adjClose[ii,:])
+
+    elapsed_data = (datetime.datetime.now() - start_time_data).total_seconds()
+    start_time_loop = datetime.datetime.now()
+    elapsed_signal = 0.0
 
     import os
     basename = os.path.split( symbols_file )[-1]
@@ -2000,6 +2018,7 @@ def dailyBacktest_pctLong(
         print("")
         print(" months to hold = ",holdMonths,monthsToHold)
         print("")
+        start_time_signal = datetime.datetime.now()
         monthgainloss = np.ones((adjClose.shape[0],adjClose.shape[1]),dtype=float)
         monthgainloss[:,LongPeriod:] = adjClose[:,LongPeriod:] / adjClose[:,:-LongPeriod]
         monthgainloss[np.isnan(monthgainloss)]=1.
@@ -2129,6 +2148,8 @@ def dailyBacktest_pctLong(
             signal2D = computeSignal2D(adjClose, gainloss, params)
 
 
+        elapsed_signal += (datetime.datetime.now() - start_time_signal).total_seconds()
+
         # copy to daily signal
         signal2D_daily = signal2D.copy()
 
@@ -2178,7 +2199,7 @@ def dailyBacktest_pctLong(
             rankThresholdPct,
             stddevThreshold=stddevThreshold,
             is_backtest=True,
-            makeQCPlots=plot,
+            makeQCPlots=makeQCPlots,
             verbose=verbose,
             fast_mode=fast_mode
         )
@@ -3430,6 +3451,9 @@ def dailyBacktest_pctLong(
                           str(last_date)+         \
                           format(holdmonthscount[ii],'7.2f'), tagnorm)
 
+    elapsed_loop = (datetime.datetime.now() - start_time_loop).total_seconds()
+    start_time_metrics = datetime.datetime.now()
+
     if isinstance(datearray, datetime.date):
         datearray = np.array([datearray])
 
@@ -3477,6 +3501,18 @@ def dailyBacktest_pctLong(
     TradedPortfolioValue = np.average(monthvalue,axis=0)
 
     # set up dictionary to save monte carlo backtest results
+    print("\n" + "="*50)
+    print("TIMING SUMMARY")
+    print("="*50)
+    print(f"Initialization: {elapsed_init:.2f} seconds")
+    print(f"Data Loading: {elapsed_data:.2f} seconds")
+    print(f"Signal Calculation (total across {randomtrials} trials): {elapsed_signal:.2f} seconds")
+    print(f"Backtesting Loop (total for {randomtrials} trials): {elapsed_loop:.2f} seconds")
+    print(f"Metrics Calculation: {elapsed_metrics:.2f} seconds")
+    if plot:
+        print(f"Plotting: {elapsed_plot:.2f} seconds")
+    print("="*50)
+
     print(" ... saving monte carlo backtest results to dict return_results? " + str(return_results))
     if return_results:
         return {
@@ -3550,7 +3586,10 @@ def dailyBacktest_pctLong(
             'beatBuyHoldTest2 VarPct': beatBuyHoldTest2VarPct,
         }
 
+    elapsed_metrics = (datetime.datetime.now() - start_time_metrics).total_seconds()
+
     if plot:
+        start_time_plot = datetime.datetime.now()
         png_fn = f'PyTAAA_monteCarloBacktestFull_{runnum}_{(iter + iter0):04d}'
     plotRecentPerfomance3( 0, datearray,
                           symbols,
@@ -3586,4 +3625,6 @@ def dailyBacktest_pctLong(
                           numberStocksUpTrendingNearHigh,
                           numberStocksUpTrendingBeatBuyHold,
                           png_fn, json_fn)
+
+    elapsed_plot = (datetime.datetime.now() - start_time_plot).total_seconds()
     return
