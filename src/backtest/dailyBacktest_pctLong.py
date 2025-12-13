@@ -2317,13 +2317,13 @@ def dailyBacktest_pctLong(
         PortfolioSharpe[iter] = ( gmean(PortfolioDailyGains)**252 -1. ) / ( np.std(PortfolioDailyGains)*sqrt(252) )
 
         # Sortino ratios
-        Sortino20Yr = ( gmean(PortfolioDailyGains[-5040:])**252 -1. ) / ( np.std(PortfolioDailyGains[-5040:][PortfolioDailyGains[-5040:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-5040:] < 0) else np.nan
-        Sortino15Yr = ( gmean(PortfolioDailyGains[-index:])**252 -1. ) / ( np.std(PortfolioDailyGains[-index:][PortfolioDailyGains[-index:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-index:] < 0) else np.nan
-        Sortino10Yr = ( gmean(PortfolioDailyGains[-2520:])**252 -1. ) / ( np.std(PortfolioDailyGains[-2520:][PortfolioDailyGains[-2520:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-2520:] < 0) else np.nan
-        Sortino5Yr = ( gmean(PortfolioDailyGains[-1260:])**252 -1. ) / ( np.std(PortfolioDailyGains[-1260:][PortfolioDailyGains[-1260:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-1260:] < 0) else np.nan
-        Sortino3Yr = ( gmean(PortfolioDailyGains[-756:])**252 -1. ) / ( np.std(PortfolioDailyGains[-756:][PortfolioDailyGains[-756:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-756:] < 0) else np.nan
-        Sortino2Yr = ( gmean(PortfolioDailyGains[-504:])**252 -1. ) / ( np.std(PortfolioDailyGains[-504:][PortfolioDailyGains[-504:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-504:] < 0) else np.nan
-        Sortino1Yr = ( gmean(PortfolioDailyGains[-252:])**252 -1. ) / ( np.std(PortfolioDailyGains[-252:][PortfolioDailyGains[-252:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-252:] < 0) else np.nan
+        Sortino20Yr = ( gmean(PortfolioDailyGains[-5040:])**252 -1. ) / ( np.std(PortfolioDailyGains[-5040:][PortfolioDailyGains[-5040:] < 1])*sqrt(252) ) if np.any(PortfolioDailyGains[-5040:] < 1) else np.nan
+        Sortino15Yr = ( gmean(PortfolioDailyGains[-index:])**252 -1. ) / ( np.std(PortfolioDailyGains[-index:][PortfolioDailyGains[-index:] < 1])*sqrt(252) ) if np.any(PortfolioDailyGains[-index:] < 1) else np.nan
+        Sortino10Yr = ( gmean(PortfolioDailyGains[-2520:])**252 -1. ) / ( np.std(PortfolioDailyGains[-2520:][PortfolioDailyGains[-2520:] < 1])*sqrt(252) ) if np.any(PortfolioDailyGains[-2520:] < 1) else np.nan
+        Sortino5Yr = ( gmean(PortfolioDailyGains[-1260:])**252 -1. ) / ( np.std(PortfolioDailyGains[-1260:][PortfolioDailyGains[-1260:] < 1])*sqrt(252) ) if np.any(PortfolioDailyGains[-1260:] < 1) else np.nan
+        Sortino3Yr = ( gmean(PortfolioDailyGains[-756:])**252 -1. ) / ( np.std(PortfolioDailyGains[-756:][PortfolioDailyGains[-756:] < 1])*sqrt(252) ) if np.any(PortfolioDailyGains[-756:] < 1) else np.nan
+        Sortino2Yr = ( gmean(PortfolioDailyGains[-504:])**252 -1. ) / ( np.std(PortfolioDailyGains[-504:][PortfolioDailyGains[-504:] < 1])*sqrt(252) ) if np.any(PortfolioDailyGains[-504:] < 1) else np.nan
+        Sortino1Yr = ( gmean(PortfolioDailyGains[-252:])**252 -1. ) / ( np.std(PortfolioDailyGains[-252:][PortfolioDailyGains[-252:] < 1])*sqrt(252) ) if np.any(PortfolioDailyGains[-252:] < 1) else np.nan
 
         print("15 year : ",index,PortfolioValue[-1], PortfolioValue[-index],datearray[-index])
 
@@ -2415,13 +2415,13 @@ def dailyBacktest_pctLong(
             BuyHoldSharpe3Mo  = ( gmean(BuyHoldDailyGains[-63:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-63:])*sqrt(252) )
             BuyHoldSharpe1Mo  = ( gmean(BuyHoldDailyGains[-21:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-21:])*sqrt(252) )
             # BuyHold Sortino ratios
-            BuyHoldSortino20Yr = ( gmean(BuyHoldDailyGains[-5040:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-5040:][BuyHoldDailyGains[-5040:] < 0])*sqrt(252) ) if np.any(BuyHoldDailyGains[-5040:] < 0) else np.nan
-            BuyHoldSortino15Yr = ( gmean(BuyHoldDailyGains[-index:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-index:][BuyHoldDailyGains[-index:] < 0])*sqrt(252) ) if np.any(BuyHoldDailyGains[-index:] < 0) else np.nan
-            BuyHoldSortino10Yr = ( gmean(BuyHoldDailyGains[-2520:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-2520:][BuyHoldDailyGains[-2520:] < 0])*sqrt(252) ) if np.any(BuyHoldDailyGains[-2520:] < 0) else np.nan
-            BuyHoldSortino5Yr = ( gmean(BuyHoldDailyGains[-1260:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-1260:][BuyHoldDailyGains[-1260:] < 0])*sqrt(252) ) if np.any(BuyHoldDailyGains[-1260:] < 0) else np.nan
-            BuyHoldSortino3Yr = ( gmean(BuyHoldDailyGains[-756:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-756:][BuyHoldDailyGains[-756:] < 0])*sqrt(252) ) if np.any(BuyHoldDailyGains[-756:] < 0) else np.nan
-            BuyHoldSortino2Yr = ( gmean(BuyHoldDailyGains[-504:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-504:][BuyHoldDailyGains[-504:] < 0])*sqrt(252) ) if np.any(BuyHoldDailyGains[-504:] < 0) else np.nan
-            BuyHoldSortino1Yr = ( gmean(BuyHoldDailyGains[-252:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-252:][BuyHoldDailyGains[-252:] < 0])*sqrt(252) ) if np.any(BuyHoldDailyGains[-252:] < 0) else np.nan
+            BuyHoldSortino20Yr = ( gmean(BuyHoldDailyGains[-5040:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-5040:][BuyHoldDailyGains[-5040:] < 1])*sqrt(252) ) if np.any(BuyHoldDailyGains[-5040:] < 1) else np.nan
+            BuyHoldSortino15Yr = ( gmean(BuyHoldDailyGains[-index:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-index:][BuyHoldDailyGains[-index:] < 1])*sqrt(252) ) if np.any(BuyHoldDailyGains[-index:] < 1) else np.nan
+            BuyHoldSortino10Yr = ( gmean(BuyHoldDailyGains[-2520:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-2520:][BuyHoldDailyGains[-2520:] < 1])*sqrt(252) ) if np.any(BuyHoldDailyGains[-2520:] < 1) else np.nan
+            BuyHoldSortino5Yr = ( gmean(BuyHoldDailyGains[-1260:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-1260:][BuyHoldDailyGains[-1260:] < 1])*sqrt(252) ) if np.any(BuyHoldDailyGains[-1260:] < 1) else np.nan
+            BuyHoldSortino3Yr = ( gmean(BuyHoldDailyGains[-756:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-756:][BuyHoldDailyGains[-756:] < 1])*sqrt(252) ) if np.any(BuyHoldDailyGains[-756:] < 1) else np.nan
+            BuyHoldSortino2Yr = ( gmean(BuyHoldDailyGains[-504:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-504:][BuyHoldDailyGains[-504:] < 1])*sqrt(252) ) if np.any(BuyHoldDailyGains[-504:] < 1) else np.nan
+            BuyHoldSortino1Yr = ( gmean(BuyHoldDailyGains[-252:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-252:][BuyHoldDailyGains[-252:] < 1])*sqrt(252) ) if np.any(BuyHoldDailyGains[-252:] < 1) else np.nan
             BuyHoldReturn20Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-5040])**(1/20.)
             BuyHoldReturn15Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-index])**(252./index)
             BuyHoldReturn10Yr = (BuyHoldPortfolioValue[-1] / BuyHoldPortfolioValue[-2520])**(1/10.)
@@ -2528,7 +2528,7 @@ def dailyBacktest_pctLong(
         if Sortino2Yr > BuyHoldSortino2Yr: beatBuyHoldTest2 += 2
         if Sortino1Yr > BuyHoldSortino1Yr: beatBuyHoldTest2 += 2.5
         # make it a ratio ranging from 0 to 1
-        beatBuyHoldTest2 /= 40
+        beatBuyHoldTest2 /= 50
 
         if beatBuyHoldTest2 > .60 :
             print("found monte carlo trial that beats BuyHold (test2)...")
@@ -2660,13 +2660,13 @@ def dailyBacktest_pctLong(
         VarPctSharpe1Yr = ( gmean(PortfolioDailyGains[-252:])**252 -1. ) / ( np.std(PortfolioDailyGains[-252:])*sqrt(252) )
 
         # VarPct Sortino ratios
-        VarPctSortino20Yr = ( gmean(PortfolioDailyGains[-5040:])**252 -1. ) / ( np.std(PortfolioDailyGains[-5040:][PortfolioDailyGains[-5040:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-5040:] < 0) else np.nan
-        VarPctSortino15Yr = ( gmean(PortfolioDailyGains[-index:])**252 -1. ) / ( np.std(PortfolioDailyGains[-index:][PortfolioDailyGains[-index:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-index:] < 0) else np.nan
-        VarPctSortino10Yr = ( gmean(PortfolioDailyGains[-2520:])**252 -1. ) / ( np.std(PortfolioDailyGains[-2520:][PortfolioDailyGains[-2520:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-2520:] < 0) else np.nan
-        VarPctSortino5Yr = ( gmean(PortfolioDailyGains[-1260:])**252 -1. ) / ( np.std(PortfolioDailyGains[-1260:][PortfolioDailyGains[-1260:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-1260:] < 0) else np.nan
-        VarPctSortino3Yr = ( gmean(PortfolioDailyGains[-756:])**252 -1. ) / ( np.std(PortfolioDailyGains[-756:][PortfolioDailyGains[-756:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-756:] < 0) else np.nan
-        VarPctSortino2Yr = ( gmean(PortfolioDailyGains[-504:])**252 -1. ) / ( np.std(PortfolioDailyGains[-504:][PortfolioDailyGains[-504:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-504:] < 0) else np.nan
-        VarPctSortino1Yr = ( gmean(PortfolioDailyGains[-252:])**252 -1. ) / ( np.std(PortfolioDailyGains[-252:][PortfolioDailyGains[-252:] < 0])*sqrt(252) ) if np.any(PortfolioDailyGains[-252:] < 0) else np.nan
+        VarPctSortino20Yr = ( gmean(PortfolioDailyGains[-5040:])**252 -1. ) / ( np.std(PortfolioDailyGains[-5040:][PortfolioDailyGains[-5040:] < 1])*sqrt(252) ) if np.any(PortfolioDailyGains[-5040:] < 1) else np.nan
+        VarPctSortino15Yr = ( gmean(PortfolioDailyGains[-index:])**252 -1. ) / ( np.std(PortfolioDailyGains[-index:][PortfolioDailyGains[-index:] < 1])*sqrt(252) ) if np.any(PortfolioDailyGains[-index:] < 1) else np.nan
+        VarPctSortino10Yr = ( gmean(PortfolioDailyGains[-2520:])**252 -1. ) / ( np.std(PortfolioDailyGains[-2520:][PortfolioDailyGains[-2520:] < 1])*sqrt(252) ) if np.any(PortfolioDailyGains[-2520:] < 1) else np.nan
+        VarPctSortino5Yr = ( gmean(PortfolioDailyGains[-1260:])**252 -1. ) / ( np.std(PortfolioDailyGains[-1260:][PortfolioDailyGains[-1260:] < 1])*sqrt(252) ) if np.any(PortfolioDailyGains[-1260:] < 1) else np.nan
+        VarPctSortino3Yr = ( gmean(PortfolioDailyGains[-756:])**252 -1. ) / ( np.std(PortfolioDailyGains[-756:][PortfolioDailyGains[-756:] < 1])*sqrt(252) ) if np.any(PortfolioDailyGains[-756:] < 1) else np.nan
+        VarPctSortino2Yr = ( gmean(PortfolioDailyGains[-504:])**252 -1. ) / ( np.std(PortfolioDailyGains[-504:][PortfolioDailyGains[-504:] < 1])*sqrt(252) ) if np.any(PortfolioDailyGains[-504:] < 1) else np.nan
+        VarPctSortino1Yr = ( gmean(PortfolioDailyGains[-252:])**252 -1. ) / ( np.std(PortfolioDailyGains[-252:][PortfolioDailyGains[-252:] < 1])*sqrt(252) ) if np.any(PortfolioDailyGains[-252:] < 1) else np.nan
 
         print("15 year : ",index,PortfolioValue[-1], PortfolioValue[-index],datearray[-index])
 
@@ -2737,7 +2737,7 @@ def dailyBacktest_pctLong(
         if VarPctDrawdown2Yr  > BuyHoldDrawdown2Yr:  beatBuyHoldTest2VarPct += 2
         if VarPctDrawdown1Yr  > BuyHoldDrawdown1Yr:  beatBuyHoldTest2VarPct += 2.5
         # make it a ratio ranging from 0 to 1
-        beatBuyHoldTest2VarPct /= 40
+        beatBuyHoldTest2VarPct /= 50
 
 
         # """
