@@ -9,6 +9,7 @@ uv run pytaaa_main.py --json /Users/donaldpg/pyTAAA_data/naz100_pine/pytaaa_naz1
 uv run pytaaa_main.py --json /Users/donaldpg/pyTAAA_data/naz100_hma/pytaaa_naz100_hma.json 2>&1 | tee pytaaa_naz100_hma.log
 uv run pytaaa_main.py --json /Users/donaldpg/pyTAAA_data/naz100_pi/pytaaa_naz100_pi.json 2>&1 | tee pytaaa_naz100_pi.log
 uv run pytaaa_main.py --json /Users/donaldpg/pytaaa_data/sp500_hma/pytaaa_sp500_hma.json 2>&1 | tee pytaaa_sp500.log
+ uv run pytaaa_main.py --json /Users/donaldpg/pytaaa_data/sp500_pine/pytaaa_sp500_pine.json 2>&1 | tee pytaaa_sp500_pine.log
 
 
 cd /Users/donaldpg/PyProjects/worktree2/PyTAAA
