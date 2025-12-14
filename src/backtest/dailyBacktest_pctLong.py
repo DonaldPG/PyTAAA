@@ -106,7 +106,7 @@ def plotRecentPerfomance3(
     ##
     params = get_json_params(json_fn)
     symbols_file = get_symbols_file(json_fn)
-    stockList = params['stockList']
+    stockList = params.get('stockList', 'SP500')
 
     # # read list of symbols from disk.
     # symbol_directory = os.path.join( os.getcwd(), "symbols" )
@@ -2492,6 +2492,11 @@ def dailyBacktest_pctLong(
             beatBuyHoldCount += 1
 
         beatBuyHoldTest2 = 0
+        stockList = params.get('stockList', 'SP500')
+        if stockList == "SP500" and uptrendSignalMethod == "percentileChannels":
+            returns_threshold = 1.65
+        else:
+            returns_threshold = 0.0
         if Return20Yr > BuyHoldReturn20Yr: beatBuyHoldTest2 += 1
         if Return15Yr > BuyHoldReturn15Yr: beatBuyHoldTest2 += 1
         if Return10Yr > BuyHoldReturn10Yr: beatBuyHoldTest2 += 1
@@ -2499,13 +2504,13 @@ def dailyBacktest_pctLong(
         if Return3Yr  > BuyHoldReturn3Yr:  beatBuyHoldTest2 += 1.5
         if Return2Yr  > BuyHoldReturn2Yr:  beatBuyHoldTest2 += 2
         if Return1Yr  > BuyHoldReturn1Yr:  beatBuyHoldTest2 += 2.5
-        if Return20Yr > 0: beatBuyHoldTest2 += 1
-        if Return15Yr > 0: beatBuyHoldTest2 += 1
-        if Return10Yr > 0: beatBuyHoldTest2 += 1
-        if Return5Yr  > 0: beatBuyHoldTest2 += 1
-        if Return3Yr  > 0: beatBuyHoldTest2 += 1.5
-        if Return2Yr  > 0: beatBuyHoldTest2 += 2
-        if Return1Yr  > 0: beatBuyHoldTest2 += 2.5
+        if Return20Yr > returns_threshold: beatBuyHoldTest2 += 1
+        if Return15Yr > returns_threshold: beatBuyHoldTest2 += 1
+        if Return10Yr > returns_threshold: beatBuyHoldTest2 += 1
+        if Return5Yr  > returns_threshold: beatBuyHoldTest2 += 1
+        if Return3Yr  > returns_threshold: beatBuyHoldTest2 += 1.5
+        if Return2Yr  > returns_threshold: beatBuyHoldTest2 += 2
+        if Return1Yr  > returns_threshold: beatBuyHoldTest2 += 2.5
         if Drawdown20Yr > BuyHoldDrawdown20Yr: beatBuyHoldTest2 += 1
         if Drawdown15Yr > BuyHoldDrawdown15Yr: beatBuyHoldTest2 += 1
         if Drawdown10Yr > BuyHoldDrawdown10Yr: beatBuyHoldTest2 += 1
@@ -2722,13 +2727,13 @@ def dailyBacktest_pctLong(
         if VarPctReturn3Yr  > BuyHoldReturn3Yr:  beatBuyHoldTest2VarPct += 1.5
         if VarPctReturn2Yr  > BuyHoldReturn2Yr:  beatBuyHoldTest2VarPct += 2
         if VarPctReturn1Yr  > BuyHoldReturn1Yr:  beatBuyHoldTest2VarPct += 2.5
-        if VarPctReturn20Yr > 0: beatBuyHoldTest2VarPct += 1
-        if VarPctReturn15Yr > 0: beatBuyHoldTest2VarPct += 1
-        if VarPctReturn10Yr > 0: beatBuyHoldTest2VarPct += 1
-        if VarPctReturn5Yr  > 0: beatBuyHoldTest2VarPct += 1
-        if VarPctReturn3Yr  > 0: beatBuyHoldTest2VarPct += 1.5
-        if VarPctReturn2Yr  > 0: beatBuyHoldTest2VarPct += 2
-        if VarPctReturn1Yr  > 0: beatBuyHoldTest2VarPct += 2.5
+        if VarPctReturn20Yr > returns_threshold: beatBuyHoldTest2VarPct += 1
+        if VarPctReturn15Yr > returns_threshold: beatBuyHoldTest2VarPct += 1
+        if VarPctReturn10Yr > returns_threshold: beatBuyHoldTest2VarPct += 1
+        if VarPctReturn5Yr  > returns_threshold: beatBuyHoldTest2VarPct += 1
+        if VarPctReturn3Yr  > returns_threshold: beatBuyHoldTest2VarPct += 1.5
+        if VarPctReturn2Yr  > returns_threshold: beatBuyHoldTest2VarPct += 2
+        if VarPctReturn1Yr  > returns_threshold: beatBuyHoldTest2VarPct += 2.5
         if VarPctDrawdown20Yr > BuyHoldDrawdown20Yr: beatBuyHoldTest2VarPct += 1
         if VarPctDrawdown15Yr > BuyHoldDrawdown15Yr: beatBuyHoldTest2VarPct += 1
         if VarPctDrawdown10Yr > BuyHoldDrawdown10Yr: beatBuyHoldTest2VarPct += 1

@@ -211,23 +211,43 @@ class MonteCarloBacktest:
             params["MA1"] = max(params["MA1"], params["MA2"] + 1)
 
         if uptrendSignalMethod == 'percentileChannels':
+            # # MA1 should be less than MA2 in this method
+            # _MA1 = int(random_triangle(low=25, mid=50, high=120))
+            # _MA2 = _MA1 + int(random_triangle(low=20, mid=50, high=75))
+            # params = {
+            #     "numberStocksTraded": choice([5, 6, 6, 7, 7, 8, 8]),
+            #     "monthsToHold": choice([1, 1, 1, 1, 1, 1, 1, 1, 1, 2]),
+            #     "LongPeriod": int(random_triangle(low=190, mid=370, high=550)),
+            #     "stddevThreshold": random_triangle(low=5.0, mid=7.50, high=10.0),
+            #     "MA1": _MA1,
+            #     "MA2": _MA2,
+            #     "sma2factor": random_triangle(low=1.65, mid=2.5, high=2.75),
+            #     "rankThresholdPct": random_triangle(low=0.14, mid=0.20, high=0.26),
+            #     "riskDownside_min": random_triangle(low=0.50, mid=0.70, high=0.90),
+            #     "riskDownside_max": random_triangle(low=8.0, mid=10.0, high=13.0),
+            #     "sma_filt_val": random_triangle(low=0.010, mid=0.015, high=0.0225),
+            #     "lowPct": np.random.uniform(7.0, 35.0),
+            #     "hiPct": np.random.uniform(65.0, 97.0),
+            #     "uptrendSignalMethod": uptrendSignalMethod,
+            #     "trade_cost": 0.0,
+            # }
             # MA1 should be less than MA2 in this method
-            _MA1 = int(random_triangle(low=25, mid=50, high=120))
-            _MA2 = _MA1 + int(random_triangle(low=20, mid=50, high=75))
+            _MA1 = int(random_triangle(low=25, mid=60, high=90))
+            _MA2 = _MA1 + int(random_triangle(low=15, mid=45, high=70))
             params = {
-                "numberStocksTraded": choice([5, 6, 6, 7, 7, 8, 8]),
+                "numberStocksTraded": choice([5, 6, 6, 7, 7, 8, 8, 9]),
                 "monthsToHold": choice([1, 1, 1, 1, 1, 1, 1, 1, 1, 2]),
-                "LongPeriod": int(random_triangle(low=190, mid=370, high=550)),
-                "stddevThreshold": random_triangle(low=5.0, mid=7.50, high=10.0),
+                "LongPeriod": int(random_triangle(low=225, mid=380, high=550)),
+                "stddevThreshold": random_triangle(low=5.0, mid=7.25, high=10.0),
                 "MA1": _MA1,
                 "MA2": _MA2,
-                "sma2factor": random_triangle(low=1.65, mid=2.5, high=2.75),
-                "rankThresholdPct": random_triangle(low=0.14, mid=0.20, high=0.26),
-                "riskDownside_min": random_triangle(low=0.50, mid=0.70, high=0.90),
-                "riskDownside_max": random_triangle(low=8.0, mid=10.0, high=13.0),
+                "sma2factor": random_triangle(low=1.90, mid=2.3, high=2.60),
+                "rankThresholdPct": random_triangle(low=0.15, mid=0.20, high=0.28),
+                "riskDownside_min": random_triangle(low=0.55, mid=0.70, high=0.90),
+                "riskDownside_max": random_triangle(low=8.0, mid=10.4, high=13.0),
                 "sma_filt_val": random_triangle(low=0.010, mid=0.015, high=0.0225),
-                "lowPct": np.random.uniform(7.0, 35.0),
-                "hiPct": np.random.uniform(65.0, 97.0),
+                "lowPct": random_triangle(low=7.0, mid=21.6, high=35.0),
+                "hiPct": random_triangle(low=65.0, mid=87.5, high=99.0),
                 "uptrendSignalMethod": uptrendSignalMethod,
                 "trade_cost": 0.0,
             }
