@@ -199,25 +199,31 @@ def newHighsAndLows(
 
         today = datetime.datetime.now()
 
+        # Create figure first
+        plt.figure(figsize=(9, 7))
         plt.clf()
-        plt.grid(True)
 
-        # set up to use dates for labels
+        # Set up to use dates for labels
         xlocs = []
         xlabels = []
         for i in range(1,len(datearray)):
             if datearray[i].year != datearray[i-1].year:
                 xlocs.append(datearray[i])
                 xlabels.append(str(datearray[i].year))
-        #print "xlocs,xlabels = ", xlocs, xlabels
+
+        # Create subplots
+        subplotsize = gridspec.GridSpec(2,1,height_ratios=[5,3])
+        
+        # Upper subplot - Portfolio value
+        plt.subplot(subplotsize[0])
+        plt.grid(True)
+        
+        # Set x-axis labels for upper subplot
         if len(xlocs) < 12 :
             plt.xticks(xlocs, xlabels)
         else:
             plt.xticks(xlocs[::2], xlabels[::2])
-
-        subplotsize = gridspec.GridSpec(2,1,height_ratios=[5,3])
-        plt.subplot(subplotsize[0])
-        plt.grid(True)
+        
         plt.plot(datearray,BuyHoldValue,'k-')
         ymin = np.min(BuyHoldValue) * .75
         ymax = np.max(BuyHoldValue) * 1.5
@@ -265,8 +271,15 @@ def newHighsAndLows(
         plot_text6 = "traded sharpe = ", format(sharpe_traded,'4.2f')
         plt.text( datearray[-2500],text_y6, plot_text6, fontsize=10 )
 
+        # Lower subplot - New highs and lows
         plt.subplot(subplotsize[1])
         plt.grid(True)
+        
+        # Set x-axis labels for lower subplot
+        if len(xlocs) < 12 :
+            plt.xticks(xlocs, xlabels)
+        else:
+            plt.xticks(xlocs[::2], xlabels[::2])
 
         plt.plot(datearray,sumNewHighs,'g-',label='new highs')
         plt.plot(datearray,sumNewLows,'r-',label='new lows')
@@ -274,6 +287,9 @@ def newHighsAndLows(
         #print "ymax=",ymax
         plt.ylim((0,ymax))
         plt.legend(loc=2,fontsize=9)
+
+        # Adjust layout to prevent overlapping labels
+        plt.tight_layout()
 
         plotfilepath = os.path.join( filepath, "PyTAAA_newHighs_newLows_count__"+today.strftime("%Y-%m-%d-%I.%M.%S%p" ) )
         #plotfilepath = plotfilepath.replace(":","-")

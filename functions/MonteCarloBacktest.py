@@ -19,6 +19,10 @@ import random
 import pickle
 from pathlib import Path
 from dataclasses import dataclass, field
+from functions.PortfolioMetrics import (
+    calculate_period_metrics, 
+    analyze_model_switching_effectiveness
+)
 
 # Global interrupt flag using threading.Event for thread safety
 _INTERRUPT_EVENT = threading.Event()
@@ -364,9 +368,20 @@ class MonteCarloBacktest:
         self.metric_blending_config = self.json_config.get('metric_blending', {})
         self.focus_period_enabled = self.metric_blending_config.get('enabled', False)
         
+        # Check if we have two focus periods or just one
+        self.has_two_focus_periods = ('focus_period_1_start' in self.metric_blending_config and 
+                                       'focus_period_2_start' in self.metric_blending_config)
+        
         if self.focus_period_enabled:
-            print(f"Focus period blending enabled: {self.metric_blending_config.get('focus_period_start')} to {self.metric_blending_config.get('focus_period_end')}")
-            print(f"Blending weights: Full period {self.metric_blending_config.get('full_period_weight', 1.0):.1f}, Focus period {self.metric_blending_config.get('focus_period_weight', 0.0):.1f}")
+            if self.has_two_focus_periods:
+                print(f"Focus period blending enabled with TWO focus periods:")
+                print(f"  Focus Period 1: {self.metric_blending_config.get('focus_period_1_start')} to {self.metric_blending_config.get('focus_period_1_end')}")
+                print(f"  Focus Period 2: {self.metric_blending_config.get('focus_period_2_start')} to {self.metric_blending_config.get('focus_period_2_end')}")
+                print(f"Blending weights: Full period {self.metric_blending_config.get('full_period_weight', 1.0):.1f}, Focus periods {self.metric_blending_config.get('focus_period_weight', 0.0):.1f}")
+            else:
+                print(f"Focus period blending enabled with ONE focus period:")
+                print(f"  Focus Period: {self.metric_blending_config.get('focus_period_start')} to {self.metric_blending_config.get('focus_period_end')}")
+                print(f"Blending weights: Full period {self.metric_blending_config.get('full_period_weight', 1.0):.1f}, Focus period {self.metric_blending_config.get('focus_period_weight', 0.0):.1f}")
         
         # Maps canonical tuple -> index in tracking arrays
         self.combination_indices: Dict[Tuple[int, ...], int] = {}
@@ -604,8 +619,8 @@ class MonteCarloBacktest:
                     metrics_dict.update(focus_metrics)
                 
                 blended_score = self.compute_blended_score(
-                    metrics_dict['normalized_score'], 
-                    focus_metrics.get('focus_normalized_score') if focus_metrics else None
+                    focus_metrics.get('focus_1_normalized_score') if focus_metrics else None,
+                    focus_metrics.get('focus_2_normalized_score') if focus_metrics else None
                 )
                 metrics_dict['blended_score'] = blended_score
                 
@@ -819,8 +834,8 @@ class MonteCarloBacktest:
             lookbacks = self._generate_diverse_lookbacks(n_lookbacks, iteration=iteration)
             logger.warning("No lookbacks provided to _select_best_model, generating new ones")
         
-        # Initialize rank storage
-        models = list(self.portfolio_histories.keys())
+        # FIXED: Force consistent alphabetical ordering of models
+        models = sorted(list(self.portfolio_histories.keys()))
         all_ranks = np.zeros((len(models), 5 * len(lookbacks))) # 5 metrics × n_lookbacks
         
         # Calculate metrics for each lookback period
@@ -870,7 +885,7 @@ class MonteCarloBacktest:
             portfolio_values: Array of portfolio values over time
             
         Returns:
-            Dictionary containing performance metrics including normalized_score
+            Dictionary containing performance metrics including normalized_score and period metrics
         """
         # Check if this is a cash portfolio (constant values)
         is_cash_portfolio = len(np.unique(portfolio_values)) == 1
@@ -907,119 +922,217 @@ class MonteCarloBacktest:
             # Calculate normalized average score (excluding final_value)
             normalized_score = sum(normalized_metrics.values()) / len(normalized_metrics)
             basic_metrics['normalized_score'] = normalized_score
+
+        # Add period metrics and model-switching effectiveness analysis
+        try:
+            # Only calculate period metrics if we have valid portfolio data
+            if len(portfolio_values) > 1 and len(self.dates) == len(portfolio_values):
+                period_metrics = calculate_period_metrics(portfolio_values, self.dates)
+                basic_metrics['period_metrics'] = period_metrics
+                
+                # Calculate model-switching effectiveness if we have best params
+                if hasattr(self, 'best_params') and self.best_params.get('lookbacks'):
+                    effectiveness_analysis = analyze_model_switching_effectiveness(
+                        self, self.best_params['lookbacks']
+                    )
+                    basic_metrics.update({
+                        'model_effectiveness': effectiveness_analysis,
+                        'outperformance_percentage': effectiveness_analysis.get('sharpe_outperformance_pct', 0.0)
+                    })
+                else:
+                    # Use current portfolio values for effectiveness analysis if no best_params yet
+                    effectiveness_analysis = analyze_model_switching_effectiveness(
+                        self, [50, 150, 250]  # Default lookbacks
+                    )
+                    basic_metrics.update({
+                        'model_effectiveness': effectiveness_analysis,
+                        'outperformance_percentage': effectiveness_analysis.get('sharpe_outperformance_pct', 0.0)
+                    })
+            else:
+                # Set default values if portfolio data is invalid
+                basic_metrics['period_metrics'] = {}
+                basic_metrics['outperformance_percentage'] = 0.0
+                
+        except Exception as e:
+            logger.warning(f"Error calculating period metrics: {e}")
+            basic_metrics['period_metrics'] = {}
+            basic_metrics['outperformance_percentage'] = 0.0
         
         return basic_metrics
 
     def compute_focus_period_metrics(self, portfolio_values: np.ndarray) -> Optional[Dict[str, float]]:
-        """Compute performance metrics for the focus period (2003-2009).
+        """Compute performance metrics for TWO focus periods.
         
         Args:
             portfolio_values: Array of portfolio values over time
             
         Returns:
-            Dictionary containing focus period metrics, or None if period not available
+            Dictionary containing both focus period metrics, or None if periods not available
         """
         if not self.focus_period_enabled:
             return None
-            
-        try:
-            # Get focus period dates from configuration
-            start_date_str = self.metric_blending_config.get('focus_period_start', '2003-01-01')
-            end_date_str = self.metric_blending_config.get('focus_period_end', '2009-12-31')
-            
-            start_date = pd.to_datetime(start_date_str).date()
-            end_date = pd.to_datetime(end_date_str).date()
-            
-            # Find indices for focus period in our data
-            start_idx = None
-            end_idx = None
-            
-            for i, date_val in enumerate(self.dates):
-                if isinstance(date_val, pd.Timestamp):
-                    date_val = date_val.date()
+        
+        #############################################################################
+        # Helper function to extract metrics for a single focus period
+        #############################################################################
+        def compute_single_period_metrics(start_date_str: str, end_date_str: str, 
+                                          prefix: str) -> Optional[Dict[str, float]]:
+            """Compute metrics for a single focus period."""
+            try:
+                start_date = pd.to_datetime(start_date_str).date()
+                end_date = pd.to_datetime(end_date_str).date()
                 
-                if start_idx is None and date_val >= start_date:
-                    start_idx = i
-                if date_val <= end_date:
-                    end_idx = i
-            
-            # Check if we have sufficient data for the focus period
-            if start_idx is None or end_idx is None or start_idx >= end_idx:
+                # Find indices for focus period in our data
+                start_idx = None
+                end_idx = None
+                
+                for i, date_val in enumerate(self.dates):
+                    if isinstance(date_val, pd.Timestamp):
+                        date_val = date_val.date()
+                    
+                    if start_idx is None and date_val >= start_date:
+                        start_idx = i
+                    if date_val <= end_date:
+                        end_idx = i
+                
+                # Check if we have sufficient data for the focus period
+                if start_idx is None or end_idx is None or start_idx >= end_idx:
+                    return None
+                    
+                # Extract focus period portfolio values
+                focus_period_values = portfolio_values[start_idx:end_idx + 1]
+                
+                if len(focus_period_values) < 2:
+                    return None
+                
+                #############################################################################
+                # Normalize focus period to start at $10,000
+                #############################################################################
+                initial_value = focus_period_values[0]
+                normalized_focus_values = focus_period_values * (10000.0 / initial_value)
+                
+                # Check if this is a cash portfolio (constant values)
+                is_cash_portfolio = len(np.unique(normalized_focus_values)) == 1
+                
+                # Calculate focus period metrics using normalized values
+                metrics = compute_daily_metrics(normalized_focus_values)
+                
+                period_metrics = {
+                    f'{prefix}_final_value': normalized_focus_values[-1],
+                    f'{prefix}_annual_return': ((normalized_focus_values[-1] / normalized_focus_values[0]) ** (252 / len(normalized_focus_values)) - 1),
+                    f'{prefix}_sharpe_ratio': metrics.sharpe_ratio,
+                    f'{prefix}_sortino_ratio': metrics.sortino_ratio,
+                    f'{prefix}_max_drawdown': metrics.max_drawdown,
+                    f'{prefix}_avg_drawdown': metrics.avg_drawdown
+                }
+                
+                # Calculate normalized score for focus period
+                if is_cash_portfolio:
+                    period_metrics[f'{prefix}_normalized_score'] = 0.0
+                else:
+                    # Use same normalization parameters as full period
+                    central_values = self.CENTRAL_VALUES
+                    std_values = self.STD_VALUES
+                    
+                    normalized_metrics = {}
+                    for metric_name in ['annual_return', 'sharpe_ratio', 'sortino_ratio', 'max_drawdown', 'avg_drawdown']:
+                        period_metric_name = f'{prefix}_{metric_name}'
+                        raw_value = period_metrics[period_metric_name]
+                        central = central_values[metric_name]
+                        std = std_values[metric_name]
+                        normalized_metrics[metric_name] = (raw_value - central) / std
+                    
+                    period_metrics[f'{prefix}_normalized_score'] = sum(normalized_metrics.values()) / len(normalized_metrics)
+                
+                return period_metrics
+                
+            except Exception as e:
+                logger.warning(f"Error computing {prefix} metrics: {e}")
                 return None
-                
-            # Extract focus period portfolio values
-            focus_period_values = portfolio_values[start_idx:end_idx + 1]
-            
-            if len(focus_period_values) < 2:
-                return None
-            
-            # Check if this is a cash portfolio (constant values)
-            is_cash_portfolio = len(np.unique(focus_period_values)) == 1
-            
-            # Calculate focus period metrics using the same computation method
-            metrics = compute_daily_metrics(focus_period_values)
-            
-            focus_metrics = {
-                'focus_final_value': focus_period_values[-1],
-                'focus_annual_return': ((focus_period_values[-1] / focus_period_values[0]) ** (252 / len(focus_period_values)) - 1),
-                'focus_sharpe_ratio': metrics.sharpe_ratio,
-                'focus_sortino_ratio': metrics.sortino_ratio,
-                'focus_max_drawdown': metrics.max_drawdown,
-                'focus_avg_drawdown': metrics.avg_drawdown
-            }
-            
-            # Calculate normalized score for focus period
-            if is_cash_portfolio:
-                focus_metrics['focus_normalized_score'] = 0.0
-            else:
-                # Use same normalization parameters as full period
-                central_values = self.CENTRAL_VALUES
-                std_values = self.STD_VALUES
-                
-                normalized_metrics = {}
-                for metric_name in ['annual_return', 'sharpe_ratio', 'sortino_ratio', 'max_drawdown', 'avg_drawdown']:
-                    focus_metric_name = f'focus_{metric_name}'
-                    raw_value = focus_metrics[focus_metric_name]
-                    central = central_values[metric_name]
-                    std = std_values[metric_name]
-                    normalized_metrics[metric_name] = (raw_value - central) / std
-                
-                focus_metrics['focus_normalized_score'] = sum(normalized_metrics.values()) / len(normalized_metrics)
-            
-            return focus_metrics
-            
-        except Exception as e:
-            logger.warning(f"Error computing focus period metrics: {e}")
-            return None
 
-    def compute_blended_score(self, full_period_score: float, focus_period_score: Optional[float]) -> float:
-        """Compute blended score combining full period and focus period metrics.
+        #############################################################################
+        # Compute metrics for both focus periods
+        #############################################################################
+        all_metrics = {}
+        
+        if self.has_two_focus_periods:
+            # Get configuration for both focus periods
+            fp1_start = self.metric_blending_config.get('focus_period_1_start', '2010-01-01')
+            fp1_end = self.metric_blending_config.get('focus_period_1_end', '2015-01-01')
+            fp2_start = self.metric_blending_config.get('focus_period_2_start', '2015-01-01')
+            fp2_end = self.metric_blending_config.get('focus_period_2_end', '2020-01-01')
+            
+            # Compute metrics for focus period 1
+            fp1_metrics = compute_single_period_metrics(fp1_start, fp1_end, 'focus_1')
+            if fp1_metrics:
+                all_metrics.update(fp1_metrics)
+            
+            # Compute metrics for focus period 2
+            fp2_metrics = compute_single_period_metrics(fp2_start, fp2_end, 'focus_2')
+            if fp2_metrics:
+                all_metrics.update(fp2_metrics)
+            
+            # Only return if we have both periods
+            if fp1_metrics and fp2_metrics:
+                return all_metrics
+            else:
+                return None
+        else:
+            # Legacy single focus period support
+            fp_start = self.metric_blending_config.get('focus_period_start', '2003-01-01')
+            fp_end = self.metric_blending_config.get('focus_period_end', '2009-12-31')
+            
+            fp_metrics = compute_single_period_metrics(fp_start, fp_end, 'focus')
+            if fp_metrics:
+                return fp_metrics
+            else:
+                return None
+
+    def compute_blended_score(self, focus_1_score: Optional[float] = None, 
+                             focus_2_score: Optional[float] = None) -> float:
+        """Compute blended score combining TWO focus period metrics.
         
         Args:
-            full_period_score: Normalized score for full period
-            focus_period_score: Normalized score for focus period (can be None)
+            focus_1_score: Normalized score for focus period 1 (can be None)
+            focus_2_score: Normalized score for focus period 2 (can be None)
             
         Returns:
             Blended score weighted according to configuration
         """
-        if not self.focus_period_enabled or focus_period_score is None:
-            return full_period_score
+        if not self.focus_period_enabled:
+            # If focus periods are disabled, return 0.0 as neutral baseline
+            return 0.0
+        
+        # Check if we have two focus periods
+        if self.has_two_focus_periods:
+            # Need both scores to compute blended score
+            if focus_1_score is None or focus_2_score is None:
+                # If either score is missing, return 0.0
+                return 0.0
             
-        full_weight = self.metric_blending_config.get('full_period_weight', 1.0)
-        focus_weight = self.metric_blending_config.get('focus_period_weight', 0.0)
-        
-        # Normalize weights to sum to 1.0
-        total_weight = full_weight + focus_weight
-        if total_weight <= 0:
-            return full_period_score
+            # Get weights for each focus period (should sum to 1.0 typically)
+            fp1_weight = self.metric_blending_config.get('focus_period_1_weight', 0.5)
+            fp2_weight = self.metric_blending_config.get('focus_period_2_weight', 0.5)
             
-        normalized_full_weight = full_weight / total_weight
-        normalized_focus_weight = focus_weight / total_weight
-        
-        blended_score = (normalized_full_weight * full_period_score + 
-                        normalized_focus_weight * focus_period_score)
-        
-        return blended_score
+            # Normalize weights to sum to 1.0
+            total_weight = fp1_weight + fp2_weight
+            if total_weight <= 0:
+                return 0.0
+                
+            normalized_fp1_weight = fp1_weight / total_weight
+            normalized_fp2_weight = fp2_weight / total_weight
+            
+            blended_score = (normalized_fp1_weight * focus_1_score + 
+                           normalized_fp2_weight * focus_2_score)
+            
+            return blended_score
+        else:
+            # Legacy single focus period support
+            if focus_1_score is None:
+                return 0.0
+            
+            # With only one focus period, just return its score
+            return focus_1_score
 
     def create_monte_carlo_plot(self, portfolio_values: np.ndarray, 
                                metrics: dict, save_path: Optional[str] = None,
@@ -1062,26 +1175,37 @@ class MonteCarloBacktest:
         # Main portfolio performance plot (83% of space)
         ax1 = fig.add_subplot(gs[0:5, 0])
         
-        # Plot historical values for each model
-        colors = ['b', 'r', 'g', 'c', 'm', 'k']
-        model_to_color = {}
+        #############################################################################
+        # Define explicit model-to-color mapping
+        #############################################################################
+        model_to_color = {
+            'sp500_hma': 'c',      # cyan
+            'naz100_pine': 'b',    # blue (royal blue)
+            'naz100_hma': 'r',     # red
+            'naz100_pi': 'g',      # green
+            'cash': 'k'            # black
+        }
+        
         date_index = pd.DatetimeIndex(self.dates)
         
-        # Normalize all series to start at 10000 and plot
-        for (model, values), color in zip(self.portfolio_histories.items(), colors):
+        # FIXED: Use sorted items to ensure consistent ordering
+        sorted_portfolio_items = sorted(self.portfolio_histories.items(), key=lambda x: x[0])
+        
+        # Normalize all series to start at 10000 and plot (excluding cash from upper plot)
+        for (model, values) in sorted_portfolio_items:
             if model != "cash":
-                model_to_color[model] = color
                 start_value = values.iloc[0]
                 normalized_values = values * (10000.0 / start_value)
                 ax1.plot(date_index, normalized_values,
-                        color=color, alpha=0.5, label=f"{model}",
-                        linewidth=1)
+                        color=model_to_color.get(model, 'gray'), alpha=0.5, 
+                        label=f"{model}", linewidth=1)
         
-        model_to_color["cash"] = 'k'
-        
-        # Plot dynamic model-switching portfolio (the real Monte Carlo Best)
-        ax1.plot(date_index, model_switching_portfolio, 
-                'k-', linewidth=2, label='Monte Carlo Best')
+        #############################################################################
+        # Plot the model-switching portfolio (the optimized portfolio)
+        #############################################################################
+        ax1.plot(date_index, model_switching_portfolio,
+                color='black', alpha=0.9, linewidth=2.5,
+                label='Model-Switching Portfolio', linestyle='-')
         
         #############################################################################
         # Configure main plot styling
@@ -1181,7 +1305,7 @@ class MonteCarloBacktest:
                         if current_idx > 0:
                             try:
                                 # Get model rankings using current best lookbacks
-                                models = list(self.portfolio_histories.keys())
+                                models = sorted(list(self.portfolio_histories.keys()))
                                 lookback_period = max(lookbacks) if lookbacks else 60
                                 start_idx = max(0, current_idx - lookback_period)
                                 start_date = pd.Timestamp(self.dates[start_idx])
@@ -1221,7 +1345,7 @@ class MonteCarloBacktest:
                         if first_weekday_idx > 0:
                             try:
                                 # Similar ranking calculation for first weekday
-                                models = list(self.portfolio_histories.keys())
+                                models = sorted(list(self.portfolio_histories.keys()))
                                 lookback_period = max(lookbacks) if lookbacks else 60
                                 start_idx = max(0, first_weekday_idx - lookback_period)
                                 start_date = pd.Timestamp(self.dates[start_idx])
@@ -1563,23 +1687,26 @@ class MonteCarloBacktest:
         return sorted(lookbacks)
 
     def _log_best_parameters_to_csv(self, metrics: Dict[str, float]) -> None:
-        """Log best performing parameters to CSV file with timestamp and focus period metrics.
+        """Log best performing parameters to CSV file with full period and both focus periods.
         
         Args:
-            metrics: Dictionary containing performance metrics including focus period metrics
+            metrics: Dictionary containing performance metrics for all periods
         """
         import csv
         import os
         from datetime import datetime
         
-        # Define CSV file path in root folder
+        #############################################################################
+        # Setup CSV file path and check if it exists
+        #############################################################################
         csv_filename = "abacus_best_performers.csv"
-        csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), csv_filename)
-        
-        # Check if file exists to determine if header is needed
+        csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                                csv_filename)
         file_exists = os.path.exists(csv_path)
         
-        # Get lookback periods and sort them
+        #############################################################################
+        # Extract lookback periods and sort them
+        #############################################################################
         lookbacks = self.best_params.get('lookbacks', [])
         sorted_lookbacks = sorted(lookbacks)
         
@@ -1587,60 +1714,279 @@ class MonteCarloBacktest:
         while len(sorted_lookbacks) < 3:
             sorted_lookbacks.append(0)
         
-        # Get central and std values from class constants
+        #############################################################################
+        # Get Monte Carlo normalization parameters
+        #############################################################################
         central_values = self.CENTRAL_VALUES
         std_values = self.STD_VALUES
         
-        # Get focus period metrics if available
-        focus_metrics = {}
-        focus_period_start = ''
-        focus_period_end = ''
+        #############################################################################
+        # Get performance metric weights from JSON config
+        #############################################################################
+        if self.json_config and 'model_selection' in self.json_config:
+            metric_weights = self.json_config['model_selection'].get(
+                'performance_metrics', {})
+            sharpe_weight = metric_weights.get('sharpe_ratio_weight', 1.0)
+            sortino_weight = metric_weights.get('sortino_ratio_weight', 1.0)
+            max_dd_weight = metric_weights.get('max_drawdown_weight', 1.0)
+            avg_dd_weight = metric_weights.get('avg_drawdown_weight', 1.0)
+            annual_ret_weight = metric_weights.get(
+                'annualized_return_weight', 1.0)
+        else:
+            sharpe_weight = 1.0
+            sortino_weight = 1.0
+            max_dd_weight = 1.0
+            avg_dd_weight = 1.0
+            annual_ret_weight = 1.0
         
-        if self.focus_period_enabled and 'focus_annual_return' in metrics:
-            # Get focus period dates from configuration
-            focus_period_start = self.metric_blending_config.get('focus_period_start', '')
-            focus_period_end = self.metric_blending_config.get('focus_period_end', '')
+        #############################################################################
+        # Recalculate model effectiveness for consistency
+        #############################################################################
+        from functions.PortfolioMetrics import (
+            analyze_model_switching_effectiveness)
+        
+        if hasattr(self, 'best_params') and self.best_params.get('lookbacks'):
+            fresh_effectiveness = analyze_model_switching_effectiveness(
+                self, self.best_params['lookbacks'])
+        else:
+            fresh_effectiveness = analyze_model_switching_effectiveness(
+                self, lookbacks)
+        
+        model_effectiveness = fresh_effectiveness
+        
+        #############################################################################
+        # Extract full period metrics (always available)
+        #############################################################################
+        full_period_metrics = {
+            'Full Period Final Value': f"${metrics['final_value']:,.0f}",
+            'Full Period Annual Return': f"{metrics['annual_return']*100:.2f}%",
+            'Full Period Sharpe Ratio': f"{metrics['sharpe_ratio']:.5f}",
+            'Full Period Sortino Ratio': f"{metrics['sortino_ratio']:.3f}",
+            'Full Period Max Drawdown': f"{metrics['max_drawdown']*100:.2f}%",
+            'Full Period Avg Drawdown': f"{metrics['avg_drawdown']*100:.2f}%",
+            'Full Period Normalized Score': f"{metrics['normalized_score']:.3f}",
+            'Full Period Start Date': str(self.dates[0]) if self.dates else '',
+            'Full Period End Date': str(self.dates[-1]) if self.dates else '',
+        }
+        
+        #############################################################################
+        # Extract focus period metrics based on configuration
+        #############################################################################
+        focus_1_metrics = {}
+        focus_2_metrics = {}
+        focus_tracking_params = {}
+        
+        if self.has_two_focus_periods and 'focus_1_annual_return' in metrics:
+            # TWO focus periods available
+            focus_1_metrics = {
+                'Focus Period 1 Final Value': 
+                    f"${metrics['focus_1_final_value']:,.0f}",
+                'Focus Period 1 Annual Return': 
+                    f"{metrics['focus_1_annual_return']*100:.2f}%",
+                'Focus Period 1 Sharpe Ratio': 
+                    f"{metrics['focus_1_sharpe_ratio']:.5f}",
+                'Focus Period 1 Sortino Ratio': 
+                    f"{metrics['focus_1_sortino_ratio']:.3f}",
+                'Focus Period 1 Max Drawdown': 
+                    f"{metrics['focus_1_max_drawdown']*100:.2f}%",
+                'Focus Period 1 Avg Drawdown': 
+                    f"{metrics['focus_1_avg_drawdown']*100:.2f}%",
+                'Focus Period 1 Normalized Score': 
+                    f"{metrics['focus_1_normalized_score']:.3f}",
+                'Focus Period 1 Start Date': 
+                    self.metric_blending_config.get('focus_period_1_start', ''),
+                'Focus Period 1 End Date': 
+                    self.metric_blending_config.get('focus_period_1_end', ''),
+            }
             
-            focus_metrics = {
-                'Focus Annual Return': f"{metrics['focus_annual_return']*100:.2f}%",
-                'Focus Sharpe Ratio': f"{metrics['focus_sharpe_ratio']:.5f}",
-                'Focus Sortino Ratio': f"{metrics['focus_sortino_ratio']:.3f}",
-                'Focus Max Drawdown': f"{metrics['focus_max_drawdown']*100:.2f}%",
-                'Focus Avg Drawdown': f"{metrics['focus_avg_drawdown']*100:.2f}%",
-                'Focus Normalized Score': f"{metrics['focus_normalized_score']:.3f}",
+            focus_2_metrics = {
+                'Focus Period 2 Final Value': 
+                    f"${metrics['focus_2_final_value']:,.0f}",
+                'Focus Period 2 Annual Return': 
+                    f"{metrics['focus_2_annual_return']*100:.2f}%",
+                'Focus Period 2 Sharpe Ratio': 
+                    f"{metrics['focus_2_sharpe_ratio']:.5f}",
+                'Focus Period 2 Sortino Ratio': 
+                    f"{metrics['focus_2_sortino_ratio']:.3f}",
+                'Focus Period 2 Max Drawdown': 
+                    f"{metrics['focus_2_max_drawdown']*100:.2f}%",
+                'Focus Period 2 Avg Drawdown': 
+                    f"{metrics['focus_2_avg_drawdown']*100:.2f}%",
+                'Focus Period 2 Normalized Score': 
+                    f"{metrics['focus_2_normalized_score']:.3f}",
+                'Focus Period 2 Start Date': 
+                    self.metric_blending_config.get('focus_period_2_start', ''),
+                'Focus Period 2 End Date': 
+                    self.metric_blending_config.get('focus_period_2_end', ''),
+            }
+            
+            # Calculate focus period tracking parameters
+            fp1_weight = self.metric_blending_config.get(
+                'focus_period_1_weight', 0.5)
+            fp2_weight = self.metric_blending_config.get(
+                'focus_period_2_weight', 0.5)
+            
+            # Calculate duration in years for each focus period
+            fp1_start = pd.to_datetime(
+                self.metric_blending_config.get('focus_period_1_start')
+            ).date()
+            fp1_end = pd.to_datetime(
+                self.metric_blending_config.get('focus_period_1_end')
+            ).date()
+            fp1_duration_years = (fp1_end - fp1_start).days / 365.25
+            
+            fp2_start = pd.to_datetime(
+                self.metric_blending_config.get('focus_period_2_start')
+            ).date()
+            fp2_end = pd.to_datetime(
+                self.metric_blending_config.get('focus_period_2_end')
+            ).date()
+            fp2_duration_years = (fp2_end - fp2_start).days / 365.25
+            
+            # Calculate overlap percentage between periods
+            overlap_start = max(fp1_start, fp2_start)
+            overlap_end = min(fp1_end, fp2_end)
+            if overlap_start < overlap_end:
+                overlap_days = (overlap_end - overlap_start).days
+                total_days = (fp1_end - fp1_start).days + (
+                    fp2_end - fp2_start).days
+                overlap_pct = (overlap_days / total_days) * 100 if total_days > 0 else 0
+            else:
+                overlap_pct = 0.0
+            
+            focus_tracking_params = {
+                'Focus Period 1 Weight': fp1_weight,
+                'Focus Period 2 Weight': fp2_weight,
+                'Focus Period 1 Duration Years': f"{fp1_duration_years:.2f}",
+                'Focus Period 2 Duration Years': f"{fp2_duration_years:.2f}",
+                'Focus Period Year Min': self.metric_blending_config.get(
+                    'fp_year_min', ''),
+                'Focus Period Year Max': self.metric_blending_config.get(
+                    'fp_year_max', ''),
+                'Focus Periods Overlap Percentage': f"{overlap_pct:.1f}%",
+            }
+            
+        elif self.focus_period_enabled and 'focus_annual_return' in metrics:
+            # Legacy single focus period support
+            focus_1_metrics = {
+                'Focus Period 1 Final Value': 
+                    f"${metrics['focus_final_value']:,.0f}",
+                'Focus Period 1 Annual Return': 
+                    f"{metrics['focus_annual_return']*100:.2f}%",
+                'Focus Period 1 Sharpe Ratio': 
+                    f"{metrics['focus_sharpe_ratio']:.5f}",
+                'Focus Period 1 Sortino Ratio': 
+                    f"{metrics['focus_sortino_ratio']:.3f}",
+                'Focus Period 1 Max Drawdown': 
+                    f"{metrics['focus_max_drawdown']*100:.2f}%",
+                'Focus Period 1 Avg Drawdown': 
+                    f"{metrics['focus_avg_drawdown']*100:.2f}%",
+                'Focus Period 1 Normalized Score': 
+                    f"{metrics['focus_normalized_score']:.3f}",
+                'Focus Period 1 Start Date': 
+                    self.metric_blending_config.get('focus_period_start', ''),
+                'Focus Period 1 End Date': 
+                    self.metric_blending_config.get('focus_period_end', ''),
+            }
+            
+            # Empty focus period 2 metrics for legacy mode
+            focus_2_metrics = {
+                'Focus Period 2 Final Value': '',
+                'Focus Period 2 Annual Return': '',
+                'Focus Period 2 Sharpe Ratio': '',
+                'Focus Period 2 Sortino Ratio': '',
+                'Focus Period 2 Max Drawdown': '',
+                'Focus Period 2 Avg Drawdown': '',
+                'Focus Period 2 Normalized Score': '',
+                'Focus Period 2 Start Date': '',
+                'Focus Period 2 End Date': '',
+            }
+            
+            # Minimal tracking params for legacy mode
+            focus_tracking_params = {
+                'Focus Period 1 Weight': 1.0,
+                'Focus Period 2 Weight': 0.0,
+                'Focus Period 1 Duration Years': '',
+                'Focus Period 2 Duration Years': '',
+                'Focus Period Year Min': '',
+                'Focus Period Year Max': '',
+                'Focus Periods Overlap Percentage': '',
             }
         else:
-            # Add empty focus period columns when blending is disabled
-            focus_metrics = {
-                'Focus Annual Return': '',
-                'Focus Sharpe Ratio': '',
-                'Focus Sortino Ratio': '',
-                'Focus Max Drawdown': '',
-                'Focus Avg Drawdown': '',
-                'Focus Normalized Score': '',
+            # No focus periods - empty columns
+            focus_1_metrics = {
+                'Focus Period 1 Final Value': '',
+                'Focus Period 1 Annual Return': '',
+                'Focus Period 1 Sharpe Ratio': '',
+                'Focus Period 1 Sortino Ratio': '',
+                'Focus Period 1 Max Drawdown': '',
+                'Focus Period 1 Avg Drawdown': '',
+                'Focus Period 1 Normalized Score': '',
+                'Focus Period 1 Start Date': '',
+                'Focus Period 1 End Date': '',
+            }
+            
+            focus_2_metrics = {
+                'Focus Period 2 Final Value': '',
+                'Focus Period 2 Annual Return': '',
+                'Focus Period 2 Sharpe Ratio': '',
+                'Focus Period 2 Sortino Ratio': '',
+                'Focus Period 2 Max Drawdown': '',
+                'Focus Period 2 Avg Drawdown': '',
+                'Focus Period 2 Normalized Score': '',
+                'Focus Period 2 Start Date': '',
+                'Focus Period 2 End Date': '',
+            }
+            
+            focus_tracking_params = {
+                'Focus Period 1 Weight': '',
+                'Focus Period 2 Weight': '',
+                'Focus Period 1 Duration Years': '',
+                'Focus Period 2 Duration Years': '',
+                'Focus Period Year Min': '',
+                'Focus Period Year Max': '',
+                'Focus Periods Overlap Percentage': '',
             }
         
-        # Prepare data row with new column order:
-        # [Existing Metrics] → [Focus Period Metrics] → [Blended Score] → [Monte Carlo Parameters] → [Focus Period Dates]
+        #############################################################################
+        # Build complete row data dictionary with proper column ordering
+        #############################################################################
         current_time = datetime.now()
         row_data = {
+            # Date/Time columns
             'Date': current_time.strftime('%Y-%m-%d'),
             'Time': current_time.strftime('%H:%M:%S'),
-            'Final Value': f"${metrics['final_value']:,.0f}",
-            'Annual Return': f"{metrics['annual_return']*100:.2f}%",
-            'Sharpe Ratio': f"{metrics['sharpe_ratio']:.5f}",
-            'Sortino Ratio': f"{metrics['sortino_ratio']:.3f}",
-            'Max Drawdown': f"{metrics['max_drawdown']*100:.2f}%",
-            'Avg Drawdown': f"{metrics['avg_drawdown']*100:.2f}%",
-            'Normalized Score': f"{metrics['normalized_score']:.3f}",
-            # Focus period metrics (without dates)
-            **focus_metrics,
+            
+            # Full period metrics (9 columns)
+            **full_period_metrics,
+            
+            # Focus period 1 metrics (9 columns)
+            **focus_1_metrics,
+            
+            # Focus period 2 metrics (9 columns)
+            **focus_2_metrics,
+            
             # Blended score
             'Blended Score': f"{metrics.get('blended_score', metrics['normalized_score']):.3f}",
-            # Monte Carlo parameters
+            
+            # Model effectiveness metrics (3 columns)
+            'Sharpe Outperformance Percentage': f"{model_effectiveness.get('sharpe_outperformance_pct', 0.0):.1f}%",
+            'Sortino Outperformance Percentage': f"{model_effectiveness.get('sortino_outperformance_pct', 0.0):.1f}%",
+            'Average Rank': f"{model_effectiveness.get('average_rank', 6.0):.2f}",
+            
+            # Lookback periods (3 columns)
             'Lookback Period 1': sorted_lookbacks[0],
             'Lookback Period 2': sorted_lookbacks[1],
             'Lookback Period 3': sorted_lookbacks[2],
+            
+            # Performance metric weights (5 columns)
+            'Sharpe Ratio Weight': sharpe_weight,
+            'Sortino Ratio Weight': sortino_weight,
+            'Max Drawdown Weight': max_dd_weight,
+            'Avg Drawdown Weight': avg_dd_weight,
+            'Annualized Return Weight': annual_ret_weight,
+            
+            # Monte Carlo normalization parameters (10 columns)
             'Central Annual Return': central_values['annual_return'],
             'Central Sharpe Ratio': central_values['sharpe_ratio'],
             'Central Sortino Ratio': central_values['sortino_ratio'],
@@ -1651,13 +1997,19 @@ class MonteCarloBacktest:
             'Std Sortino Ratio': std_values['sortino_ratio'],
             'Std Max Drawdown': std_values['max_drawdown'],
             'Std Avg Drawdown': std_values['avg_drawdown'],
-            # Focus period dates at the very end
-            'Focus Period Start': focus_period_start,
-            'Focus Period End': focus_period_end
+            
+            # Focus period tracking parameters (7 columns)
+            **focus_tracking_params,
+            
+            # Metric blending enabled flag (1 column)
+            'Metric Blending Enabled': self.metric_blending_config.get(
+                'enabled', False),
         }
         
+        #############################################################################
+        # Write to CSV file
+        #############################################################################
         try:
-            # Write to CSV file
             with open(csv_path, 'a', newline='', encoding='utf-8') as csvfile:
                 writer = csv.DictWriter(csvfile, fieldnames=row_data.keys())
                 
@@ -1764,59 +2116,51 @@ class MonteCarloBacktest:
     def _print_best_parameters(self, metrics: Dict[str, float]) -> None:
         """Print information about the best performing parameters found so far."""
         lookbacks = self.best_params.get('lookbacks', [])
-        print(f"\n" + "="*50)
+        print(f"\n" + "="*90)
         print(f"NEW BEST PERFORMANCE FOUND!")
-        print(f"="*50)
+        print(f"="*90)
         
-        # Check if focus period metrics are available
-        has_focus_metrics = (self.focus_period_enabled and 
-                           'focus_annual_return' in metrics)
+        # Check if TWO focus period metrics are available
+        has_two_focus_periods = (self.has_two_focus_periods and 
+                                 'focus_1_annual_return' in metrics and 
+                                 'focus_2_annual_return' in metrics)
         
-        if has_focus_metrics:
-            # Calculate focus period final value assuming $10,000 starting value
-            try:
-                # Get the model-switching portfolio for focus period calculation
-                consistent_portfolio = self._calculate_model_switching_portfolio(lookbacks)
-                
-                # Get focus period dates from configuration
-                start_date_str = self.metric_blending_config.get('focus_period_start', '2003-01-01')
-                end_date_str = self.metric_blending_config.get('focus_period_end', '2009-12-31')
-                
-                start_date = pd.to_datetime(start_date_str).date()
-                end_date = pd.to_datetime(end_date_str).date()
-                
-                # Find indices for focus period
-                start_idx = None
-                end_idx = None
-                
-                for i, date_val in enumerate(self.dates):
-                    if isinstance(date_val, pd.Timestamp):
-                        date_val = date_val.date()
-                    
-                    if start_idx is None and date_val >= start_date:
-                        start_idx = i
-                    if date_val <= end_date:
-                        end_idx = i
-                
-                # Calculate focus period final value
-                if start_idx is not None and end_idx is not None and start_idx < end_idx:
-                    focus_period_values = consistent_portfolio[start_idx:end_idx + 1]
-                    if len(focus_period_values) > 0:
-                        # Normalize to start at $10,000
-                        start_value = focus_period_values[0]
-                        focus_final_value = (focus_period_values[-1] / start_value) * 10000.0
-                    else:
-                        focus_final_value = 10000.0
-                else:
-                    focus_final_value = 10000.0
-                    
-            except Exception as e:
-                focus_final_value = 10000.0
+        # Check if ONE focus period metrics are available (legacy)
+        has_one_focus_period = (self.focus_period_enabled and 
+                               'focus_annual_return' in metrics)
+        
+        if has_two_focus_periods:
+            # Print THREE columns: Full Period | Focus Period 1 | Focus Period 2
+            print(f"{'Metric':<20} {'Full Period':>20} {'Focus Period 1':>20} {'Focus Period 2':>20}")
+            print(f"{'-'*20} {'-'*20} {'-'*20} {'-'*20}")
+            print(f"{'Final Value:':<20} ${metrics['final_value']:>19,.0f} ${metrics['focus_1_final_value']:>19,.0f} ${metrics['focus_2_final_value']:>19,.0f}")
+            print(f"{'Annual Return:':<20} {metrics['annual_return']*100:>19.2f}% {metrics['focus_1_annual_return']*100:>19.2f}% {metrics['focus_2_annual_return']*100:>19.2f}%")
+            print(f"{'Sharpe Ratio:':<20} {metrics['sharpe_ratio']:>20.5f} {metrics['focus_1_sharpe_ratio']:>20.5f} {metrics['focus_2_sharpe_ratio']:>20.5f}")
+            print(f"{'Sortino Ratio:':<20} {metrics['sortino_ratio']:>20.3f} {metrics['focus_1_sortino_ratio']:>20.3f} {metrics['focus_2_sortino_ratio']:>20.3f}")
+            print(f"{'Max Drawdown:':<20} {metrics['max_drawdown']*100:>19.1f}% {metrics['focus_1_max_drawdown']*100:>19.1f}% {metrics['focus_2_max_drawdown']*100:>19.1f}%")
+            print(f"{'Avg Drawdown:':<20} {metrics['avg_drawdown']*100:>19.1f}% {metrics['focus_1_avg_drawdown']*100:>19.1f}% {metrics['focus_2_avg_drawdown']*100:>19.1f}%")
+            print(f"{'Normalized Score:':<20} {metrics['normalized_score']:>20.3f} {metrics['focus_1_normalized_score']:>20.3f} {metrics['focus_2_normalized_score']:>20.3f}")
+            print(f"{'Blended Score:':<20} {'(not used)':>20} {metrics['blended_score']:>41.3f}")
             
-            # Print headers and values in two columns with right alignment
-            print(f"{'Metric':<20} {'all dates':>20} {'focus dates':>20}")
+            # Print period date ranges
+            full_start = str(self.dates[0]) if self.dates else 'N/A'
+            full_end = str(self.dates[-1]) if self.dates else 'N/A'
+            fp1_start = self.metric_blending_config.get('focus_period_1_start', 'N/A')
+            fp1_end = self.metric_blending_config.get('focus_period_1_end', 'N/A')
+            fp2_start = self.metric_blending_config.get('focus_period_2_start', 'N/A')
+            fp2_end = self.metric_blending_config.get('focus_period_2_end', 'N/A')
+            
+            print(f"\n{'Period':<20} {'Start Date':>20} {'End Date':>20}")
             print(f"{'-'*20} {'-'*20} {'-'*20}")
-            print(f"{'Final Value:':<20} ${metrics['final_value']:>19,.0f} ${focus_final_value:>19,.0f}")
+            print(f"{'Full Period:':<20} {full_start:>20} {full_end:>20}")
+            print(f"{'Focus Period 1:':<20} {fp1_start:>20} {fp1_end:>20}")
+            print(f"{'Focus Period 2:':<20} {fp2_start:>20} {fp2_end:>20}")
+            
+        elif has_one_focus_period:
+            # Legacy single focus period display (kept for backward compatibility)
+            print(f"{'Metric':<20} {'Full Period':>20} {'Focus Period':>20}")
+            print(f"{'-'*20} {'-'*20} {'-'*20}")
+            print(f"{'Final Value:':<20} ${metrics['final_value']:>19,.0f} ${metrics['focus_final_value']:>19,.0f}")
             print(f"{'Annual Return:':<20} {metrics['annual_return']*100:>19.2f}% {metrics['focus_annual_return']*100:>19.2f}%")
             print(f"{'Sharpe Ratio:':<20} {metrics['sharpe_ratio']:>20.5f} {metrics['focus_sharpe_ratio']:>20.5f}")
             print(f"{'Sortino Ratio:':<20} {metrics['sortino_ratio']:>20.3f} {metrics['focus_sortino_ratio']:>20.3f}")
@@ -1825,18 +2169,19 @@ class MonteCarloBacktest:
             print(f"{'Normalized Score:':<20} {metrics['normalized_score']:>20.3f} {metrics['focus_normalized_score']:>20.3f}")
             print(f"{'Blended Score:':<20} {metrics['blended_score']:>20.3f}")
         else:
-            # Single column format when focus period is not available
-            print(f"Final Value: ${metrics['final_value']:,.0f}")
-            print(f"Annual Return: {metrics['annual_return']*100:.2f}%")
-            print(f"Sharpe Ratio: {metrics['sharpe_ratio']:.5f}")
-            print(f"Sortino Ratio: {metrics['sortino_ratio']:.3f}")
-            print(f"Max Drawdown: {metrics['max_drawdown']*100:.1f}%")
-            print(f"Avg Drawdown: {metrics['avg_drawdown']*100:.1f}%")
-            print(f"Normalized Score: {metrics['normalized_score']:.3f}")
+            # No focus periods available - show only full period
+            print(f"{'Metric':<20} {'Full Period':>20}")
+            print(f"{'-'*20} {'-'*20}")
+            print(f"{'Final Value:':<20} ${metrics['final_value']:>19,.0f}")
+            print(f"{'Annual Return:':<20} {metrics['annual_return']*100:>19.2f}%")
+            print(f"{'Sharpe Ratio:':<20} {metrics['sharpe_ratio']:>20.5f}")
+            print(f"{'Sortino Ratio:':<20} {metrics['sortino_ratio']:>20.3f}")
+            print(f"{'Max Drawdown:':<20} {metrics['max_drawdown']*100:>19.1f}%")
+            print(f"{'Avg Drawdown:':<20} {metrics['avg_drawdown']*100:>19.1f}%")
             print(f"Blended Score: {metrics['blended_score']:.3f}")
         
-        print(f"Lookback periods: {sorted(lookbacks)} days")
-        print(f"="*50)
+        print(f"\nLookback periods: {sorted(lookbacks)} days")
+        print(f"="*90)
         
         # Only show debug breakdown if verbose mode is enabled
         if self.verbose:
@@ -1939,7 +2284,7 @@ class MonteCarloBacktest:
         #############################################################################
         # Compute performance metrics for each model on monthly dates
         #############################################################################
-        models = list(self.portfolio_histories.keys())
+        models = sorted(list(self.portfolio_histories.keys()))
         non_cash_models = [m for m in models if m != "cash"]
         
         # Initialize arrays for normalized scores
@@ -1994,8 +2339,11 @@ class MonteCarloBacktest:
         model_to_color = {}
         date_index = pd.DatetimeIndex(self.dates)
         
+        # FIXED: Use sorted items to ensure consistent ordering with rest of codebase
+        sorted_portfolio_items = sorted(self.portfolio_histories.items(), key=lambda x: x[0])
+        
         # Plot historical values for each model
-        for (model, values), color in zip(self.portfolio_histories.items(), colors):
+        for (model, values), color in zip(sorted_portfolio_items, colors):
             if model != "cash":
                 model_to_color[model] = color
                 start_value = values.iloc[0]

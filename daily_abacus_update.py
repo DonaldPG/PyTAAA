@@ -146,6 +146,39 @@ def validate_config_structure(config: Dict[str, Any]) -> None:
         if item not in config['Valuation']:
             raise ValueError(f"Missing '{item}' in Valuation configuration")
     
+    # Validate model_selection section for performance metric weights
+    if 'model_selection' not in config:
+        raise ValueError("Missing 'model_selection' section in JSON configuration")
+    
+    if 'performance_metrics' not in config['model_selection']:
+        raise ValueError("Missing 'performance_metrics' section in model_selection configuration")
+    
+    # Validate required performance metric weights
+    required_weights = [
+        'sharpe_ratio_weight',
+        'sortino_ratio_weight',
+        'max_drawdown_weight',
+        'avg_drawdown_weight',
+        'annualized_return_weight'
+    ]
+    
+    performance_metrics = config['model_selection']['performance_metrics']
+    missing_weights = [w for w in required_weights if w not in performance_metrics]
+    
+    if missing_weights:
+        raise ValueError(f"Missing required performance metric weights in JSON configuration: {', '.join(missing_weights)}")
+    
+    # Validate metric blending configuration
+    if 'metric_blending' not in config:
+        raise ValueError("Missing 'metric_blending' section in JSON configuration")
+    
+    metric_blending = config['metric_blending']
+    required_blending_params = ['enabled', 'full_period_weight', 'focus_period_weight']
+    missing_blending = [p for p in required_blending_params if p not in metric_blending]
+    
+    if missing_blending:
+        raise ValueError(f"Missing required metric blending parameters in JSON configuration: {', '.join(missing_blending)}")
+    
     logger.debug("Configuration structure validation passed")
 
 
@@ -250,6 +283,10 @@ def update_config_with_data_source(config: Dict[str, Any],
     
     This dynamically switches between naz100, sp500, or abacus data sources
     based on the active trading model detected from holdings file.
+    
+    IMPORTANT: This only updates the data source routing (symbols_file, stockList).
+    The performance_store remains pointing to the abacus data store so the abacus
+    portfolio maintains its own holdings, status, and configuration.
     """
     logger = logging.getLogger(__name__)
     
@@ -259,25 +296,18 @@ def update_config_with_data_source(config: Dict[str, Any],
     # Create a copy of config to avoid modifying original
     updated_config = config.copy()
     
-    # Update the Valuation section with correct symbols file, stockList, and performance_store
+    # Update the Valuation section with correct symbols file and stockList
+    # BUT keep performance_store pointing to abacus data store
     if 'Valuation' in updated_config:
         updated_config['Valuation'] = updated_config['Valuation'].copy()
         updated_config['Valuation']['symbols_file'] = data_source_paths['symbols_file']
         updated_config['Valuation']['stockList'] = data_source_paths['stockList']
         
-        # Set performance_store to the active model's data store
-        if trading_model and trading_model != 'cash':
-            # For active trading models, use their specific data store
-            base_folder = config['models']['base_folder']
-            model_performance_store = f"{base_folder}/{trading_model}/data_store"
-            updated_config['Valuation']['performance_store'] = model_performance_store
-            logger.info(f"Updated performance_store to: {model_performance_store}")
-        else:
-            # For cash model, use abacus data store
-            logger.info("Using abacus performance_store for cash model")
-        
+        # DO NOT change performance_store - it should always point to abacus
+        # The abacus portfolio maintains its own holdings and configuration
         logger.info(f"Updated symbols_file to: {data_source_paths['symbols_file']}")
         logger.info(f"Updated stockList to: {data_source_paths['stockList']}")
+        logger.info(f"Keeping performance_store as: {updated_config['Valuation']['performance_store']}")
     
     # Update data_paths section if it exists
     if 'data_paths' in updated_config:
@@ -296,6 +326,9 @@ def update_config_with_active_model(config: Dict[str, Any],
     
     This now includes both model-specific data validation AND
     data source routing based on the trading model.
+    
+    IMPORTANT: This loads the active model's Valuation section to get
+    the correct uptrendSignalMethod and other model-specific parameters.
     """
     logger = logging.getLogger(__name__)
     
@@ -329,6 +362,64 @@ def update_config_with_active_model(config: Dict[str, Any],
     if not os.path.exists(resolved_path):
         logger.error(f"Active model data file not found: {resolved_path}")
         raise FileNotFoundError(f"Active model data file not found: {resolved_path}")
+    
+    # Load the active model's JSON configuration to get its Valuation section
+    # This ensures we use the correct uptrendSignalMethod and other parameters
+    model_data_store = os.path.dirname(resolved_path)
+    model_json_files = [
+        os.path.join(model_data_store, f"pytaaa_{active_model}.json"),
+        os.path.join(os.path.dirname(model_data_store), f"pytaaa_{active_model}.json"),
+        os.path.join(base_folder, active_model, f"pytaaa_{active_model}.json")
+    ]
+    
+    model_config_loaded = False
+    for model_json_path in model_json_files:
+        if os.path.exists(model_json_path):
+            try:
+                with open(model_json_path, 'r') as f:
+                    model_config = json.load(f)
+                
+                # Copy the Valuation section from the model's config
+                if 'Valuation' in model_config:
+                    # Preserve critical abacus paths BEFORE updating
+                    abacus_performance_store = config['Valuation']['performance_store']
+                    
+                    # Get webpage - check multiple sources with priority order
+                    abacus_webpage = config['Valuation'].get('webpage')
+                    if not abacus_webpage and 'web_output_dir' in config:
+                        abacus_webpage = config['web_output_dir']
+                    
+                    logger.info(f"BEFORE update - abacus_webpage: {abacus_webpage}")
+                    logger.info(f"BEFORE update - performance_store: {abacus_performance_store}")
+                    
+                    # Update with model's Valuation section
+                    config['Valuation'].update(model_config['Valuation'])
+                    
+                    # Restore abacus-specific paths (these should ALWAYS be preserved)
+                    config['Valuation']['performance_store'] = abacus_performance_store
+                    
+                    # CRITICAL: Always ensure webpage is set
+                    if abacus_webpage:
+                        config['Valuation']['webpage'] = abacus_webpage
+                        logger.info(f"AFTER update - Preserved webpage directory: {abacus_webpage}")
+                    elif 'web_output_dir' in config:
+                        # Fallback to web_output_dir if webpage was never set
+                        config['Valuation']['webpage'] = config['web_output_dir']
+                        logger.info(f"AFTER update - Set webpage from web_output_dir: {config['web_output_dir']}")
+                    else:
+                        logger.error("No webpage directory available - this will cause errors!")
+                        raise ValueError("webpage directory not configured in JSON")
+                    
+                    logger.info(f"AFTER update - performance_store: {config['Valuation']['performance_store']}")
+                    logger.info(f"Loaded Valuation section from {model_json_path}")
+                    logger.info(f"Using uptrendSignalMethod: {config['Valuation'].get('uptrendSignalMethod')}")
+                    model_config_loaded = True
+                    break
+            except Exception as e:
+                logger.warning(f"Could not load model config from {model_json_path}: {e}")
+    
+    if not model_config_loaded:
+        logger.warning(f"Could not find JSON config for model {active_model}, using abacus Valuation section")
     
     logger.debug(f"Configuration updated for active model: {active_model}")
     return config

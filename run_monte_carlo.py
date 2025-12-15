@@ -63,7 +63,33 @@ def print_progress(i: int, total: int, start_time: float) -> None:
     default=False,
     help='Use randomized values for CENTRAL_VALUES and STD_VALUES (default: False)'
 )
-def main(search: str, verbose: bool, json_config_path: Optional[str], randomize: bool) -> None:
+@click.option(
+    '--fp-duration',
+    type=int,
+    default=None,
+    help='Focus period duration in years (default: 5 or from JSON config)'
+)
+@click.option(
+    '--fp-year-min',
+    type=int,
+    default=None,
+    help='Minimum year for focus period start (default: 1995)'
+)
+@click.option(
+    '--fp-year-max',
+    type=int,
+    default=None,
+    help='Maximum year for focus period start (default: 2021)'
+)
+def main(
+    search: str, 
+    verbose: bool, 
+    json_config_path: Optional[str], 
+    randomize: bool,
+    fp_duration: Optional[int],
+    fp_year_min: Optional[int],
+    fp_year_max: Optional[int]
+) -> None:
     """Run Monte Carlo backtesting with actual or backtested portfolio values.
     
     Args:
@@ -71,6 +97,9 @@ def main(search: str, verbose: bool, json_config_path: Optional[str], randomize:
         verbose: Whether to show detailed normalized score breakdown
         json_config_path: Path to JSON configuration file
         randomize: Whether to use randomized normalization values
+        fp_duration: Focus period duration in years
+        fp_year_min: Minimum year for focus period start
+        fp_year_max: Maximum year for focus period start
     """
     
     try:
@@ -104,6 +133,70 @@ def main(search: str, verbose: bool, json_config_path: Optional[str], randomize:
         # Load monte carlo settings from config
         with open(config_path, 'r') as f:
             config = json.load(f)
+        
+        #############################################################################
+        # Handle focus period parameter overrides
+        #############################################################################
+        
+        # Set defaults for focus period parameters
+        fp_duration_years = fp_duration if fp_duration is not None else 5
+        fp_year_min_val = fp_year_min if fp_year_min is not None else 1995
+        fp_year_max_val = fp_year_max if fp_year_max is not None else 2021
+        
+        # Validate year range
+        if fp_year_min_val > fp_year_max_val:
+            raise ValueError(f"Minimum year ({fp_year_min_val}) cannot be greater than maximum year ({fp_year_max_val})")
+        
+        # Generate random focus period start years with overlap constraint
+        max_attempts = 100
+        overlap_threshold = 0.4
+        
+        for attempt in range(max_attempts):
+            # Randomly select two start years
+            year1 = np.random.randint(fp_year_min_val, fp_year_max_val + 1)
+            year2 = np.random.randint(fp_year_min_val, fp_year_max_val + 1)
+            
+            # Ensure ascending chronological order: FP1 (earlier) before FP2 (later)
+            fp1_start_year = min(year1, year2)
+            fp2_start_year = max(year1, year2)
+            
+            # Calculate end years
+            fp1_end_year = fp1_start_year + fp_duration_years
+            fp2_end_year = fp2_start_year + fp_duration_years
+            
+            # Calculate overlap
+            overlap_start = max(fp1_start_year, fp2_start_year)
+            overlap_end = min(fp1_end_year, fp2_end_year)
+            overlap_years = max(0, overlap_end - overlap_start)
+            overlap_percentage = overlap_years / fp_duration_years
+            
+            # Check if overlap is acceptable
+            if overlap_percentage <= overlap_threshold:
+                break
+        else:
+            # If we couldn't find valid periods after max_attempts, use them anyway but warn
+            logger.warning(f"Could not find focus periods with <{overlap_threshold*100}% overlap after {max_attempts} attempts")
+            print(f"Warning: Focus periods overlap by {overlap_percentage*100:.1f}% (exceeds {overlap_threshold*100}% threshold)")
+        
+        # Override config with generated focus periods if CLI parameters were provided
+        if fp_duration is not None or fp_year_min is not None or fp_year_max is not None:
+            # Update metric_blending config with new focus periods
+            if 'metric_blending' not in config:
+                config['metric_blending'] = {}
+            
+            config['metric_blending']['focus_period_1_start'] = f"{fp1_start_year}-01-01"
+            config['metric_blending']['focus_period_1_end'] = f"{fp1_end_year}-01-01"
+            config['metric_blending']['focus_period_2_start'] = f"{fp2_start_year}-01-01"
+            config['metric_blending']['focus_period_2_end'] = f"{fp2_end_year}-01-01"
+            
+            print(f"\nFocus Period Configuration (overriding JSON):")
+            print(f"  Duration: {fp_duration_years} years")
+            print(f"  Year range: {fp_year_min_val} to {fp_year_max_val}")
+            print(f"  Focus Period 1: {fp1_start_year} to {fp1_end_year}")
+            print(f"  Focus Period 2: {fp2_start_year} to {fp2_end_year}")
+            print(f"  Overlap: {overlap_years} years ({overlap_percentage*100:.1f}%)")
+            logger.info(f"Focus periods: FP1={fp1_start_year}-{fp1_end_year}, FP2={fp2_start_year}-{fp2_end_year}, overlap={overlap_percentage*100:.1f}%")
+        
         monte_carlo_config = config.get('monte_carlo', {})
         iterations = monte_carlo_config.get('max_iterations', 50000)
         min_iterations_for_exploit = monte_carlo_config.get('min_iterations_for_exploit', 50)
@@ -279,6 +372,48 @@ def main(search: str, verbose: bool, json_config_path: Optional[str], randomize:
             percentage = (count / total_selections) * 100
             print(f"{i}. {model}: {count} selections ({percentage:.1f}%)")
 
+        print("\nModel-Switching Effectiveness Analysis:")
+        print("-" * 50)
+        effectiveness = final_metrics.get('model_effectiveness', {})
+        sharpe_outperformance_pct = effectiveness.get('sharpe_outperformance_pct', 0.0)
+        sortino_outperformance_pct = effectiveness.get('sortino_outperformance_pct', 0.0)
+        average_rank = effectiveness.get('average_rank', 6.0)
+        
+        print(f"Sharpe ratio outperformance: {sharpe_outperformance_pct:.1f}% ({effectiveness.get('sharpe_wins', 0)}/{effectiveness.get('total_sharpe_comparisons', 32)} comparisons)")
+        print(f"Sortino ratio outperformance: {sortino_outperformance_pct:.1f}% ({effectiveness.get('sortino_wins', 0)}/{effectiveness.get('total_sortino_comparisons', 32)} comparisons)")
+        print(f"Average rank across all periods and metrics (Sharpe + Sortino): {average_rank:.2f} (5=best, 0=worst)")
+
+        # Create comparison DataFrames for detailed analysis
+        from functions.PortfolioMetrics import create_comparison_dataframes, analyze_method_performance
+        
+        sharpe_df, sortino_df = create_comparison_dataframes(effectiveness)
+        performance_analysis = analyze_method_performance(sharpe_df, sortino_df)
+
+        print("\n" + "="*80)
+        print("DETAILED COMPARISON DATAFRAMES")
+        print("="*80)
+        
+        print("\nSharpe Ratio Comparison:")
+        print("-" * 40)
+        print(sharpe_df.round(3))
+        
+        print("\nSortino Ratio Comparison:")
+        print("-" * 40)
+        print(sortino_df.round(3))
+        
+        print("\n" + "="*80)
+        print("PERFORMANCE ANALYSIS SUMMARY")
+        print("="*80)
+        
+        # Individual method comparisons
+        print("\nSharpe Ratio Head-to-Head Results:")
+        for method, stats in performance_analysis.get("sharpe_comparison", {}).items():
+            print(f"  vs {method:>12}: {stats['periods_outperformed']}/{stats['total_periods']} periods ({stats['win_rate_pct']:>5.1f}%), avg diff: {stats['avg_difference']:>+6.3f}")
+        
+        print("\nSortino Ratio Head-to-Head Results:")
+        for method, stats in performance_analysis.get("sortino_comparison", {}).items():
+            print(f"  vs {method:>12}: {stats['periods_outperformed']}/{stats['total_periods']} periods ({stats['win_rate_pct']:>5.1f}%), avg diff: {stats['avg_difference']:>+6.3f}")
+        
         print("\nPortfolio Statistics:")
         print("-" * 40)
         initial_value = monte_carlo.best_portfolio_value[0]

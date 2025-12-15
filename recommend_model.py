@@ -230,7 +230,8 @@ def generate_recommendation_output(monte_carlo: MonteCarloBacktest,
                 plot_text += f"  Best model: {best_model}\n"
                 
                 # Get model rankings for detailed display
-                models = list(monte_carlo.portfolio_histories.keys())
+                # FIXED: Force consistent alphabetical ordering of models
+                models = sorted(list(monte_carlo.portfolio_histories.keys()))
                 lookback_period = max(used_lookbacks)
                 start_idx = max(0, date_idx - lookback_period)
                 start_date = pd.Timestamp(monte_carlo.dates[start_idx])
@@ -328,6 +329,15 @@ def display_parameters_info(monte_carlo: MonteCarloBacktest,
         print(f"  Annualized Return    : {annualized_return:>11.1%}")
         print(f"  Time Period          : {years:>11.1f} years")
     
+    from functions.PortfolioMetrics import analyze_model_switching_effectiveness
+
+    # Add effectiveness analysis
+    effectiveness = analyze_model_switching_effectiveness(monte_carlo, lookbacks)
+    
+    print(f"\nModel-Switching Effectiveness:")
+    print(f"  Outperformance Rate  : {effectiveness['sharpe_outperformance_pct']:>11.1f}%")
+    print(f"  vs Equal-Weight Base : {effectiveness.get('avg_excess_return', 0.0)*100:>11.1f}% excess annual return")
+    
     print("="*70)
 
 
@@ -369,6 +379,39 @@ def main(date: Optional[str], lookbacks: Optional[str], json_config_path: Option
             
         with open(config_path, 'r') as f:
             config = json.load(f)
+        
+        # Validate required configuration sections for performance metric weights
+        if 'model_selection' not in config:
+            raise ValueError("Missing 'model_selection' section in JSON configuration")
+        
+        if 'performance_metrics' not in config['model_selection']:
+            raise ValueError("Missing 'performance_metrics' section in model_selection configuration")
+        
+        # Validate required performance metric weights
+        required_weights = [
+            'sharpe_ratio_weight',
+            'sortino_ratio_weight',
+            'max_drawdown_weight',
+            'avg_drawdown_weight',
+            'annualized_return_weight'
+        ]
+        
+        performance_metrics = config['model_selection']['performance_metrics']
+        missing_weights = [w for w in required_weights if w not in performance_metrics]
+        
+        if missing_weights:
+            raise ValueError(f"Missing required performance metric weights in JSON configuration: {', '.join(missing_weights)}")
+        
+        # Validate metric blending configuration
+        if 'metric_blending' not in config:
+            raise ValueError("Missing 'metric_blending' section in JSON configuration")
+        
+        metric_blending = config['metric_blending']
+        required_blending_params = ['enabled', 'full_period_weight', 'focus_period_weight']
+        missing_blending = [p for p in required_blending_params if p not in metric_blending]
+        
+        if missing_blending:
+            raise ValueError(f"Missing required metric blending parameters in JSON configuration: {', '.join(missing_blending)}")
         
         # Ensure recommendation_mode section exists
         if 'recommendation_mode' not in config:
@@ -543,7 +586,8 @@ def main(date: Optional[str], lookbacks: Optional[str], json_config_path: Option
                                     recommendation_text += f"  Best model: {best_model}\n"
                                     
                                     # Get model rankings for this date
-                                    models = list(monte_carlo.portfolio_histories.keys())
+                                    # FIXED: Force consistent alphabetical ordering of models
+                                    models = sorted(list(monte_carlo.portfolio_histories.keys()))
                                     lookback_period = max(used_lookbacks)
                                     start_idx = max(0, date_idx - lookback_period)
                                     start_date = pd.Timestamp(monte_carlo.dates[start_idx])

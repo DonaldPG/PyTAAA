@@ -14,19 +14,26 @@
 #   ./run_monte_carlo.sh 10 explore          # Run 10 times with exploration
 #   ./run_monte_carlo.sh 3 exploit           # Run 3 times with exploitation
 #   ./run_monte_carlo.sh 7 explore-exploit   # Run 7 times with dynamic strategy
+#   ./run_monte_carlo.sh 5 --fp-duration=7   # Run 5 times with 7-year focus periods
+#   ./run_monte_carlo.sh 3 --fp-year-min=2000 --fp-year-max=2020  # Custom year range
 #############################################################################
 
 # Function to display usage information
 show_usage() {
-    echo "Usage: $0 <number_of_runs> [search_strategy] [--verbose] [--reset]"
+    echo "Usage: $0 <number_of_runs> [search_strategy] [options]"
     echo ""
     echo "Arguments:"
     echo "  number_of_runs    Number of Monte Carlo runs to execute (required)"
     echo "  search_strategy   Search strategy: explore, exploit, or explore-exploit (optional)"
-    echo "  --verbose         Show detailed normalized score breakdown (optional)"
-    echo "  --reset           Reset saved state after each run (optional)"
-    echo "  --json=<path>     Specify JSON configuration file path (optional)"
-    echo "  --randomize       Use randomized normalization values (optional)"
+    echo ""
+    echo "Options:"
+    echo "  --verbose              Show detailed normalized score breakdown (optional)"
+    echo "  --reset                Reset saved state after each run (optional)"
+    echo "  --json=<path>          Specify JSON configuration file path (optional)"
+    echo "  --randomize            Use randomized normalization values (optional)"
+    echo "  --fp-duration=<years>  Focus period duration in years (default: 5)"
+    echo "  --fp-year-min=<year>   Minimum year for focus period start (default: 1995)"
+    echo "  --fp-year-max=<year>   Maximum year for focus period start (default: 2021)"
     echo ""
     echo "Examples:"
     echo "  $0 5                       # Run 5 times with default strategy"
@@ -39,9 +46,12 @@ show_usage() {
     echo "  $0 4 --json=config.json   # Run 4 times with JSON configuration file"
     echo "  $0 2 --randomize          # Run 2 times with randomized normalization values"
     echo "  $0 3 exploit --randomize  # Run 3 times with exploitation and randomization"
+    echo "  $0 5 --fp-duration=7      # Run 5 times with 7-year focus periods"
+    echo "  $0 3 --fp-year-min=2000 --fp-year-max=2020  # Custom year range"
     echo ""
     echo "Note: Each run builds upon the previous state for continuous optimization."
     echo "      Use --reset to start fresh exploration from each run."
+    echo "      Focus period parameters override JSON config values for the run."
 }
 
 # Check if help is requested
@@ -50,21 +60,24 @@ if [[ "$1" == "-h" || "$1" == "--help" ]]; then
     exit 0
 fi
 
-# Validate number of arguments - Allow up to 5 arguments for all combinations
-if [[ $# -lt 1 || $# -gt 5 ]]; then
+# Validate number of arguments - Allow more arguments for all combinations
+if [[ $# -lt 1 ]]; then
     echo "Error: Invalid number of arguments"
     echo ""
     show_usage
     exit 1
 fi
 
-# Parse arguments to handle --verbose, --reset, --json, and --randomize flags in any position
+# Parse arguments to handle all flags in any position
 NUM_RUNS=""
 SEARCH_STRATEGY=""
 VERBOSE_FLAG=""
 RESET_FLAG=""
 JSON_FLAG=""
 RANDOMIZE_FLAG=""
+FP_DURATION=""
+FP_YEAR_MIN=""
+FP_YEAR_MAX=""
 
 for arg in "$@"; do
     case "$arg" in
@@ -83,6 +96,15 @@ for arg in "$@"; do
             ;;
         --randomize)
             RANDOMIZE_FLAG="--randomize"
+            ;;
+        --fp-duration=*)
+            FP_DURATION="${arg#*=}"
+            ;;
+        --fp-year-min=*)
+            FP_YEAR_MIN="${arg#*=}"
+            ;;
+        --fp-year-max=*)
+            FP_YEAR_MAX="${arg#*=}"
             ;;
         explore|exploit|explore-exploit)
             SEARCH_STRATEGY="$arg"
@@ -143,6 +165,8 @@ echo "Verbose mode: ${VERBOSE_FLAG:-disabled}"
 echo "Reset state after each run: ${RESET_FLAG:-disabled}"
 echo "JSON configuration: ${JSON_FLAG:-none}"
 echo "Randomize normalization: ${RANDOMIZE_FLAG:-disabled}"
+echo "Focus period duration: ${FP_DURATION:-default (5 years)}"
+echo "Focus period year range: ${FP_YEAR_MIN:-1995} to ${FP_YEAR_MAX:-2021}"
 echo "Start time: $(date)"
 echo "Working directory: $(pwd)"
 echo "=============================================================="
@@ -178,6 +202,19 @@ for ((i=1; i<=NUM_RUNS; i++)); do
 
     if [[ -n "$RANDOMIZE_FLAG" ]]; then
         CMD="$CMD $RANDOMIZE_FLAG"
+    fi
+    
+    # Add focus period parameters if specified
+    if [[ -n "$FP_DURATION" ]]; then
+        CMD="$CMD --fp-duration=$FP_DURATION"
+    fi
+    
+    if [[ -n "$FP_YEAR_MIN" ]]; then
+        CMD="$CMD --fp-year-min=$FP_YEAR_MIN"
+    fi
+    
+    if [[ -n "$FP_YEAR_MAX" ]]; then
+        CMD="$CMD --fp-year-max=$FP_YEAR_MAX"
     fi
     
     echo "Executing: $CMD"
