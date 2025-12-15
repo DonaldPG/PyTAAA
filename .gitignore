@@ -6,13 +6,15 @@ pytaaa_*.log
 
 # Ignore Python cache
 __pycache__/
+**/__pycache__/
 *.pyc
 
 # Ignore generated images and plots
 *.png
 pngs/
 
-# Ignore Excel files and other generated data
+# Ignore CSV and Excel files and other generated data
+*.csv
 *.xlsx
 *.xls
 ~$*
