@@ -60,3 +60,17 @@
 - Always set the `PYTHONPATH` to the root of the project directory for testing and development.
 - Example: `export PYTHONPATH=$(pwd)` (for macOS/Linux) or `set PYTHONPATH=%cd%` (for Windows).
 - This ensures that all modules in the project are correctly recognized.
+
+## Copilot Session Documentation
+- At the end of significant Copilot sessions, create a summary document in `docs/copilot_sessions/`.
+- Use the naming format: `YYYY-MM-DD_brief-description.md` (e.g., `2025-10-04_daily-abacus-update-fix.md`).
+- Include the following sections in session summaries:
+  - **Date and Context**: When the session occurred and what prompted it
+  - **Problem Statement**: What issue or task was being addressed
+  - **Solution Overview**: High-level description of the solution implemented
+  - **Key Changes**: List of files modified and what changed
+  - **Technical Details**: Important implementation details for future reference
+  - **Testing**: How the solution was verified
+  - **Follow-up Items**: Any remaining tasks or considerations
+- Keep summaries concise but informative for future reference.
+- Session summaries help maintain project knowledge and facilitate onboarding.

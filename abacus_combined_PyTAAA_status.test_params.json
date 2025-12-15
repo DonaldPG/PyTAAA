@@ -25,9 +25,9 @@
     },
     "recommendation_mode": {
         "default_lookbacks": [
-            105,
-            111,
-            180
+            55,
+            157,
+            174
         ],
         "output_format": "both",
         "generate_plot": true,
@@ -82,38 +82,36 @@
             "sortino_ratio_weight": 2.0,
             "max_drawdown_weight": 1.0,
             "avg_drawdown_weight": 1.0,
-            "annualized_return_weight": 5.0
+            "annualized_return_weight": 50.0
         },
         "normalization": {
             "lookback_days": [
-                105,
-                111,
-                180
+                55,
+                157,
+                174
             ],
             "central_values": {
                 "annual_return": 0.435,
                 "sharpe_ratio": 1.45,
-                "sortino_ratio": 1.35,
-                "max_drawdown": -0.58,
-                "avg_drawdown": -0.105
+                "sortino_ratio": 1.3,
+                "max_drawdown": -0.54,
+                "avg_drawdown": -0.115
             },
             "std_values": {
-                "annual_return": 0.02,
+                "annual_return": 0.04,
                 "sharpe_ratio": 0.165,
                 "sortino_ratio": 0.14,
-                "max_drawdown": 0.225,
-                "avg_drawdown": 0.0855
+                "max_drawdown": 0.075,
+                "avg_drawdown": 0.072
             }
         }
     },
     "metric_blending": {
         "enabled": true,
-        "focus_period_1_start": "2018-01-01",
-        "focus_period_1_end": "2023-01-01",
-        "focus_period_1_weight": 0.5,
-        "focus_period_2_start": "2013-01-01",
-        "focus_period_2_end": "2018-01-01",
-        "focus_period_2_weight": 0.5
+        "full_period_weight": 0.2,
+        "focus_period_weight": 0.8,
+        "focus_period_start": "2005-01-01",
+        "focus_period_end": "2025-10-01"
     },
     "monte_carlo": {
         "initial_capital": 10000.0,
