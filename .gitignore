@@ -27,3 +27,20 @@ pngs/
 # Ignore env and lock files managed separately
 venv/
 .venv/
+
+# Additional ignores requested by user
+# Compiled python files
+*.pyc
+*.pyo
+*.pyd
+
+# Log files and log directory
+*.log
+logs/
+
+# pngs directory
+pngs/
+
+# Backup patterns
+*.bak
+*bak*
