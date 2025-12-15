@@ -845,7 +845,7 @@ def recentSharpeWithAndWithoutGap(x,numdaysinfit=504,offset_factor=.4):
 
     # calculate number of loops
     sharpeList = []
-    for i in range(1,25):
+    for i in range(1,4):
         if i == 1:
             numdaysStart = numdaysinfit
             numdaysEnd = int(numdaysStart * offset_factor + .5)
