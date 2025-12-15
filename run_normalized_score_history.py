@@ -119,7 +119,8 @@ def create_combined_normalized_score_plot(
     #############################################################################
     # Compute normalized scores for all models on monthly dates using same method as Monte Carlo
     #############################################################################
-    models = list(monte_carlo.portfolio_histories.keys())
+    # FIXED: Force consistent alphabetical ordering of models
+    models = sorted(list(monte_carlo.portfolio_histories.keys()))
     non_cash_models = [m for m in models if m != "cash"]
     
     # Initialize arrays for normalized scores

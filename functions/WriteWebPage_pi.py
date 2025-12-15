@@ -208,43 +208,6 @@ def writeWebPage(
     #rank_table_container
     {
       float:left;
-      width:350px;
-    }
-    #indexchanges_table_container
-    {
-      position:absolute;
-      right:450px;
-      width:350px;
-    }
-</style>
-
-
-<img src="PyTAAA_stock-chart-blue.png" alt="PyTAAA by DonaldPG" width="1000" height="350">
-
-"""
-    # message body preliminaries
-    message = """<!DOCTYPE html>
-<html>
-<head>
-<title>pyTAAA web</title>
-</head>
-
-<body id="w3s" bgcolor=#F2F2F2>
-
-<style>
-    body
-    {
-    background-image: -ms-linear-gradient(top left, #F2F2F2 0%, #94B0B3 80%);
-
-    background-image: -moz-linear-gradient(top left, #F2F2F2 0%, #94B0B3 80%);
-
-    background-image: -webkit-linear-gradient(top left, #F2F2F2 0%, #94B0B3 80%);
-
-    background-image: linear-gradient(to bottom right, #F2F2F2 0%, #94B0B3 80%);
-    }
-    #rank_table_container
-    {
-      float:left;
       width:825px;
     }
     #indexchanges_table_container
@@ -391,7 +354,7 @@ def writeWebPage(
     # compute stock value compared to offset trend and make plot
     ##########################################
 
-    figure5a_htmlText = makeDailyChannelOffsetSignal(json_fn)
+    figure5a_htmlText, figure5b_htmlText = makeDailyChannelOffsetSignal(json_fn)
     print("... writeWebPage: daily channel offset signal plot created ")
 
 
@@ -491,10 +454,12 @@ def writeWebPage(
         filepath = os.path.join(webpage_dir, "pyTAAAweb.html")
         with open( filepath, "w" ) as f:
             f.write(message)
-            f.write(figure_htmlText)
-            f.write(figure4_htmlText)
+            # Note: figure_htmlText and figure4_htmlText already added to message above
+            # Only write plots that weren't added to message
             f.write(figure5_htmlText)
             f.write(figure5aa_htmlText)
+            f.write(figure5a_htmlText)
+            f.write(figure5b_htmlText)
             f.write(figure6_htmlText)
             # f.write(figure7_htmlText)
             f.write(rankingMessage)

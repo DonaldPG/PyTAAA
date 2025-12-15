@@ -205,13 +205,41 @@ def makeUptrendingPlot(json_fn):
 
     from functions.TAfunctions import SMA, MoveMax, dpgchannel
 
-    ##########################################
-    # read uptrending stocks status file
-    ##########################################
+    #############
+    # Read uptrending stocks status file
+    #############
 
     json_folder = os.path.split(json_fn)[0]
     p_store = get_performance_store(json_fn)
-    file2path = os.path.join(p_store, "pyTAAAweb_numberUptrendingStocks_status.params" )
+    webpage_dir = get_webpage_store(json_fn)
+    
+    # Debug: Print the directories being used
+    print(f"\n=== makeUptrendingPlot Debug Info ===")
+    print(f"json_fn: {json_fn}")
+    print(f"json_folder: {json_folder}")
+    print(f"p_store (performance_store): {p_store}")
+    print(f"webpage_dir: {webpage_dir}")
+    
+    file2path = os.path.join(webpage_dir, "pyTAAAweb_numberUptrendingStocks_status.params" )
+    print(f"Looking for file at: {file2path}")
+    print(f"File exists: {os.path.exists(file2path)}")
+    
+    if os.path.exists(file2path):
+        # Check file size and content
+        file_size = os.path.getsize(file2path)
+        print(f"File size: {file_size} bytes")
+        
+        # Read first few lines to check format
+        try:
+            with open(file2path, "r") as f:
+                first_lines = [f.readline() for _ in range(min(5, sum(1 for _ in open(file2path))))]
+            print(f"First {len(first_lines)} lines of file:")
+            for i, line in enumerate(first_lines, 1):
+                print(f"  Line {i}: {line.strip()[:100]}")  # First 100 chars
+        except Exception as e:
+            print(f"ERROR reading file for debug: {e}")
+    
+    print("=" * 40 + "\n")
 
     date = []
     value = []
@@ -405,7 +433,8 @@ def makeTrendDispersionPlot(json_fn):
     ### make a combined plot
     ### 1. get percent of uptrending stocks
     ###
-    file2path = os.path.join(p_store, "pyTAAAweb_numberUptrendingStocks_status.params" )
+    webpage_dir = get_webpage_store(json_fn)
+    file2path = os.path.join(webpage_dir, "pyTAAAweb_numberUptrendingStocks_status.params" )
     date = []
     value = []
     active = []
@@ -511,11 +540,12 @@ def makeTrendDispersionPlot(json_fn):
     )
     numDaysToPlot = len( valueMedians )
     plt.legend(loc=3,prop={'size':6})
+    
+    # Adjust layout to prevent overlapping labels
+    plt.tight_layout()
+    
     plt.savefig(figure5path)
     #figure5path = 'PyTAAA_backtestWithTrend.png'  # re-set to name without full path
-    #figure5_htmlText = "\n<br><h3>Daily backtest with trend indicators</h3>\n"
-    #figure5_htmlText = figure5_htmlText + "\nCombined backtest with Trend indicators.\n"
-    #figure5_htmlText = figure5_htmlText + '''<br><img src="'''+figure5path+'''" alt="PyTAAA by DonaldPG" width="850" height="500"><br>\n'''
     figure5path = 'PyTAAA_backtestWithTrend.png'  # re-set to name without full path
     figure5_htmlText = "\n<br><h3>Monthly backtest</h3>\n"
     figure5_htmlText = figure5_htmlText + "\nMost recent backtest for PyTAAA. "
@@ -817,30 +847,40 @@ def makeDailyChannelOffsetSignal(json_fn):
     ### make a combined plot
     ### 1. get percent of uptrending stocks
     ###
-    _dates = []
-    avgPctChannel = []
-    numAboveBelowChannel = []
-    try:
-        with open( file4path, "r" ) as f:
-            # get number of lines in file
-            lines = f.read().split("\n")
-            numlines = len (lines)
-            for i in range(numlines):
-                statusline = lines[i]
-                statusline_list = statusline.split(" ")
-                statusline_list = [_f for _f in statusline_list if _f]
-                if len( statusline_list ) == 3:
-                    _dates.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
-                    avgPctChannel.append( float(statusline_list[1].split('%')[0])/100. )
-                    numAboveBelowChannel.append( float(statusline_list[2]) )
-
-    except:
-        print(" Error: unable to read updates from pyTAAAweb_numberUptrendingStocks_status.params")
-        print("")
-
     _dates = np.array(_dates)
     avgPctChannel = np.array(avgPctChannel)
     numAboveBelowChannel = np.array(numAboveBelowChannel)
+    
+    # Debug: Show what we have before trying to use these arrays
+    print("\n=== makeDailyChannelOffsetSignal Debug Info ===")
+    print(f"file4path (file just read): {file4path}")
+    print(f"File exists: {os.path.exists(file4path)}")
+    if os.path.exists(file4path):
+        file_size = os.path.getsize(file4path)
+        print(f"File size: {file_size} bytes")
+        if file_size > 0:
+            with open(file4path, "r") as f:
+                lines = f.read().split("\n")
+                print(f"Number of lines in file: {len(lines)}")
+                print(f"First 3 lines:")
+                for i, line in enumerate(lines[:3], 1):
+                    print(f"  Line {i}: '{line}'")
+    print(f"_dates array length: {len(_dates)}")
+    print(f"avgPctChannel array length: {len(avgPctChannel)}")
+    print(f"numAboveBelowChannel array length: {len(numAboveBelowChannel)}")
+    print("=" * 50)
+    
+    # Check if arrays are empty before calling .min(), .mean(), .max()
+    if len(avgPctChannel) == 0:
+        print("WARNING: avgPctChannel is empty! Cannot compute min/mean/max.")
+        print("This likely means the status file has no valid data.")
+        # Return early to avoid crash
+        figure4_htmlText = "\n<br><h3>Channel Offset Signal</h3>\n"
+        figure4_htmlText = figure4_htmlText + "\n<p>No data available for Channel Offset Signal plot.</p>\n"
+        figure5_htmlText = "\n<br><h3>Daily backtest with offset Channel trend signal</h3>\n"
+        figure5_htmlText = figure5_htmlText + "\n<p>No data available for backtest plot.</p>\n"
+        return figure4_htmlText, figure5_htmlText
+    
     print(" avgPctChannel shape = " + str(avgPctChannel.shape))
     print(" avgPctChannel min, mean, max = ", avgPctChannel.min(),avgPctChannel.mean(),avgPctChannel.max())
     print("\n\n numAboveBelowChannel = ", numAboveBelowChannel)

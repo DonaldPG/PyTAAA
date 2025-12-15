@@ -34,7 +34,7 @@
         "MA2": 8,
         "MA3": 11,
         "sma2factor": 1.536,
-        "rankThresholdPct": 0.1330,
+        "rankThresholdPct": 0.133,
         "riskDownside_min": 0.467,
         "riskDownside_max": 9.027,
         "longShort_mindays": 5,
@@ -65,12 +65,28 @@
             "max_drawdown_weight": 1.0,
             "avg_drawdown_weight": 1.0,
             "annualized_return_weight": 5.0
+        },
+        "normalization": {
+            "central_values": {
+                "annual_return": 0.435,
+                "sharpe_ratio": 1.45,
+                "sortino_ratio": 1.35,
+                "max_drawdown": -0.58,
+                "avg_drawdown": -0.105
+            },
+            "std_values": {
+                "annual_return": 0.02,
+                "sharpe_ratio": 0.165,
+                "sortino_ratio": 0.14,
+                "max_drawdown": 0.225,
+                "avg_drawdown": 0.0854999999999999
+            }
         }
     },
     "metric_blending": {
         "enabled": true,
-        "full_period_weight": 0.20,
-        "focus_period_weight": 0.80,
+        "full_period_weight": 0.2,
+        "focus_period_weight": 0.8,
         "focus_period_start": "2020-01-01",
         "focus_period_end": "2025-09-11"
     },
@@ -89,7 +105,11 @@
         }
     },
     "recommendation_mode": {
-        "default_lookbacks": [20, 86, 177],
+        "default_lookbacks": [
+            20,
+            86,
+            177
+        ],
         "output_format": "both",
         "generate_plot": true,
         "show_model_ranks": true
