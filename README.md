@@ -39,5 +39,28 @@ The `pytaaa-backtest-montecarlo.py` script enables Monte Carlo simulations for o
 
 Usage example:
 ```
-uv run python pytaaa-backtest-montecarlo.py --config sp500_pine/pytaaa_sp500_pine.json --n_trials 250 --plot_individual --output_csv sp500_pine/pytaaa_sp500_pine_montecarlo.csv
+uv run python pytaaa_backtest_montecarlo.py  --config sp500_pine/pytaaa_sp500_pine.json --n_trials 250 --plot_individual --output_csv sp500_pine/pytaaa_sp500_pine_montecarlo.csv
 ```
+
+## Backtest Output Files
+
+### pyTAAAweb_backtestPortfolioValue.params
+
+**Format:** Space-separated values, 5 columns
+
+**Columns:**
+1. **Date** (YYYY-MM-DD) - Trading date
+2. **Buy-Hold Portfolio Value** (float) - Value of equal-weight buy-and-hold portfolio
+3. **Traded Portfolio Value** (float) - Value of PyTAAA trading strategy portfolio
+4. **New Highs Count** (integer) - Number of stocks making new highs on this date
+5. **New Lows Count** (integer) - Number of stocks making new lows on this date
+
+**Location:** `{performance_store}/pyTAAAweb_backtestPortfolioValue.params`
+
+**Update Frequency:** Rewritten completely on each daily backtest run
+
+**Notes:** 
+- File contains entire backtest history (all dates from data start to present)
+- New highs/lows are computed using multiple lookback windows (narrow, medium, wide days)
+- Values in columns 4-5 are computed only on the final Monte Carlo trial which uses JSON parameters
+- Backward compatible: existing code reading only first 3 columns will continue to work

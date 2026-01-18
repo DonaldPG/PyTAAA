@@ -865,7 +865,7 @@ def recentSharpeWithAndWithoutGap(
 
     # calculate number of loops
     sharpeList = []
-    max_i = 3 if fast_mode else 25
+    max_i = 3  # reduced for speed
     for i in range(1, max_i):
         if i == 1:
             numdaysStart = numdaysinfit
@@ -1180,6 +1180,8 @@ def textmessageOutsideTrendChannel(symbols, adjClose, json_fn):
     # temporarily skip this!!!!!!
     #return
 
+    print("\n\n ... inside src/backtest/functions/TAfunctions.textmessageOutsideTrendChannel ... ")
+
     import datetime
     from functions.GetParams import get_json_params, get_holdings, GetEdition
     from functions.CheckMarketOpen import get_MarketOpenOrClosed
@@ -1216,13 +1218,19 @@ def textmessageOutsideTrendChannel(symbols, adjClose, json_fn):
     channelGainsLosses = []
     channelStds = []
     currentNumStdDevs = []
-    for i, symbol in enumerate(symbols):
-        pctChannel,channelGainLoss,channelStd,numStdDevs = jumpTheChannelTest(adjClose[i,:],\
-                                                                              #minperiod=4,\
-                                                                              #maxperiod=12,\
-                                                                              #incperiod=3,\
-                                                                              #numdaysinfit=28,\
-                                                                              #offset=3)
+    # Only compute channel tests for symbols that are actually held.
+    # For large lists (e.g. SP500) this avoids running the expensive
+    # jumpTheChannelTest for every universe symbol when we only need
+    # alerts for holdings.
+    sym_to_idx = {s: idx for idx, s in enumerate(symbols)}
+    unique_holdings = list(dict.fromkeys(holdings_symbols))
+    for symbol in unique_holdings:
+        if symbol == 'CASH':
+            continue
+        i = sym_to_idx.get(symbol)
+        if i is None:
+            continue
+        pctChannel,channelGainLoss,channelStd,numStdDevs = jumpTheChannelTest(adjClose[i,:],
                                                    minperiod=params['minperiod'],
                                                    maxperiod=params['maxperiod'],
                                                    incperiod=params['incperiod'],
@@ -1230,21 +1238,12 @@ def textmessageOutsideTrendChannel(symbols, adjClose, json_fn):
                                                    offset=params['offset'])
         channelGainsLosses.append(channelGainLoss)
         channelStds.append(channelStd)
-        if symbol in holdings_symbols:
-            #pctChannel = jumpTheChannelTest(adjClose[i,:],minperiod=4,maxperiod=12,incperiod=3,numdaysinfit=28, offset=3)
-            print(" ... performing PctChannelTest: symbol = ",format(symbol,'5s'), "  pctChannel = ", format(pctChannel-1.,'6.1%'))
-            '''
-            if pctChannel < 1.:
-                # send textmessage alert of possible new down-trend
-                downtrendSymbols.append(symbol)
-                channelPercent.append(format(pctChannel-1.,'6.1%'))
-            '''
-            # send textmessage alert of current trend
-            downtrendSymbols.append(symbol)
-            channelPercent.append(format(pctChannel-1.,'6.1%'))
-            channelGainsLossesHoldings.append(format(channelGainLoss,'6.1%'))
-            channelStdsHoldings.append(format(channelStd,'6.1%'))
-            currentNumStdDevs.append(format(numStdDevs,'6.1f'))
+        print(" ... performing PctChannelTest: symbol = ",format(symbol,'5s'), "  pctChannel = ", format(pctChannel-1.,'6.1%'))
+        downtrendSymbols.append(symbol)
+        channelPercent.append(format(pctChannel-1.,'6.1%'))
+        channelGainsLossesHoldings.append(format(channelGainLoss,'6.1%'))
+        channelStdsHoldings.append(format(channelStd,'6.1%'))
+        currentNumStdDevs.append(format(numStdDevs,'6.1f'))
 
     print("\n ... downtrending symbols are ", downtrendSymbols, "\n")
 
@@ -2733,7 +2732,7 @@ def sharpeWeightedRank_2D(
         LongPeriod, rankthreshold,
         riskDownside_min, riskDownside_max,
         rankThresholdPct, stddevThreshold=4.,
-        is_backtest=True, makeQCPlots=False, verbose=False, fast_mode=False
+        is_backtest=True, makeQCPlots=False, verbose=False, fast_mode=True
 ):
 
     # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)

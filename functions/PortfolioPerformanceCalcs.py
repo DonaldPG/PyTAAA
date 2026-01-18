@@ -558,11 +558,17 @@ def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
         print("\n\n\nCurrently up-trending symbols ("+str(datearray[-1])+"):")
         uptrendCount = 0
         for i in range(len(symbols)):
+            sym = symbols[i]
+            adj = adjClose[i,-1]
+            low = lowChannel[i,-1]
+            hi = hiChannel[i,-1]
+            # symbol: fixed width 5 (truncate or pad), numbers: 2 decimal places
+            sym_fmt = f"{sym:5.5s}"
             if signal2D_daily[i,-1] > 0:
                 uptrendCount += 1
-                print(uptrendCount, symbols[i], adjClose[i,-1], " uptrend", lowChannel[i,-1], hiChannel[i,-1])
+                print(f"{uptrendCount:3d} {sym_fmt} {adj:.2f} uptrend {low:.2f} {hi:.2f}")
             else:
-                print(uptrendCount, symbols[i], adjClose[i,-1], "        ", lowChannel[i,-1], hiChannel[i,-1])
+                print(f"{uptrendCount:3d} {sym_fmt} {adj:.2f}       {low:.2f} {hi:.2f}")
     print("\n\n\n")
 
     ####################################################################################3

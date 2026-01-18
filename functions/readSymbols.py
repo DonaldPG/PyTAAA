@@ -725,7 +725,11 @@ def read_symbols_list_web(json_fn, verbose=True):
                     print(f"... error processing row {row_count}: {e}")
                 continue
         
-        print(f"... retrieved {len(symbolList)} SP500 companies from internet ({processed_count} valid rows from {row_count} total rows)")
+        print(
+            f"... retrieved {len(symbolList)} SP500 companies from internet \
+            ({processed_count} valid rows from {row_count} total rows)",
+            flush=True
+        )
         
         # Sanity check - S&P 500 should have around 500 companies
         if len(symbolList) < 400:
@@ -742,7 +746,7 @@ def read_symbols_list_web(json_fn, verbose=True):
         with open(companyName_file, "w") as f:
             for i in range(len(symbolList)):
                 f.write(symbolList[i] + ";" + companyNamesList[i] + "\n")
-        print("... wrote SP500_companyNames.txt")
+        print("... wrote SP500_companyNames.txt", flush=True)
 
         ### -----------------
         ### end of enhanced code

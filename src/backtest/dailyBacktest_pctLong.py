@@ -18,6 +18,7 @@ from src.backtest.functions.TAfunctions import (
     cleantobeginning, cleantoend,interpolate
 )
 from src.backtest.functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
+from functions.CountNewHighsLows import newHighsAndLows
 
 
 def plotRecentPerfomance3(
@@ -3297,16 +3298,52 @@ def dailyBacktest_pctLong(
         ###
         ### save backtest portfolio values ( B&H and system )
         ###
+        
+        # Compute new highs/lows for last trial only (uses JSON parameters)
+        if iter == randomtrials - 1:
+            print(f"Computing new highs/lows for final trial (iter={iter})...")
+            try:
+                newHighs_2D, newLows_2D, _ = newHighsAndLows(
+                    json_fn,
+                    datearray,
+                    symbols,
+                    adjClose,
+                    narrowDays=narrowDays,
+                    mediumDays=mediumDays,
+                    wideDays=wideDays,
+                    LongPeriod=LongPeriod,
+                    verbose=False
+                )
+                # Sum across stocks to get totals per day
+                sumNewHighs = np.sum(newHighs_2D, axis=0)
+                sumNewLows = np.sum(newLows_2D, axis=0)
+                print(f"  sumNewHighs shape: {sumNewHighs.shape}")
+                print(f"  sumNewLows shape: {sumNewLows.shape}")
+                print(f"  Sample values - Highs: {sumNewHighs[-5:]}")
+                print(f"  Sample values - Lows: {sumNewLows[-5:]}")
+            except Exception as e:
+                print(f"  WARNING: Failed to compute new highs/lows: {e}")
+                # Initialize as zeros if computation fails
+                sumNewHighs = np.zeros(len(datearray))
+                sumNewLows = np.zeros(len(datearray))
+        else:
+            # For non-final trials, initialize as zeros
+            sumNewHighs = np.zeros(len(datearray))
+            sumNewLows = np.zeros(len(datearray))
+        
         try:
             filepath = os.path.join(p_store, "pyTAAAweb_backtestPortfolioValue.params" )
             textmessage = ""
             for idate in range(len(BuyHoldPortfolioValue)):
-                textmessage = textmessage + str(datearray[idate])+"  "+str(BuyHoldPortfolioValue[idate])+"  "+str(np.average(monthvalue[:,idate]))+"\n"
+                # Write 5 columns: date, buy-hold value, traded value, new highs, new lows
+                textmessage = textmessage + str(datearray[idate])+"  "+str(BuyHoldPortfolioValue[idate])+"  "+str(np.average(monthvalue[:,idate]))+"  "+str(int(sumNewHighs[idate]))+"  "+str(int(sumNewLows[idate]))+"\n"
             with open( filepath, "w" ) as f:
                 f.write(textmessage)
-        except:
+            if iter == randomtrials - 1:
+                print(f"  Successfully wrote 5-column params file to: {filepath}")
+        except Exception as e:
             _fn = os.path.join(p_store, "pyTAAAweb_backtestPortfolioValue.params")
-            print(" ERROR: unable to update file " + _fn)
+            print(f" ERROR: unable to update file {_fn}: {e}")
 
 
         ########################################################################

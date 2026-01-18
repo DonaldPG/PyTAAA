@@ -10,7 +10,7 @@ def from_config_file(config_filename):
     return params
 
 
-def get_symbols_file(json_fn):
+def get_symbols_file(json_fn, verbose=False):
     ######################
     ### get filename where list of symbols is stored
     ######################
@@ -18,8 +18,9 @@ def get_symbols_file(json_fn):
     ##  Import list of symbols to process.
     ##
 
-    print("\n... inside functions.GetParams.get_symbols_file ...")
-    print("   . json_fn = ", json_fn)
+    if verbose:
+        print("\n... inside functions.GetParams.get_symbols_file ...")
+        print("   . json_fn = ", json_fn)
 
     params = get_json_params(json_fn)
     stockList = params['stockList']
@@ -36,7 +37,8 @@ def get_symbols_file(json_fn):
             symbol_file = "SP500_Symbols.txt"
         symbols_file = os.path.join( symbol_directory, symbol_file )
 
-    print("   . symbols_file = ", symbols_file)
+    if verbose:
+        print("   . symbols_file = ", symbols_file)
 
     return symbols_file
 
@@ -311,9 +313,10 @@ def get_json_params(json_fn, verbose=False):
     ### Rewritten Input parameters from json file with multiple sections using json package
     ######################
 
-    print("\n... inside rewritten functions.GetParams.get_json_params ...")
-    print("   . json_fn = ", json_fn)
-    print(" ... json file exists: ", os.path.exists(json_fn))
+    if verbose:
+        print("\n... inside rewritten functions.GetParams.get_json_params ...")
+        print("   . json_fn = ", json_fn)
+        print(" ... json file exists: ", os.path.exists(json_fn))
 
     with open(json_fn, 'r') as json_file:
         config = json.load(json_file)
@@ -458,7 +461,7 @@ def get_json_params(json_fn, verbose=False):
     params['stockList'] = valuation_section.get('stockList', 'Naz100')
     params['symbols_file'] = valuation_section.get('symbols_file', '')
 
-    print("   . params loaded successfully...")
+    print("   . params loaded successfully using get_json_params...")
 
     return params
 

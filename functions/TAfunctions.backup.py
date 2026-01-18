@@ -845,7 +845,7 @@ def recentSharpeWithAndWithoutGap(x,numdaysinfit=504,offset_factor=.4):
 
     # calculate number of loops
     sharpeList = []
-    for i in range(1,4):
+    for i in range(1,25):
         if i == 1:
             numdaysStart = numdaysinfit
             numdaysEnd = int(numdaysStart * offset_factor + .5)
@@ -1150,9 +1150,6 @@ def textmessageOutsideTrendChannel(symbols, adjClose, json_fn):
     # temporarily skip this!!!!!!
     #return
 
-    print("\n\n ... inside textmessageOutsideTrendChannel")
-    print(" ... sending text message for held stocks if outside trend channel")
-
     import datetime
     from functions.GetParams import get_json_params, get_holdings, GetEdition
     from functions.CheckMarketOpen import get_MarketOpenOrClosed
@@ -1189,19 +1186,13 @@ def textmessageOutsideTrendChannel(symbols, adjClose, json_fn):
     channelGainsLosses = []
     channelStds = []
     currentNumStdDevs = []
-    # Only compute channel tests for symbols that are actually held.
-    # For large lists (e.g. SP500) this avoids running the expensive
-    # jumpTheChannelTest for every universe symbol when we only need
-    # alerts for holdings.
-    sym_to_idx = {s: idx for idx, s in enumerate(symbols)}
-    unique_holdings = list(dict.fromkeys(holdings_symbols))
-    for symbol in unique_holdings:
-        if symbol == 'CASH':
-            continue
-        i = sym_to_idx.get(symbol)
-        if i is None:
-            continue
-        pctChannel,channelGainLoss,channelStd,numStdDevs = jumpTheChannelTest(adjClose[i,:],
+    for i, symbol in enumerate(symbols):
+        pctChannel,channelGainLoss,channelStd,numStdDevs = jumpTheChannelTest(adjClose[i,:],\
+                                                                              #minperiod=4,\
+                                                                              #maxperiod=12,\
+                                                                              #incperiod=3,\
+                                                                              #numdaysinfit=28,\
+                                                                              #offset=3)
                                                    minperiod=params['minperiod'],
                                                    maxperiod=params['maxperiod'],
                                                    incperiod=params['incperiod'],
@@ -1209,12 +1200,21 @@ def textmessageOutsideTrendChannel(symbols, adjClose, json_fn):
                                                    offset=params['offset'])
         channelGainsLosses.append(channelGainLoss)
         channelStds.append(channelStd)
-        print(" ... performing PctChannelTest: symbol = ",format(symbol,'5s'), "  pctChannel = ", format(pctChannel-1.,'6.1%'))
-        downtrendSymbols.append(symbol)
-        channelPercent.append(format(pctChannel-1.,'6.1%'))
-        channelGainsLossesHoldings.append(format(channelGainLoss,'6.1%'))
-        channelStdsHoldings.append(format(channelStd,'6.1%'))
-        currentNumStdDevs.append(format(numStdDevs,'6.1f'))
+        if symbol in holdings_symbols:
+            #pctChannel = jumpTheChannelTest(adjClose[i,:],minperiod=4,maxperiod=12,incperiod=3,numdaysinfit=28, offset=3)
+            print(" ... performing PctChannelTest: symbol = ",format(symbol,'5s'), "  pctChannel = ", format(pctChannel-1.,'6.1%'))
+            '''
+            if pctChannel < 1.:
+                # send textmessage alert of possible new down-trend
+                downtrendSymbols.append(symbol)
+                channelPercent.append(format(pctChannel-1.,'6.1%'))
+            '''
+            # send textmessage alert of current trend
+            downtrendSymbols.append(symbol)
+            channelPercent.append(format(pctChannel-1.,'6.1%'))
+            channelGainsLossesHoldings.append(format(channelGainLoss,'6.1%'))
+            channelStdsHoldings.append(format(channelStd,'6.1%'))
+            currentNumStdDevs.append(format(numStdDevs,'6.1f'))
 
     print("\n ... downtrending symbols are ", downtrendSymbols, "\n")
 
@@ -1784,8 +1784,6 @@ def sharpeWeightedRank_2D(
         LongPeriod,rankthreshold,riskDownside_min,riskDownside_max,
         rankThresholdPct,stddevThreshold=4.,makeQCPlots=False, verbose=False
 ):
-
-    print("\n\n ... inside sharpeWeightedRank_2D ... ")
 
     # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
     # rankthreshold --     # select this many funds with best recent performance
@@ -2618,32 +2616,26 @@ def sharpeWeightedRank_2D(
         filepath = path_symbolChartsSort_byRankBeginMonth
         with open( filepath, "w" ) as f:
             f.write(pagetext_byRankBeginMonth)
-        print(" ... wrote pagetext_byRankBeginMonth")
 
         filepath = path_symbolChartsSort_byRankToday
         with open( filepath, "w" ) as f:
             f.write(pagetext_byRankToday)
-        print(" ... wrote pagetext_byRankToday")
 
         filepath = path_symbolChartsSort_byRecentGainRank
         with open( filepath, "w" ) as f:
             f.write(pagetext_byRecentGainRank)
-        print(" ... wrote pagetext_byRecentGainRank")
 
         filepath = path_symbolChartsSort_byRecentComboGainRank
         with open( filepath, "w" ) as f:
             f.write(pagetext_byRecentComboGainRank)
-        print(" ... wrote pagetext_byRecentComboGainRank")
 
         filepath = path_symbolChartsSort_byRecentTrendsRatioRank
         with open( filepath, "w" ) as f:
             f.write(pagetext_byRecentTrendRatioRank)
-        print(" ... wrote pagetext_byRecentTrendRatioRank")
 
         filepath = path_symbolChartsSort_byRecentSharpeRatioRank
         with open( filepath, "w" ) as f:
             f.write(pagetext_byRecentSharpeRatioRank)
-        print(" ... wrote pagetext_byRecentSharpeRatioRank")
 
         ########################################################################
         ### save current ranks to params file
@@ -2699,8 +2691,6 @@ def sharpeWeightedRank_2D(
         rankThresholdPct,stddevThreshold=4.,
         is_backtest=True, makeQCPlots=False, verbose=False
 ):
-    
-    print("\n\n ... inside function sharpeWeightedRank_2D ...")
 
     # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
     # rankthreshold --     # select this many funds with best recent performance

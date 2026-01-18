@@ -157,6 +157,25 @@ def makeValuePlot(json_fn):
             verticalalignment='top'
         )
 
+    if params['stockList'] == 'SP500' and params['uptrendSignalMethod'] == "percentileChannels":
+        switch_date = datetime.date(2025,12,12)
+        switch_date = datetime.datetime(
+            switch_date.year, switch_date.month, switch_date.day
+        )
+        switch_value_index = np.argmin(np.abs(sortedDailyDate-switch_date))
+        plt.plot(
+            [switch_date, switch_date],
+            [sortedDailyValue[switch_value_index]//2., sortedDailyValue.max()],
+            'g-', lw=.75
+        )
+        plt.text(
+            switch_date, sortedDailyValue[switch_value_index]//2.,
+            "switch to percentileChannels",
+            rotation=90,
+            horizontalalignment = 'left',
+            verticalalignment='top'
+        )
+
     plt.xlim((date[0],date[-1]+datetime.timedelta(10) ))
     plt.title("pyTAAA Value History Plot ("+edition+" edition)")
     # put text line with most recent date at bottom of plot

@@ -2,6 +2,7 @@ import numpy as np
 import datetime
 
 import datetime
+import pandas as pd
 from numpy import random
 from scipy.stats import rankdata
 
@@ -885,7 +886,8 @@ def arrayFromQuotesForList(symbolsFile, json_fn, beginDate, endDate):
 
     # clean up quotes for missing values and varying starting date
     #x = quote.as_matrix().swapaxes(0,1)
-    quote = quote.convert_objects(convert_numeric=True)   ### test
+    # convert all columns to numeric where possible (replace deprecated convert_objects)
+    quote = quote.apply(pd.to_numeric, errors='coerce')
     x = quote.values.T
     ###print "x = ", x
     date = quote.index

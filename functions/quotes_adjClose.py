@@ -87,8 +87,9 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
     ###from pandas_datareader import get_data_yahoo, get_data_google
     #import la
     ####from functions.get_data_yahoo_fix import get_data_yahoo_fix  # <== that's all it takes :-)
-    from functions.quotes_adjClose_alphavantage import get_ts_data
-    from functions.quotes_adjClose_quandl import get_q_data
+    # from functions.quotes_adjClose_alphavantage import get_ts_data
+    # from functions.quotes_adjClose_quandl import get_q_data
+    import yfinance as yf
     # from functions.quotes
 
     if date1 is None:
@@ -177,16 +178,16 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
 
             ###data = get_data_yahoo(ticker, start = date1, end = date2)[items]
             ####data = get_data_yahoo_fix(ticker, start = date1, end = date2)[items]
-            if (date2 - date1).days <= 100:
-                output_size = 'compact'
-            else:
-                output_size = 'full'
+            # if (date2 - date1).days <= 100:
+            #     output_size = 'compact'
+            # else:
+            #     output_size = 'full'
             #print "   ... ticker = ", ticker
 
             for ii in range(25):
                 try:
-                    dataseries, _ = get_ts_data(ticker, interval="D", outputsize=output_size, adjusted=True, output_format='df')
-                    data = pd.DataFrame({'dates':dataseries.index, 'Adj Close':dataseries['Adj Close'].values})
+                    dataseries = yf.download(ticker, start=date1, end=date2, auto_adjust=True)['Close'].squeeze()
+                    data = pd.DataFrame({'dates':dataseries.index, ticker:dataseries.values})
                     data.set_index('dates', inplace=True)
                     number_days = (date2 - date1).days
                     data = data[-number_days:]
@@ -208,7 +209,7 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
         dates = data.index
         #print " ... got dates from df.index ..."
         #print ' dates = ', dates
-        dates = [d.to_pydatetime() for d in dates]
+        dates = dates.to_pydatetime()
         #print " ... dates reformatted ..."
 
         data.columns = [ticker]
