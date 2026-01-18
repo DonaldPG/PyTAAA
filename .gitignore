@@ -32,3 +32,6 @@ cluster.params
 agentic_prompt.txt
 finviz_*.html
 finviz_delisted_cache.json
+
+# Purgatory folder - code suspected unused, testing for 1 week before deletion
+purgatory/
