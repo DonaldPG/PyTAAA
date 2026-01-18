@@ -378,8 +378,8 @@ def makeTrendDispersionPlot( ):
                     statusline_list = statusline.split(" ")
                     if len( statusline_list ) == 5:
                         backtestDate.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
-                        backtestBHvalue.append( float(statusline_list[2]) )
-                        backtestSystemvalue.append( float(statusline_list[4]) )
+                        backtestBHvalue.append( float(statusline_list[1]) )
+                        backtestSystemvalue.append( float(statusline_list[2]) )
                 except:
                     break
     except:
@@ -756,8 +756,8 @@ def makeDailyChannelOffsetSignal( ):
                     statusline_list = statusline.split(" ")
                     if len( statusline_list ) == 5:
                         backtestDate.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
-                        backtestBHvalue.append( float(statusline_list[2]) )
-                        backtestSystemvalue.append( float(statusline_list[4]) )
+                        backtestBHvalue.append( float(statusline_list[1]) )
+                        backtestSystemvalue.append( float(statusline_list[2]) )
                 except:
                     break
     except:

@@ -52,7 +52,10 @@ def makeValuePlot(json_fn):
                     if len( statusline_list ) >= 4:
                         date.append( datetime.datetime.strptime( statusline_list[1], '%Y-%m-%d') )
                         value.append( float(statusline_list[3]) )
-                except:
+                except Exception as e:
+                    if statusline.strip():  # Only print if line is not empty
+                        print(f" Warning: Error parsing line {i} in PyTAAA_status.params: {e}")
+                        print(f"   Line content: {statusline[:100]}")
                     break
 
             #print "rankingMessage -----"
@@ -227,7 +230,10 @@ def makeUptrendingPlot(json_fn):
                         date.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                         value.append( float(statusline_list[2]) )
                         active.append( float(statusline_list[4]) )
-                except:
+                except Exception as e:
+                    if statusline.strip():
+                        print(f" Warning: Error parsing line {i} in numberUptrendingStocks: {e}")
+                        print(f"   Line content: {statusline[:100]}")
                     break
     except:
         print(" Error: unable to read updates from pyTAAAweb_numberUptrendingStocks_status.params")
@@ -255,7 +261,10 @@ def makeUptrendingPlot(json_fn):
                         dates.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                         medianSharpe.append( float(statusline_list[2]) )
                         signalSharpe.append( float(statusline_list[4]) )
-                except:
+                except Exception as e:
+                    if statusline.strip():
+                        print(f" Warning: Error parsing line {i} in MeanTrendDispersion (file2): {e}")
+                        print(f"   Line content: {statusline[:100]}")
                     break
     except:
         print(" Error: unable to read updates from pyTAAAweb_multiSharpeIndicator_status.params")
@@ -373,7 +382,10 @@ def makeTrendDispersionPlot(json_fn):
                         dateMedians.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                         valueMeans.append( float(statusline_list[2]) )
                         valueMedians.append( float(statusline_list[4]) )
-                except:
+                except Exception as e:
+                    if statusline.strip():
+                        print(f" Warning: Error parsing line {i} in DailyChannelOffsetSignal: {e}")
+                        print(f"   Line content: {statusline[:100]}")
                     break
     except:
         print(" Error: unable to read updates from pyTAAAweb_MeanTrendDispersion_status.params")
@@ -420,7 +432,10 @@ def makeTrendDispersionPlot(json_fn):
                         date.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                         value.append( float(statusline_list[2]) )
                         active.append( float(statusline_list[4]) )
-                except:
+                except Exception as e:
+                    if statusline.strip():
+                        print(f" Warning: Error parsing line {i} in numberUptrendingStocks (2nd): {e}")
+                        print(f"   Line content: {statusline[:100]}")
                     break
     except:
         print(" Error: unable to read updates from pyTAAAweb_numberUptrendingStocks_status.params")
@@ -453,9 +468,13 @@ def makeTrendDispersionPlot(json_fn):
                     statusline_list = statusline.split(" ")
                     if len( statusline_list ) == 5:
                         backtestDate.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
-                        backtestBHvalue.append( float(statusline_list[2]) )
-                        backtestSystemvalue.append( float(statusline_list[4]) )
-                except:
+                        backtestBHvalue.append( float(statusline_list[1]) )
+                        backtestSystemvalue.append( float(statusline_list[2]) )
+                except Exception as e:
+                    if statusline.strip():
+                        print(f" Warning: Error parsing line {i} in backtestPortfolioValue: {e}")
+                        print(f"   Line content: {statusline[:100]}")
+                        print(f"   Split result length: {len(statusline_list)}, content: {statusline_list}")
                     break
     except:
         print(" Error: unable to read updates from pyTAAAweb_backtestPortfolioValue.params")
@@ -875,9 +894,13 @@ def makeDailyChannelOffsetSignal(json_fn):
                     statusline_list = statusline.split(" ")
                     if len( statusline_list ) == 5:
                         backtestDate.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
-                        backtestBHvalue.append( float(statusline_list[2]) )
-                        backtestSystemvalue.append( float(statusline_list[4]) )
-                except:
+                        backtestBHvalue.append( float(statusline_list[1]) )
+                        backtestSystemvalue.append( float(statusline_list[2]) )
+                except Exception as e:
+                    if statusline.strip():
+                        print(f" Warning: Error parsing line {i} in backtestPortfolioValue (2nd plot): {e}")
+                        print(f"   Line content: {statusline[:100]}")
+                        print(f"   Split result length: {len(statusline_list)}, content: {statusline_list}")
                     break
     except:
         print(" Error: unable to read updates from pyTAAAweb_backtestPortfolioValue.params")

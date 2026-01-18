@@ -1620,7 +1620,47 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
         randomtrials = 51
         randomtrials = 15
     elif edition == 'MacOS':
-        randomtrials = 17
+        randomtrials = 13
+
+    ########################################################################
+    ### compute count of new highs and lows over various time periods
+    ### - do this once outside the loop over monte carlo trials -- used later
+    ### - don't create a plot
+    ########################################################################
+
+    from functions.GetParams import get_json_params
+    from functions.CountNewHighsLows import newHighsAndLows
+
+    params = get_json_params(json_fn)
+
+    if params['stockList'] == 'Naz100':
+        newHighs_2D, newLows_2D, mean_TradedValue = newHighsAndLows(
+            json_fn, num_days_highlow=(73,293),
+            num_days_cumu=(50,159),
+            HighLowRatio=(1.654,2.019),
+            HighPctile=(8.499,8.952),
+            HGamma=(1.,1.),
+            LGamma=(1.176,1.223),
+            makeQCPlots=False
+        )
+
+    elif params['stockList'] == 'SP500':
+        newHighs_2D, newLows_2D, mean_TradedValue = newHighsAndLows(
+            json_fn, num_days_highlow=(73,146),
+            num_days_cumu=(76,108),
+            HighLowRatio=(2.293,1.573),
+            HighPctile=(12.197,11.534),
+            HGamma=(1.157,.568),
+            LGamma=(.667,1.697),
+            makeQCPlots=False
+        )
+
+    sumNewHighs = np.sum(newHighs_2D, axis=0)
+    sumNewLows = np.sum(newLows_2D, axis=0)
+    # If multiple parameter sets were used, sum them to get 1D array
+    if sumNewHighs.ndim > 1:
+        sumNewHighs = np.sum(sumNewHighs, axis=-1)
+        sumNewLows = np.sum(sumNewLows, axis=-1)
 
     ##
     ##  Import list of symbols to process.
@@ -3056,7 +3096,12 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
             filepath = os.path.join(p_store, "pyTAAAweb_backtestPortfolioValue.params" )
             textmessage = ""
             for idate in range(len(BuyHoldPortfolioValue)):
-                textmessage = textmessage + str(datearray[idate])+"  "+str(BuyHoldPortfolioValue[idate])+"  "+str(np.average(monthvalue[:,idate]))+"\n"
+                textmessage = textmessage + \
+                            str(datearray[idate]) + " " + \
+                            str(BuyHoldPortfolioValue[idate]) + " " + \
+                            str(np.average(monthvalue[:,idate]))  + " " + \
+                            f"{sumNewHighs[idate]:.1f}" + " " + \
+                            f"{sumNewLows[idate]:.1f}" + "\n"
             with open( filepath, "w" ) as f:
                 f.write(textmessage)
         except:

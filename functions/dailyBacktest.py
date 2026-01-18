@@ -13,6 +13,7 @@ from math import sqrt
 from functions.quotes_for_list_adjClose import *
 from functions.TAfunctions import *
 from functions.GetParams import get_performance_store
+from functions.CountNewHighsLows import newHighsAndLows
 # from functions.UpdateSymbols_inHDF5 import UpdateHDF5
 
 def computeDailyBacktest(
@@ -345,13 +346,51 @@ def computeDailyBacktest(
         json_dir = os.path.split(json_fn)
         p_store = get_performance_store(json_fn)
         filepath = os.path.join(p_store, "pyTAAAweb_backtestPortfolioValue.params" )
+        
+        # Compute new highs and lows for each date
+        print("\n ... Computing new highs and lows for backtest output...")
+        newHighs_2D, newLows_2D, _ = newHighsAndLows(
+            json_fn, num_days_highlow=(73,293),
+            num_days_cumu=(50,159),
+            HighLowRatio=(1.654,2.019),
+            HighPctile=(8.499,8.952),
+            HGamma=(1.,1.),
+            LGamma=(1.176,1.223),
+            makeQCPlots=False,
+            outputStats=False
+        )
+        # Sum across stocks (axis=0) and across parameter sets (axis=1 if multiple)
+        sumNewHighs = np.sum(newHighs_2D, axis=0)
+        sumNewLows = np.sum(newLows_2D, axis=0)
+        # If multiple parameter sets were used, sum them to get 1D array
+        if sumNewHighs.ndim > 1:
+            sumNewHighs = np.sum(sumNewHighs, axis=-1)
+            sumNewLows = np.sum(sumNewLows, axis=-1)
+        
+        textmessage = ""
+        filepath = os.path.join(p_store, "pyTAAAweb_backtestPortfolioValue.params" )
+        textmessage = ""
+        for idate in range(len(BuyHoldPortfolioValue)):
+            textmessage = textmessage + \
+                        str(datearray[idate]) + " " + \
+                        str(BuyHoldPortfolioValue[idate]) + " " + \
+                        str(np.average(monthvalue[:,idate]))  + " " + \
+                        f"{sumNewHighs[idate]:.1f}" + " " + \
+                        f"{sumNewLows[idate]:.1f}" + "\n"
+        with open( filepath, "w" ) as f:
+            f.write(textmessage)
+        # for idate in range(len(BuyHoldPortfolioValue)):
+        #     textmessage = textmessage + str(datearray[idate])+"  "+str(BuyHoldPortfolioValue[idate])+"  "+str(np.average(monthvalue[:,idate]))+"  "+str(int(sumNewHighs[idate]))+"  "+str(int(sumNewLows[idate]))+"\n"
+        # with open( filepath, "w" ) as f:
+        #     f.write(textmessage)
+    except Exception as e:
+        print(f"\n ... Error computing new highs/lows: {e}")
+        print(" ... Writing 3-column output as fallback...")
         textmessage = ""
         for idate in range(len(BuyHoldPortfolioValue)):
             textmessage = textmessage + str(datearray[idate])+"  "+str(BuyHoldPortfolioValue[idate])+"  "+str(np.average(monthvalue[:,idate]))+"\n"
         with open( filepath, "w" ) as f:
             f.write(textmessage)
-    except:
-        pass
 
 
     ########################################################################
