@@ -29,66 +29,89 @@
 
 ---
 
-## Phase 1: Baseline Establishment
+## Phase 1: Baseline Establishment ✅ COMPLETED
 
 ### 1.1 Run Current Version and Capture Baseline
 **Goal:** Establish reference outputs for comparison
 
 **Steps:**
-- [ ] Create baseline directory: `.github/refactoring_baseline/`
-- [ ] Run current recommend_model.py with test JSON:
+- [x] Create baseline directory: `.github/refactoring_baseline/`
+- [x] Run current recommend_model.py with test JSON:
   ```bash
   cd /Users/donaldpg/PyProjects/worktree2/PyTAAA
   uv run python recommend_model.py \
     --json /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pytaaa_naz100_sp500_abacus.json \
     > .github/refactoring_baseline/console_output.txt 2>&1
   ```
-- [ ] Copy outputs to baseline directory:
+- [x] Copy outputs to baseline directory:
   - `recommendation_plot.png` → `.github/refactoring_baseline/recommendation_plot_baseline.png`
   - Console output (already captured above)
-  - Log file if generated
+  - Log file if generated (none found)
   - Model-Switching Portfolio dates and values (heavy black line in upper subplot)
-- [ ] Document runtime parameters in baseline:
-  - Lookback periods used
-  - Date tested
-  - Models included
-  - Data format (backtested)
+- [x] Document runtime parameters in baseline:
+  - Lookback periods used: [55, 157, 174]
+  - Dates tested: 2026-01-19, 2026-01-01
+  - Models included: 6 (cash, naz100_pine, naz100_hma, naz100_pi, sp500_hma, sp500_pine)
+  - Data format: backtested
 
 **Validation:**
-- [ ] Baseline files exist and are non-empty
-- [ ] recommendation_plot.png opens and displays correctly
-- [ ] Console output shows expected recommendations
+- [x] Baseline files exist and are non-empty
+- [x] recommendation_plot.png opens and displays correctly
+- [x] Console output shows expected recommendations
+
+**Completed:** January 19, 2026
+
+**Files Created:**
+- `console_output.txt` (5.4 KB) - Full console output
+- `recommendation_plot_baseline.png` (692 KB) - Reference plot image
+- `model_switching_portfolio_baseline.csv` (252 KB) - Portfolio data (8,835 values, 1991-2026)
+- `baseline_summary.md` (4.2 KB) - Complete documentation
 
 ---
 
-## Phase 2: Code Analysis and Architecture Design
+## Phase 2: Code Analysis and Architecture Design ✅ COMPLETED
 
 ### 2.1 Analyze Current Code Structure
 **Map existing functionality:**
 
-**Current `recommend_model.py` contains:**
-1. **Utility Functions** (Lines 26-135)
-   - `get_first_weekday_of_month()` - Date helper
-   - `get_recommendation_dates()` - Date processing
-   - `load_best_params_from_saved_state()` - State management
-   - `get_recommendation_lookbacks()` - Parameter resolution
+**Current `recommend_model.py` contains:** (671 lines total, verified January 19, 2026)
 
-2. **Recommendation Engine** (Lines 138-285)
-   - `generate_recommendation_output()` - Core recommendation logic
+1. **Utility Functions** (Lines 27-139)
+   - `get_first_weekday_of_month()` (line 27) - Date helper
+   - `get_recommendation_dates()` (line 49) - Date processing  
+   - `load_best_params_from_saved_state()` (line 77) - State management
+   - `get_recommendation_lookbacks()` (line 108) - Parameter resolution
+
+2. **Recommendation Engine** (Lines 141-279)
+   - `generate_recommendation_output()` (line 141) - Core recommendation logic
    - Model selection and ranking
    - Normalized score calculation
+   - Builds plot text
 
-3. **Display Functions** (Lines 288-350)
-   - `display_parameters_info()` - Parameter summary output
+3. **Display Functions** (Lines 281-344)
+   - `display_parameters_info()` (line 281) - Parameter summary output
+   - Console formatting and effectiveness analysis
 
-4. **Main CLI Handler** (Lines 353-621)
+4. **Main CLI Handler** (Lines 346-671)
+   - Click decorators (lines 346-351)
+   - `main()` function (line 353)
    - Configuration loading
-   - Model path resolution
+   - Model path resolution and validation
    - MonteCarloBacktest initialization
-   - Plot generation
+   - Normalization value application
+   - State file loading
+   - Recommendation generation orchestration
+   - Plot generation with custom text
    - Error handling
 
-### 2.2 Design New Module Structure
+**Code Metrics:**
+- Total lines: 671
+- Functions: 6 (excluding main)
+- Main function: 318 lines (47% of file)
+- Imports: 18 lines
+- Heavy reliance on MonteCarloBacktest class
+
+### 2.2 Design New Module Structure ✅ REVIEWED
 
 **Target Architecture:**
 
@@ -132,25 +155,43 @@ functions/
 - CLI argument parsing (click)
 - High-level orchestration
 - Calls functions from abacus_recommend.py
-- Minimal business logic (< 150 lines)
+- Minimal business logic (target: < 200 lines)
+
+**Completed:** January 19, 2026
+
+**Architecture Review Notes:**
+- Separation of concerns: Data loading vs. Recommendation vs. Display
+- Reusable components for future scripts
+- Maintains dependency on existing MonteCarloBacktest for plotting
+- Date helpers isolated for easy testing
+- Portfolio generation can be used standalone
 
 ---
 
 ## Phase 3: Incremental Refactoring
 
-### 3.1 Extract Date Utilities
+### 3.1 Extract Date Utilities ✅ COMPLETED
 **Target Module:** `functions/abacus_recommend.py`
 
 **Steps:**
-- [ ] Create `functions/abacus_recommend.py`
-- [ ] Add module docstring and imports
-- [ ] Create `DateHelper` class:
-  - [ ] Move `get_first_weekday_of_month()` → `DateHelper.get_first_weekday()`
-  - [ ] Move `get_recommendation_dates()` → `DateHelper.get_recommendation_dates()`
-  - [ ] Add `find_closest_trading_date()` helper
-- [ ] Add unit tests in `tests/test_abacus_recommend.py`
-- [ ] Update `recommend_model.py` imports
-- [ ] Run and verify: output matches baseline
+- [x] Create `functions/abacus_recommend.py`
+- [x] Add module docstring and imports
+- [x] Create `DateHelper` class:
+  - [x] Move `get_first_weekday_of_month()` → `DateHelper.get_first_weekday_of_month()`
+  - [x] Move `get_recommendation_dates()` → `DateHelper.get_recommendation_dates()`
+  - [x] Add `find_closest_trading_date()` helper
+- [x] Add unit tests in `tests/test_abacus_recommend.py` (13 tests, all passing)
+- [x] Update `recommend_model.py` imports
+- [x] Run and verify: output matches baseline (identical console output, plot generated)
+
+**Completed:** January 19, 2026
+
+**Results:**
+- Created `functions/abacus_recommend.py` (93 lines)
+- Created `tests/test_abacus_recommend.py` (137 lines, 13 tests)
+- Removed 57 lines from `recommend_model.py` (671 → 614 lines)
+- Console output: byte-identical to baseline
+- All unit tests passing
 
 **Testing:**
 ```python
@@ -164,8 +205,36 @@ def test_get_first_weekday():
     assert result == date(2026, 1, 1)  # First weekday of Jan 2026
 ```
 
-### 3.2 Extract Recommendation Engine
+### 3.2 Extract Recommendation Engine ✅ COMPLETED
 **Target Module:** `functions/abacus_recommend.py`
+
+**Status:** Completed January 19, 2026, 23:15 PST
+
+**Changes Made:**
+1. Created `ModelRecommender` class in `functions/abacus_recommend.py`
+   - `__init__(monte_carlo, lookbacks)` - Initialize with backtest data
+   - `get_recommendation_for_date(target_date)` - Get best model for a date
+   - `rank_models_at_date(date_idx, used_lookbacks)` - Rank all models by score
+   - `generate_recommendation_text(dates, target_date, first_weekday)` - Generate plot text
+   - `display_recommendations(dates, target_date, first_weekday)` - Console + plot text
+
+2. Updated `recommend_model.py`:
+   - Removed `generate_recommendation_output()` function (140+ lines)
+   - Removed duplicate plot text generation logic (75+ lines)
+   - Added `ModelRecommender` import
+   - Replaced function calls with ModelRecommender instantiation and method calls
+   - Reduced from 614 lines to 411 lines (203 lines removed)
+
+3. Test Results:
+   - ✅ Console output: `diff` showed **zero differences** vs baseline
+   - ✅ Plot generated: `recommendation_plot.png` (696KB)
+   - ✅ All functionality preserved with identical output
+
+**Line Count:**
+- Before Phase 3.2: 614 lines (recommend_model.py)
+- After Phase 3.2: 411 lines (recommend_model.py) + 308 lines (abacus_recommend.py)
+- Removed: 203 lines of duplicated logic
+- Total reduction from original: 260 lines (671 → 411)
 
 **Steps:**
 - [ ] Create `ModelRecommender` class in `abacus_recommend.py`
@@ -493,10 +562,10 @@ uv run python generate_abacus_backtest.py \
 
 ## Checklist Summary
 
-### Pre-Refactoring
-- [ ] Baseline outputs captured
-- [ ] Architecture designed and reviewed
-- [ ] Test strategy defined
+### Pre-Refactoring ✅ COMPLETED
+- [x] Baseline outputs captured (January 19, 2026)
+- [x] Architecture designed and reviewed (January 19, 2026)
+- [x] Test strategy defined (documented in Phase 4)
 
 ### During Refactoring
 - [ ] Each phase validated before proceeding
