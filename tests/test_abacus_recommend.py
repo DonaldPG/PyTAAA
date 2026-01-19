@@ -3,8 +3,13 @@
 """Unit tests for abacus_recommend module."""
 
 import pytest
+import tempfile
+import pickle
 from datetime import date
-from functions.abacus_recommend import DateHelper
+from unittest.mock import Mock, MagicMock
+from functions.abacus_recommend import (
+    DateHelper, ConfigurationHelper, RecommendationDisplay
+)
 
 
 class TestDateHelper:
@@ -114,6 +119,126 @@ class TestDateHelper:
         
         assert closest == date(2026, 1, 15)
         assert diff == 5
+
+
+class TestConfigurationHelper:
+    """Smoke tests for ConfigurationHelper class."""
+    
+    def test_get_recommendation_lookbacks_from_config(self):
+        """Test getting lookbacks from config defaults."""
+        config = {
+            'recommendation_mode': {
+                'default_lookbacks': [50, 150, 250]
+            }
+        }
+        
+        lookbacks = ConfigurationHelper.get_recommendation_lookbacks(None, config)
+        
+        assert lookbacks == [50, 150, 250]
+    
+    def test_get_recommendation_lookbacks_from_string(self):
+        """Test parsing lookbacks from comma-separated string."""
+        config = {'recommendation_mode': {'default_lookbacks': [50]}}
+        
+        lookbacks = ConfigurationHelper.get_recommendation_lookbacks("25,100,200", config)
+        
+        assert lookbacks == [25, 100, 200]
+    
+    def test_load_best_lookbacks_from_nonexistent_state(self):
+        """Test loading from missing state file returns None."""
+        result = ConfigurationHelper.load_best_lookbacks_from_state("nonexistent_file.pkl")
+        
+        assert result is None
+    
+    def test_load_best_lookbacks_from_valid_state(self):
+        """Test loading lookbacks from valid state file."""
+        # Create temporary state file
+        state = {
+            'best_params': {
+                'lookbacks': [55, 157, 174]
+            }
+        }
+        
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.pkl', delete=False) as f:
+            pickle.dump(state, f)
+            temp_file = f.name
+        
+        try:
+            result = ConfigurationHelper.load_best_lookbacks_from_state(temp_file)
+            assert result == [55, 157, 174]
+        finally:
+            import os
+            os.unlink(temp_file)
+    
+    def test_ensure_config_defaults_adds_missing_sections(self):
+        """Test that ensure_config_defaults adds missing sections."""
+        config = {}
+        
+        ConfigurationHelper.ensure_config_defaults(config)
+        
+        assert 'model_selection' in config
+        assert 'performance_metrics' in config['model_selection']
+        assert 'metric_blending' in config
+        assert 'recommendation_mode' in config
+    
+    def test_ensure_config_defaults_preserves_existing(self):
+        """Test that existing config values are preserved."""
+        config = {
+            'model_selection': {
+                'performance_metrics': {
+                    'sharpe_ratio_weight': 2.0,
+                    'sortino_ratio_weight': 1.5,
+                    'max_drawdown_weight': 1.0,
+                    'avg_drawdown_weight': 1.0,
+                    'annualized_return_weight': 1.0
+                }
+            }
+        }
+        
+        ConfigurationHelper.ensure_config_defaults(config)
+        
+        assert config['model_selection']['performance_metrics']['sharpe_ratio_weight'] == 2.0
+
+
+class TestRecommendationDisplay:
+    """Smoke tests for RecommendationDisplay class."""
+    
+    def test_instantiation(self):
+        """Test that RecommendationDisplay can be instantiated."""
+        mock_mc = Mock()
+        mock_mc.CENTRAL_VALUES = {'sharpe_ratio': 1.0}
+        mock_mc.STD_VALUES = {'sharpe_ratio': 0.5}
+        
+        display = RecommendationDisplay(mock_mc)
+        
+        assert display.monte_carlo == mock_mc
+    
+    def test_display_parameters_summary_runs_without_error(self, capsys):
+        """Test that display_parameters_summary executes without errors."""
+        import numpy as np
+        
+        mock_mc = Mock()
+        mock_mc.CENTRAL_VALUES = {
+            'sharpe_ratio': 1.0,
+            'annual_return': 0.10,
+            'max_drawdown': -0.15
+        }
+        mock_mc.STD_VALUES = {
+            'sharpe_ratio': 0.5,
+            'annual_return': 0.05,
+            'max_drawdown': 0.10
+        }
+        
+        display = RecommendationDisplay(mock_mc)
+        portfolio = np.array([10000.0, 10500.0, 11000.0] + [11000.0] * 249)  # 252 days
+        
+        # Should not raise exception
+        display.display_parameters_summary([50, 150], portfolio)
+        
+        captured = capsys.readouterr()
+        assert "PARAMETERS SUMMARY" in captured.out
+        assert "Lookback Periods" in captured.out
+
 
 
 if __name__ == "__main__":
