@@ -137,8 +137,7 @@
             "naz100_pine": "{base_folder}/naz100_pine/data_store/{data_file}",
             "naz100_hma": "{base_folder}/naz100_hma/data_store/{data_file}",
             "naz100_pi": "{base_folder}/naz100_pi/data_store/{data_file}",
-            "sp500_hma": "{base_folder}/sp500_hma/data_store/{data_file}",
-            "sp500_pine": "{base_folder}/sp500_pine/data_store/{data_file}"
+            "sp500_hma": "{base_folder}/sp500_hma/data_store/{data_file}"
         }
     },
     "web_output_dir": "/Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web"
