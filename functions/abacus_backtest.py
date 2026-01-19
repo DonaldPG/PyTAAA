@@ -161,7 +161,18 @@ def write_abacus_backtest_portfolio_values(
         print(f"Using lookback periods: {lookbacks}")
         
         # Initialize Monte Carlo system
-        from functions.MonteCarloBacktest import MonteCarloBacktest
+        # Note: Import MonteCarloBacktest with care - numba initialization can conflict
+        # with custom print functions in __main__. Temporarily restore original print.
+        import builtins
+        original_print = builtins.print
+        try:
+            # Restore original print during import to avoid numba conflicts
+            if hasattr(builtins, '__original_print__'):
+                builtins.print = builtins.__original_print__
+            from functions.MonteCarloBacktest import MonteCarloBacktest
+        finally:
+            # Restore whatever print was being used
+            builtins.print = original_print
         
         # Get data format from config
         monte_carlo_config = config.get('monte_carlo', {})
