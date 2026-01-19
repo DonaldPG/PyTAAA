@@ -19,79 +19,14 @@ import logging
 
 from functions.MonteCarloBacktest import MonteCarloBacktest
 from functions.logger_config import get_logger
-from functions.abacus_recommend import DateHelper, ModelRecommender, RecommendationDisplay
+from functions.abacus_recommend import (
+    DateHelper, ModelRecommender, RecommendationDisplay, 
+    ConfigurationHelper, PlotGenerator
+)
 from functions.abacus_backtest import BacktestDataLoader
 
 # Get module-specific logger
 logger = get_logger(__name__, log_file='recommend_model.log')
-
-
-def load_best_params_from_saved_state() -> Optional[List[int]]:
-    """Load best parameters from saved Monte Carlo state.
-    
-    Returns:
-        List of lookback periods from saved state, or None if unavailable
-    """
-    state_file = "monte_carlo_state.pkl"
-    if not os.path.exists(state_file):
-        logger.warning(f"No saved state file found: {state_file}")
-        return None
-    
-    try:
-        with open(state_file, 'rb') as f:
-            state = pickle.load(f)
-        
-        # Extract best lookbacks from saved state
-        best_params = state.get('best_params', {})
-        lookbacks = best_params.get('lookbacks', None)
-        
-        if lookbacks and isinstance(lookbacks, list):
-            logger.info(f"Loaded best lookbacks from saved state: {sorted(lookbacks)}")
-            return sorted(lookbacks)
-        else:
-            logger.warning("No valid lookbacks found in saved state")
-            return None
-            
-    except Exception as e:
-        logger.error(f"Failed to load saved state: {str(e)}")
-        return None
-
-
-def get_recommendation_lookbacks(lookbacks_arg: Optional[str], config: Dict[str, Any]) -> List[int]:
-    """Get lookbacks from user input, saved state, or config defaults.
-    
-    Args:
-        lookbacks_arg: User-provided lookback argument
-        config: Configuration dictionary
-        
-    Returns:
-        List of lookback periods to use
-    """
-    if lookbacks_arg == "use-saved":
-        # Try to load from monte_carlo_state.pkl
-        saved_lookbacks = load_best_params_from_saved_state()
-        if saved_lookbacks:
-            return saved_lookbacks
-        else:
-            print("Warning: Could not load saved parameters, using config defaults")
-            return config['recommendation_mode']['default_lookbacks']
-            
-    elif lookbacks_arg:
-        # Parse user-provided lookbacks like "25,50,100"
-        try:
-            lookbacks = [int(x.strip()) for x in lookbacks_arg.split(',')]
-            if not lookbacks:
-                raise ValueError("Empty lookbacks list")
-            return sorted(lookbacks)
-        except ValueError as e:
-            raise click.BadParameter(f"Invalid lookbacks format: {e}")
-    else:
-        # Use defaults from JSON config
-        return config['recommendation_mode']['default_lookbacks']
-
-
-# Removed: generate_recommendation_output() - replaced with ModelRecommender class
-# Removed: display_parameters_info() - replaced with RecommendationDisplay class
 
 
 @click.command()
@@ -133,56 +68,14 @@ def main(date: Optional[str], lookbacks: Optional[str], json_config_path: Option
         with open(config_path, 'r') as f:
             config = json.load(f)
         
-        # Ensure model_selection section exists and provide sensible defaults
-        if 'model_selection' not in config:
-            config['model_selection'] = {}
-
-        # Ensure performance_metrics exists; if missing, fall back to defaults
-        if 'performance_metrics' not in config['model_selection']:
-            logger.warning("Missing 'performance_metrics' in JSON; using defaults")
-            config['model_selection']['performance_metrics'] = {
-                'sharpe_ratio_weight': 1.0,
-                'sortino_ratio_weight': 1.0,
-                'max_drawdown_weight': 1.0,
-                'avg_drawdown_weight': 1.0,
-                'annualized_return_weight': 1.0
-            }
-
-        # Validate required performance metric weights (after defaults applied)
-        required_weights = [
-            'sharpe_ratio_weight',
-            'sortino_ratio_weight',
-            'max_drawdown_weight',
-            'avg_drawdown_weight',
-            'annualized_return_weight'
-        ]
-        performance_metrics = config['model_selection']['performance_metrics']
-        missing_weights = [w for w in required_weights if w not in performance_metrics]
-        if missing_weights:
-            raise ValueError(f"Missing required performance metric weights in JSON configuration: {', '.join(missing_weights)}")
-
-        # Ensure metric_blending section exists; if missing, provide defaults
-        if 'metric_blending' not in config:
-            logger.warning("Missing 'metric_blending' in JSON; using defaults")
-            config['metric_blending'] = {
-                'enabled': False,
-                'full_period_weight': 1.0,
-                'focus_period_weight': 0.0
-            }
-        metric_blending = config['metric_blending']
-        
-        # Ensure recommendation_mode section exists
-        if 'recommendation_mode' not in config:
-            config['recommendation_mode'] = {
-                'default_lookbacks': [50, 150, 250],
-                'output_format': 'both',
-                'generate_plot': True,
-                'show_model_ranks': True
-            }
+        # Ensure config has required sections with defaults
+        ConfigurationHelper.ensure_config_defaults(config)
         
         # Get recommendation parameters
         dates, target_date, first_weekday = DateHelper.get_recommendation_dates(date)
-        recommendation_lookbacks = get_recommendation_lookbacks(lookbacks, config)
+        recommendation_lookbacks = ConfigurationHelper.get_recommendation_lookbacks(
+            lookbacks, config
+        )
         
         print(f"Target date: {target_date.strftime('%Y-%m-%d')}")
         if first_weekday and first_weekday != target_date:
@@ -241,48 +134,19 @@ def main(date: Optional[str], lookbacks: Optional[str], json_config_path: Option
         if config['recommendation_mode'].get('generate_plot', True):
             print(f"\nGenerating recommendation plot...")
             
-            # Determine output path - use JSON web_output_dir if available
+            # Determine output path
             if web_output_dir:
                 os.makedirs(web_output_dir, exist_ok=True)
                 output_path = os.path.join(web_output_dir, "recommendation_plot.png")
-                print(f"Saving plot to: {output_path}")
             else:
                 output_path = "recommendation_plot.png"
-                print(f"Saving plot to: {output_path}")
+            print(f"Saving plot to: {output_path}")
             
-            # For recommendation mode, create a plot using existing portfolio data
-            try:
-                # Use the best performing model or cash as baseline for plotting
-                if monte_carlo.portfolio_histories:
-                    # Calculate model-switching portfolio using recommendation lookbacks
-                    model_switching_portfolio = monte_carlo._calculate_model_switching_portfolio(recommendation_lookbacks)
-                    sample_metrics = monte_carlo.compute_performance_metrics(model_switching_portfolio)
-                    
-                    # Set best_params for plotting if not already set
-                    if not hasattr(monte_carlo, 'best_params') or not monte_carlo.best_params:
-                        monte_carlo.best_params = {'lookbacks': recommendation_lookbacks}
-                    
-                    # Initialize best_model_selections for plotting
-                    if not hasattr(monte_carlo, 'best_model_selections'):
-                        monte_carlo.best_model_selections = {}
-                    
-                    # Generate custom text for recommendation plot using ModelRecommender
-                    recommender = ModelRecommender(monte_carlo, recommendation_lookbacks)
-                    recommendation_text = recommender.generate_recommendation_text(
-                        dates, target_date, first_weekday
-                    )
-                    
-                    monte_carlo.create_monte_carlo_plot(
-                        model_switching_portfolio,
-                        sample_metrics, 
-                        output_path,
-                        custom_text=recommendation_text
-                    )
-                else:
-                    print("No portfolio data available for plotting")
-            except Exception as e:
-                logger.warning(f"Could not generate plot: {str(e)}")
-                print(f"Plot generation skipped: {str(e)}")
+            # Generate plot
+            plot_gen = PlotGenerator(monte_carlo, config)
+            plot_gen.generate_recommendation_plot(
+                recommendation_lookbacks, dates, target_date, first_weekday, output_path
+            )
         
         logger.info("Model recommendation generation completed successfully")
         print("Model recommendation generation completed successfully")
