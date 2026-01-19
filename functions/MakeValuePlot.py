@@ -52,7 +52,10 @@ def makeValuePlot(json_fn):
                     if len( statusline_list ) >= 4:
                         date.append( datetime.datetime.strptime( statusline_list[1], '%Y-%m-%d') )
                         value.append( float(statusline_list[3]) )
-                except:
+                except Exception as e:
+                    if statusline.strip():  # Only print if line is not empty
+                        print(f" Warning: Error parsing line {i} in PyTAAA_status.params: {e}")
+                        print(f"   Line content: {statusline[:100]}")
                     break
 
             #print "rankingMessage -----"
@@ -157,25 +160,23 @@ def makeValuePlot(json_fn):
             verticalalignment='top'
         )
 
-    #############
-    # Add abacus switch annotation if output folder includes 'abacus'
-    #############
-    if "abacus" in webpage_dir.lower():
-        abacus_switch_date = datetime.datetime(2025, 8, 1)
-        abacus_value_index = np.argmin(np.abs(sortedDailyDate-abacus_switch_date))
+    if params['stockList'] == 'SP500' and params['uptrendSignalMethod'] == "percentileChannels":
+        switch_date = datetime.date(2025,12,12)
+        switch_date = datetime.datetime(
+            switch_date.year, switch_date.month, switch_date.day
+        )
+        switch_value_index = np.argmin(np.abs(sortedDailyDate-switch_date))
         plt.plot(
-            [abacus_switch_date, abacus_switch_date],
-            [sortedDailyValue[abacus_value_index]//2., sortedDailyValue.max()],
-            'g--', lw=1.0
+            [switch_date, switch_date],
+            [sortedDailyValue[switch_value_index]//2., sortedDailyValue.max()],
+            'g-', lw=.75
         )
         plt.text(
-            abacus_switch_date, sortedDailyValue[abacus_value_index]//2.,
-            "switch to abacus switching",
+            switch_date, sortedDailyValue[switch_value_index]//2.,
+            "switch to percentileChannels",
             rotation=90,
             horizontalalignment = 'left',
-            verticalalignment='top',
-            color='green',
-            fontsize=9
+            verticalalignment='top'
         )
 
     plt.xlim((date[0],date[-1]+datetime.timedelta(10) ))
@@ -212,35 +213,8 @@ def makeUptrendingPlot(json_fn):
     json_folder = os.path.split(json_fn)[0]
     p_store = get_performance_store(json_fn)
     webpage_dir = get_webpage_store(json_fn)
-    
-    # Debug: Print the directories being used
-    print(f"\n=== makeUptrendingPlot Debug Info ===")
-    print(f"json_fn: {json_fn}")
-    print(f"json_folder: {json_folder}")
-    print(f"p_store (performance_store): {p_store}")
-    print(f"webpage_dir: {webpage_dir}")
-    
     file2path = os.path.join(webpage_dir, "pyTAAAweb_numberUptrendingStocks_status.params" )
-    print(f"Looking for file at: {file2path}")
-    print(f"File exists: {os.path.exists(file2path)}")
     
-    if os.path.exists(file2path):
-        # Check file size and content
-        file_size = os.path.getsize(file2path)
-        print(f"File size: {file_size} bytes")
-        
-        # Read first few lines to check format
-        try:
-            with open(file2path, "r") as f:
-                first_lines = [f.readline() for _ in range(min(5, sum(1 for _ in open(file2path))))]
-            print(f"First {len(first_lines)} lines of file:")
-            for i, line in enumerate(first_lines, 1):
-                print(f"  Line {i}: {line.strip()[:100]}")  # First 100 chars
-        except Exception as e:
-            print(f"ERROR reading file for debug: {e}")
-    
-    print("=" * 40 + "\n")
-
     date = []
     value = []
     active = []
@@ -257,7 +231,10 @@ def makeUptrendingPlot(json_fn):
                         date.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                         value.append( float(statusline_list[2]) )
                         active.append( float(statusline_list[4]) )
-                except:
+                except Exception as e:
+                    if statusline.strip():
+                        print(f" Warning: Error parsing line {i} in numberUptrendingStocks (2nd): {e}")
+                        print(f"   Line content: {statusline[:100]}")
                     break
     except:
         print(" Error: unable to read updates from pyTAAAweb_numberUptrendingStocks_status.params")
@@ -285,7 +262,10 @@ def makeUptrendingPlot(json_fn):
                         dates.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                         medianSharpe.append( float(statusline_list[2]) )
                         signalSharpe.append( float(statusline_list[4]) )
-                except:
+                except Exception as e:
+                    if statusline.strip():
+                        print(f" Warning: Error parsing line {i} in MeanTrendDispersion (file2): {e}")
+                        print(f"   Line content: {statusline[:100]}")
                     break
     except:
         print(" Error: unable to read updates from pyTAAAweb_multiSharpeIndicator_status.params")
@@ -344,22 +324,26 @@ def makeNewHighsAndLowsPlot(json_fn):
     params = get_json_params(json_fn)
 
     if params['stockList'] == 'Naz100':
-        _, _, _ = newHighsAndLows(json_fn, num_days_highlow=(73,293),\
-                                num_days_cumu=(50,159),\
-                                HighLowRatio=(1.654,2.019),\
-                                HighPctile=(8.499,8.952),\
-                                HGamma=(1.,1.),\
-                                LGamma=(1.176,1.223),\
-                                makeQCPlots=True)
+        _, _, _ = newHighsAndLows(
+            json_fn, num_days_highlow=(73,293),
+            num_days_cumu=(50,159),
+            HighLowRatio=(1.654,2.019),
+            HighPctile=(8.499,8.952),
+            HGamma=(1.,1.),
+            LGamma=(1.176,1.223),
+            makeQCPlots=True
+        )
 
     elif params['stockList'] == 'SP500':
-        _, _, _ = newHighsAndLows(json_fn, num_days_highlow=(73,146),\
-                                num_days_cumu=(76,108),\
-                                HighLowRatio=(2.293,1.573),\
-                                HighPctile=(12.197,11.534),\
-                                HGamma=(1.157,.568),\
-                                LGamma=(.667,1.697),\
-                                makeQCPlots=True)
+        _, _, _ = newHighsAndLows(
+            json_fn, num_days_highlow=(73,146),
+            num_days_cumu=(76,108),
+            HighLowRatio=(2.293,1.573),
+            HighPctile=(12.197,11.534),
+            HGamma=(1.157,.568),
+            LGamma=(.667,1.697),
+            makeQCPlots=True
+        )
 
     ########################################################################
     ### write html for web page
@@ -403,7 +387,10 @@ def makeTrendDispersionPlot(json_fn):
                         dateMedians.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                         valueMeans.append( float(statusline_list[2]) )
                         valueMedians.append( float(statusline_list[4]) )
-                except:
+                except Exception as e:
+                    if statusline.strip():
+                        print(f" Warning: Error parsing line {i} in DailyChannelOffsetSignal: {e}")
+                        print(f"   Line content: {statusline[:100]}")
                     break
     except:
         print(" Error: unable to read updates from pyTAAAweb_MeanTrendDispersion_status.params")
@@ -481,12 +468,16 @@ def makeTrendDispersionPlot(json_fn):
             for i in range(numlines):
                 try:
                     statusline = lines[i]
-                    statusline_list = statusline.split(" ")
-                    if len( statusline_list ) == 5:
+                    statusline_list = [x for x in statusline.split(" ") if x]  # Filter empty strings
+                    if len( statusline_list ) >= 3:
                         backtestDate.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
-                        backtestBHvalue.append( float(statusline_list[2]) )
-                        backtestSystemvalue.append( float(statusline_list[4]) )
-                except:
+                        backtestBHvalue.append( float(statusline_list[1]) )
+                        backtestSystemvalue.append( float(statusline_list[2]) )
+                except Exception as e:
+                    if statusline.strip():
+                        print(f" Warning: Error parsing line {i} in backtestPortfolioValue: {e}")
+                        print(f"   Line content: {statusline[:100]}")
+                        print(f"   Split result length: {len(statusline_list)}, content: {statusline_list}")
                     break
     except:
         print(" Error: unable to read updates from pyTAAAweb_backtestPortfolioValue.params")
@@ -540,10 +531,6 @@ def makeTrendDispersionPlot(json_fn):
     )
     numDaysToPlot = len( valueMedians )
     plt.legend(loc=3,prop={'size':6})
-    
-    # Adjust layout to prevent overlapping labels
-    plt.tight_layout()
-    
     plt.savefig(figure5path)
     #figure5path = 'PyTAAA_backtestWithTrend.png'  # re-set to name without full path
     figure5path = 'PyTAAA_backtestWithTrend.png'  # re-set to name without full path
@@ -631,6 +618,9 @@ def makeDailyMonteCarloBacktest(json_fn):
     if modified_hours > 20.0:
         dailyBacktest_pctLong(json_fn)
     #dailyBacktest_pctLong()   ### TODO: remove this line !!!!!!!!
+
+    # for abacus, re-populate the saved abacus backtest portfolio values
+    
 
     ##########################################
     # create html markup for backtest plot
@@ -914,12 +904,16 @@ def makeDailyChannelOffsetSignal(json_fn):
             for i in range(numlines):
                 try:
                     statusline = lines[i]
-                    statusline_list = statusline.split(" ")
-                    if len( statusline_list ) == 5:
+                    statusline_list = [x for x in statusline.split(" ") if x]  # Filter empty strings
+                    if len( statusline_list ) >= 3:
                         backtestDate.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
-                        backtestBHvalue.append( float(statusline_list[2]) )
-                        backtestSystemvalue.append( float(statusline_list[4]) )
-                except:
+                        backtestBHvalue.append( float(statusline_list[1]) )
+                        backtestSystemvalue.append( float(statusline_list[2]) )
+                except Exception as e:
+                    if statusline.strip():
+                        print(f" Warning: Error parsing line {i} in backtestPortfolioValue (2nd plot): {e}")
+                        print(f"   Line content: {statusline[:100]}")
+                        print(f"   Split result length: {len(statusline_list)}, content: {statusline_list}")
                     break
     except:
         print(" Error: unable to read updates from pyTAAAweb_backtestPortfolioValue.params")

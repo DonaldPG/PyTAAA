@@ -2138,7 +2138,11 @@ def sharpeWeightedRank_2D(
             ChannelPct_text = ChannelPct_text + format(pctChannel-1.,'6.1%')
             sharpeRatio.append(format(sharpe2periods,'6.1f'))
             floatSharpeRatio.append(sharpe2periods)
-            print("isymbol,floatSharpeRatio = ", isymbol,floatSharpeRatio[-1])
+            print(
+                "isymbol,floatSharpeRatio = ",
+                isymbol,floatSharpeRatio[-1],
+                flush=True
+            )
 
             channelComboGainLoss = recentTrendComboGain(adjClose[i,:],
                                                               datearray,
@@ -2972,11 +2976,17 @@ def sharpeWeightedRank_2D(
         companySymbolList, companyNameList = read_company_names_local(
             json_fn, verbose=False
         )
-    except:
-        from functions.readSymbols import read_symbols_list_web    
-        companyNameList, companySymbolList = read_symbols_list_web(
-            json_fn, verbose=False
-        )
+    except Exception as e:
+        try:
+            from functions.readSymbols import read_symbols_list_web    
+            companyNameList, companySymbolList = read_symbols_list_web(
+                json_fn, verbose=False
+            )
+        except Exception as e2:
+            # If both methods fail, create empty lists to continue
+            print(f"Warning: Could not fetch company symbols or names: {e2}")
+            companySymbolList = []
+            companyNameList = []
 
     for ii in range(1,monthgainloss.shape[1]):
         if datearray[ii].month == datearray[ii-1].month:
@@ -3120,7 +3130,11 @@ def sharpeWeightedRank_2D(
             ChannelPct_text = ChannelPct_text + format(pctChannel-1.,'6.1%')
             sharpeRatio.append(format(sharpe2periods,'6.1f'))
             floatSharpeRatio.append(sharpe2periods)
-            print("isymbol,floatSharpeRatio = ", isymbol,floatSharpeRatio[-1])
+            print(
+                "isymbol,floatSharpeRatio = ",
+                isymbol,floatSharpeRatio[-1],
+                flush=True
+            )
 
             channelComboGainLoss = recentTrendComboGain(adjClose[i,:],
                                                               datearray,

@@ -101,38 +101,37 @@ def main(
         fp_year_min: Minimum year for focus period start
         fp_year_max: Maximum year for focus period start
     """
-    
-    try:
-        logger.info("Starting Monte Carlo backtesting process")
-        logger.info(f"Search strategy: {search}")
-        print("Starting Monte Carlo backtesting process")
-        print(f"Search strategy: {search}")
+
+    logger.info("Starting Monte Carlo backtesting process")
+    logger.info(f"Search strategy: {search}")
+    print("Starting Monte Carlo backtesting process")
+    print(f"Search strategy: {search}")
         
-        # Determine configuration source and load config
-        if json_config_path:
-            print(f"Using JSON configuration: {json_config_path}")
-            config_path = json_config_path
-            # Use JSON configuration functions for centralized values
-            from functions.GetParams import get_web_output_dir, get_central_std_values
-            try:
-                web_output_dir = get_web_output_dir(json_config_path)
-            except (KeyError, FileNotFoundError):
-                print("Warning: Could not load web output directory from JSON, using default")
-                web_output_dir = None
-            try:
-                normalization_values = get_central_std_values(json_config_path)
-            except (KeyError, FileNotFoundError):
-                print("Warning: Could not load normalization values from JSON, using defaults")
-                normalization_values = None
-        else:
-            # Use legacy configuration
-            config_path = 'pytaaa_model_switching_params.json'
+    # Determine configuration source and load config
+    if json_config_path:
+        print(f"Using JSON configuration: {json_config_path}")
+        config_path = json_config_path
+        # Use JSON configuration functions for centralized values
+        from functions.GetParams import get_web_output_dir, get_central_std_values
+        try:
+            web_output_dir = get_web_output_dir(json_config_path)
+        except (KeyError, FileNotFoundError):
+            print("Warning: Could not load web output directory from JSON, using default")
             web_output_dir = None
+        try:
+            normalization_values = get_central_std_values(json_config_path)
+        except (KeyError, FileNotFoundError):
+            print("Warning: Could not load normalization values from JSON, using defaults")
             normalization_values = None
-        
-        # Load monte carlo settings from config
-        with open(config_path, 'r') as f:
-            config = json.load(f)
+    else:
+        # Use legacy configuration
+        config_path = 'pytaaa_model_switching_params.json'
+        web_output_dir = None
+        normalization_values = None
+
+    # Load monte carlo settings from config
+    with open(config_path, 'r') as f:
+        config = json.load(f)
         
         #############################################################################
         # Handle focus period parameter overrides
@@ -236,7 +235,32 @@ def main(
                 "naz100_hma": f"{base_folder}/naz100_hma/data_store/{data_files[data_format]}",
                 "naz100_pi": f"{base_folder}/naz100_pi/data_store/{data_files[data_format]}",
                 "sp500_hma": f"{base_folder}/sp500_hma/data_store/{data_files[data_format]}",
+                "sp500_pine": f"{base_folder}/sp500_pine/data_store/{data_files[data_format]}",
             }
+
+        # Validate that each resolved model path actually exists. If a model's
+        # data file is missing, log an error and skip that model instead of
+        # crashing. Keep empty-template models (e.g., "cash") as-is.
+        validated_model_choices = {}
+        for mname, mtemplate in model_choices.items():
+            if not mtemplate:
+                validated_model_choices[mname] = ""
+                continue
+
+            resolved_path = os.path.expanduser(mtemplate)
+            resolved_path = os.path.abspath(resolved_path)
+
+            if not os.path.exists(resolved_path):
+                logger.warning(f"Model data file not found for {mname}: {resolved_path}. Keeping mapping; MonteCarloBacktest will handle missing data.")
+                print(f"WARNING: Model data file not found for {mname}: {resolved_path}. Keeping mapping; MonteCarloBacktest will handle missing data.")
+
+            validated_model_choices[mname] = resolved_path
+
+        model_choices = validated_model_choices
+
+        # Log resolved model paths at INFO level
+        logger.info(f"Resolved model choices: {model_choices}")
+        print(f"Resolved model choices: {model_choices}")
 
         print("\nInitializing Monte Carlo backtesting...")
         print(f"Using {'actual' if data_format == 'actual' else 'backtested'} portfolio values")
@@ -310,20 +334,20 @@ def main(
         # Create and save the final plot using the unified plotting function
         print("\nCreating final performance plot...")
         
-        # Create timestamp for filename (nearest minute)
+        # Create timestamp for legacy filename (nearest minute)
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
-        
+
         # Determine output path - use JSON web_output_dir if available
         if web_output_dir:
-            # Create pngs subdirectory in web output directory
-            pngs_dir = os.path.join(web_output_dir, "pngs")
-            os.makedirs(pngs_dir, exist_ok=True)
-            output_path = os.path.join(pngs_dir, f"monte_carlo_best_performance_{timestamp}.png")
+            # Create web output directory and write image directly into it
+            os.makedirs(web_output_dir, exist_ok=True)
+            output_path = os.path.join(web_output_dir, "monte_carlo_best_performance.png")
             print(f"Using JSON web output directory: {web_output_dir}")
         else:
             # Create pngs subdirectory in current directory for legacy path
             pngs_dir = "pngs"
             os.makedirs(pngs_dir, exist_ok=True)
+            # Legacy filenames include a timestamp to avoid collisions
             output_path = os.path.join(pngs_dir, f"monte_carlo_best_performance_{timestamp}.png")
 
     
@@ -430,9 +454,7 @@ def main(
         print("-" * 40)
         print(f"Performance plot saved to: {output_path}")
         
-    except Exception as e:
-        logger.error(f"Monte Carlo backtesting failed: {str(e)}", exc_info=True)
-        raise
+    # Exceptions will propagate to the caller; errors are logged where appropriate.
 
 if __name__ == "__main__":
     main()

@@ -18,6 +18,7 @@ from functions.TAfunctions import (
     cleantobeginning, cleantoend,interpolate
 )
 from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
+from functions.CountNewHighsLows import newHighsAndLows
 
 
 def plotRecentPerfomance3(
@@ -1619,31 +1620,56 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
         randomtrials = 51
         randomtrials = 15
     elif edition == 'MacOS':
-        randomtrials = 17
+        randomtrials = 13
+
+    ########################################################################
+    ### compute count of new highs and lows over various time periods
+    ### - do this once outside the loop over monte carlo trials -- used later
+    ### - don't create a plot
+    ########################################################################
+
+    from functions.GetParams import get_json_params
+    from functions.CountNewHighsLows import newHighsAndLows
+
+    params = get_json_params(json_fn)
+
+    if params['stockList'] == 'Naz100':
+        sumNewHighs, sumNewLows, mean_TradedValue = newHighsAndLows(
+            json_fn, num_days_highlow=(73,293),
+            num_days_cumu=(50,159),
+            HighLowRatio=(1.654,2.019),
+            HighPctile=(8.499,8.952),
+            HGamma=(1.,1.),
+            LGamma=(1.176,1.223),
+            makeQCPlots=False
+        )
+
+    elif params['stockList'] == 'SP500':
+        sumNewHighs, sumNewLows, mean_TradedValue = newHighsAndLows(
+            json_fn, num_days_highlow=(73,146),
+            num_days_cumu=(76,108),
+            HighLowRatio=(2.293,1.573),
+            HighPctile=(12.197,11.534),
+            HGamma=(1.157,.568),
+            LGamma=(.667,1.697),
+            makeQCPlots=False
+        )
+
+    # # Sum across stocks (axis=0) to get array of shape (num_dates, num_param_sets) or (num_dates,)
+    # sumNewHighs = np.sum(newHighs_2D, axis=0)
+    # sumNewLows = np.sum(newLows_2D, axis=0)
+    # If multiple parameter sets were used, sum across parameter sets (axis=-1) to get 1D array
+    if sumNewHighs.ndim > 1:
+        sumNewHighs = np.sum(sumNewHighs, axis=-1)
+    if sumNewLows.ndim > 1:
+        sumNewLows = np.sum(sumNewLows, axis=-1)
 
     ##
     ##  Import list of symbols to process.
     ##
-    # '''
-    # params = GetParams()
-    # stockList = params['stockList']
-
-    # # read list of symbols from disk.
-    # symbol_directory = os.path.join( os.getcwd(), "symbols" )
-    # if stockList == 'Naz100':
-    #     symbol_file = "Naz100_Symbols.txt"
-    # elif stockList == 'SP500':
-    #     symbol_file = "SP500_Symbols.txt"
-    # symbols_file = os.path.join( symbol_directory, symbol_file )
-    # '''
-    # symbols_file = GetSymbolsFile()
     symbols_file = get_symbols_file(json_fn)
     json_dir = os.path.split(json_fn)[0]
     p_store = get_performance_store(json_fn)
-    # '''
-    # # read list of symbols from disk.
-    # filename = os.path.join( os.getcwd(), 'symbols', 'Naz100_Symbols.txt' )
-    # '''
 
     ###############################################################################################
     ###  UpdateHDF5( symbols_directory, symbols_file )  ### assume hdf is already up to date
@@ -1714,26 +1740,6 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
     print("   . basename = " + basename)
     print("   . runnum = " + runnum)
     print("   . plotmax = " + str(plotmax))
-
-    # '''
-    # ########################################################################
-    # # take inverse of quotes for declines
-    # ########################################################################
-    # for iCompany in range( adjClose.shape[0] ):
-    #     tempQuotes = adjClose[iCompany,:]
-    #     tempQuotes[ np.isnan(tempQuotes) ] = 1.0
-    #     index = np.argmax(np.clip(np.abs(tempQuotes[::-1]-1),0,1e-8)) - 1
-    #     if index == -1:
-    #         lastquote = adjClose[iCompany,-1]
-    #         lastquote = lastquote ** 2
-    #     else:
-    #         lastQuoteIndex = -index-1
-    #         lastquote = adjClose[iCompany,lastQuoteIndex]
-    #         print "\nlast quote index and quote for ", symbols[iCompany],lastQuoteIndex,adjClose[iCompany,lastQuoteIndex]
-    #         lastquote = lastquote ** 2
-    #         adjClose[iCompany,lastQuoteIndex:] = adjClose[iCompany,lastQuoteIndex-1]
-    #         print adjClose[iCompany,lastQuoteIndex-3:]
-    # '''
 
     ########################################################################
 
@@ -2509,105 +2515,6 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
         # make it a ratio ranging from 0 to 1
         beatBuyHoldTest2VarPct /= 27
 
-
-        # """
-        # ########################################################################
-        # ### plot results
-        # ########################################################################
-
-
-        # plt.rcParams['figure.edgecolor'] = 'grey'
-        # plt.rc('savefig',edgecolor = 'grey')
-        # fig = plt.figure(1)
-        # plt.clf()
-        # subplotsize = gridspec.GridSpec(3,1,height_ratios=[4,1,1])
-        # plt.subplot(subplotsize[0])
-        # plt.grid()
-        # ##
-        # ## make plot of all stocks' individual prices
-        # ##
-        # if iter == 0:
-        #     plt.yscale('log')
-        #     plt.ylim([1000,max(10000,plotmax)])
-        #     ymin, ymax = np.log10(1e3), np.log10(max(10000,plotmax))
-        #     bin_width = (ymax - ymin) / 50
-        #     print("ymin = ", ymin)
-        #     print("ymax = ", ymax)
-        #     print("bin_width = ", bin_width)
-
-        #     y_bins = np.arange(ymin, ymax+.0000001, bin_width)
-        #     print("y_bins = ", y_bins)
-
-        #     AllStocksHistogram = np.ones((len(y_bins)-1, len(datearray),3))
-        #     HH = np.zeros((len(y_bins)-1, len(datearray)))
-        #     mm = np.zeros(len(datearray))
-        #     xlocs = []
-        #     xlabels = []
-        #     for i in range(1,len(datearray)):
-        #         ValueOnDate = value[:,i].copy()
-        #         ValueOnDate = ValueOnDate[~np.isnan(ValueOnDate)]
-        #         ValueOnDate = ValueOnDate[~np.isinf(ValueOnDate)]
-        #         #print " i,datearray[i],ValueOnDate.min(),ValueOnDate.max() = ", i,datearray[i],ValueOnDate.min(),ValueOnDate.max()
-
-        #         if ValueOnDate[ValueOnDate == 10000].shape[0] > 1:
-        #             ValueOnDate[ValueOnDate == 10000] = 1.
-        #             ValueOnDate[np.argmin(ValueOnDate)] = 10000.
-        #         h, _ = np.histogram(np.log10(ValueOnDate/10000.), bins=y_bins, density=True)
-        #         # reverse so big numbers become small(and print out black)
-        #         h = 1. - h
-        #         # set range to [.5,1.]
-        #         h /= 2.
-        #         h += .5
-        #         HH[:,i] = h
-        #         mm[i] = np.median(value[-1,:])
-        #         if datearray[i].year != datearray[i-1].year:
-        #             print(" inside histogram evaluation for date = ", datearray[i])
-        #             xlocs.append(i)
-        #             xlabels.append(str(datearray[i].year))
-        #     AllStocksHistogram[:,:,2] = HH
-        #     AllStocksHistogram[:,:,1] = AllStocksHistogram[:,:,2]
-        #     AllStocksHistogram = np.clip(AllStocksHistogram,AllStocksHistogram.max()*.05,1)
-        #     AllStocksHistogram /= AllStocksHistogram.max()
-
-        # plt.imshow(AllStocksHistogram, cmap='Reds_r', aspect='auto', origin='lower', extent=(0, len(datearray), 10**ymin, 10**ymax))
-        # plt.grid()
-        # ##
-        # ## cumulate final values for grayscale histogram overlay
-        # ##
-        # if iter == 0:
-        #     MonteCarloPortfolioValues = np.zeros( (randomtrials, len(datearray) ), float )
-        # MonteCarloPortfolioValues[iter,:] = np.average(monthvalue,axis=0)
-
-        # if iter > 9 and iter%10 == 0:
-        #     plt.yscale('log')
-        #     plt.ylim([1000,max(10000,plotmax)])
-        #     ymin, ymax = np.log10(1e3), np.log10(max(10000,plotmax))
-        #     bin_width = (ymax - ymin) / 50
-        #     y_bins = np.arange(ymin, ymax+.0000001, bin_width)
-        #     H = np.zeros((len(y_bins)-1, len(datearray)))
-        #     m = np.zeros(len(datearray))
-        #     hb = np.zeros((len(y_bins)-1, len(datearray),3))
-        #     for i in range(1,len(datearray)):
-        #         h, _ = np.histogram(np.log10(MonteCarloPortfolioValues[:iter,i]/10000.), bins=y_bins, density=True)
-        #         # reverse so big numbers become small(and print out black)
-        #         h = 1. - h
-        #         # set range to [.5,1.]
-        #         h = np.clip( h, .05, 1. )
-        #         h /= 2.
-        #         h += .5
-        #         H[:,i] = h
-        #         m[i] = np.median(value[-1,:])
-        #         if datearray[i].year != datearray[i-1].year:
-        #             print(" inside histogram evaluation for date = ", datearray[i])
-        #     hb[:,:,0] = H
-        #     hb[:,:,1] = H
-        #     hb[:,:,2] = H
-        #     hb = .5 * AllStocksHistogram + .5 * hb
-
-        # if iter > 10  :
-        #     plt.yscale('log')
-        #     plt.imshow(hb, cmap='gray', aspect='auto', origin='lower', extent=(0, len(datearray), 10**ymin, 10**ymax))
-        # """
         ########################################################################
         ### plot results
         ########################################################################
@@ -2715,149 +2622,6 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
             plt.plot( MonteCarloPortfolioValues[ii,:], c='k', lw=.3, alpha=.5 )
         for ii in range( value.shape[0] ):
             plt.plot( value[ii,:], c=(1.,0.5,0.5), lw=.1, alpha=.5 )
-
-        # """
-        # ########################################################################
-        # ### plot results
-        # ########################################################################
-
-        # plt.rcParams['figure.edgecolor'] = 'grey'
-        # plt.rc('savefig',edgecolor = 'grey')
-        # fig = plt.figure(1)
-        # plt.clf()
-        # subplotsize = gridspec.GridSpec(3,1,height_ratios=[4,1,1])
-        # plt.subplot(subplotsize[0])
-        # plt.grid()
-        # ##
-        # ## make plot of all stocks' individual prices
-        # ##
-        # if iter == 0:
-        #     #plt.yscale('log')
-        #     #plt.ylim([1000,max(10000,plotmax)])
-        #     #ymin, ymax = np.log10(1e3), np.log10(max(10000,plotmax))
-        #     #ymin, ymax = 7000,plotmax
-        #     #bin_width = (ymax - ymin) / 50
-        #     n_bins = 150
-        #     ymin, ymax = 7000, max(10000, plotmax)
-        #     y_bins = np.linspace(ymin, ymax, n_bins)
-
-        #     print("ymin = ", ymin)
-        #     print("ymax = ", ymax)
-        #     print("value min/mean/median/max = "+str((value.min(), value.mean(), np.median(value), value.max())))
-        #     print("y_bins = ", y_bins)
-        #     #print("bin_width = ", bin_width)
-
-        #     #y_bins = np.arange(ymin, ymax+.0000001, bin_width)
-        #     #print("y_bins = ", y_bins)
-
-        #     AllStocksHistogram = np.ones((len(y_bins)-1, len(datearray),3))
-        #     HH = np.zeros((len(y_bins)-1, len(datearray)))
-        #     mm = np.zeros(len(datearray))
-        #     xlocs = []
-        #     xlabels = []
-        #     for i in range(1,len(datearray)):
-        #         '''
-        #         ValueOnDate = value[:,i].copy()
-        #         ValueOnDate = ValueOnDate[~np.isnan(ValueOnDate)]
-        #         ValueOnDate = ValueOnDate[~np.isinf(ValueOnDate)]
-        #         #print " i,datearray[i],ValueOnDate.min(),ValueOnDate.max() = ", i,datearray[i],ValueOnDate.min(),ValueOnDate.max()
-
-        #         if ValueOnDate[ValueOnDate == 10000].shape[0] > 1:
-        #             ValueOnDate[ValueOnDate == 10000] = 1.
-        #             ValueOnDate[np.argmin(ValueOnDate)] = 10000.
-        #         h, _ = np.histogram(np.log10(ValueOnDate/10000.), bins=y_bins, density=True)
-        #         '''
-        #         ValueOnDate = value[:,i] * 1.
-        #         h, _ = np.histogram(ValueOnDate, bins=y_bins, density=True)
-        #         h /= h.sum()
-        #         # reverse so big numbers become small(and print out black)
-        #         h = 1. - h
-        #         # set range to [.5,1.]
-        #         h /= 2.
-        #         h += .5
-        #         HH[:,i] = h
-        #         '''
-        #         print(" ... i, ValueOnDate.shape = "+str( (i, ValueOnDate.shape)))
-        #         print(" ... i, HH[:,i].max() = "+str( (i, HH[:,i].max())))
-        #         '''
-        #         mm[i] = np.median(value[-1,:])
-        #         if datearray[i].year != datearray[i-1].year:
-        #             print(" inside histogram evaluation for date = ", datearray[i])
-        #             xlocs.append(i)
-        #             xlabels.append(str(datearray[i].year))
-        #     AllStocksHistogram[:,:,2] = HH
-        #     AllStocksHistogram[:,:,1] = AllStocksHistogram[:,:,2]
-        #     AllStocksHistogram = np.clip(AllStocksHistogram,AllStocksHistogram.max()*.05,1)
-        #     AllStocksHistogram /= AllStocksHistogram.max()
-
-        # print(" ... AllStocksHistogram.shape = "+str( AllStocksHistogram.shape))
-        # print(" ... AllStocksHistogram.min() = "+str( AllStocksHistogram.min()))
-        # print(" ... AllStocksHistogram.mean() = "+str( AllStocksHistogram.mean()))
-        # print(" ... AllStocksHistogram median = "+str( np.median(AllStocksHistogram)))
-        # print(" ... np.median(AllStocksHistogram) = "+str( AllStocksHistogram.max()))
-        # print(" ... len(datearray) = "+str(len(datearray)))
-
-        # plt.imshow(AllStocksHistogram, origin='lower', vmin=AllStocksHistogram.min(), vmax=AllStocksHistogram.max(), extent=(0, len(datearray)-1, 10**ymin, 10**ymax))
-        # plt.savefig("temp_junk_plot.png", format='png')
-        # # cmap='Reds_r',
-        # #plt.imshow(AllStocksHistogram, aspect='auto', origin='lower')
-        # plt.imshow(AllStocksHistogram, origin='lower', extent=(0, len(datearray)-1, 10**ymin, 10**ymax))
-        # #plt.imshow(AllStocksHistogram, cmap='Reds_r', aspect='auto', origin='lower', extent=(0, len(datearray), 10**ymin, 10**ymax))
-        # plt.grid()
-        # ##
-        # ## cumulate final values for grayscale histogram overlay
-        # ##
-        # if iter == 0:
-        #     MonteCarloPortfolioValues = np.zeros( (randomtrials, len(datearray) ), float )
-        # MonteCarloPortfolioValues[iter,:] = np.average(monthvalue,axis=0)
-
-        # if iter > 9 and iter%10 == 0:
-        #     #plt.yscale('log')
-        #     ymin, ymax = 7000, max(10000,plotmax)
-        #     #plt.ylim([1000,max(10000,plotmax)])
-        #     plt.ylim([7000,plotmax])
-        #     #ymin, ymax = np.log10(1e3), np.log10(max(10000,plotmax))
-        #     #bin_width = (ymax - ymin) / 50
-        #     #y_bins = np.arange(ymin, ymax+.0000001, bin_width)
-        #     n_bins = 150
-        #     y_bins = np.linspace(np.log10(ymin), np.log10(ymax), n_bins)
-
-        #     H = np.zeros((len(y_bins)-1, len(datearray)))
-        #     m = np.zeros(len(datearray))
-        #     hb = np.zeros((len(y_bins)-1, len(datearray),3))
-        #     for i in range(1,len(datearray)):
-        #         #h, _ = np.histogram(np.log10(MonteCarloPortfolioValues[:iter,i]/10000.), bins=y_bins, density=True)
-        #         ValueOnDate = MonteCarloPortfolioValues[:,i]
-        #         h, _ = np.histogram(ValueOnDate, bins=y_bins, density=True)
-        #         h /= h.sum()
-        #         # reverse so big numbers become small(and print out black)
-        #         h = 1. - h
-        #         # set range to [.5,1.]
-        #         h = np.clip( h, .05, 1. )
-        #         h /= 2.
-        #         h += .5
-        #         H[:,i] = h
-        #         m[i] = np.median(value[-1,:])
-        #         print(" ... i, ValueOnDate.shape from MonteCarloPortfolioValues = "+str( (i, ValueOnDate.shape)))
-        #         print(" ... i, HH[:,i].max() = "+str( (i, HH[:,i].max())))
-        #         if datearray[i].year != datearray[i-1].year:
-        #             print(" inside histogram evaluation for date = ", datearray[i])
-        #     hb[:,:,0] = H
-        #     hb[:,:,1] = H
-        #     hb[:,:,2] = H
-        #     hb = .5 * AllStocksHistogram + .5 * hb
-
-        # print(" ... 2 hb.shape = "+str( hb.shape))
-        # print(" ... 2 hb.min() = "+str( hb.min()))
-        # print(" ... 2 hb.mean() = "+str( hb.mean()))
-        # print(" ... 2 np.median(hb) = "+str( np.median(hb)))
-        # print(" ... 2 hb.max)) = "+str( hb.max()))
-        # print(" ... 2 len(datearray) = "+str(len(datearray)))
-
-        # if iter > 10  :
-        #     #plt.yscale('log')
-        #     plt.imshow(hb, cmap='gray', aspect='auto', origin='lower', extent=(0, len(datearray), 10**ymin, 10**ymax))
-        # """
 
         plt.yscale('log')
         plt.plot( np.average(monthvalue,axis=0), lw=3, c='k' )
@@ -3028,13 +2792,7 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
         plt.plot(_dates, n_stocks_uptrending_beat_BH[ii],'k-',lw=2)
         plt.plot(_dates, n_stocks_uptrending[ii] ,'r-')
 
-        # plt.plot(datearray,numberStocksUpTrendingMedian / activeCount,'g-',lw=1)
-        # plt.plot(datearray,numberStocksUpTrendingNearHigh / activeCount,'b-',lw=1)
-        # plt.plot(datearray,numberStocksUpTrendingBeatBuyHold / activeCount,'k-',lw=2)
-        # plt.plot(datearray,numberStocks  / activeCount,'r-')
         plt.xlim(datearray[0],datearray[len(datearray)-1])
-
-
 
         plt.subplot(subplotsize[2])
         plt.grid(True)
@@ -3054,8 +2812,15 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
         try:
             filepath = os.path.join(p_store, "pyTAAAweb_backtestPortfolioValue.params" )
             textmessage = ""
+            # Only write data for dates where new highs/lows are valid (>= 0)
+            # This typically skips the first ~500 days where there isn't enough historical data
             for idate in range(len(BuyHoldPortfolioValue)):
-                textmessage = textmessage + str(datearray[idate])+"  "+str(BuyHoldPortfolioValue[idate])+"  "+str(np.average(monthvalue[:,idate]))+"\n"
+                textmessage = textmessage + \
+                            str(datearray[idate]) + " " + \
+                            str(BuyHoldPortfolioValue[idate]) + " " + \
+                            str(np.average(monthvalue[:,idate]))  + " " + \
+                            f"{float(sumNewHighs[idate]):.1f}" + " " + \
+                            f"{float(sumNewLows[idate]):.1f}" + "\n"
             with open( filepath, "w" ) as f:
                 f.write(textmessage)
         except:
@@ -3266,37 +3031,7 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
         daysCount[ii] = (datearray[ii]-realtimestartdate).days
     #pdb.set_trace()
     indexRealtimeStart = np.argmax( np.clip(daysCount,-5000,1) ) - 1
-    '''
-    plotRecentPerfomance( datearray[indexRealtimeStart:],
-                          symbols,
-                          value[:,indexRealtimeStart:],
-                          monthvalue[:,indexRealtimeStart:],
-                          ValueOnDate[:],
-                          AllStocksHistogram[:,indexRealtimeStart:,:],
-                          MonteCarloPortfolioValues[:,indexRealtimeStart:],
-                          FinalTradedPortfolioValue[:],
-                          numberStocksUpTrending[:,indexRealtimeStart:],
-                          last_symbols_text,
-                          activeCount[indexRealtimeStart:],
-                          numberStocks[indexRealtimeStart:],
-                          numberStocksUpTrendingNearHigh[indexRealtimeStart:],
-                          numberStocksUpTrendingBeatBuyHold[indexRealtimeStart:] )
-    '''
-    """
-    plotRecentPerfomance( datearray[indexRealtimeStart:],
-                          symbols,
-                          value[:,indexRealtimeStart:],
-                          monthvalue[:,indexRealtimeStart:],
-                          AllStocksHistogram[:,indexRealtimeStart:,:],
-                          MonteCarloPortfolioValues[:,indexRealtimeStart:],
-                          FinalTradedPortfolioValue[:],
-                          numberStocksUpTrending[:,indexRealtimeStart:],
-                          last_symbols_text,
-                          activeCount[indexRealtimeStart:],
-                          numberStocks[indexRealtimeStart:],
-                          numberStocksUpTrendingNearHigh[indexRealtimeStart:],
-                          numberStocksUpTrendingBeatBuyHold[indexRealtimeStart:] )
-    """
+
     TradedPortfolioValue = np.average(monthvalue,axis=0)
 
     png_fn = 'PyTAAA_monteCarloBacktestFull'

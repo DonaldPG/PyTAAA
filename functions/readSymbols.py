@@ -349,7 +349,12 @@ def read_symbols_list_web(json_fn, verbose=True):
         except:
 
             base_url ='https://en.wikipedia.org/wiki/NASDAQ-100#Components'
-            soup = BeautifulSoup( urllib.request.urlopen(base_url).read(), "lxml" )
+            # Add User-Agent header to avoid 403 Forbidden errors from Wikipedia
+            req = urllib.request.Request(
+                base_url,
+                headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
+            )
+            soup = BeautifulSoup( urllib.request.urlopen(req, timeout=10).read(), "lxml" )
             t = soup.find("table", {"id": "constituents"}) # 2024-10-05
 
             print("... got web content")
@@ -358,33 +363,39 @@ def read_symbols_list_web(json_fn, verbose=True):
             symbolList = [] # store all of the records in this list
             companyNamesList = []
             data=[]
-            for row in t.find_all('tr'):
-                if str(row)==[]:
-                    continue
-                if str(row)=="\n":
-                    continue
-                if "<th>" in str(row):
-                    continue
-                col = row.find_all('td')
-                cols = row.find_all('td')
-                cols = [ele.text.strip() for ele in cols]
-                data.append([ele for ele in cols if ele])
-                if col==[]:
-                    continue
-                company_name = data[-1][0].encode("utf8")
-                if company_name[:3]=='MON':
-                    break
+            
+            # Check if table was found before attempting to parse
+            if t is not None:
+                for row in t.find_all('tr'):
+                    if str(row)==[]:
+                        continue
+                    if str(row)=="\n":
+                        continue
+                    if "<th>" in str(row):
+                        continue
+                    col = row.find_all('td')
+                    cols = row.find_all('td')
+                    cols = [ele.text.strip() for ele in cols]
+                    data.append([ele for ele in cols if ele])
+                    if col==[]:
+                        continue
+                    company_name = data[-1][0].encode("utf8")
+                    if company_name[:3]=='MON':
+                        break
 
-                company_name = strip_accents(data[-1][0])
-                symbol_name = data[-1][1]
+                    company_name = strip_accents(data[-1][0])
+                    symbol_name = data[-1][1]
 
-                if verbose:
-                    print(
-                        " ...symbol_name="+'{0: <5}'.format(symbol_name) + \
-                        " ...company_name=" + company_name
-                    )
-                companyNamesList.append(company_name)
-                symbolList.append(symbol_name)
+                    if verbose:
+                        print(
+                            " ...symbol_name="+'{0: <5}'.format(symbol_name) + \
+                            " ...company_name=" + company_name
+                        )
+                    companyNamesList.append(company_name)
+                    symbolList.append(symbol_name)
+            else:
+                print("... WARNING: Could not find Nasdaq-100 table on Wikipedia. Will use empty list.")
+
 
 
             # import requests
@@ -627,7 +638,12 @@ def read_symbols_list_web(json_fn, verbose=True):
         ### get current symbol list from wikipedia website
         ###
         base_url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
-        soup = BeautifulSoup( urllib.request.urlopen(base_url), "lxml" )
+        # Add User-Agent header to avoid 403 Forbidden errors from Wikipedia
+        req = urllib.request.Request(
+            base_url,
+            headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
+        )
+        soup = BeautifulSoup( urllib.request.urlopen(req, timeout=10), "lxml" )
         t = soup.find(
             "table",
             {
@@ -639,35 +655,46 @@ def read_symbols_list_web(json_fn, verbose=True):
         print("... got web content")
         print("... ran beautiful soup on web content")
 
+        # If table not found with specific class, try simpler search.
+        if t is None:
+            print("... table not found with specific class. Trying alternative search...")
+            t = soup.find("table", {"id": "constituents"})
+
         symbolList = [] # store all of the records in this list
         companyNamesList = []
         data=[]
-        for row in t.find_all('tr'):
-            if str(row)==[]:
-                continue
-            col = row.find_all('td')
-            cols = row.find_all('td')
-            cols = [ele.text.strip() for ele in cols]
-            data.append([ele for ele in cols if ele])
-            if col==[]:
-                continue
-            company_name = data[-1][0].encode("utf8")
-            # if company_name[:3]=='MON':
-            #     break
-            company_name = unicodedata.normalize('NFD',data[-1][1]).encode('ascii', 'ignore').decode('ascii')
-            symbol_name = data[-1][0].encode("utf8").decode('ascii')
-            symbol_name = symbol_name.replace(".", "-")
 
-            #print(str(row)+"\n ...company_name = "+company_name+"\n ...symbol_name="+symbol_name+"\n")
-            if verbose:
-                print(
-                    # "  ...symbol_name=" + symbol_name + \
-                    # " ...company_name = " + company_name
-                    " ...symbol_name="+'{0: <5}'.format(symbol_name) + \
-                    " ...company_name=" + company_name
-                )
-            companyNamesList.append(company_name)
-            symbolList.append(symbol_name)
+        # Check if table was found before attempting to parse
+        if t is not None:
+            for row in t.find_all('tr'):
+                if str(row)==[]:
+                    continue
+                col = row.find_all('td')
+                cols = row.find_all('td')
+                cols = [ele.text.strip() for ele in cols]
+                data.append([ele for ele in cols if ele])
+                if col==[]:
+                    continue
+                company_name = data[-1][0].encode("utf8")
+                # if company_name[:3]=='MON':
+                #     break
+                company_name = unicodedata.normalize('NFD',data[-1][1]).encode('ascii', 'ignore').decode('ascii')
+                symbol_name = data[-1][0].encode("utf8").decode('ascii')
+                symbol_name = symbol_name.replace(".", "-")
+
+                #print(str(row)+"\n ...company_name = "+company_name+"\n ...symbol_name="+symbol_name+"\n")
+                if verbose:
+                    print(
+                        # "  ...symbol_name=" + symbol_name + \
+                        # " ...company_name = " + company_name
+                        " ...symbol_name="+'{0: <5}'.format(symbol_name) + \
+                        " ...company_name=" + company_name
+                    )
+                companyNamesList.append(company_name)
+                symbolList.append(symbol_name)
+        else:
+            print("... WARNING: Could not find table on Wikipedia page. Using local list.")
+            symbolList = old_symbolList
         print(f"... retrieved {len(symbolList)} SP500 companies lists from internet")
 
         companyName_file = os.path.join( symbol_directory, "SP500_companyNames.txt" )

@@ -246,6 +246,7 @@ def get_data_source_from_trading_model(trading_model: str) -> Dict[str, str]:
         'naz100_hma': 'naz100', 
         'naz100_pi': 'naz100',
         'sp500_hma': 'sp500',
+        'sp500_pine': 'sp500',
         'cash': 'abacus'  # Default to abacus for cash
     }
     
