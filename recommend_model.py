@@ -19,7 +19,7 @@ import logging
 
 from functions.MonteCarloBacktest import MonteCarloBacktest
 from functions.logger_config import get_logger
-from functions.abacus_recommend import DateHelper, ModelRecommender
+from functions.abacus_recommend import DateHelper, ModelRecommender, RecommendationDisplay
 
 # Get module-specific logger
 logger = get_logger(__name__, log_file='recommend_model.log')
@@ -90,71 +90,7 @@ def get_recommendation_lookbacks(lookbacks_arg: Optional[str], config: Dict[str,
 
 
 # Removed: generate_recommendation_output() - replaced with ModelRecommender class
-
-
-def display_parameters_info(monte_carlo: MonteCarloBacktest, 
-                          lookbacks: List[int],
-                          model_switching_portfolio: np.ndarray) -> None:
-    """Display detailed parameter information to stdout.
-    
-    Args:
-        monte_carlo: Monte Carlo backtesting instance
-        lookbacks: List of lookback periods used
-        model_switching_portfolio: Portfolio values array
-    """
-    print("\n" + "="*70)
-    print("PARAMETERS SUMMARY")
-    print("="*70)
-    
-    # Display lookback periods
-    print(f"\nLookback Periods:")
-    print(f"  Values: {sorted(lookbacks)} days")
-    print(f"  Count: {len(lookbacks)} periods")
-    
-    # Display combined normalization parameters table
-    print(f"\nNormalization Parameters:")
-    print(f"  {'Metric':<18} {'Central Value':<14} {'Std Deviation':<14}")
-    print(f"  {'-'*18} {'-'*14} {'-'*14}")
-    
-    central_values = monte_carlo.CENTRAL_VALUES
-    std_values = monte_carlo.STD_VALUES
-    
-    for metric in central_values.keys():
-        central_val = central_values[metric]
-        std_val = std_values[metric]
-        
-        metric_name = metric.replace('_', ' ').title()
-        
-        if metric in ['annual_return', 'max_drawdown', 'avg_drawdown']:
-            print(f"  {metric_name:<18} {central_val:>13.1%} {std_val:>13.1%}")
-        else:
-            print(f"  {metric_name:<18} {central_val:>13.3f} {std_val:>13.3f}")
-    
-    # Display final portfolio value and key metrics
-    print(f"\nFinal Portfolio Results:")
-    final_value = model_switching_portfolio[-1]
-    initial_value = model_switching_portfolio[0]
-    
-    print(f"  Initial Value        : ${initial_value:>12,.2f}")
-    print(f"  Final Value          : ${final_value:>12,.2f}")
-    
-    # Calculate and display annualized return
-    years = len(model_switching_portfolio) / 252  # 252 trading days per year
-    if years > 0:
-        annualized_return = ((final_value / initial_value) ** (1 / years)) - 1
-        print(f"  Annualized Return    : {annualized_return:>11.1%}")
-        print(f"  Time Period          : {years:>11.1f} years")
-    
-    from functions.PortfolioMetrics import analyze_model_switching_effectiveness
-
-    # Add effectiveness analysis
-    effectiveness = analyze_model_switching_effectiveness(monte_carlo, lookbacks)
-    
-    print(f"\nModel-Switching Effectiveness:")
-    print(f"  Outperformance Rate  : {effectiveness['sharpe_outperformance_pct']:>11.1f}%")
-    print(f"  vs Equal-Weight Base : {effectiveness.get('avg_excess_return', 0.0)*100:>11.1f}% excess annual return")
-    
-    print("="*70)
+# Removed: display_parameters_info() - replaced with RecommendationDisplay class
 
 
 @click.command()
@@ -344,8 +280,9 @@ def main(date: Optional[str], lookbacks: Optional[str], json_config_path: Option
         # Calculate model-switching portfolio for parameters display
         model_switching_portfolio = monte_carlo._calculate_model_switching_portfolio(recommendation_lookbacks)
         
-        # Display detailed parameter information
-        display_parameters_info(monte_carlo, recommendation_lookbacks, model_switching_portfolio)
+        # Display detailed parameter information using RecommendationDisplay
+        display = RecommendationDisplay(monte_carlo)
+        display.display_parameters_summary(recommendation_lookbacks, model_switching_portfolio)
         
         # Generate plot if requested
         if config['recommendation_mode'].get('generate_plot', True):
