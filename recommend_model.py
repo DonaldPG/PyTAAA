@@ -20,6 +20,7 @@ import logging
 from functions.MonteCarloBacktest import MonteCarloBacktest
 from functions.logger_config import get_logger
 from functions.abacus_recommend import DateHelper, ModelRecommender, RecommendationDisplay
+from functions.abacus_backtest import BacktestDataLoader
 
 # Get module-specific logger
 logger = get_logger(__name__, log_file='recommend_model.log')
@@ -191,59 +192,11 @@ def main(date: Optional[str], lookbacks: Optional[str], json_config_path: Option
         # Load monte carlo settings
         monte_carlo_config = config.get('monte_carlo', {})
         data_format = monte_carlo_config.get('data_format', 'actual')
-        data_files = monte_carlo_config.get('data_files', {
-            'actual': 'PyTAAA_status.params',
-            'backtested': 'pyTAAAweb_backtestPortfolioValue.params'
-        })
         
-        # Configure model paths - use JSON config if available
-        if json_config_path and 'models' in config:
-            # Use JSON configuration for model paths
-            models_config = config['models']
-            base_folder = models_config.get('base_folder', '/Users/donaldpg/pyTAAA_data')
-            model_choices = {}
-            
-            for model_name, path_template in models_config.get('model_choices', {}).items():
-                if path_template == "":  # Cash model
-                    model_choices[model_name] = ""
-                else:
-                    # Replace placeholders in path template
-                    data_file = data_files[data_format]
-                    model_path = path_template.format(
-                        base_folder=base_folder,
-                        data_file=data_file
-                    )
-                    model_choices[model_name] = model_path
-        else:
-            # Use legacy hard-coded paths
-            base_folder = "/Users/donaldpg/pyTAAA_data"
-            model_choices = {
-                "cash": "",
-                "naz100_pine": f"{base_folder}/naz100_pine/data_store/{data_files[data_format]}",
-                "naz100_hma": f"{base_folder}/naz100_hma/data_store/{data_files[data_format]}",
-                "naz100_pi": f"{base_folder}/naz100_pi/data_store/{data_files[data_format]}",
-                "sp500_hma": f"{base_folder}/sp500_hma/data_store/{data_files[data_format]}",
-                "sp500_pine": f"{base_folder}/sp500_pine/data_store/{data_files[data_format]}",
-            }
-
-        # Validate resolved model paths similar to run_monte_carlo: log warnings for
-        # missing data files but keep the mapping so downstream code can handle them.
-        validated_model_choices = {}
-        for mname, mtemplate in model_choices.items():
-            if not mtemplate:
-                validated_model_choices[mname] = ""
-                continue
-
-            resolved_path = os.path.expanduser(mtemplate)
-            resolved_path = os.path.abspath(resolved_path)
-
-            if not os.path.exists(resolved_path):
-                logger.warning(f"Model data file not found for {mname}: {resolved_path}. Keeping mapping; MonteCarloBacktest will handle missing data.")
-                print(f"WARNING: Model data file not found for {mname}: {resolved_path}. Keeping mapping; MonteCarloBacktest will handle missing data.")
-
-            validated_model_choices[mname] = resolved_path
-
-        model_choices = validated_model_choices
+        # Configure model paths using BacktestDataLoader
+        loader = BacktestDataLoader(config)
+        model_choices = loader.build_model_paths(data_format, json_config_path)
+        model_choices = loader.validate_model_paths(model_choices)
         
         print(f"\nInitializing model recommendation system...")
         print(f"Using {'actual' if data_format == 'actual' else 'backtested'} portfolio values")
