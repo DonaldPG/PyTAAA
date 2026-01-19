@@ -100,6 +100,7 @@ def suppress_matplotlib_output():
     
     # Temporarily replace print during matplotlib operations
     import builtins
+    builtins.__original_print__ = original_print  # Save for numba compatibility
     builtins.print = quiet_print
 
 
