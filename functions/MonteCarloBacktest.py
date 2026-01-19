@@ -637,11 +637,31 @@ class MonteCarloBacktest:
                     self.best_params = current_params.copy()
                     self.best_model_selections = current_selections.copy()
 
-                    # Display performance metrics using the same consistent calculation
-                    self._print_best_parameters(metrics_dict)
+                    # Create unique PNG in repo `pngs/` and save plot for this NEW BEST
+                    try:
+                        repo_root = os.path.dirname(os.path.dirname(__file__))
+                        pngs_dir = os.path.join(repo_root, 'pngs')
+                        os.makedirs(pngs_dir, exist_ok=True)
+                        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                        lb_list = sorted(current_lookbacks) if current_lookbacks else []
+                        lb_str = '-'.join(str(x) for x in lb_list) if lb_list else 'none'
+                        score_val = metrics_dict.get('normalized_score', 0.0)
+                        score_str = f"{score_val:.3f}".replace('.', '_')
+                        png_name = f"monte_carlo_best_{timestamp}_lb{lb_str}_{score_str}.png"
+                        png_path = os.path.join(pngs_dir, png_name)
 
-                    # Plot performance using the same consistent portfolio
-                    self.plot_performance(consistent_portfolio, metrics_dict)
+                        # Save per-new-best plot with unique name
+                        try:
+                            self.create_monte_carlo_plot(consistent_portfolio, metrics_dict, save_path=png_path)
+                        except Exception as e:
+                            logger.warning(f"Failed to create per-best PNG {png_path}: {e}")
+                            png_path = ''
+                    except Exception as e:
+                        logger.warning(f"Failed to prepare pngs directory: {e}")
+                        png_path = ''
+
+                    # Display performance metrics using the same consistent calculation and log PNG filename
+                    self._print_best_parameters(metrics_dict, png_filename=os.path.relpath(png_path, repo_root) if png_path else '')
 
                 # Record model choice
                 top_models.append(current_model)
@@ -1180,6 +1200,7 @@ class MonteCarloBacktest:
         #############################################################################
         model_to_color = {
             'sp500_hma': 'c',      # cyan
+            'sp500_pine': 'm',     # magenta (new model)
             'naz100_pine': 'b',    # blue (royal blue)
             'naz100_hma': 'r',     # red
             'naz100_pi': 'g',      # green
@@ -1425,10 +1446,10 @@ class MonteCarloBacktest:
             mask = [x == model_to_num[model] for x in numeric_selections]
             if any(mask):
                 ax2.scatter(date_index[mask], [model_to_num[model]] * sum(mask),
-                          color=model_to_color[model], alpha=0.7, s=20,
-                          label=f"{model} periods")
+                      color=model_to_color.get(model, 'gray'), alpha=0.7, s=20,
+                      label=f"{model} periods")
                 ax2.plot(date_index[mask], [model_to_num[model]] * sum(mask),
-                        color=model_to_color[model], alpha=0.3, linewidth=1)
+                    color=model_to_color.get(model, 'gray'), alpha=0.3, linewidth=1)
         
         #############################################################################
         # Configure lower subplot to match upper subplot exactly
@@ -1686,7 +1707,7 @@ class MonteCarloBacktest:
         
         return sorted(lookbacks)
 
-    def _log_best_parameters_to_csv(self, metrics: Dict[str, float]) -> None:
+    def _log_best_parameters_to_csv(self, metrics: Dict[str, float], png_filename: Optional[str] = None) -> None:
         """Log best performing parameters to CSV file with full period and both focus periods.
         
         Args:
@@ -2009,19 +2030,25 @@ class MonteCarloBacktest:
         #############################################################################
         # Write to CSV file
         #############################################################################
+        # Add PNG filename column if provided
+        if png_filename:
+            row_data['PNG Filename'] = png_filename
+        else:
+            row_data['PNG Filename'] = ''
+
         try:
             with open(csv_path, 'a', newline='', encoding='utf-8') as csvfile:
                 writer = csv.DictWriter(csvfile, fieldnames=row_data.keys())
-                
+
                 # Write header if file is new
                 if not file_exists:
                     writer.writeheader()
-                
+
                 # Write data row
                 writer.writerow(row_data)
-                
+
             print(f"Best parameters logged to: {csv_filename}")
-            
+
         except Exception as e:
             logger.error(f"Failed to write to CSV file {csv_path}: {str(e)}")
             print(f"Warning: Could not log to CSV file: {str(e)}")
@@ -2113,7 +2140,7 @@ class MonteCarloBacktest:
         print(f"Difference: {abs(calculated_avg - metrics['normalized_score']):.6f}")
         print(f"="*70)
 
-    def _print_best_parameters(self, metrics: Dict[str, float]) -> None:
+    def _print_best_parameters(self, metrics: Dict[str, float], png_filename: Optional[str] = None) -> None:
         """Print information about the best performing parameters found so far."""
         lookbacks = self.best_params.get('lookbacks', [])
         print(f"\n" + "="*90)
@@ -2187,8 +2214,8 @@ class MonteCarloBacktest:
         if self.verbose:
             self.debug_normalized_score(metrics)
         
-        # Log to CSV file
-        self._log_best_parameters_to_csv(metrics)
+        # Log to CSV file (include PNG filename if provided)
+        self._log_best_parameters_to_csv(metrics, png_filename=png_filename)
 
     def plot_performance(self, portfolio_values: np.ndarray, metrics: Dict[str, float]) -> None:
         """Create a plot of the current best performance."""

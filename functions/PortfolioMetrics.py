@@ -281,7 +281,8 @@ def calculate_outperformance_percentage(model_switching_metrics: Dict[str, Dict[
     """
     try:
         periods = list(PERIOD_DAYS_MAPPING.keys())
-        base_methods = ["naz100_pine", "naz100_hma", "naz100_pi", "sp500_hma"]
+        # Derive base methods dynamically from all_methods_metrics
+        base_methods = [m for m in all_methods_metrics.keys() if m not in ("model_switching", "cash")]
         
         sharpe_wins = 0
         sortino_wins = 0
@@ -545,7 +546,25 @@ def create_comparison_dataframes(model_effectiveness: Dict[str, Any]) -> Tuple[p
         
         # Define periods and methods
         periods = ["3M", "6M", "1Y", "3Y", "5Y", "10Y", "20Y", "MAX"]
-        methods = ["model_switching", "naz100_pine", "naz100_hma", "naz100_pi", "sp500_hma", "cash"]
+
+        # Build methods list dynamically: prefer existing canonical order, then
+        # append any additional methods found (e.g., sp500_pine).
+        individual_methods = list(individual_metrics.keys()) if isinstance(individual_metrics, dict) else []
+        # Avoid duplicating 'cash' column: treat cash specially and exclude from
+        # the dynamic individual methods list (we'll append it exactly once).
+        individual_methods = [m for m in individual_methods if m != 'cash']
+        canonical_order = ["naz100_pine", "naz100_hma", "naz100_pi", "sp500_hma"]
+        methods = ["model_switching"]
+        # Add canonical methods in order if present
+        for m in canonical_order:
+            if m in individual_methods:
+                methods.append(m)
+        # Append any additional methods that were not in canonical_order
+        for m in individual_methods:
+            if m not in methods:
+                methods.append(m)
+        # Finally add cash
+        methods.append("cash")
         
         # Initialize arrays for Sharpe and Sortino ratios
         sharpe_data = np.zeros((len(periods), len(methods)))
@@ -560,7 +579,10 @@ def create_comparison_dataframes(model_effectiveness: Dict[str, Any]) -> Tuple[p
             
             # Individual methods data
             for method_idx, method in enumerate(methods[1:], 1):  # Skip model_switching
-                method_data = individual_metrics.get(method, {}).get(period, {"sharpe_ratio": 0.0, "sortino_ratio": 0.0})
+                if method == 'cash':
+                    method_data = {"sharpe_ratio": 0.0, "sortino_ratio": 0.0}
+                else:
+                    method_data = individual_metrics.get(method, {}).get(period, {"sharpe_ratio": 0.0, "sortino_ratio": 0.0})
                 sharpe_data[period_idx, method_idx] = method_data.get("sharpe_ratio", 0.0)
                 sortino_data[period_idx, method_idx] = method_data.get("sortino_ratio", 0.0)
         

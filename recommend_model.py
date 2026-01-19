@@ -138,11 +138,13 @@ def get_recommendation_lookbacks(lookbacks_arg: Optional[str], config: Dict[str,
         return config['recommendation_mode']['default_lookbacks']
 
 
-def generate_recommendation_output(monte_carlo: MonteCarloBacktest, 
-                                 dates: List[date_type], 
-                                 lookbacks: List[int],
-                                 target_date: date_type,
-                                 first_weekday: Optional[date_type]) -> str:
+def generate_recommendation_output(
+        monte_carlo: MonteCarloBacktest, 
+        dates: List[date_type], 
+        lookbacks: List[int],
+        target_date: date_type,
+        first_weekday: Optional[date_type]
+    ) -> str:
     """Generate and display model recommendations for specified dates.
     
     Args:
@@ -380,14 +382,22 @@ def main(date: Optional[str], lookbacks: Optional[str], json_config_path: Option
         with open(config_path, 'r') as f:
             config = json.load(f)
         
-        # Validate required configuration sections for performance metric weights
+        # Ensure model_selection section exists and provide sensible defaults
         if 'model_selection' not in config:
-            raise ValueError("Missing 'model_selection' section in JSON configuration")
-        
+            config['model_selection'] = {}
+
+        # Ensure performance_metrics exists; if missing, fall back to defaults
         if 'performance_metrics' not in config['model_selection']:
-            raise ValueError("Missing 'performance_metrics' section in model_selection configuration")
-        
-        # Validate required performance metric weights
+            logger.warning("Missing 'performance_metrics' in JSON; using defaults")
+            config['model_selection']['performance_metrics'] = {
+                'sharpe_ratio_weight': 1.0,
+                'sortino_ratio_weight': 1.0,
+                'max_drawdown_weight': 1.0,
+                'avg_drawdown_weight': 1.0,
+                'annualized_return_weight': 1.0
+            }
+
+        # Validate required performance metric weights (after defaults applied)
         required_weights = [
             'sharpe_ratio_weight',
             'sortino_ratio_weight',
@@ -395,23 +405,20 @@ def main(date: Optional[str], lookbacks: Optional[str], json_config_path: Option
             'avg_drawdown_weight',
             'annualized_return_weight'
         ]
-        
         performance_metrics = config['model_selection']['performance_metrics']
         missing_weights = [w for w in required_weights if w not in performance_metrics]
-        
         if missing_weights:
             raise ValueError(f"Missing required performance metric weights in JSON configuration: {', '.join(missing_weights)}")
-        
-        # Validate metric blending configuration
+
+        # Ensure metric_blending section exists; if missing, provide defaults
         if 'metric_blending' not in config:
-            raise ValueError("Missing 'metric_blending' section in JSON configuration")
-        
+            logger.warning("Missing 'metric_blending' in JSON; using defaults")
+            config['metric_blending'] = {
+                'enabled': False,
+                'full_period_weight': 1.0,
+                'focus_period_weight': 0.0
+            }
         metric_blending = config['metric_blending']
-        required_blending_params = ['enabled', 'full_period_weight', 'focus_period_weight']
-        missing_blending = [p for p in required_blending_params if p not in metric_blending]
-        
-        if missing_blending:
-            raise ValueError(f"Missing required metric blending parameters in JSON configuration: {', '.join(missing_blending)}")
         
         # Ensure recommendation_mode section exists
         if 'recommendation_mode' not in config:
@@ -466,7 +473,27 @@ def main(date: Optional[str], lookbacks: Optional[str], json_config_path: Option
                 "naz100_hma": f"{base_folder}/naz100_hma/data_store/{data_files[data_format]}",
                 "naz100_pi": f"{base_folder}/naz100_pi/data_store/{data_files[data_format]}",
                 "sp500_hma": f"{base_folder}/sp500_hma/data_store/{data_files[data_format]}",
+                "sp500_pine": f"{base_folder}/sp500_pine/data_store/{data_files[data_format]}",
             }
+
+        # Validate resolved model paths similar to run_monte_carlo: log warnings for
+        # missing data files but keep the mapping so downstream code can handle them.
+        validated_model_choices = {}
+        for mname, mtemplate in model_choices.items():
+            if not mtemplate:
+                validated_model_choices[mname] = ""
+                continue
+
+            resolved_path = os.path.expanduser(mtemplate)
+            resolved_path = os.path.abspath(resolved_path)
+
+            if not os.path.exists(resolved_path):
+                logger.warning(f"Model data file not found for {mname}: {resolved_path}. Keeping mapping; MonteCarloBacktest will handle missing data.")
+                print(f"WARNING: Model data file not found for {mname}: {resolved_path}. Keeping mapping; MonteCarloBacktest will handle missing data.")
+
+            validated_model_choices[mname] = resolved_path
+
+        model_choices = validated_model_choices
         
         print(f"\nInitializing model recommendation system...")
         print(f"Using {'actual' if data_format == 'actual' else 'backtested'} portfolio values")
