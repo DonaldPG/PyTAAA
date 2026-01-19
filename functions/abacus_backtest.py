@@ -9,6 +9,7 @@ configuration, and portfolio generation capabilities.
 
 import os
 import pandas as pd
+import numpy as np
 from typing import Dict, List, Optional
 from functions.logger_config import get_logger
 
@@ -114,3 +115,253 @@ class BacktestDataLoader:
             validated_model_choices[mname] = resolved_path
 
         return validated_model_choices
+
+
+def write_abacus_backtest_portfolio_values(
+    json_config_path: str,
+    lookbacks: Optional[List[int]] = None
+) -> bool:
+    """Write abacus model-switching portfolio values to backtest params file.
+    
+    This function generates the abacus model-switching portfolio values
+    and writes them to column 3 of the pyTAAAweb_backtestPortfolioValue.params
+    file, replacing existing values while preserving dates and other columns.
+    Also adds model name as 6th column.
+    
+    Args:
+        json_config_path: Path to the JSON configuration file (must be abacus config)
+        lookbacks: Optional lookback periods for model selection.
+                  If None, will try to load from saved state or use config defaults.
+    
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        # Verify this is an abacus configuration
+        if "abacus" not in json_config_path.lower():
+            logger.warning(f"Skipping: Not an abacus configuration: {json_config_path}")
+            return False
+        
+        logger.info(f"Generating abacus backtest portfolio values for {json_config_path}")
+        print(f"\nGenerating abacus backtest portfolio values...")
+        
+        # Load configuration
+        import json
+        with open(json_config_path, 'r') as f:
+            config = json.load(f)
+        
+        # Get lookbacks if not provided
+        if lookbacks is None:
+            from functions.abacus_recommend import ConfigurationHelper
+            ConfigurationHelper.ensure_config_defaults(config)
+            lookbacks = ConfigurationHelper.get_recommendation_lookbacks(
+                "use-saved", config
+            )
+        
+        print(f"Using lookback periods: {lookbacks}")
+        
+        # Initialize Monte Carlo system
+        from functions.MonteCarloBacktest import MonteCarloBacktest
+        
+        # Get data format from config
+        monte_carlo_config = config.get('monte_carlo', {})
+        data_format = 'backtested'  # Always use backtested for this operation
+        
+        # Configure model paths
+        loader = BacktestDataLoader(config)
+        model_choices = loader.build_model_paths(data_format, json_config_path)
+        model_choices = loader.validate_model_paths(model_choices)
+        
+        print(f"Initializing Monte Carlo backtest system...")
+        
+        # Initialize Monte Carlo instance
+        monte_carlo = MonteCarloBacktest(
+            model_paths=model_choices,
+            iterations=1,
+            trading_frequency=monte_carlo_config.get('trading_frequency', 'monthly'),
+            min_lookback=monte_carlo_config.get('min_lookback', 10),
+            max_lookback=monte_carlo_config.get('max_lookback', 400),
+            search_mode='exploit',
+            json_config=config
+        )
+        
+        # Apply normalization values if available
+        from functions.GetParams import get_central_std_values
+        try:
+            normalization_values = get_central_std_values(json_config_path)
+            monte_carlo.CENTRAL_VALUES = normalization_values['central_values']
+            monte_carlo.STD_VALUES = normalization_values['std_values']
+            print(f"Applied JSON normalization values")
+        except Exception as e:
+            logger.warning(f"Could not load normalization values: {e}")
+        
+        # Calculate model-switching portfolio with model selections
+        print(f"Calculating model-switching portfolio...")
+        model_switching_portfolio, model_selections = _calculate_model_switching_portfolio_with_selections(
+            monte_carlo, lookbacks
+        )
+        
+        # Get dates from monte_carlo
+        dates = monte_carlo.dates
+        
+        # Determine output file path
+        from functions.GetParams import get_json_params
+        params = get_json_params(json_config_path)
+        data_folder = params.get('data_folder', '/Users/donaldpg/pyTAAA_data')
+        folder_name = params.get('folder_name', 'naz100_sp500_abacus')
+        output_file = os.path.join(
+            data_folder, folder_name, 'data_store',
+            'pyTAAAweb_backtestPortfolioValue.params'
+        )
+        
+        # Read existing file
+        if not os.path.exists(output_file):
+            logger.error(f"Output file does not exist: {output_file}")
+            print(f"Error: Output file does not exist: {output_file}")
+            return False
+        
+        print(f"Reading existing backtest file: {output_file}")
+        
+        # Read existing data
+        existing_dates = []
+        existing_col2 = []
+        existing_col3 = []
+        existing_col4 = []
+        existing_col5 = []
+        existing_col6 = []  # Model names (may not exist in older files)
+        
+        with open(output_file, 'r') as f:
+            for line in f:
+                parts = line.strip().split()
+                if len(parts) >= 5:
+                    existing_dates.append(parts[0])
+                    existing_col2.append(parts[1])
+                    existing_col3.append(parts[2])
+                    existing_col4.append(parts[3])
+                    existing_col5.append(parts[4])
+                    # Handle optional 6th column
+                    if len(parts) >= 6:
+                        existing_col6.append(parts[5])
+                    else:
+                        existing_col6.append("UNKNOWN")
+        
+        # Create mapping from date to abacus portfolio value and model name
+        abacus_values = {}
+        abacus_models = {}
+        for i, date_val in enumerate(dates):
+            from datetime import datetime
+            if isinstance(date_val, datetime):
+                date_str = date_val.strftime('%Y-%m-%d')
+            else:
+                date_str = str(date_val)
+            abacus_values[date_str] = model_switching_portfolio[i]
+            abacus_models[date_str] = model_selections[i]
+        
+        # Update column 3 with abacus values and column 6 with model names where dates match
+        updated_lines = []
+        updates_count = 0
+        
+        for i in range(len(existing_dates)):
+            date_str = existing_dates[i]
+            
+            if date_str in abacus_values:
+                # Replace column 3 with abacus value and column 6 with model name
+                new_col3 = f"{abacus_values[date_str]:.2f}"
+                new_col6 = abacus_models[date_str]
+                updated_lines.append(
+                    f"{existing_dates[i]} {existing_col2[i]} {new_col3} "
+                    f"{existing_col4[i]} {existing_col5[i]} {new_col6}\n"
+                )
+                updates_count += 1
+            else:
+                # Keep original line (preserve existing col6 if it exists)
+                updated_lines.append(
+                    f"{existing_dates[i]} {existing_col2[i]} {existing_col3[i]} "
+                    f"{existing_col4[i]} {existing_col5[i]} {existing_col6[i]}\n"
+                )
+        
+        # Write updated data back to file
+        print(f"Writing updated values to {output_file}")
+        with open(output_file, 'w') as f:
+            f.writelines(updated_lines)
+        
+        print(f"Successfully updated {updates_count} of {len(existing_dates)} dates")
+        logger.info(f"Updated {updates_count} dates in {output_file}")
+        
+        # Compute metrics for the abacus portfolio
+        metrics = monte_carlo.compute_performance_metrics(model_switching_portfolio)
+        print(f"\nAbacus Model-Switching Portfolio:")
+        print(f"  Final Value: ${metrics['final_value']:,.0f}")
+        print(f"  Annual Return: {metrics['annual_return']:.1f}%")
+        print(f"  Sharpe Ratio: {metrics['sharpe_ratio']:.2f}")
+        print(f"  Normalized Score: {metrics['normalized_score']:.3f}")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to write abacus backtest portfolio values: {str(e)}", exc_info=True)
+        print(f"Error: {str(e)}")
+        return False
+
+
+def _calculate_model_switching_portfolio_with_selections(
+    monte_carlo, lookbacks: List[int]
+) -> tuple:
+    """Calculate portfolio values and track model selections.
+    
+    This is similar to MonteCarloBacktest._calculate_model_switching_portfolio
+    but also returns which model was selected at each date.
+    
+    Args:
+        monte_carlo: MonteCarloBacktest instance
+        lookbacks: Lookback periods to use for model selection
+        
+    Returns:
+        Tuple of (portfolio_values, model_selections)
+        where model_selections[i] is the model name used at date i
+    """
+    n_dates = len(monte_carlo.dates)
+    portfolio_values = np.zeros(n_dates)
+    portfolio_values[0] = 10000.0
+    model_selections = ["cash"] * n_dates  # Track which model is selected
+    current_model = "cash"
+    
+    # Reset trading state
+    monte_carlo.last_trade_date = None
+    
+    # Simulate trading through all dates
+    for t in range(1, n_dates):
+        date_val = monte_carlo.dates[t]
+        prev_date_val = monte_carlo.dates[t-1]
+        
+        # Convert date objects to pandas Timestamps for indexing
+        date = pd.Timestamp(date_val)
+        prev_date = pd.Timestamp(prev_date_val)
+        
+        # Check if we should trade (monthly rebalancing)
+        if monte_carlo._should_trade(date_val):
+            # Select best model for this date using specified lookbacks
+            if t >= max(lookbacks):  # Ensure we have enough history
+                current_model, _ = monte_carlo._select_best_model(t, lookbacks=lookbacks)
+            else:
+                current_model = "cash"  # Default to cash if insufficient history
+        
+        # Record which model is being used
+        model_selections[t] = current_model
+        
+        # Update portfolio value based on current model
+        if current_model == "cash":
+            portfolio_values[t] = portfolio_values[t-1]
+        else:
+            try:
+                model_return = (
+                    monte_carlo.portfolio_histories[current_model][date] /
+                    monte_carlo.portfolio_histories[current_model][prev_date]
+                )
+                portfolio_values[t] = portfolio_values[t-1] * model_return
+            except (KeyError, ZeroDivisionError):
+                # Fallback to cash if model data is unavailable
+                portfolio_values[t] = portfolio_values[t-1]
+                model_selections[t] = "cash"
+    
+    return portfolio_values, model_selections

@@ -617,10 +617,14 @@ def makeDailyMonteCarloBacktest(json_fn):
 
     if modified_hours > 20.0:
         dailyBacktest_pctLong(json_fn)
+    if "abacus" in json_fn.lower():
+        # Update abacus backtest portfolio values (column 3) with model-switching results
+        from functions.abacus_backtest import write_abacus_backtest_portfolio_values
+        write_abacus_backtest_portfolio_values(json_fn)
     #dailyBacktest_pctLong()   ### TODO: remove this line !!!!!!!!
 
     # for abacus, re-populate the saved abacus backtest portfolio values
-    
+
 
     ##########################################
     # create html markup for backtest plot
