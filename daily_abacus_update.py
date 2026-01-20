@@ -49,6 +49,9 @@ logging.getLogger('matplotlib.font_manager').setLevel(logging.WARNING)
 logging.getLogger('matplotlib.pyplot').setLevel(logging.WARNING)
 logging.getLogger('matplotlib.ticker').setLevel(logging.WARNING)
 
+# Suppress verbose numba debug logging
+logging.getLogger('numba').setLevel(logging.WARNING)
+
 # Suppress warnings
 import warnings
 warnings.filterwarnings("ignore", message=".*Using non-interactive Agg backend.*")
