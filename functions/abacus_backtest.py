@@ -160,6 +160,12 @@ def write_abacus_backtest_portfolio_values(
         
         print(f"Using lookback periods: {lookbacks}")
         
+        # Suppress numba's verbose debug logging
+        import logging
+        numba_logger = logging.getLogger('numba')
+        original_numba_level = numba_logger.level
+        numba_logger.setLevel(logging.WARNING)
+        
         # Initialize Monte Carlo system
         # Note: Import MonteCarloBacktest with care - numba initialization can conflict
         # with custom print functions in __main__. Temporarily restore original print.
@@ -173,6 +179,7 @@ def write_abacus_backtest_portfolio_values(
         finally:
             # Restore whatever print was being used
             builtins.print = original_print
+            # Keep numba logging suppressed (don't restore original level)
         
         # Get data format from config
         monte_carlo_config = config.get('monte_carlo', {})
