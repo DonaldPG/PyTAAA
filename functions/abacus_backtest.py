@@ -203,6 +203,23 @@ def write_abacus_backtest_portfolio_values(
             json_config=config
         )
         
+        # Force date range to use longest available model (Nasdaq starts 1991, SP500 starts 2000)
+        # Find the model with the most dates (earliest start date)
+        max_dates = 0
+        longest_model = None
+        for model_name in monte_carlo.portfolio_histories.keys():
+            if model_name != 'cash':
+                model_dates = len(monte_carlo.portfolio_histories[model_name])
+                if model_dates > max_dates:
+                    max_dates = model_dates
+                    longest_model = model_name
+        
+        if longest_model:
+            # Use the date range from the longest model
+            longest_dates = monte_carlo.portfolio_histories[longest_model].index.tolist()
+            monte_carlo.dates = [d.date() if hasattr(d, 'date') else d for d in longest_dates]
+            print(f"Using date range from {longest_model}: {len(monte_carlo.dates)} dates from {monte_carlo.dates[0]} to {monte_carlo.dates[-1]}")
+        
         # Apply normalization values if available
         from functions.GetParams import get_central_std_values
         try:
@@ -266,6 +283,7 @@ def write_abacus_backtest_portfolio_values(
         # Create mapping from date to abacus portfolio value and model name
         abacus_values = {}
         abacus_models = {}
+        abacus_dates_set = set()
         for i, date_val in enumerate(dates):
             from datetime import datetime
             if isinstance(date_val, datetime):
@@ -274,11 +292,41 @@ def write_abacus_backtest_portfolio_values(
                 date_str = str(date_val)
             abacus_values[date_str] = model_switching_portfolio[i]
             abacus_models[date_str] = model_selections[i]
+            abacus_dates_set.add(date_str)
         
-        # Update column 3 with abacus values and column 6 with model names where dates match
+        # Find dates in abacus that are missing from existing file (dates before existing start)
+        from datetime import datetime
+        existing_dates_set = set(existing_dates)
+        missing_dates = []
+        if existing_dates:
+            first_existing_date = datetime.strptime(existing_dates[0], '%Y-%m-%d').date()
+            for date_str in sorted(abacus_dates_set):
+                date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+                if date_obj < first_existing_date and date_str not in existing_dates_set:
+                    missing_dates.append(date_str)
+        
+        # Prepend missing dates (from 1991-2000 if they exist)
         updated_lines = []
         updates_count = 0
+        prepended_count = 0
         
+        # Add missing dates at the beginning
+        for date_str in sorted(missing_dates):
+            if date_str in abacus_values:
+                # Create new line with abacus value in col 3 and model name in col 6
+                # Use placeholder values for col 2, 4, 5 (will be filled by dailyBacktest_pctLong later)
+                new_col2 = "10000.0"  # Placeholder buy-hold value
+                new_col3 = f"{abacus_values[date_str]:.2f}"
+                new_col4 = "-6381.4"  # Placeholder
+                new_col5 = "-100000.0"  # Placeholder
+                new_col6 = abacus_models[date_str]
+                updated_lines.append(
+                    f"{date_str} {new_col2} {new_col3} "
+                    f"{new_col4} {new_col5} {new_col6}\n"
+                )
+                prepended_count += 1
+        
+        # Update existing dates
         for i in range(len(existing_dates)):
             date_str = existing_dates[i]
             
@@ -303,8 +351,12 @@ def write_abacus_backtest_portfolio_values(
         with open(output_file, 'w') as f:
             f.writelines(updated_lines)
         
-        print(f"Successfully updated {updates_count} of {len(existing_dates)} dates")
-        logger.info(f"Updated {updates_count} dates in {output_file}")
+        total_dates = len(updated_lines)
+        print(f"Successfully prepended {prepended_count} dates and updated {updates_count} existing dates")
+        print(f"Total dates in file: {total_dates} (from {updated_lines[0].split()[0]} to {updated_lines[-1].split()[0]})")
+        logger.info(f"Prepended {prepended_count} dates, updated {updates_count} dates in {output_file}")
+        logger.info(f"Total dates: {total_dates}")
+
         
         # Compute metrics for the abacus portfolio
         metrics = monte_carlo.compute_performance_metrics(model_switching_portfolio)
