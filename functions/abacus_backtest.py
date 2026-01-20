@@ -236,8 +236,9 @@ def write_abacus_backtest_portfolio_values(
             monte_carlo, lookbacks
         )
         
-        # Get dates from monte_carlo
+        # Get dates from monte_carlo (full Nasdaq range: 1991-present)
         dates = monte_carlo.dates
+        nasdaq_start_date = dates[0]  # Should be 1991-01-02
         
         # Determine output file path
         from functions.GetParams import get_json_params
@@ -259,98 +260,106 @@ def write_abacus_backtest_portfolio_values(
         
         # Read existing data
         existing_dates = []
-        existing_col2 = []
-        existing_col3 = []
-        existing_col4 = []
-        existing_col5 = []
-        existing_col6 = []  # Model names (may not exist in older files)
+        existing_cols = []  # Store all columns as-is
         
         with open(output_file, 'r') as f:
             for line in f:
                 parts = line.strip().split()
                 if len(parts) >= 5:
                     existing_dates.append(parts[0])
-                    existing_col2.append(parts[1])
-                    existing_col3.append(parts[2])
-                    existing_col4.append(parts[3])
-                    existing_col5.append(parts[4])
-                    # Handle optional 6th column
-                    if len(parts) >= 6:
-                        existing_col6.append(parts[5])
+                    existing_cols.append(parts)
+        
+        # STEP 1: Pad file back to 1991 if needed (with placeholder values, no col6 yet)
+        from datetime import datetime
+        if existing_dates:
+            first_existing_date = datetime.strptime(existing_dates[0], '%Y-%m-%d').date()
+            
+            # Check if padding is needed
+            if first_existing_date > nasdaq_start_date:
+                print(f"Padding file from {nasdaq_start_date} to {first_existing_date}")
+                
+                # Generate all Nasdaq trading dates from 1991 to first existing date
+                padding_dates = []
+                for date_val in dates:
+                    if isinstance(date_val, datetime):
+                        date_obj = date_val.date()
+                        date_str = date_val.strftime('%Y-%m-%d')
                     else:
-                        existing_col6.append("UNKNOWN")
+                        date_obj = date_val
+                        date_str = str(date_val)
+                    
+                    if date_obj < first_existing_date:
+                        padding_dates.append(date_str)
+                
+                # Prepend padding rows (only 5 columns: date, col1-col4, no col5 yet)
+                padded_lines = []
+                for date_str in sorted(padding_dates):
+                    # Placeholder values: col1=10000, col2=10000, col3=-1000, col4=-100000
+                    padded_line = [date_str, "10000.0", "10000.0", "-1000", "-100000.0"]
+                    padded_lines.append(padded_line)
+                
+                # Combine padded and existing data
+                all_lines = padded_lines + existing_cols
+                existing_dates = [line[0] for line in all_lines]
+                existing_cols = all_lines
+                
+                print(f"Padded {len(padded_lines)} dates from {nasdaq_start_date} to {first_existing_date}")
+        
+        # STEP 2: Calculate abacus values for all dates
+        print(f"Calculating model-switching portfolio...")
+        model_switching_portfolio, model_selections = _calculate_model_switching_portfolio_with_selections(
+            monte_carlo, lookbacks
+        )
         
         # Create mapping from date to abacus portfolio value and model name
         abacus_values = {}
         abacus_models = {}
-        abacus_dates_set = set()
         for i, date_val in enumerate(dates):
-            from datetime import datetime
             if isinstance(date_val, datetime):
                 date_str = date_val.strftime('%Y-%m-%d')
             else:
                 date_str = str(date_val)
             abacus_values[date_str] = model_switching_portfolio[i]
             abacus_models[date_str] = model_selections[i]
-            abacus_dates_set.add(date_str)
         
-        # Find dates in abacus that are missing from existing file (dates before existing start)
-        from datetime import datetime
-        existing_dates_set = set(existing_dates)
-        missing_dates = []
-        if existing_dates:
-            first_existing_date = datetime.strptime(existing_dates[0], '%Y-%m-%d').date()
-            for date_str in sorted(abacus_dates_set):
-                date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
-                if date_obj < first_existing_date and date_str not in existing_dates_set:
-                    missing_dates.append(date_str)
-        
-        # Prepend missing dates (from 1991-2000 if they exist)
+        # STEP 3: Update column 3 (index 2) and add/update column 6 (index 5)
         updated_lines = []
         updates_count = 0
-        prepended_count = 0
+        padded_count = len(existing_cols) - len([c for c in existing_cols if len(c) >= 6])
         
-        # Add missing dates at the beginning
-        for date_str in sorted(missing_dates):
+        for cols in existing_cols:
+            date_str = cols[0]
+            
             if date_str in abacus_values:
-                # Create new line with abacus value in col 3 and model name in col 6
-                # Use placeholder values for other columns per user specification
-                new_col2 = "10000.0"  # Col 1: Buy-hold value (10000 if no data)
-                new_col3 = f"{abacus_values[date_str]:.2f}"  # Col 2: Abacus portfolio value
-                new_col4 = "-1000"  # Col 3: Placeholder (-1000 when padding)
-                new_col5 = "-100000.0"  # Col 4: Placeholder (-100000 when padding)
-                # Col 5: Model name - use "CASH" (uppercase) when value is at initial 10000
-                # or when model is "cash", otherwise use actual model name
+                # Replace column 3 (index 2) with abacus value
+                # Add/update column 6 (index 5) with model name
+                new_col3 = f"{abacus_values[date_str]:.2f}"
                 model_name = abacus_models[date_str]
+                
+                # Use "CASH" (uppercase) when model is cash or value is at initial 10000
                 if model_name.lower() == "cash" or abacus_values[date_str] == 10000.0:
                     new_col6 = "CASH"
                 else:
                     new_col6 = model_name
-                updated_lines.append(
-                    f"{date_str} {new_col2} {new_col3} "
-                    f"{new_col4} {new_col5} {new_col6}\n"
-                )
-                prepended_count += 1
-        
-        # Update existing dates
-        for i in range(len(existing_dates)):
-            date_str = existing_dates[i]
-            
-            if date_str in abacus_values:
-                # Replace column 3 with abacus value and column 6 with model name
-                new_col3 = f"{abacus_values[date_str]:.2f}"
-                new_col6 = abacus_models[date_str]
-                updated_lines.append(
-                    f"{existing_dates[i]} {existing_col2[i]} {new_col3} "
-                    f"{existing_col4[i]} {existing_col5[i]} {new_col6}\n"
-                )
+                
+                # Build line with 6 columns
+                line_parts = [
+                    cols[0],  # date
+                    cols[1],  # col1 (buy-hold)
+                    new_col3, # col2 (abacus value - UPDATED)
+                    cols[3],  # col3
+                    cols[4],  # col4
+                    new_col6  # col5 (model name - ADDED/UPDATED)
+                ]
+                updated_lines.append(" ".join(line_parts) + "\n")
                 updates_count += 1
             else:
                 # Keep original line (preserve existing col6 if it exists)
-                updated_lines.append(
-                    f"{existing_dates[i]} {existing_col2[i]} {existing_col3[i]} "
-                    f"{existing_col4[i]} {existing_col5[i]} {existing_col6[i]}\n"
-                )
+                if len(cols) >= 6:
+                    updated_lines.append(" ".join(cols) + "\n")
+                else:
+                    # Should not happen since we just padded, but handle gracefully
+                    updated_lines.append(" ".join(cols) + " UNKNOWN\n")
         
         # Write updated data back to file
         print(f"Writing updated values to {output_file}")
@@ -358,9 +367,16 @@ def write_abacus_backtest_portfolio_values(
             f.writelines(updated_lines)
         
         total_dates = len(updated_lines)
-        print(f"Successfully prepended {prepended_count} dates and updated {updates_count} existing dates")
-        print(f"Total dates in file: {total_dates} (from {updated_lines[0].split()[0]} to {updated_lines[-1].split()[0]})")
-        logger.info(f"Prepended {prepended_count} dates, updated {updates_count} dates in {output_file}")
+        first_date = updated_lines[0].split()[0]
+        last_date = updated_lines[-1].split()[0]
+        
+        print(f"Successfully updated file:")
+        if padded_count > 0:
+            print(f"  Padded: {padded_count} dates")
+        print(f"  Updated: {updates_count} dates with abacus values")
+        print(f"  Total: {total_dates} dates from {first_date} to {last_date}")
+        
+        logger.info(f"Padded {padded_count} dates, updated {updates_count} dates in {output_file}")
         logger.info(f"Total dates: {total_dates}")
 
         
