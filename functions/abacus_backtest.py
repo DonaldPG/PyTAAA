@@ -314,12 +314,18 @@ def write_abacus_backtest_portfolio_values(
         for date_str in sorted(missing_dates):
             if date_str in abacus_values:
                 # Create new line with abacus value in col 3 and model name in col 6
-                # Use placeholder values for col 2, 4, 5 (will be filled by dailyBacktest_pctLong later)
-                new_col2 = "10000.0"  # Placeholder buy-hold value
-                new_col3 = f"{abacus_values[date_str]:.2f}"
-                new_col4 = "-6381.4"  # Placeholder
-                new_col5 = "-100000.0"  # Placeholder
-                new_col6 = abacus_models[date_str]
+                # Use placeholder values for other columns per user specification
+                new_col2 = "10000.0"  # Col 1: Buy-hold value (10000 if no data)
+                new_col3 = f"{abacus_values[date_str]:.2f}"  # Col 2: Abacus portfolio value
+                new_col4 = "-1000"  # Col 3: Placeholder (-1000 when padding)
+                new_col5 = "-100000.0"  # Col 4: Placeholder (-100000 when padding)
+                # Col 5: Model name - use "CASH" (uppercase) when value is at initial 10000
+                # or when model is "cash", otherwise use actual model name
+                model_name = abacus_models[date_str]
+                if model_name.lower() == "cash" or abacus_values[date_str] == 10000.0:
+                    new_col6 = "CASH"
+                else:
+                    new_col6 = model_name
                 updated_lines.append(
                     f"{date_str} {new_col2} {new_col3} "
                     f"{new_col4} {new_col5} {new_col6}\n"
