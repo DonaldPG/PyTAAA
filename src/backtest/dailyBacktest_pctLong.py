@@ -107,7 +107,7 @@ def plotRecentPerfomance3(
     ##
     params = get_json_params(json_fn)
     symbols_file = get_symbols_file(json_fn)
-    stockList = params.get('stockList', 'SP500')
+    stockList = params['stockList']
 
     # # read list of symbols from disk.
     # symbol_directory = os.path.join( os.getcwd(), "symbols" )

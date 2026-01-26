@@ -404,7 +404,7 @@ def newHighsAndLows(
         with open( output_file, "a" ) as f:
             f.write(textmessage)
 
-    return newHighs_2D, newLows_2D, np.mean(TradedValue,axis=0)[-1]
+    return sumNewHighs, sumNewLows, np.mean(TradedValue,axis=0)[-1]
 
 def HighLowIterate(iterations=100):
     import random

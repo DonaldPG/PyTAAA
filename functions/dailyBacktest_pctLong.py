@@ -1634,7 +1634,7 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
     params = get_json_params(json_fn)
 
     if params['stockList'] == 'Naz100':
-        newHighs_2D, newLows_2D, mean_TradedValue = newHighsAndLows(
+        sumNewHighs, sumNewLows, mean_TradedValue = newHighsAndLows(
             json_fn, num_days_highlow=(73,293),
             num_days_cumu=(50,159),
             HighLowRatio=(1.654,2.019),
@@ -1645,7 +1645,7 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
         )
 
     elif params['stockList'] == 'SP500':
-        newHighs_2D, newLows_2D, mean_TradedValue = newHighsAndLows(
+        sumNewHighs, sumNewLows, mean_TradedValue = newHighsAndLows(
             json_fn, num_days_highlow=(73,146),
             num_days_cumu=(76,108),
             HighLowRatio=(2.293,1.573),
@@ -1655,8 +1655,8 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
             makeQCPlots=False
         )
 
-    sumNewHighs = np.sum(newHighs_2D, axis=0)
-    sumNewLows = np.sum(newLows_2D, axis=0)
+    # sumNewHighs = np.sum(newHighs_2D, axis=0)
+    # sumNewLows = np.sum(newLows_2D, axis=0)
     # If multiple parameter sets were used, sum them to get 1D array
     if sumNewHighs.ndim > 1:
         sumNewHighs = np.sum(sumNewHighs, axis=-1)

@@ -38,7 +38,7 @@ uv run python recommend_model.py \
 
 uv run python daily_abacus_update.py \
 --json /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pytaaa_naz100_sp500_abacus.json \
---verbose
+--verbose 2>&1 | tee pytaaa_naz100_sp500_abacus.log
 
 
 

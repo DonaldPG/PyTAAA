@@ -349,7 +349,7 @@ def computeDailyBacktest(
         
         # Compute new highs and lows for each date
         print("\n ... Computing new highs and lows for backtest output...")
-        newHighs_2D, newLows_2D, _ = newHighsAndLows(
+        sumNewHighs, sumNewLows, _ = newHighsAndLows(
             json_fn, num_days_highlow=(73,293),
             num_days_cumu=(50,159),
             HighLowRatio=(1.654,2.019),
@@ -360,8 +360,8 @@ def computeDailyBacktest(
             outputStats=False
         )
         # Sum across stocks (axis=0) and across parameter sets (axis=1 if multiple)
-        sumNewHighs = np.sum(newHighs_2D, axis=0)
-        sumNewLows = np.sum(newLows_2D, axis=0)
+        # sumNewHighs = np.sum(newHighs_2D, axis=0)
+        # sumNewLows = np.sum(newLows_2D, axis=0)
         # If multiple parameter sets were used, sum them to get 1D array
         if sumNewHighs.ndim > 1:
             sumNewHighs = np.sum(sumNewHighs, axis=-1)

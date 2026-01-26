@@ -465,8 +465,9 @@ def makeTrendDispersionPlot(json_fn):
             for i in range(numlines):
                 try:
                     statusline = lines[i]
-                    statusline_list = statusline.split(" ")
-                    if len( statusline_list ) == 5:
+                    # statusline_list = statusline.split(" ")
+                    statusline_list = [x for x in statusline.split(" ") if x]  # Filter empty strings
+                    if len( statusline_list ) >= 3:
                         backtestDate.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                         backtestBHvalue.append( float(statusline_list[1]) )
                         backtestSystemvalue.append( float(statusline_list[2]) )
@@ -891,8 +892,10 @@ def makeDailyChannelOffsetSignal(json_fn):
             for i in range(numlines):
                 try:
                     statusline = lines[i]
-                    statusline_list = statusline.split(" ")
-                    if len( statusline_list ) == 5:
+                    # statusline_list = statusline.split(" ")
+                    # if len( statusline_list ) == 5:
+                    statusline_list = [x for x in statusline.split(" ") if x]  # Filter empty strings
+                    if len( statusline_list ) >= 3:
                         backtestDate.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                         backtestBHvalue.append( float(statusline_list[1]) )
                         backtestSystemvalue.append( float(statusline_list[2]) )
