@@ -81,6 +81,12 @@ def print_progress(i: int, total: int, start_time: float) -> None:
     default=None,
     help='Maximum year for focus period start (default: 2021)'
 )
+@click.option(
+    '--workers',
+    type=int,
+    default=10,
+    help='Number of parallel worker processes (default: 10, use 1 for serial execution)'
+)
 def main(
     search: str, 
     verbose: bool, 
@@ -88,7 +94,8 @@ def main(
     randomize: bool,
     fp_duration: Optional[int],
     fp_year_min: Optional[int],
-    fp_year_max: Optional[int]
+    fp_year_max: Optional[int],
+    workers: int
 ) -> None:
     """Run Monte Carlo backtesting with actual or backtested portfolio values.
     
@@ -100,6 +107,7 @@ def main(
         fp_duration: Focus period duration in years
         fp_year_min: Minimum year for focus period start
         fp_year_max: Maximum year for focus period start
+        workers: Number of parallel worker processes
     """
 
     logger.info("Starting Monte Carlo backtesting process")
@@ -277,7 +285,8 @@ def main(
             max_lookback=max_lookback,
             search_mode=search,
             verbose=verbose,
-            json_config=config
+            json_config=config,
+            workers=workers
         )
         
         # Apply JSON normalization values if available by updating class constants

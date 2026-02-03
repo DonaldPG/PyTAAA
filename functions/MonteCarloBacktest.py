@@ -19,6 +19,7 @@ import random
 import pickle
 from pathlib import Path
 from dataclasses import dataclass, field
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from functions.PortfolioMetrics import (
     calculate_period_metrics, 
     analyze_model_switching_effectiveness
@@ -336,7 +337,8 @@ class MonteCarloBacktest:
         n_lookbacks: int = 3,
         search_mode: str = "explore-exploit",
         verbose: bool = False,
-        json_config: Optional[Dict] = None
+        json_config: Optional[Dict] = None,
+        workers: int = 10
     ) -> None:
         """Initialize Monte Carlo backtesting framework with permutation-invariant tracking.
         
@@ -352,6 +354,7 @@ class MonteCarloBacktest:
             search_mode: Search strategy - "explore-exploit" (default), "explore", or "exploit"
             verbose: Whether to show detailed normalized score breakdown
             json_config: Optional JSON configuration dictionary
+            workers: Number of parallel worker processes (default: 10, use 1 for serial)
         """
         self.iterations = iterations
         self.min_iterations_for_exploit = min_iterations_for_exploit
@@ -362,6 +365,7 @@ class MonteCarloBacktest:
         self.n_lookbacks = n_lookbacks
         self.search_mode = search_mode
         self.verbose = verbose  # Store verbose setting
+        self.workers = workers  # Number of parallel worker processes
         
         # Store JSON configuration for focus period blending
         self.json_config = json_config or {}
@@ -535,7 +539,10 @@ class MonteCarloBacktest:
         print("\nData loading complete!")
 
     def run(self) -> List[str]:
-        """Run Monte Carlo backtesting with actual portfolio values."""
+        """Run Monte Carlo backtesting with actual portfolio values.
+        
+        Uses parallel processing if workers > 1, otherwise runs serially.
+        """
         if not self.dates:
             raise ValueError("No historical data loaded")
             
@@ -547,146 +554,26 @@ class MonteCarloBacktest:
         best_performance = float('-inf')
         start_time = time.time()
         
-        print(f"\nRunning {self.iterations} Monte Carlo iterations...")
+        # Determine execution mode
+        use_parallel = self.workers > 1
+        mode_str = f"parallel with {self.workers} workers" if use_parallel else "serial"
+        
+        print(f"\nRunning {self.iterations} Monte Carlo iterations ({mode_str})...")
         print(f"Using {len(self.portfolio_histories)} models over {n_dates} trading days")
         print("Press Ctrl+C to stop early with current best result\n")
         
         try:
-            # Run Monte Carlo iterations
-            for i in range(self.iterations):
-                # Check for interrupt at the start of each iteration
-                check_interrupt()
-                    
-                if i % 10 == 0:  # Progress update every 10 iterations
-                    elapsed = time.time() - start_time
-                    if i > 0:
-                        est_total = elapsed * self.iterations / i
-                        remaining = est_total - elapsed
-                        remaining_min = int(remaining // 60)
-                        remaining_sec = int(remaining % 60)
-                        print(f"Running iteration {i+1}/{self.iterations}... "
-                              f"Est. remaining: {remaining_min}m {remaining_sec}s", end="\r")
-                
-                portfolio_value = 10000.0
-                current_model = "cash"
-                current_lookbacks = []  # Track lookbacks for this iteration
-                portfolio_values = np.zeros(n_dates)
-                portfolio_values[0] = portfolio_value
-                
-                # Track model selections and parameters for this iteration
-                current_selections = {}
-                current_params = {"lookbacks": [], "models": []}
-
-                # Generate lookbacks once at the start of iteration using new permutation-invariant system
-                current_lookbacks = self._generate_diverse_lookbacks(self.n_lookbacks, iteration=i)
-                current_params["lookbacks"] = current_lookbacks
-                
-                # Simulate trading through all dates
-                for t in range(1, n_dates):
-                    # Check for interrupt every 25 dates for maximum responsiveness
-                    if t % 25 == 0:
-                        check_interrupt()
-                    
-                    date = pd.Timestamp(self.dates[t])
-                    prev_date = pd.Timestamp(self.dates[t-1])
-                    
-                    # Check if we should trade
-                    if self._should_trade(self.dates[t]):
-                        # Pass current lookbacks to model selection
-                        current_model, _ = self._select_best_model(t, lookbacks=current_lookbacks)
-                        current_selections[date.strftime('%Y-%m-%d')] = current_model
-                        current_params["models"].append(current_model)
-                    
-                    # Update portfolio value
-                    if current_model == "cash":
-                        portfolio_values[t] = portfolio_values[t-1]
-                    else:
-                        model_return = (
-                            self.portfolio_histories[current_model][date] /
-                            self.portfolio_histories[current_model][prev_date]
-                        )
-                        portfolio_values[t] = portfolio_values[t-1] * model_return
-                
-                # Calculate performance metrics for this iteration
-                # Use consistent portfolio calculation method for both optimization and display
-                consistent_portfolio = self._calculate_model_switching_portfolio(current_lookbacks)
-                metrics_dict = self.compute_performance_metrics(consistent_portfolio)
-                
-                # Compute focus period metrics and blended score
-                focus_metrics = self.compute_focus_period_metrics(consistent_portfolio)
-                if focus_metrics:
-                    # Add focus period metrics to main metrics dict
-                    metrics_dict.update(focus_metrics)
-                
-                blended_score = self.compute_blended_score(
-                    focus_metrics.get('focus_1_normalized_score') if focus_metrics else None,
-                    focus_metrics.get('focus_2_normalized_score') if focus_metrics else None
-                )
-                metrics_dict['blended_score'] = blended_score
-                
-                # Use blended score for Monte Carlo optimization
-                current_performance = blended_score
-                
-                # Update permutation-invariant tracking arrays
-                self._update_tracking_arrays(current_lookbacks, current_performance)
-                
-                # Track best performing portfolio
-                if current_performance > best_performance:
-                    best_performance = current_performance
-                    self.best_portfolio_value = consistent_portfolio.copy()  # Use consistent calculation
-                    self.best_params = current_params.copy()
-                    self.best_model_selections = current_selections.copy()
-
-                    # Create unique PNG in repo `pngs/` and save plot for this NEW BEST
-                    try:
-                        repo_root = os.path.dirname(os.path.dirname(__file__))
-                        pngs_dir = os.path.join(repo_root, 'pngs')
-                        os.makedirs(pngs_dir, exist_ok=True)
-                        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-                        lb_list = sorted(current_lookbacks) if current_lookbacks else []
-                        lb_str = '-'.join(str(x) for x in lb_list) if lb_list else 'none'
-                        score_val = metrics_dict.get('normalized_score', 0.0)
-                        score_str = f"{score_val:.3f}".replace('.', '_')
-                        png_name = f"monte_carlo_best_{timestamp}_lb{lb_str}_{score_str}.png"
-                        png_path = os.path.join(pngs_dir, png_name)
-
-                        # Save per-new-best plot with unique name
-                        try:
-                            self.create_monte_carlo_plot(consistent_portfolio, metrics_dict, save_path=png_path)
-                        except Exception as e:
-                            logger.warning(f"Failed to create per-best PNG {png_path}: {e}")
-                            png_path = ''
-                    except Exception as e:
-                        logger.warning(f"Failed to prepare pngs directory: {e}")
-                        png_path = ''
-
-                    # Display performance metrics using the same consistent calculation and log PNG filename
-                    # Format as ./pngs/filename.png for consistency
-                    png_rel_path = f"./pngs/{png_name}" if png_path else ''
-                    self._print_best_parameters(metrics_dict, png_filename=png_rel_path)
-
-                # Record model choice
-                top_models.append(current_model)
-                
-                # Add small delay every 100 iterations to prevent system overload
-                if i % 100 == 0:
-                    time.sleep(0.01)
-                    
-                    # Log current state of exploration/exploitation with new permutation-invariant system
-                    if i > 0:
-                        stats = self.get_permutation_statistics()
-                        self.logger.info(
-                            f"Permutation-invariant statistics after {i} iterations:\n"
-                            f"  Total canonical combinations explored: {stats['total_canonical_combinations']}\n"
-                            f"  Total visits: {stats['total_visits']}\n"
-                            f"  Average visits per combination: {stats['average_visits_per_combination']:.2f}\n"
-                            f"  Efficiency improvement factor: {stats['efficiency_improvement_factor']}"
-                        )
+            if use_parallel:
+                # Parallel execution using ProcessPoolExecutor
+                self._run_parallel(start_time)
+            else:
+                # Serial execution (original behavior)
+                self._run_serial(start_time)
                 
         except KeyboardInterrupt:
             print("\n\nStopped early by user")
-            print(f"Completed {i+1} iterations")
-            if not top_models:
+            print(f"Completed iterations so far")
+            if not self.best_portfolio_value:
                 return []
         
         total_time = time.time() - start_time
@@ -703,6 +590,241 @@ class MonteCarloBacktest:
             print(f"  Best performing lookbacks: {best_combo['lookbacks']} (score: {best_combo['score']:.4f})")
         
         return top_models
+    
+    def _run_serial(self, start_time: float) -> None:
+        """Run iterations serially (original behavior)."""
+        for i in range(self.iterations):
+            # Check for interrupt at the start of each iteration
+            check_interrupt()
+                
+            if i % 10 == 0:  # Progress update every 10 iterations
+                elapsed = time.time() - start_time
+                if i > 0:
+                    est_total = elapsed * self.iterations / i
+                    remaining = est_total - elapsed
+                    remaining_min = int(remaining // 60)
+                    remaining_sec = int(remaining % 60)
+                    print(f"Running iteration {i+1}/{self.iterations}... "
+                          f"Est. remaining: {remaining_min}m {remaining_sec}s", end="\r")
+            
+            # Run iteration and process results
+            result = self._run_single_iteration(i)
+            self._process_iteration_result(result, i)
+            
+            # Log statistics periodically
+            if i % 100 == 0 and i > 0:
+                stats = self.get_permutation_statistics()
+                self.logger.info(
+                    f"Permutation-invariant statistics after {i} iterations:\n"
+                    f"  Total canonical combinations explored: {stats['total_canonical_combinations']}\n"
+                    f"  Total visits: {stats['total_visits']}\n"
+                    f"  Average visits per combination: {stats['average_visits_per_combination']:.2f}\n"
+                    f"  Efficiency improvement factor: {stats['efficiency_improvement_factor']}"
+                )
+    
+    def _run_parallel(self, start_time: float) -> None:
+        """Run iterations in parallel using ProcessPoolExecutor."""
+        completed_count = 0
+        
+        with ProcessPoolExecutor(max_workers=self.workers) as executor:
+            # Submit all iterations
+            futures = {executor.submit(self._run_single_iteration, i): i 
+                      for i in range(self.iterations)}
+            
+            # Process results as they complete
+            for future in as_completed(futures):
+                iteration_num = futures[future]
+                
+                try:
+                    # Check for interrupt
+                    check_interrupt()
+                    
+                    # Get result and process it
+                    result = future.result()
+                    self._process_iteration_result(result, iteration_num)
+                    
+                    completed_count += 1
+                    
+                    # Progress update every 10 completions
+                    if completed_count % 10 == 0:
+                        elapsed = time.time() - start_time
+                        est_total = elapsed * self.iterations / completed_count
+                        remaining = est_total - elapsed
+                        remaining_min = int(remaining // 60)
+                        remaining_sec = int(remaining % 60)
+                        print(f"Completed {completed_count}/{self.iterations} iterations... "
+                              f"Est. remaining: {remaining_min}m {remaining_sec}s", end="\r")
+                    
+                    # Log statistics periodically
+                    if completed_count % 100 == 0:
+                        stats = self.get_permutation_statistics()
+                        self.logger.info(
+                            f"Permutation-invariant statistics after {completed_count} iterations:\n"
+                            f"  Total canonical combinations explored: {stats['total_canonical_combinations']}\n"
+                            f"  Total visits: {stats['total_visits']}\n"
+                            f"  Average visits per combination: {stats['average_visits_per_combination']:.2f}\n"
+                            f"  Efficiency improvement factor: {stats['efficiency_improvement_factor']}"
+                        )
+                        
+                except Exception as e:
+                    logger.error(f"Iteration {iteration_num} failed: {str(e)}")
+                    continue
+    
+    def _process_iteration_result(self, result: Dict[str, Any], iteration_num: int) -> None:
+        """Process results from a single iteration.
+        
+        Args:
+            result: Dictionary containing iteration results
+            iteration_num: The iteration number
+        """
+        current_performance = result['performance']
+        consistent_portfolio = result['consistent_portfolio']
+        current_selections = result['selections']
+        current_params = result['params']
+        metrics_dict = result['metrics']
+        current_lookbacks = result['lookbacks']
+        
+        # Update permutation-invariant tracking arrays
+        self._update_tracking_arrays(current_lookbacks, current_performance)
+        
+        # Track best performing portfolio
+        if current_performance > getattr(self, 'best_performance', float('-inf')):
+            self.best_performance = current_performance
+            self.best_portfolio_value = consistent_portfolio.copy()
+            self.best_params = current_params.copy()
+            self.best_model_selections = current_selections.copy()
+
+            # Create unique PNG in repo `pngs/` and save plot for this NEW BEST
+            try:
+                repo_root = os.path.dirname(os.path.dirname(__file__))
+                pngs_dir = os.path.join(repo_root, 'pngs')
+                os.makedirs(pngs_dir, exist_ok=True)
+                timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                lb_list = sorted(current_lookbacks) if current_lookbacks else []
+                lb_str = '-'.join(str(x) for x in lb_list) if lb_list else 'none'
+                score_val = metrics_dict.get('normalized_score', 0.0)
+                score_str = f"{score_val:.3f}".replace('.', '_')
+                png_name = f"monte_carlo_best_{timestamp}_lb{lb_str}_{score_str}.png"
+                png_path = os.path.join(pngs_dir, png_name)
+
+                # Save per-new-best plot with unique name
+                try:
+                    self.create_monte_carlo_plot(consistent_portfolio, metrics_dict, save_path=png_path)
+                except Exception as e:
+                    logger.warning(f"Failed to create per-best PNG {png_path}: {e}")
+                    png_path = ''
+            except Exception as e:
+                logger.warning(f"Failed to prepare pngs directory: {e}")
+                png_path = ''
+
+            # Display performance metrics using the same consistent calculation and log PNG filename
+            # Format as ./pngs/filename.png for consistency
+            png_rel_path = f"./pngs/{png_name}" if png_path else ''
+            self._print_best_parameters(metrics_dict, png_filename=png_rel_path)
+    
+    def _run_single_iteration(self, iteration_num: int) -> Dict[str, Any]:
+        """Run a single Monte Carlo iteration and return results.
+        
+        Args:
+            iteration_num: The iteration number (for logging and generation)
+            
+        Returns:
+            Dictionary containing iteration results:
+                - performance: normalized score
+                - portfolio_values: array of portfolio values
+                - selections: dict of date -> model selections
+                - params: dict with lookbacks and models
+                - metrics: dict of performance metrics
+                - consistent_portfolio: recalculated portfolio using best lookbacks
+        """
+        n_dates = len(self.dates)
+        portfolio_value = 10000.0
+        current_model = "cash"
+        portfolio_values = np.zeros(n_dates)
+        portfolio_values[0] = portfolio_value
+        
+        # Track model selections and parameters for this iteration
+        current_selections = {}
+        current_params = {"lookbacks": [], "models": []}
+        
+        # Generate lookbacks once at the start of iteration
+        current_lookbacks = self._generate_diverse_lookbacks(self.n_lookbacks, iteration=iteration_num)
+        current_params["lookbacks"] = current_lookbacks
+        
+        # Initialize trade tracking for this iteration
+        last_trade_date = None
+        
+        # Simulate trading through all dates
+        for t in range(1, n_dates):
+            date = pd.Timestamp(self.dates[t])
+            prev_date = pd.Timestamp(self.dates[t-1])
+            
+            # Check if we should trade (using local state instead of instance state)
+            should_trade = self._should_trade_stateless(self.dates[t], last_trade_date)
+            if should_trade:
+                last_trade_date = self.dates[t]
+                # Pass current lookbacks to model selection
+                current_model, _ = self._select_best_model(t, lookbacks=current_lookbacks)
+                current_selections[date.strftime('%Y-%m-%d')] = current_model
+                current_params["models"].append(current_model)
+            
+            # Update portfolio value
+            if current_model == "cash":
+                portfolio_values[t] = portfolio_values[t-1]
+            else:
+                model_return = (
+                    self.portfolio_histories[current_model][date] /
+                    self.portfolio_histories[current_model][prev_date]
+                )
+                portfolio_values[t] = portfolio_values[t-1] * model_return
+        
+        # Calculate performance metrics using consistent portfolio calculation
+        consistent_portfolio = self._calculate_model_switching_portfolio(current_lookbacks)
+        metrics_dict = self.compute_performance_metrics(consistent_portfolio)
+        
+        # Compute focus period metrics and blended score
+        focus_metrics = self.compute_focus_period_metrics(consistent_portfolio)
+        if focus_metrics:
+            metrics_dict.update(focus_metrics)
+        
+        blended_score = self.compute_blended_score(
+            focus_metrics.get('focus_1_normalized_score') if focus_metrics else None,
+            focus_metrics.get('focus_2_normalized_score') if focus_metrics else None
+        )
+        metrics_dict['blended_score'] = blended_score
+        
+        return {
+            'performance': blended_score,
+            'portfolio_values': portfolio_values,
+            'consistent_portfolio': consistent_portfolio,
+            'selections': current_selections,
+            'params': current_params,
+            'metrics': metrics_dict,
+            'lookbacks': current_lookbacks
+        }
+    
+    def _should_trade_stateless(self, date_val: date, last_trade_date: Optional[date]) -> bool:
+        """Determine if we should trade on given date (stateless version for parallel execution).
+        
+        Args:
+            date_val: Current date to check
+            last_trade_date: Last date when a trade occurred (None if first trade)
+            
+        Returns:
+            True if should trade, False otherwise
+        """
+        if last_trade_date is None:
+            return True
+            
+        if self.trading_frequency == "monthly":
+            should_trade = (
+                date_val.year != last_trade_date.year or
+                date_val.month != last_trade_date.month
+            )
+        else:  # daily
+            should_trade = date_val != last_trade_date
+            
+        return should_trade
     
     def _should_trade(self, date_val: date) -> bool:
         """Determine if we should trade on given date."""
