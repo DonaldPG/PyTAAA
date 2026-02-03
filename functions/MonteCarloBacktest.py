@@ -1972,6 +1972,29 @@ class MonteCarloBacktest:
             }
         
         #############################################################################
+        # Extract period metrics for CAGR and Average Drawdown (18 columns total)
+        #############################################################################
+        period_metrics_data = {}
+        if 'period_metrics' in metrics:
+            period_metrics = metrics['period_metrics']
+            periods = ["3M", "6M", "1Y", "3Y", "5Y", "10Y", "20Y", "30Y", "MAX"]
+            
+            for period in periods:
+                period_data = period_metrics.get(period, {})
+                cagr_value = period_data.get('cagr', 0.0)
+                avg_dd_value = period_data.get('avg_drawdown', 0.0)
+                
+                # Format as percentages
+                period_metrics_data[f'{period} CAGR'] = f"{cagr_value*100:.2f}%"
+                period_metrics_data[f'{period} Avg Drawdown'] = f"{avg_dd_value*100:.2f}%"
+        else:
+            # No period metrics available - use empty values
+            periods = ["3M", "6M", "1Y", "3Y", "5Y", "10Y", "20Y", "30Y", "MAX"]
+            for period in periods:
+                period_metrics_data[f'{period} CAGR'] = ''
+                period_metrics_data[f'{period} Avg Drawdown'] = ''
+        
+        #############################################################################
         # Build complete row data dictionary with proper column ordering
         #############################################################################
         current_time = datetime.now()
@@ -1996,6 +2019,9 @@ class MonteCarloBacktest:
             'Sharpe Outperformance Percentage': f"{model_effectiveness.get('sharpe_outperformance_pct', 0.0):.1f}%",
             'Sortino Outperformance Percentage': f"{model_effectiveness.get('sortino_outperformance_pct', 0.0):.1f}%",
             'Average Rank': f"{model_effectiveness.get('average_rank', 6.0):.2f}",
+            
+            # Period metrics - CAGR and Average Drawdown for all periods (18 columns)
+            **period_metrics_data,
             
             # Lookback periods (3 columns)
             'Lookback Period 1': sorted_lookbacks[0],
