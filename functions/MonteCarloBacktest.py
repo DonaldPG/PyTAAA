@@ -661,7 +661,9 @@ class MonteCarloBacktest:
                         png_path = ''
 
                     # Display performance metrics using the same consistent calculation and log PNG filename
-                    self._print_best_parameters(metrics_dict, png_filename=os.path.relpath(png_path, repo_root) if png_path else '')
+                    # Format as ./pngs/filename.png for consistency
+                    png_rel_path = f"./pngs/{png_name}" if png_path else ''
+                    self._print_best_parameters(metrics_dict, png_filename=png_rel_path)
 
                 # Record model choice
                 top_models.append(current_model)
