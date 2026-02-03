@@ -26,6 +26,7 @@ PERIOD_DAYS_MAPPING = {
     "5Y": 1260,   # ~5 years
     "10Y": 2520,  # ~10 years
     "20Y": 5040,  # ~20 years
+    "30Y": 7560,  # ~30 years
     "MAX": None   # Full dataset
 }
 
@@ -73,11 +74,84 @@ def calculate_sharpe_sortino_ratios(portfolio_values: np.ndarray,
         return 0.0, 0.0
 
 
+def calculate_cagr(portfolio_values: np.ndarray, num_trading_days: int) -> float:
+    """
+    Calculate Compound Annual Growth Rate (CAGR) for portfolio values.
+    
+    Args:
+        portfolio_values: Array of portfolio values over time
+        num_trading_days: Number of trading days in the period
+        
+    Returns:
+        CAGR as a decimal (e.g., 0.15 for 15%)
+    """
+    if len(portfolio_values) < 2 or num_trading_days <= 0:
+        return 0.0
+        
+    try:
+        initial_value = portfolio_values[0]
+        final_value = portfolio_values[-1]
+        
+        if initial_value <= 0:
+            return 0.0
+            
+        # Calculate number of years (252 trading days per year)
+        num_years = num_trading_days / 252.0
+        
+        # CAGR formula: (Final/Initial)^(1/years) - 1
+        cagr = (final_value / initial_value) ** (1.0 / num_years) - 1.0
+        
+        return cagr
+        
+    except Exception as e:
+        logger.warning(f"Error calculating CAGR: {e}")
+        return 0.0
+
+
+def calculate_avg_drawdown(portfolio_values: np.ndarray) -> float:
+    """
+    Calculate average drawdown for portfolio values.
+    
+    Drawdown is the decline from a peak to a trough, expressed as a percentage.
+    This function calculates the average of all drawdowns in the period.
+    
+    Args:
+        portfolio_values: Array of portfolio values over time
+        
+    Returns:
+        Average drawdown as a negative decimal (e.g., -0.15 for -15%)
+    """
+    if len(portfolio_values) < 2:
+        return 0.0
+        
+    try:
+        # Calculate running maximum (peak values)
+        running_max = np.maximum.accumulate(portfolio_values)
+        
+        # Calculate drawdowns at each point
+        drawdowns = (portfolio_values - running_max) / running_max
+        
+        # Filter to only negative drawdowns (periods below peak)
+        negative_drawdowns = drawdowns[drawdowns < 0]
+        
+        if len(negative_drawdowns) == 0:
+            return 0.0
+        
+        # Calculate average of all drawdowns
+        avg_drawdown = np.mean(negative_drawdowns)
+        
+        return avg_drawdown
+        
+    except Exception as e:
+        logger.warning(f"Error calculating average drawdown: {e}")
+        return 0.0
+
+
 def calculate_period_metrics(portfolio_values: np.ndarray, 
                            dates: List[date],
                            periods: List[str] = None) -> Dict[str, Dict[str, float]]:
     """
-    Calculate Sharpe and Sortino ratios for specified periods.
+    Calculate performance metrics for specified periods.
     
     Args:
         portfolio_values: Array of portfolio values over time
@@ -86,8 +160,12 @@ def calculate_period_metrics(portfolio_values: np.ndarray,
         
     Returns:
         Dict with structure: {
-            "3M": {"sharpe_ratio": 1.5, "sortino_ratio": 1.8},
-            "6M": {"sharpe_ratio": 1.6, "sortino_ratio": 1.9},
+            "3M": {
+                "sharpe_ratio": 1.5, 
+                "sortino_ratio": 1.8,
+                "cagr": 0.15,
+                "avg_drawdown": -0.12
+            },
             ...
         }
     """
@@ -98,14 +176,22 @@ def calculate_period_metrics(portfolio_values: np.ndarray,
     if (portfolio_values is None or len(portfolio_values) < 2 or 
         dates is None or len(dates) != len(portfolio_values)):
         logger.warning(f"Invalid input: portfolio_values length={len(portfolio_values) if portfolio_values is not None else 'None'}, dates length={len(dates) if dates is not None else 'None'}")
-        return {period: {"sharpe_ratio": 0.0, "sortino_ratio": 0.0} 
-                for period in periods}
+        return {period: {
+                    "sharpe_ratio": 0.0, 
+                    "sortino_ratio": 0.0,
+                    "cagr": 0.0,
+                    "avg_drawdown": 0.0
+                } for period in periods}
     
     # Check for valid portfolio values
     if np.any(np.isnan(portfolio_values)) or np.any(np.isinf(portfolio_values)):
         logger.warning("Portfolio values contain NaN or inf values")
-        return {period: {"sharpe_ratio": 0.0, "sortino_ratio": 0.0} 
-                for period in periods}
+        return {period: {
+                    "sharpe_ratio": 0.0, 
+                    "sortino_ratio": 0.0,
+                    "cagr": 0.0,
+                    "avg_drawdown": 0.0
+                } for period in periods}
     
     results = {}
     
@@ -114,30 +200,46 @@ def calculate_period_metrics(portfolio_values: np.ndarray,
             if period == "MAX":
                 # Use full dataset
                 period_values = portfolio_values
+                period_days = len(portfolio_values)
             else:
                 period_days = PERIOD_DAYS_MAPPING.get(period)
                 if period_days is None or period_days >= len(portfolio_values):
                     # Use full dataset if period is longer than available data
                     period_values = portfolio_values
+                    period_days = len(portfolio_values)
                 else:
                     # Use last N days
                     period_values = portfolio_values[-period_days:]
             
             if len(period_values) < 2:
-                results[period] = {"sharpe_ratio": 0.0, "sortino_ratio": 0.0}
+                results[period] = {
+                    "sharpe_ratio": 0.0, 
+                    "sortino_ratio": 0.0,
+                    "cagr": 0.0,
+                    "avg_drawdown": 0.0
+                }
                 continue
             
-            # Calculate Sharpe and Sortino ratios
+            # Calculate all four metrics
             sharpe, sortino = calculate_sharpe_sortino_ratios(period_values)
+            cagr = calculate_cagr(period_values, period_days)
+            avg_drawdown = calculate_avg_drawdown(period_values)
             
             results[period] = {
                 "sharpe_ratio": sharpe,
-                "sortino_ratio": sortino
+                "sortino_ratio": sortino,
+                "cagr": cagr,
+                "avg_drawdown": avg_drawdown
             }
             
         except Exception as e:
             logger.warning(f"Error calculating metrics for period {period}: {e}")
-            results[period] = {"sharpe_ratio": 0.0, "sortino_ratio": 0.0}
+            results[period] = {
+                "sharpe_ratio": 0.0, 
+                "sortino_ratio": 0.0,
+                "cagr": 0.0,
+                "avg_drawdown": 0.0
+            }
     
     return results
 
@@ -379,12 +481,20 @@ def calculate_all_methods_metrics(monte_carlo,
                 
             except Exception as e:
                 logger.warning(f"Error calculating metrics for method {method}: {e}")
-                results[method] = {period: {"sharpe_ratio": 0.0, "sortino_ratio": 0.0} 
-                                 for period in periods}
+                results[method] = {period: {
+                    "sharpe_ratio": 0.0, 
+                    "sortino_ratio": 0.0,
+                    "cagr": 0.0,
+                    "avg_drawdown": 0.0
+                } for period in periods}
         
-        # Add CASH method with zero ratios
-        results["cash"] = {period: {"sharpe_ratio": 0.0, "sortino_ratio": 0.0} 
-                          for period in periods}
+        # Add CASH method with zero metrics
+        results["cash"] = {period: {
+            "sharpe_ratio": 0.0, 
+            "sortino_ratio": 0.0,
+            "cagr": 0.0,
+            "avg_drawdown": 0.0
+        } for period in periods}
         
         return results
         
@@ -474,7 +584,7 @@ def analyze_model_switching_effectiveness(monte_carlo,
         model_switching_portfolio = monte_carlo._calculate_model_switching_portfolio(lookbacks)
         
         # Get standard periods for analysis
-        periods = ["3M", "6M", "1Y", "3Y", "5Y", "10Y", "20Y", "MAX"]
+        periods = ["3M", "6M", "1Y", "3Y", "5Y", "10Y", "20Y", "30Y", "MAX"]
         
         # Calculate period metrics for model-switching portfolio
         model_switching_metrics = calculate_period_metrics(
@@ -545,7 +655,7 @@ def create_comparison_dataframes(model_effectiveness: Dict[str, Any]) -> Tuple[p
         individual_metrics = model_effectiveness.get('individual_method_metrics', {})
         
         # Define periods and methods
-        periods = ["3M", "6M", "1Y", "3Y", "5Y", "10Y", "20Y", "MAX"]
+        periods = ["3M", "6M", "1Y", "3Y", "5Y", "10Y", "20Y", "30Y", "MAX"]
 
         # Build methods list dynamically: prefer existing canonical order, then
         # append any additional methods found (e.g., sp500_pine).
@@ -604,7 +714,7 @@ def create_comparison_dataframes(model_effectiveness: Dict[str, Any]) -> Tuple[p
     except Exception as e:
         logger.error(f"Error creating comparison DataFrames: {e}")
         # Return empty DataFrames with proper structure
-        periods = ["3M", "6M", "1Y", "3Y", "5Y", "10Y", "20Y", "MAX"]
+        periods = ["3M", "6M", "1Y", "3Y", "5Y", "10Y", "20Y", "30Y", "MAX"]
         methods = ["model_switching", "naz100_pine", "naz100_hma", "naz100_pi", "sp500_hma", "cash"]
         
         empty_df = pd.DataFrame(
