@@ -1972,26 +1972,44 @@ class MonteCarloBacktest:
             }
         
         #############################################################################
-        # Extract period metrics for CAGR and Average Drawdown (18 columns total)
+        # Extract period metrics for all 4 metrics across all periods (36 columns total)
+        # Ordered by metric type: CAGR, Sharpe, Sortino, Avg Drawdown
         #############################################################################
         period_metrics_data = {}
         if 'period_metrics' in metrics:
             period_metrics = metrics['period_metrics']
             periods = ["3M", "6M", "1Y", "3Y", "5Y", "10Y", "20Y", "30Y", "MAX"]
             
+            # First add all CAGR columns
             for period in periods:
                 period_data = period_metrics.get(period, {})
                 cagr_value = period_data.get('cagr', 0.0)
-                avg_dd_value = period_data.get('avg_drawdown', 0.0)
-                
-                # Format as percentages
                 period_metrics_data[f'{period} CAGR'] = f"{cagr_value*100:.2f}%"
+            
+            # Then add all Sharpe Ratio columns
+            for period in periods:
+                period_data = period_metrics.get(period, {})
+                sharpe_value = period_data.get('sharpe_ratio', 0.0)
+                period_metrics_data[f'{period} Sharpe Ratio'] = f"{sharpe_value:.5f}"
+            
+            # Then add all Sortino Ratio columns
+            for period in periods:
+                period_data = period_metrics.get(period, {})
+                sortino_value = period_data.get('sortino_ratio', 0.0)
+                period_metrics_data[f'{period} Sortino Ratio'] = f"{sortino_value:.3f}"
+            
+            # Finally add all Avg Drawdown columns
+            for period in periods:
+                period_data = period_metrics.get(period, {})
+                avg_dd_value = period_data.get('avg_drawdown', 0.0)
                 period_metrics_data[f'{period} Avg Drawdown'] = f"{avg_dd_value*100:.2f}%"
         else:
             # No period metrics available - use empty values
             periods = ["3M", "6M", "1Y", "3Y", "5Y", "10Y", "20Y", "30Y", "MAX"]
             for period in periods:
                 period_metrics_data[f'{period} CAGR'] = ''
+                period_metrics_data[f'{period} Sharpe Ratio'] = ''
+                period_metrics_data[f'{period} Sortino Ratio'] = ''
                 period_metrics_data[f'{period} Avg Drawdown'] = ''
         
         #############################################################################
@@ -2020,7 +2038,7 @@ class MonteCarloBacktest:
             'Sortino Outperformance Percentage': f"{model_effectiveness.get('sortino_outperformance_pct', 0.0):.1f}%",
             'Average Rank': f"{model_effectiveness.get('average_rank', 6.0):.2f}",
             
-            # Period metrics - CAGR and Average Drawdown for all periods (18 columns)
+            # Period metrics for all periods (36 columns: 9 CAGR + 9 Sharpe + 9 Sortino + 9 Avg Drawdown)
             **period_metrics_data,
             
             # Lookback periods (3 columns)
