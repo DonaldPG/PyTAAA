@@ -14,6 +14,7 @@ import numpy as np
 from datetime import date as date_type, datetime
 from typing import List, Tuple, Optional, Dict, Any
 import logging
+import json
 
 from functions.logger_config import get_logger
 
@@ -466,6 +467,120 @@ class ModelRecommender:
         # Return sorted by score descending
         return sorted(zip(models, normalized_scores), key=lambda x: x[1], reverse=True)
 
+    def display_recommendations(
+        self,
+        dates: List[date_type],
+        target_date: date_type,
+        first_weekday: Optional[date_type]
+    ) -> str:
+        """Display recommendations to console and return plot text.
+        
+        Args:
+            dates: List of dates to generate recommendations for
+            target_date: The main target date
+            first_weekday: First weekday of the month (if different)
+            
+        Returns:
+            Formatted recommendation text for plot display
+        """
+        print("\n" + "="*60)
+        print("MODEL RECOMMENDATION RESULTS")
+        print("="*60)
+        
+        print(f"\nRecommendation Parameters:")
+        print(f"  Lookback periods: {self.lookbacks} days")
+        print(f"  Target date: {target_date.strftime('%Y-%m-%d (%A)')}")
+        if first_weekday and first_weekday != target_date:
+            print(f"  First weekday of month: {first_weekday.strftime('%Y-%m-%d (%A)')}")
+        
+        # Process each date
+        for recommendation_date in dates:
+            print(f"\n{'-'*40}")
+            print(f"Recommendation for {recommendation_date.strftime('%Y-%m-%d')}:")
+            print(f"{'-'*40}")
+            
+            best_model, rankings, min_diff = self.get_recommendation_for_date(recommendation_date)
+            
+            if best_model is None:
+                if not rankings:
+                    print("No data available for this date")
+                else:
+                    print(f"  Insufficient data (need at least {max(self.lookbacks)} days)")
+                continue
+            
+            if min_diff > 0:
+                closest_date, _ = DateHelper.find_closest_trading_date(
+                    recommendation_date, self.available_dates
+                )
+                print(f"  Using closest available date: {closest_date.strftime('%Y-%m-%d')} ({min_diff} days difference)")
+            
+            print(f"  Best model: {best_model}")
+            # --- Print combined Multi-Rank and Normalized Score table ---
+            try:
+                date_idx = self.monte_carlo.dates.index(recommendation_date)
+            except ValueError:
+                closest_date, _ = DateHelper.find_closest_trading_date(recommendation_date, self.available_dates)
+                date_idx = self.monte_carlo.dates.index(closest_date)
+            lookbacks = self.lookbacks
+            config_path = os.path.join(os.path.dirname(self.monte_carlo.model_paths[next(iter(self.monte_carlo.model_paths))]), 'pytaaa_model_switching_params.json')
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+            metric_weights = config['model_selection']['performance_metrics']
+            models = sorted(list(self.monte_carlo.portfolio_histories.keys()))
+            all_ranks = np.zeros((len(models), 5 * len(lookbacks)))
+            for i, lookback_period in enumerate(lookbacks):
+                start_idx = max(0, date_idx - lookback_period)
+                start_date = pd.Timestamp(self.monte_carlo.dates[start_idx])
+                end_date = pd.Timestamp(self.monte_carlo.dates[date_idx - 1])
+                metrics_list = []
+                for model in models:
+                    if model == "cash":
+                        portfolio_values = np.ones(lookback_period) * 10000.0
+                    else:
+                        portfolio_values = self.monte_carlo.portfolio_histories[model][start_date:end_date].values
+                    metrics = self.monte_carlo.compute_performance_metrics(portfolio_values)
+                    metrics_list.append([
+                        metrics['sharpe_ratio'],
+                        metrics['sortino_ratio'],
+                        metrics['max_drawdown'],
+                        metrics['avg_drawdown'],
+                        metrics['annual_return']
+                    ])
+                metric_array = np.array(metrics_list).T
+                period_ranks = np.zeros_like(metric_array)
+                for m in range(5):
+                    order = np.argsort(-metric_array[m])
+                    ranks = np.empty_like(order)
+                    ranks[order] = np.arange(len(order))
+                    period_ranks[m] = ranks
+                weights = np.array([
+                    metric_weights.get('sharpe_ratio_weight', 1.0),
+                    metric_weights.get('sortino_ratio_weight', 1.0),
+                    metric_weights.get('max_drawdown_weight', 1.0),
+                    metric_weights.get('avg_drawdown_weight', 1.0),
+                    metric_weights.get('annualized_return_weight', 1.0)
+                ])
+                weighted_ranks = period_ranks * weights[:, np.newaxis]
+                all_ranks[:, i*5:(i+1)*5] = weighted_ranks.T
+            avg_ranks = np.mean(all_ranks, axis=1)
+            # Get normalized scores in model order
+            norm_score_dict = dict(rankings)
+            print("Model     Multi  Normalized")
+            print("rankings  Rank   Score")
+            # Sort by multi-rank (lowest is best), then by normalized score
+            sorted_models = sorted(models, key=lambda m: (avg_ranks[models.index(m)], -norm_score_dict.get(m, 0)))
+            for idx, model in enumerate(sorted_models, 1):
+                norm_score = norm_score_dict.get(model, 0)
+                multi_rank = int(round(avg_ranks[models.index(model)]))
+                # Format model name to full width (no truncation)
+                print(f"  {idx}. {model:<15} {multi_rank:>3} {norm_score:>8.2f}")
+        print(f"{'='*60}")
+        print(f"Generated recommendations for manual portfolio updates")
+        print(f"Based on model-switching trading system methodology")
+        
+        # Generate plot text
+        return self.generate_recommendation_text(dates, target_date, first_weekday)
+
     def generate_recommendation_text(
         self,
         dates: List[date_type],
@@ -518,70 +633,64 @@ class ModelRecommender:
                     plot_text += f"  (Using {closest_date.strftime('%Y-%m-%d')}, {min_diff}d diff)\n"
                 plot_text += f"  Best model: {best_model}\n"
                 
-                plot_text += f"  Model ranks (Normalized Score):\n"
-                for i, (model, score) in enumerate(rankings, 1):
-                    plot_text += f"    {i}. {model:<12} {score:>6.3f}\n"
+                # Compute multi-ranks for this date
+                try:
+                    date_idx = self.monte_carlo.dates.index(recommendation_date)
+                except ValueError:
+                    closest_date, _ = DateHelper.find_closest_trading_date(recommendation_date, self.available_dates)
+                    date_idx = self.monte_carlo.dates.index(closest_date)
+                lookbacks = self.lookbacks
+                config_path = os.path.join(os.path.dirname(self.monte_carlo.model_paths[next(iter(self.monte_carlo.model_paths))]), 'pytaaa_model_switching_params.json')
+                with open(config_path, 'r') as f:
+                    config = json.load(f)
+                metric_weights = config['model_selection']['performance_metrics']
+                models = sorted(list(self.monte_carlo.portfolio_histories.keys()))
+                all_ranks = np.zeros((len(models), 5 * len(lookbacks)))
+                for i, lookback_period in enumerate(lookbacks):
+                    start_idx = max(0, date_idx - lookback_period)
+                    start_date = pd.Timestamp(self.monte_carlo.dates[start_idx])
+                    end_date = pd.Timestamp(self.monte_carlo.dates[date_idx - 1])
+                    metrics_list = []
+                    for model in models:
+                        if model == "cash":
+                            portfolio_values = np.ones(lookback_period) * 10000.0
+                        else:
+                            portfolio_values = self.monte_carlo.portfolio_histories[model][start_date:end_date].values
+                        metrics = self.monte_carlo.compute_performance_metrics(portfolio_values)
+                        metrics_list.append([
+                            metrics['sharpe_ratio'],
+                            metrics['sortino_ratio'],
+                            metrics['max_drawdown'],
+                            metrics['avg_drawdown'],
+                            metrics['annual_return']
+                        ])
+                    metric_array = np.array(metrics_list).T
+                    period_ranks = np.zeros_like(metric_array)
+                    for m in range(5):
+                        order = np.argsort(-metric_array[m])
+                        ranks = np.empty_like(order)
+                        ranks[order] = np.arange(len(order))
+                        period_ranks[m] = ranks
+                    weights = np.array([
+                        metric_weights.get('sharpe_ratio_weight', 1.0),
+                        metric_weights.get('sortino_ratio_weight', 1.0),
+                        metric_weights.get('max_drawdown_weight', 1.0),
+                        metric_weights.get('avg_drawdown_weight', 1.0),
+                        metric_weights.get('annualized_return_weight', 1.0)
+                    ])
+                    weighted_ranks = period_ranks * weights[:, np.newaxis]
+                    all_ranks[:, i*5:(i+1)*5] = weighted_ranks.T
+                avg_ranks = np.mean(all_ranks, axis=1)
+                # Get normalized scores in model order
+                norm_score_dict = dict(rankings)
+                
+                plot_text += f"  Model        Multi  Normalized\n"
+                plot_text += f"  Rankings     Rank   Score\n"
+                sorted_models = sorted(models, key=lambda m: (-norm_score_dict.get(m, 0), avg_ranks[models.index(m)]))
+                for idx, model in enumerate(sorted_models, 1):
+                    norm_score = norm_score_dict.get(model, 0)
+                    multi_rank = int(round(avg_ranks[models.index(model)]))
+                    plot_text += f"  {idx}. {(model[:11]):<11}{multi_rank:>3} {norm_score:>7.2f}\n"
         
         return plot_text
-
-    def display_recommendations(
-        self,
-        dates: List[date_type],
-        target_date: date_type,
-        first_weekday: Optional[date_type]
-    ) -> str:
-        """Display recommendations to console and return plot text.
-        
-        Args:
-            dates: List of dates to generate recommendations for
-            target_date: The main target date
-            first_weekday: First weekday of the month (if different)
-            
-        Returns:
-            Formatted recommendation text for plot display
-        """
-        print("\n" + "="*60)
-        print("MODEL RECOMMENDATION RESULTS")
-        print("="*60)
-        
-        print(f"\nRecommendation Parameters:")
-        print(f"  Lookback periods: {self.lookbacks} days")
-        print(f"  Target date: {target_date.strftime('%Y-%m-%d (%A)')}")
-        if first_weekday and first_weekday != target_date:
-            print(f"  First weekday of month: {first_weekday.strftime('%Y-%m-%d (%A)')}")
-        
-        # Process each date
-        for recommendation_date in dates:
-            print(f"\n{'-'*40}")
-            print(f"Recommendation for {recommendation_date.strftime('%Y-%m-%d')}:")
-            print(f"{'-'*40}")
-            
-            best_model, rankings, min_diff = self.get_recommendation_for_date(recommendation_date)
-            
-            if best_model is None:
-                if not rankings:
-                    print("No data available for this date")
-                else:
-                    print(f"  Insufficient data (need at least {max(self.lookbacks)} days)")
-                continue
-            
-            if min_diff > 0:
-                closest_date, _ = DateHelper.find_closest_trading_date(
-                    recommendation_date, self.available_dates
-                )
-                print(f"  Using closest available date: {closest_date.strftime('%Y-%m-%d')} ({min_diff} days difference)")
-            
-            print(f"  Best model: {best_model}")
-            print(f"  Model rankings (Normalized Score):")
-            for i, (model, score) in enumerate(rankings, 1):
-                print(f"    {i}. {model:<12} {score:>6.3f}")
-        
-        print(f"\n{'='*60}")
-        print("SUMMARY")
-        print(f"{'='*60}")
-        print(f"Generated recommendations for manual portfolio updates")
-        print(f"Based on model-switching trading system methodology")
-        
-        # Generate plot text
-        return self.generate_recommendation_text(dates, target_date, first_weekday)
 

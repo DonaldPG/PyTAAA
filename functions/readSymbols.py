@@ -246,9 +246,19 @@ def read_company_names_local(json_fn, verbose=False):
         symbols.append(s[0])
         company_names.append(s[1])
 
-    # ensure that there are no duplicate tickers
-    symbols = list( set( symbols ) )
-    company_names = list( set( company_names ) )
+    # ensure that there are no duplicate tickers while maintaining symbol-company correspondence
+    seen_symbols = set()
+    unique_symbols = []
+    unique_company_names = []
+    
+    for symbol, company_name in zip(symbols, company_names):
+        if symbol not in seen_symbols:
+            seen_symbols.add(symbol)
+            unique_symbols.append(symbol)
+            unique_company_names.append(company_name)
+    
+    symbols = unique_symbols
+    company_names = unique_company_names
 
     # print list of symbols
     if verbose:
