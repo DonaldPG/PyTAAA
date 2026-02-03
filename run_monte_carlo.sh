@@ -34,6 +34,7 @@ show_usage() {
     echo "  --fp-duration=<years>  Focus period duration in years (default: 5)"
     echo "  --fp-year-min=<year>   Minimum year for focus period start (default: 1995)"
     echo "  --fp-year-max=<year>   Maximum year for focus period start (default: 2021)"
+    echo "  --workers=<n>          Number of parallel workers (default: 10, use 1 for serial)"
     echo ""
     echo "Examples:"
     echo "  $0 5                       # Run 5 times with default strategy"
@@ -48,6 +49,8 @@ show_usage() {
     echo "  $0 3 exploit --randomize  # Run 3 times with exploitation and randomization"
     echo "  $0 5 --fp-duration=7      # Run 5 times with 7-year focus periods"
     echo "  $0 3 --fp-year-min=2000 --fp-year-max=2020  # Custom year range"
+    echo "  $0 5 --workers=20         # Run 5 times with 20 parallel workers"
+    echo "  $0 2 --workers=1          # Run 2 times with serial execution (no parallelism)"
     echo ""
     echo "Note: Each run builds upon the previous state for continuous optimization."
     echo "      Use --reset to start fresh exploration from each run."
@@ -78,6 +81,7 @@ RANDOMIZE_FLAG=""
 FP_DURATION=""
 FP_YEAR_MIN=""
 FP_YEAR_MAX=""
+WORKERS_FLAG=""
 
 for arg in "$@"; do
     case "$arg" in
@@ -105,6 +109,9 @@ for arg in "$@"; do
             ;;
         --fp-year-max=*)
             FP_YEAR_MAX="${arg#*=}"
+            ;;
+        --workers=*)
+            WORKERS_FLAG="${arg#*=}"
             ;;
         explore|exploit|explore-exploit)
             SEARCH_STRATEGY="$arg"
@@ -167,6 +174,7 @@ echo "JSON configuration: ${JSON_FLAG:-none}"
 echo "Randomize normalization: ${RANDOMIZE_FLAG:-disabled}"
 echo "Focus period duration: ${FP_DURATION:-default (5 years)}"
 echo "Focus period year range: ${FP_YEAR_MIN:-1995} to ${FP_YEAR_MAX:-2021}"
+echo "Parallel workers: ${WORKERS_FLAG:-default (10)}"
 echo "Start time: $(date)"
 echo "Working directory: $(pwd)"
 echo "=============================================================="
@@ -215,6 +223,10 @@ for ((i=1; i<=NUM_RUNS; i++)); do
     
     if [[ -n "$FP_YEAR_MAX" ]]; then
         CMD="$CMD --fp-year-max=$FP_YEAR_MAX"
+    fi
+    
+    if [[ -n "$WORKERS_FLAG" ]]; then
+        CMD="$CMD --workers=$WORKERS_FLAG"
     fi
     
     echo "Executing: $CMD"
