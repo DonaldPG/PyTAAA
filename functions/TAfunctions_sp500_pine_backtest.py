@@ -1001,7 +1001,7 @@ def recentSharpeWithAndWithoutGap(x,numdaysinfit=504,offset_factor=.4):
 
     crossplot_rotationAngle = 33. * np.pi/180.
     for i,isharpe in enumerate(sharpeList):
-        # combine sharpe ratios compouted over 2 different periods
+        # combine sharpe ratios computed over 2 different periods
         # - use an angle of 33 degrees instead of 45 to give slightly more weight the the "no gap" sharpe
         if i==0:
             continue

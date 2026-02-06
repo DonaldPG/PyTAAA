@@ -1230,12 +1230,15 @@ def textmessageOutsideTrendChannel(symbols, adjClose, json_fn):
         i = sym_to_idx.get(symbol)
         if i is None:
             continue
-        pctChannel,channelGainLoss,channelStd,numStdDevs = jumpTheChannelTest(adjClose[i,:],
-                                                   minperiod=params['minperiod'],
-                                                   maxperiod=params['maxperiod'],
-                                                   incperiod=params['incperiod'],
-                                                   numdaysinfit=params['numdaysinfit'],
-                                                   offset=params['offset'])
+        pctChannel,channelGainLoss,channelStd,numStdDevs = (
+            jumpTheChannelTest(adjClose[i,:],
+                minperiod=params['minperiod'],
+                maxperiod=params['maxperiod'],
+                incperiod=params['incperiod'],
+                numdaysinfit=params['numdaysinfit'],
+                offset=params['offset']
+            )
+        )
         channelGainsLosses.append(channelGainLoss)
         channelStds.append(channelStd)
         print(" ... performing PctChannelTest: symbol = ",format(symbol,'5s'), "  pctChannel = ", format(pctChannel-1.,'6.1%'))
@@ -3168,13 +3171,17 @@ def sharpeWeightedRank_2D(
         floatSharpeRatio = []
         for i, isymbol in enumerate(symbols):
             ### save current projected position in price channel calculated without recent prices
-            channelGainLoss, numStdDevs, pctChannel = recentTrendAndStdDevs(adjClose[i,:],
-                                                              datearray,
-                                                              minperiod=params['minperiod'],
-                                                              maxperiod=params['maxperiod'],
-                                                              incperiod=params['incperiod'],
-                                                              numdaysinfit=params['numdaysinfit'],
-                                                              offset=params['offset'])
+            import time
+            symbol_start_time = time.time()
+            channelGainLoss, numStdDevs, pctChannel = recentTrendAndStdDevs(
+                adjClose[i,:],
+                datearray,
+                minperiod=params['minperiod'],
+                maxperiod=params['maxperiod'],
+                incperiod=params['incperiod'],
+                numdaysinfit=params['numdaysinfit'],
+                offset=params['offset']
+            )
 
             if verbose:
                 print("\nsymbol = ", symbols[i])
@@ -3192,27 +3199,30 @@ def sharpeWeightedRank_2D(
             if verbose:
                 print("isymbol,floatSharpeRatio = ", isymbol,floatSharpeRatio[-1])
 
-            channelComboGainLoss = recentTrendComboGain(adjClose[i,:],
-                                                              datearray,
-                                                              minperiod=params['minperiod'],
-                                                              maxperiod=params['maxperiod'],
-                                                              incperiod=params['incperiod'],
-                                                              numdaysinfit=params['numdaysinfit'],
-                                                              offset=params['offset'])
+            channelComboGainLoss = recentTrendComboGain(
+                adjClose[i,:],
+                datearray,
+                minperiod=params['minperiod'],
+                maxperiod=params['maxperiod'],
+                incperiod=params['incperiod'],
+                numdaysinfit=params['numdaysinfit'],
+                offset=params['offset']
+            )
 
             #print " companyName, channelComboGainLoss = ", companyNameList[i], channelComboGainLoss
             channelComboGainsLosses.append(format(channelComboGainLoss,'6.1%'))
             floatChannelComboGainsLosses.append(channelComboGainLoss)
 
             lowerTrend, upperTrend, NoGapLowerTrend, NoGapUpperTrend = \
-                     recentTrendAndMidTrendChannelFitWithAndWithoutGap( \
-                                   adjClose[i,:], \
-                                   minperiod=params['minperiod'], \
-                                   maxperiod=params['maxperiod'], \
-                                   incperiod=params['incperiod'], \
-                                   numdaysinfit=params['numdaysinfit'], \
-                                   numdaysinfit2=params['numdaysinfit2'], \
-                                   offset=params['offset'])
+                recentTrendAndMidTrendChannelFitWithAndWithoutGap(
+                    adjClose[i,:],
+                    minperiod=params['minperiod'],
+                    maxperiod=params['maxperiod'],
+                    incperiod=params['incperiod'],
+                    numdaysinfit=params['numdaysinfit'],
+                    numdaysinfit2=params['numdaysinfit2'],
+                    offset=params['offset']
+                )
             midTrendEndPoint = (lowerTrend[-1]+upperTrend[-1])/2.
             noGapMidTrendEndPoint = (NoGapLowerTrend[-1]+NoGapUpperTrend[-1])/2.
             trendsRatio.append( noGapMidTrendEndPoint/midTrendEndPoint - 1. )

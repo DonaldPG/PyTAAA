@@ -562,13 +562,16 @@ def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
             adj = adjClose[i,-1]
             low = lowChannel[i,-1]
             hi = hiChannel[i,-1]
-            # symbol: fixed width 5 (truncate or pad), numbers: 2 decimal places
+            # symbol: fixed width 5 (truncate or pad), numbers: fixed width 7.2f
             sym_fmt = f"{sym:5.5s}"
+            adj_fmt = f"{adj:7.2f}"
+            low_fmt = f"{low:7.2f}"
+            hi_fmt = f"{hi:7.2f}"
             if signal2D_daily[i,-1] > 0:
                 uptrendCount += 1
-                print(f"{uptrendCount:3d} {sym_fmt} {adj:.2f} uptrend {low:.2f} {hi:.2f}")
+                print(f"{uptrendCount:3d} {sym_fmt} {adj_fmt} uptrend {low_fmt} {hi_fmt}")
             else:
-                print(f"{uptrendCount:3d} {sym_fmt} {adj:.2f}       {low:.2f} {hi:.2f}")
+                print(f"{uptrendCount:3d} {sym_fmt} {adj_fmt}         {low_fmt} {hi_fmt}")
     print("\n\n\n")
 
     ####################################################################################3

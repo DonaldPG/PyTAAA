@@ -1201,12 +1201,14 @@ def textmessageOutsideTrendChannel(symbols, adjClose, json_fn):
         i = sym_to_idx.get(symbol)
         if i is None:
             continue
-        pctChannel,channelGainLoss,channelStd,numStdDevs = jumpTheChannelTest(adjClose[i,:],
-                                                   minperiod=params['minperiod'],
-                                                   maxperiod=params['maxperiod'],
-                                                   incperiod=params['incperiod'],
-                                                   numdaysinfit=params['numdaysinfit'],
-                                                   offset=params['offset'])
+        pctChannel,channelGainLoss,channelStd,numStdDevs = jumpTheChannelTest(
+            adjClose[i,:],
+            minperiod=params['minperiod'],
+            maxperiod=params['maxperiod'],
+            incperiod=params['incperiod'],
+            numdaysinfit=params['numdaysinfit'],
+            offset=params['offset']
+        )
         channelGainsLosses.append(channelGainLoss)
         channelStds.append(channelStd)
         print(" ... performing PctChannelTest: symbol = ",format(symbol,'5s'), "  pctChannel = ", format(pctChannel-1.,'6.1%'))
@@ -1811,6 +1813,10 @@ def sharpeWeightedRank_2D(
     symbols_file = get_symbols_file(json_fn)
     stockList = params['stockList']
 
+    # Initialize averages to prevent UnboundLocalError when companyName may be empty
+    avgChannelGainsLosses = 0.0
+    avgStdevsAboveChannel = 0.0
+
     adjClose_despike = despike_2D( adjClose, LongPeriod, stddevThreshold=stddevThreshold )
 
     gainloss = np.ones((adjClose.shape[0],adjClose.shape[1]),dtype=float)
@@ -2120,17 +2126,34 @@ def sharpeWeightedRank_2D(
         sharpeRatio = []
         floatSharpeRatio = []
         for i, isymbol in enumerate(symbols):
+            import time
+            symbol_start_time = time.time()
+
+            xrange = range(params['minperiod'], params['maxperiod']+1, params['incperiod'])
+            print(
+                f"\nDEBUG: symbol={symbols[i]}, "
+                f"x.shape={adjClose[i,:].shape}, "
+                f"x.dtype={adjClose[i,:].dtype}, "
+                f"xrange={(list(xrange))}"
+            )
+
             ### save current projected position in price channel calculated without recent prices
-            channelGainLoss, numStdDevs, pctChannel = recentTrendAndStdDevs(adjClose[i,:],
-                                                              datearray,
-                                                              minperiod=params['minperiod'],
-                                                              maxperiod=params['maxperiod'],
-                                                              incperiod=params['incperiod'],
-                                                              numdaysinfit=params['numdaysinfit'],
-                                                              offset=params['offset'])
+            channelGainLoss, numStdDevs, pctChannel = recentTrendAndStdDevs(
+                adjClose[i,:],
+                datearray,
+                minperiod=params['minperiod'],
+                maxperiod=params['maxperiod'],
+                incperiod=params['incperiod'],
+                numdaysinfit=params['numdaysinfit'],
+                offset=params['offset']
+            )
+            time1 = time.time()
+            symbol_elapsed_time_01 = time1 - symbol_start_time
 
             print("\nsymbol = ", symbols[i])
             sharpe2periods = recentSharpeWithAndWithoutGap(adjClose[i,:])
+            time2 = time.time()
+            symbol_elapsed_time_12 = time2 - time1
 
             print(" ... performing PctChannelTest: symbol = ",format(isymbol,'5s'), "  numStdDevs = ", format(numStdDevs,'6.1f'))
             channelGainsLosses.append(format(channelGainLoss,'6.1%'))
@@ -2142,30 +2165,47 @@ def sharpeWeightedRank_2D(
             floatSharpeRatio.append(sharpe2periods)
             print("isymbol,floatSharpeRatio = ", isymbol,floatSharpeRatio[-1])
 
-            channelComboGainLoss = recentTrendComboGain(adjClose[i,:],
-                                                              datearray,
-                                                              minperiod=params['minperiod'],
-                                                              maxperiod=params['maxperiod'],
-                                                              incperiod=params['incperiod'],
-                                                              numdaysinfit=params['numdaysinfit'],
-                                                              offset=params['offset'])
+            channelComboGainLoss = recentTrendComboGain(
+                adjClose[i,:],
+                datearray,
+                minperiod=params['minperiod'],
+                maxperiod=params['maxperiod'],
+                incperiod=params['incperiod'],
+                numdaysinfit=params['numdaysinfit'],
+                offset=params['offset']
+            )
+            time3 = time.time()
+            symbol_elapsed_time_23 = time3 - time2
 
             #print " companyName, channelComboGainLoss = ", companyNameList[i], channelComboGainLoss
             channelComboGainsLosses.append(format(channelComboGainLoss,'6.1%'))
             floatChannelComboGainsLosses.append(channelComboGainLoss)
 
             lowerTrend, upperTrend, NoGapLowerTrend, NoGapUpperTrend = \
-                     recentTrendAndMidTrendChannelFitWithAndWithoutGap( \
-                                   adjClose[i,:], \
-                                   minperiod=params['minperiod'], \
-                                   maxperiod=params['maxperiod'], \
-                                   incperiod=params['incperiod'], \
-                                   numdaysinfit=params['numdaysinfit'], \
-                                   numdaysinfit2=params['numdaysinfit2'], \
-                                   offset=params['offset'])
+                recentTrendAndMidTrendChannelFitWithAndWithoutGap( \
+                    adjClose[i,:], \
+                    minperiod=params['minperiod'], \
+                    maxperiod=params['maxperiod'], \
+                    incperiod=params['incperiod'], \
+                    numdaysinfit=params['numdaysinfit'], \
+                    numdaysinfit2=params['numdaysinfit2'], \
+                    offset=params['offset']
+                )
             midTrendEndPoint = (lowerTrend[-1]+upperTrend[-1])/2.
             noGapMidTrendEndPoint = (NoGapLowerTrend[-1]+NoGapUpperTrend[-1])/2.
             trendsRatio.append( noGapMidTrendEndPoint/midTrendEndPoint - 1. )
+
+            time4 = time.time()
+            symbol_elapsed_time_34 = time4 - time3
+            symbol_elapsed_time = time.time() - symbol_start_time
+            print(
+                f". inside functions/TAfunctions/sharpeWeightedRank_2D\n"
+                f"[TIMING] Symbol {isymbol} processing steps: "
+                f"[{symbol_elapsed_time_01}, {symbol_elapsed_time_12}, "
+                f"{symbol_elapsed_time_23}, {symbol_elapsed_time_34}]\n"
+                f"[TIMING] Symbol {isymbol} processing completed in "
+                f"{symbol_elapsed_time:.4f} seconds"
+            )
 
         print(" ... finished computing price positions within trend channels ...")
 
@@ -2727,6 +2767,15 @@ def sharpeWeightedRank_2D(
     symbols_file = get_symbols_file(json_fn)
     stockList = params['stockList']
 
+    # Initialize averages to prevent UnboundLocalError when companyName may be empty
+    avgChannelGainsLosses = 0.0
+    avgStdevsAboveChannel = 0.0
+
+    # print params (one line per value)
+    print(" ... parameters used in sharpeWeightedRank_2D: ")
+    for key, value in params.items():
+        print(f"{key}: {value}")
+
     adjClose_despike = despike_2D( adjClose, LongPeriod, stddevThreshold=stddevThreshold )
 
     gainloss = np.ones((adjClose.shape[0],adjClose.shape[1]),dtype=float)
@@ -3110,17 +3159,34 @@ def sharpeWeightedRank_2D(
         sharpeRatio = []
         floatSharpeRatio = []
         for i, isymbol in enumerate(symbols):
+            import time
+            symbol_start_time = time.time()
+
+            xrange = range(params['minperiod'], params['maxperiod']+1, params['incperiod'])
+            print(
+                f"\nDEBUG: symbol={symbols[i]}, "
+                f"x.shape={adjClose[i,:].shape}, "
+                f"x.dtype={adjClose[i,:].dtype}, "
+                f"xrange={(list(xrange))}"
+            )
+
             ### save current projected position in price channel calculated without recent prices
-            channelGainLoss, numStdDevs, pctChannel = recentTrendAndStdDevs(adjClose[i,:],
-                                                              datearray,
-                                                              minperiod=params['minperiod'],
-                                                              maxperiod=params['maxperiod'],
-                                                              incperiod=params['incperiod'],
-                                                              numdaysinfit=params['numdaysinfit'],
-                                                              offset=params['offset'])
+            channelGainLoss, numStdDevs, pctChannel = recentTrendAndStdDevs(
+                adjClose[i,:],
+                datearray,
+                minperiod=params['minperiod'],
+                maxperiod=params['maxperiod'],
+                incperiod=params['incperiod'],
+                numdaysinfit=params['numdaysinfit'],
+                offset=params['offset']
+            )
+            time1 = time.time()
+            symbol_elapsed_time_01 = time1 - symbol_start_time
 
             print("\nsymbol = ", symbols[i])
             sharpe2periods = recentSharpeWithAndWithoutGap(adjClose[i,:])
+            time2 = time.time()
+            symbol_elapsed_time_12 = time2 - time1
 
             print(" ... performing PctChannelTest: symbol = ",format(isymbol,'5s'), "  numStdDevs = ", format(numStdDevs,'6.1f'))
             channelGainsLosses.append(format(channelGainLoss,'6.1%'))
@@ -3131,31 +3197,49 @@ def sharpeWeightedRank_2D(
             sharpeRatio.append(format(sharpe2periods,'6.1f'))
             floatSharpeRatio.append(sharpe2periods)
             print("isymbol,floatSharpeRatio = ", isymbol,floatSharpeRatio[-1])
-
-            channelComboGainLoss = recentTrendComboGain(adjClose[i,:],
-                                                              datearray,
-                                                              minperiod=params['minperiod'],
-                                                              maxperiod=params['maxperiod'],
-                                                              incperiod=params['incperiod'],
-                                                              numdaysinfit=params['numdaysinfit'],
-                                                              offset=params['offset'])
+            symbol_elapsed_time = time.time() - symbol_start_time
+            
+            channelComboGainLoss = recentTrendComboGain(
+                adjClose[i,:],
+                datearray,
+                minperiod=params['minperiod'],
+                maxperiod=params['maxperiod'],
+                incperiod=params['incperiod'],
+                numdaysinfit=params['numdaysinfit'],
+                offset=params['offset']
+            )
+            time3 = time.time()
+            symbol_elapsed_time_23 = time3 - time2
 
             #print " companyName, channelComboGainLoss = ", companyNameList[i], channelComboGainLoss
             channelComboGainsLosses.append(format(channelComboGainLoss,'6.1%'))
             floatChannelComboGainsLosses.append(channelComboGainLoss)
 
             lowerTrend, upperTrend, NoGapLowerTrend, NoGapUpperTrend = \
-                     recentTrendAndMidTrendChannelFitWithAndWithoutGap( \
-                                   adjClose[i,:], \
-                                   minperiod=params['minperiod'], \
-                                   maxperiod=params['maxperiod'], \
-                                   incperiod=params['incperiod'], \
-                                   numdaysinfit=params['numdaysinfit'], \
-                                   numdaysinfit2=params['numdaysinfit2'], \
-                                   offset=params['offset'])
+                recentTrendAndMidTrendChannelFitWithAndWithoutGap(
+                    adjClose[i,:], \
+                    minperiod=params['minperiod'], \
+                    maxperiod=params['maxperiod'], \
+                    incperiod=params['incperiod'], \
+                    numdaysinfit=params['numdaysinfit'], \
+                    numdaysinfit2=params['numdaysinfit2'], \
+                    offset=params['offset']
+                )
             midTrendEndPoint = (lowerTrend[-1]+upperTrend[-1])/2.
             noGapMidTrendEndPoint = (NoGapLowerTrend[-1]+NoGapUpperTrend[-1])/2.
             trendsRatio.append( noGapMidTrendEndPoint/midTrendEndPoint - 1. )
+
+            time4 = time.time()
+            symbol_elapsed_time_34 = time4 - time3
+            symbol_elapsed_time = time4 - symbol_start_time
+            print(
+                f". inside functions/TAfunctions/sharpeWeightedRank_2D\n"
+                f"[TIMING] Symbol {isymbol} processing steps: "
+                f"[{symbol_elapsed_time_01}, {symbol_elapsed_time_12}, "
+                f"{symbol_elapsed_time_23}, {symbol_elapsed_time_34}]\n"
+                f"[TIMING] Symbol {isymbol} processing completed in "
+                f"{symbol_elapsed_time:.4f} seconds"
+            )
 
         print(" ... finished computing price positions within trend channels ...")
 
@@ -3707,6 +3791,11 @@ def MAA_WeightedRank_2D(
     from functions.GetParams import get_json_params
     params = get_json_params(json_fn)
     stockList = params['stockList']
+
+    # print params (one line per value)
+    print(" ... parameters used in sharpeWeightedRank_2D: ")
+    for key, value in params.items():
+        print(f"{key}: {value}")
 
     adjClose_despike = despike_2D( adjClose, LongPeriod, stddevThreshold=stddevThreshold )
 

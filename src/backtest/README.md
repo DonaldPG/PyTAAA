@@ -123,7 +123,10 @@ mc = MonteCarloBacktest(
 )
 
 # Generate random parameters
-params = mc.generate_random_params(iteration=0, uptrendSignalMethod='percentileChannels')
+params = mc.generate_random_params(
+  iteration=0,
+  uptrendSignalMethod='percentileChannels'
+)
 
 # Calculate Sharpe ratio
 sharpe = calculate_sharpe_ratio(daily_gains)

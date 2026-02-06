@@ -351,7 +351,10 @@ class TestMonteCarloBacktest:
     def test_generate_random_params_valid_ranges(self, mc_backtest):
         """Test that generated params are in valid ranges."""
         for i in range(20):
-            params = mc_backtest.generate_random_params(iteration=i, uptrendSignalMethod='percentileChannels')
+            params = mc_backtest.generate_random_params(
+                iteration=i,
+                uptrendSignalMethod='percentileChannels'
+            )
             
             assert params["MA2"] >= 3
             assert params["MA1"] > params["MA2"]
