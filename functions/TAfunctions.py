@@ -3351,6 +3351,7 @@ def sharpeWeightedRank_2D(
         avgChannelGainsLosses = 0.0
         avgStdevsAboveChannel = 0.0
         avgTrendsRatio = 0.0
+        validCompanyCount = 0
 
         for i, isymbol in enumerate(symbols):
             for j in range(len(symbols)):
@@ -3385,12 +3386,13 @@ def sharpeWeightedRank_2D(
 
                     ###print " i,j,companyName = ", i,j,"__"+companyName+"__"
                     if companyName != "":
-                        if i==1:
+                        if validCompanyCount == 0:
                             avgChannelGainsLosses = floatChannelGainsLosses[j]
                             avgStdevsAboveChannel = floatStdevsAboveChannel[j]
                         else:
-                            avgChannelGainsLosses = (avgChannelGainsLosses*(i-1)+floatChannelGainsLosses[j])/(i)
-                            avgStdevsAboveChannel = (avgStdevsAboveChannel*(i-1)+floatStdevsAboveChannel[j])/(i)
+                            avgChannelGainsLosses = (avgChannelGainsLosses*validCompanyCount+floatChannelGainsLosses[j])/(validCompanyCount+1)
+                            avgStdevsAboveChannel = (avgStdevsAboveChannel*validCompanyCount+floatStdevsAboveChannel[j])/(validCompanyCount+1)
+                        validCompanyCount += 1
 
 
                 if i == deltaRank[j,-1]:

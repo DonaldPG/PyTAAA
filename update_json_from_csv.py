@@ -83,8 +83,8 @@ def read_csv_row(csv_file: str, row_number: int) -> Dict[str, Any]:
     # Extract metric blending parameters
     metric_blending = {
         'enabled': row['Metric Blending Enabled'].lower() == 'true',
-        'full_period_weight': float(row['Full Period Weight']),
-        'focus_period_weight': float(row['Focus Period Weight'])
+        'focus_period_1_weight': float(row['Focus Period 1 Weight']),
+        'focus_period_2_weight': float(row['Focus Period 2 Weight'])
     }
     
     return {
@@ -158,8 +158,8 @@ def find_row_by_datetime(csv_file: str, date: str, time: str) -> Dict[str, Any]:
             # Extract metric blending parameters
             metric_blending = {
                 'enabled': row['Metric Blending Enabled'].lower() == 'true',
-                'full_period_weight': float(row['Full Period Weight']),
-                'focus_period_weight': float(row['Focus Period Weight'])
+                'focus_period_1_weight': float(row['Focus Period 1 Weight']),
+                'focus_period_2_weight': float(row['Focus Period 2 Weight'])
             }
             
             return {
@@ -233,13 +233,13 @@ def read_excel_row(excel_file: str, row_number: int) -> Dict[str, Any]:
     workbook = openpyxl.load_workbook(excel_file, read_only=True)
     sheet = workbook.active
     
-    # Header is at row 13, data starts at row 14
-    # Read up to column 42 (indices 0-41) to include all data columns
-    header_row = list(sheet.iter_rows(min_row=13, max_row=13, 
-                                       max_col=42, values_only=True))[0]
+    # Header is at row 11, data starts at row 12
+    # Read up to column 96 to include all data columns
+    header_row = list(sheet.iter_rows(min_row=11, max_row=11, 
+                                       max_col=96, values_only=True))[0]
     
-    # Get all data rows starting from row 14
-    rows = list(sheet.iter_rows(min_row=14, max_col=42, values_only=True))
+    # Get all data rows starting from row 12
+    rows = list(sheet.iter_rows(min_row=12, max_col=96, values_only=True))
     
     if row_number < 1 or row_number > len(rows):
         raise ValueError(
@@ -290,8 +290,8 @@ def read_excel_row(excel_file: str, row_number: int) -> Dict[str, Any]:
     # Extract metric blending parameters with safe conversion
     metric_blending = {
         'enabled': str(row['Metric Blending Enabled']).lower() == 'true',
-        'full_period_weight': safe_float_convert(row['Full Period Weight']),
-        'focus_period_weight': safe_float_convert(row['Focus Period Weight'])
+        'focus_period_1_weight': safe_float_convert(row['Focus Period 1 Weight']),
+        'focus_period_2_weight': safe_float_convert(row['Focus Period 2 Weight'])
     }
     
     workbook.close()
@@ -334,9 +334,9 @@ def find_excel_row_by_datetime(excel_file: str, date: str,
     workbook = openpyxl.load_workbook(excel_file, read_only=True)
     sheet = workbook.active
     
-    # Header is at row 13, only use columns A through AE (indices 0-30)
-    header_row = list(sheet.iter_rows(min_row=13, max_row=13, 
-                                       max_col=42, values_only=True))[0]
+    # Header is at row 11, only use columns A through CS (up to 96)
+    header_row = list(sheet.iter_rows(min_row=11, max_row=11, 
+                                       max_col=96, values_only=True))[0]
     
     # Find Date and Time column indices
     date_col = None
@@ -351,9 +351,9 @@ def find_excel_row_by_datetime(excel_file: str, date: str,
         workbook.close()
         raise ValueError("Could not find 'Date' or 'Time' columns in Excel file")
     
-    # Search for matching row (data starts at row 14)
+    # Search for matching row (data starts at row 12)
     for row_idx, row_data in enumerate(
-        sheet.iter_rows(min_row=14, max_col=42, values_only=True), start=1
+        sheet.iter_rows(min_row=12, max_col=96, values_only=True), start=1
     ):
         row_date = str(row_data[date_col]) if row_data[date_col] else ""
         row_time = str(row_data[time_col]) if row_data[time_col] else ""
@@ -402,8 +402,8 @@ def find_excel_row_by_datetime(excel_file: str, date: str,
             # Extract metric blending parameters
             metric_blending = {
                 'enabled': str(row['Metric Blending Enabled']).lower() == 'true',
-                'full_period_weight': float(row['Full Period Weight']),
-                'focus_period_weight': float(row['Focus Period Weight'])
+                'focus_period_1_weight': float(row['Focus Period 1 Weight']),
+                'focus_period_2_weight': float(row['Focus Period 2 Weight'])
             }
             
             workbook.close()
@@ -478,10 +478,10 @@ def update_json_config(
         config['metric_blending'] = {}
     
     config['metric_blending']['enabled'] = metric_blending['enabled']
-    config['metric_blending']['full_period_weight'] = \
-        metric_blending['full_period_weight']
-    config['metric_blending']['focus_period_weight'] = \
-        metric_blending['focus_period_weight']
+    config['metric_blending']['focus_period_1_weight'] = \
+        metric_blending['focus_period_1_weight']
+    config['metric_blending']['focus_period_2_weight'] = \
+        metric_blending['focus_period_2_weight']
     
     #############################################################################
     # Update recommendation_mode.default_lookbacks for recommend_model.py
@@ -643,19 +643,19 @@ def main(
             
             if row_number:
                 # For Excel files, convert actual Excel row number to data row number
-                # Header is at row 13, data starts at row 14
-                if row_number < 14:
+                # Header is at row 11, data starts at row 12
+                if row_number < 12:
                     raise ValueError(
-                        f"Excel row {row_number} is before data starts (row 14)"
+                        f"Excel row {row_number} is before data starts (row 12)"
                     )
-                data_row = row_number - 13
+                data_row = row_number - 11
                 print(f"Extracting parameters from Excel row {row_number}")
                 params = read_excel_row(xlsx_file, data_row)
             elif date and time:
                 print(f"Searching for row with Date='{date}' and Time='{time}'")
                 params = find_excel_row_by_datetime(xlsx_file, date, time)
                 data_row = params['row_number']
-                row_number = data_row + 13
+                row_number = data_row + 11
                 print(f"Found at Excel row {row_number}")
             else:
                 raise ValueError(
@@ -680,7 +680,7 @@ def main(
         print(f"  Time: {params['row_data']['Time']}")
         
         # Format Final Value with $ and commas
-        final_value_raw = params['row_data']['Final Value']
+        final_value_raw = params['row_data']['Full Period Final Value']
         if isinstance(final_value_raw, str):
             # Remove existing $ and commas if present
             final_value_clean = final_value_raw.replace('$', '').replace(',', '')
@@ -689,10 +689,10 @@ def main(
             final_value = float(final_value_raw)
         
         print(f"  Final Value: ${final_value:,.0f}")
-        print(f"  Annual Return: {params['row_data']['Annual Return']}")
-        print(f"  Sharpe Ratio: {params['row_data']['Sharpe Ratio']}")
-        print(f"  Sortino Ratio: {params['row_data']['Sortino Ratio']}")
-        print(f"  Max Drawdown: {params['row_data']['Max Drawdown']}")
+        print(f"  Annual Return: {params['row_data']['Full Period Annual Return']}")
+        print(f"  Sharpe Ratio: {params['row_data']['Full Period Sharpe Ratio']}")
+        print(f"  Sortino Ratio: {params['row_data']['Full Period Sortino Ratio']}")
+        print(f"  Max Drawdown: {params['row_data']['Full Period Max Drawdown']}")
         
         print("\nLookback Periods:")
         print(f"  {params['lookback_days']}")
@@ -703,8 +703,8 @@ def main(
         
         print("\nMetric Blending:")
         print(f"  enabled: {params['metric_blending']['enabled']}")
-        print(f"  full_period_weight: {params['metric_blending']['full_period_weight']}")
-        print(f"  focus_period_weight: {params['metric_blending']['focus_period_weight']}")
+        print(f"  focus_period_1_weight: {params['metric_blending']['focus_period_1_weight']}")
+        print(f"  focus_period_2_weight: {params['metric_blending']['focus_period_2_weight']}")
         
         if show_only:
             print("\n" + "="*60)
