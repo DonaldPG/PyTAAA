@@ -853,40 +853,31 @@ def main() -> None:
         
         print("--- PyTAAA Update Complete ---\n")
         
-        # TEMPORARILY DISABLED: Update abacus backtest file with model-switching portfolio values
-        # This updates column 3 with correct model-switching values and adds column 6 with model names
-        # logger.info("Updating abacus backtest file with model-switching portfolio values...")
-        # print("\n--- Updating Abacus Backtest Data ---")
-        # 
-        # try:
-        #     from functions.abacus_backtest import write_abacus_backtest_to_params_file
-        #     from functions.abacus_recommend import ConfigurationHelper
-        #     
-        #     # Get lookback parameters from config using the same logic as recommend_model.py
-        #     ConfigurationHelper.ensure_config_defaults(config)
-        #     lookbacks = ConfigurationHelper.get_recommendation_lookbacks(
-        #         "use-saved", config
-        #     )
-        #     
-        #     print(f"Using lookback periods: {lookbacks}")
-        #     success = write_abacus_backtest_to_params_file(
-        #         json_config_path=args.json,
-        #         lookbacks=lookbacks
-        #     )
-        #     
-        #     if success:
-        #         print("✅ Successfully updated abacus backtest file with model-switching portfolio values")
-        #         print("   - Column 3: Updated with model-switching portfolio values")
-        #         print("   - Column 6: Added selected model names for each date")
-        #     else:
-        #         logger.warning("Failed to update abacus backtest file")
-        #         print("⚠️  Warning: Could not update abacus backtest file")
-        #         
-        # except Exception as e:
-        #     logger.error(f"Error updating abacus backtest file: {e}")
-        #     print(f"⚠️  Warning: Error updating abacus backtest file: {e}")
-        # 
-        # print("--- Abacus Backtest Update Complete ---\n")
+        # Update abacus backtest portfolio values in PyTAAA_status.params
+        logger.info("Updating abacus backtest portfolio values...")
+        print("\n--- Updating Abacus Backtest Values ---")
+        
+        try:
+            from functions.abacus_backtest import write_abacus_backtest_portfolio_values
+            
+            # Use saved lookbacks or defaults from config
+            success = write_abacus_backtest_portfolio_values(
+                json_config_path=args.json,
+                lookbacks=None  # Will auto-detect from saved state or config
+            )
+            
+            if success:
+                print("✓ Abacus backtest portfolio values updated successfully")
+                logger.info("Abacus backtest portfolio values updated")
+            else:
+                print("⚠ Abacus backtest update skipped or failed")
+                logger.warning("Abacus backtest update was not successful")
+                
+        except Exception as e:
+            logger.error(f"Failed to update abacus backtest values: {e}")
+            print(f"ERROR: Failed to update abacus backtest values: {e}")
+        
+        print("--- Abacus Backtest Update Complete ---\n")
 
         # if update_needed:
         #     print("Stock price update needed - proceeding with full update")

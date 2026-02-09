@@ -117,8 +117,8 @@
     },
     "monte_carlo": {
         "initial_capital": 10000.0,
-        "max_iterations": 750,
-        "min_iterations_for_exploit": 275,
+        "max_iterations": 1000,
+        "min_iterations_for_exploit": 400,
         "trading_frequency": "monthly",
         "use_daily_close_only": true,
         "portfolio_rebalance_day": 1,
