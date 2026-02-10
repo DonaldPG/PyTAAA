@@ -359,22 +359,29 @@ def computeDailyBacktest(
             makeQCPlots=False,
             outputStats=False
         )
-        # newHighsAndLows returns full-length arrays but sets early values to invalid (-1e5)
-        # Only write data for dates where new highs/lows are valid (>= 0)
-        # This typically skips the first ~500 days where there isn't enough historical data
+        # Sum across stocks (axis=0) and across parameter sets (axis=1 if multiple)
+        # sumNewHighs = np.sum(newHighs_2D, axis=0)
+        # sumNewLows = np.sum(newLows_2D, axis=0)
+        # If multiple parameter sets were used, sum them to get 1D array
+        if sumNewHighs.ndim > 1:
+            sumNewHighs = np.sum(sumNewHighs, axis=-1)
+            sumNewLows = np.sum(sumNewLows, axis=-1)
         
         textmessage = ""
+        filepath = os.path.join(p_store, "pyTAAAweb_backtestPortfolioValue.params" )
         for idate in range(len(BuyHoldPortfolioValue)):
-            # Only write if new highs/lows data is valid (not the placeholder negative values)
-            if sumNewLows[idate] >= 0:
-                textmessage = textmessage + \
-                            str(datearray[idate]) + " " + \
-                            str(BuyHoldPortfolioValue[idate]) + " " + \
-                            str(np.average(monthvalue[:,idate]))  + " " + \
-                            f"{float(sumNewHighs[idate]):.1f}" + " " + \
-                            f"{float(sumNewLows[idate]):.1f}" + "\n"
+            textmessage = textmessage + \
+                        str(datearray[idate]) + " " + \
+                        str(BuyHoldPortfolioValue[idate]) + " " + \
+                        str(np.average(monthvalue[:,idate]))  + " " + \
+                        f"{sumNewHighs[idate]:.1f}" + " " + \
+                        f"{sumNewLows[idate]:.1f}" + "\n"
         with open( filepath, "w" ) as f:
             f.write(textmessage)
+        # for idate in range(len(BuyHoldPortfolioValue)):
+        #     textmessage = textmessage + str(datearray[idate])+"  "+str(BuyHoldPortfolioValue[idate])+"  "+str(np.average(monthvalue[:,idate]))+"  "+str(int(sumNewHighs[idate]))+"  "+str(int(sumNewLows[idate]))+"\n"
+        # with open( filepath, "w" ) as f:
+        #     f.write(textmessage)
     except Exception as e:
         print(f"\n ... Error computing new highs/lows: {e}")
         print(" ... Writing 3-column output as fallback...")

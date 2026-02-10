@@ -645,72 +645,112 @@ def read_symbols_list_web(json_fn, verbose=True):
             old_symbolList[i] = old_symbolList[i].replace("\n","")
 
         ###
-        ### get current symbol list from wikipedia website
+        ### get current symbol list from wikipedia website with enhanced error handling
         ###
         base_url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
         # Add User-Agent header to avoid 403 Forbidden errors from Wikipedia
-        req = urllib.request.Request(
-            base_url,
-            headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
-        )
-        soup = BeautifulSoup( urllib.request.urlopen(req, timeout=10), "lxml" )
-        t = soup.find(
-            "table",
-            {
-                "class" : "wikitable sortable sticky-header",
-                "id": "constituents"
-            }
-        )
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        try:
+            req = urllib.request.Request(base_url, headers=headers)
+            response = urllib.request.urlopen(req, timeout=15)
+            soup = BeautifulSoup(response.read(), "lxml")
+            print("... got web content (with headers)")
+        except:
+            # Fallback to basic request
+            try:
+                soup = BeautifulSoup( urllib.request.urlopen(base_url), "lxml" )
+                print("... got web content (basic request)")
+            except Exception as e:
+                print(f"... ERROR: Could not fetch Wikipedia page: {e}")
+                print("... Using local symbol list instead")
+                symbolList = old_symbolList
+                companyNamesList = []
+                soup = None
+        
+        if soup is not None:
+            print("... ran beautiful soup on web content")
+            
+            # Try multiple table selection strategies
+            t = soup.find("table", {"class" : "wikitable sortable sticky-header", "id": "constituents"})
+            
+            # If table not found with specific class, try simpler search.
+            if t is None:
+                print("... table not found with specific class. Trying alternative search...")
+                t = soup.find("table", {"id": "constituents"})
+            
+            # Try even simpler search if still not found
+            if t is None:
+                print("... trying fallback table search...")
+                tables = soup.find_all("table", {"class": "wikitable"})
+                for table in tables:
+                    table_text = str(table).lower()
+                    if 'symbol' in table_text and 'security' in table_text:
+                        rows = table.find_all('tr')
+                        if len(rows) > 400:  # S&P 500 should have ~500 rows
+                            t = table
+                            print(f"... found table with {len(rows)} rows using content detection")
+                            break
 
-        print("... got web content")
-        print("... ran beautiful soup on web content")
+            symbolList = [] # store all of the records in this list
+            companyNamesList = []
+            data=[]
 
-        # If table not found with specific class, try simpler search.
-        if t is None:
-            print("... table not found with specific class. Trying alternative search...")
-            t = soup.find("table", {"id": "constituents"})
+            # Check if table was found before attempting to parse
+            if t is not None:
+                for row in t.find_all('tr'):
+                    if str(row)==[]:
+                        continue
+                    col = row.find_all('td')
+                    cols = row.find_all('td')
+                    cols = [ele.text.strip() for ele in cols]
+                    data.append([ele for ele in cols if ele])
+                    if col==[]:
+                        continue
+                    
+                    # Skip if not enough columns
+                    if len(data[-1]) < 2:
+                        continue
+                    
+                    try:
+                        company_name = unicodedata.normalize('NFD',data[-1][1]).encode('ascii', 'ignore').decode('ascii')
+                        symbol_name = data[-1][0].encode("utf8").decode('ascii')
+                        symbol_name = symbol_name.replace(".", "-")
 
-        symbolList = [] # store all of the records in this list
-        companyNamesList = []
-        data=[]
-
-        # Check if table was found before attempting to parse
-        if t is not None:
-            for row in t.find_all('tr'):
-                if str(row)==[]:
-                    continue
-                col = row.find_all('td')
-                cols = row.find_all('td')
-                cols = [ele.text.strip() for ele in cols]
-                data.append([ele for ele in cols if ele])
-                if col==[]:
-                    continue
-                company_name = data[-1][0].encode("utf8")
-                # if company_name[:3]=='MON':
-                #     break
-                company_name = unicodedata.normalize('NFD',data[-1][1]).encode('ascii', 'ignore').decode('ascii')
-                symbol_name = data[-1][0].encode("utf8").decode('ascii')
-                symbol_name = symbol_name.replace(".", "-")
-
-                #print(str(row)+"\n ...company_name = "+company_name+"\n ...symbol_name="+symbol_name+"\n")
-                if verbose:
-                    print(
-                        # "  ...symbol_name=" + symbol_name + \
-                        # " ...company_name = " + company_name
-                        " ...symbol_name="+'{0: <5}'.format(symbol_name) + \
-                        " ...company_name=" + company_name
-                    )
-                companyNamesList.append(company_name)
-                symbolList.append(symbol_name)
-        else:
-            print("... WARNING: Could not find table on Wikipedia page. Using local list.")
-            symbolList = old_symbolList
-        print(f"... retrieved {len(symbolList)} SP500 companies lists from internet")
+                        # Skip empty or header rows
+                        if not symbol_name or symbol_name.lower() in ['symbol', 'ticker', '', 'company']:
+                            continue
+                        
+                        if verbose:
+                            print(
+                                " ...symbol_name="+'{0: <5}'.format(symbol_name) + \
+                                " ...company_name=" + company_name
+                            )
+                        companyNamesList.append(company_name)
+                        symbolList.append(symbol_name)
+                    except (IndexError, UnicodeDecodeError, AttributeError) as e:
+                        if verbose:
+                            print(f"... error processing row: {e}")
+                        continue
+            else:
+                print("... WARNING: Could not find table on Wikipedia page. Using local list.")
+                symbolList = old_symbolList
+            
+            if len(symbolList) > 0:
+                print(f"... retrieved {len(symbolList)} SP500 companies from internet")
+            else:
+                print("... WARNING: No symbols retrieved, using local list")
+                symbolList = old_symbolList
 
         companyName_file = os.path.join( symbol_directory, "SP500_companyNames.txt" )
         with open( companyName_file, "w" ) as f:
             for i in range( len(symbolList) ) :
-                f.write( symbolList[i] + ";" + companyNamesList[i] + "\n" )
+                if i < len(companyNamesList):
+                    f.write( symbolList[i] + ";" + companyNamesList[i] + "\n" )
+                else:
+                    f.write( symbolList[i] + ";\n" )
         print("... wrote SP500_companyNames.txt")
 
         ### -----------------
