@@ -10,7 +10,7 @@ except:
     pass
 
 from functions.TAfunctions import SMS
-from functions.GetParams import get_json_params
+from functions.GetParams import get_json_params, get_symbols_file
 from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
 from functions.allstats import *
 
@@ -55,6 +55,19 @@ def newHighsAndLows(
     elif stockList == 'SP500':
         symbol_file = "SP500_Symbols.txt"
     symbols_file = os.path.join( symbol_directory, symbol_file )
+
+    # get symbols file from json
+    symbols_file = get_symbols_file(json_fn)
+
+    print("\n\n")
+    print(" ... inside functions/CountNewHighsAndLows/newHighsAndLows.py")
+    print(".  . stockList = ", stockList)
+    print("   . symbols_file = ", symbols_file)
+    print("   . json_fn = ", json_fn)
+    print("   . loading quotes from HDF5 file")
+    
+    if not os.path.isfile(symbols_file):
+        raise ValueError("symbols file does not exist")
 
     adjClose, symbols, datearray, _, _ = loadQuotes_fromHDF(symbols_file, json_fn)
 

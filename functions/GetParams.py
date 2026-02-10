@@ -347,12 +347,13 @@ def get_json_params(json_fn, verbose=False):
     params['lowPct'] = config.get("Valuation")["lowPct"]
     params['hiPct'] = config.get("Valuation")["hiPct"]
 
-    params['minperiod'] = int( config.get("Valuation")["minperiod"])
-    params['maxperiod'] = int( config.get("Valuation")["maxperiod"])
-    params['incperiod'] = int( config.get("Valuation")["incperiod"])
-    params['numdaysinfit'] = int( config.get("Valuation")["numdaysinfit"])
-    params['numdaysinfit2'] = int( config.get("Valuation")["numdaysinfit2"])
-    params['offset'] = int( config.get("Valuation")["offset"])
+    valuation_section = config.get("Valuation")
+    params['minperiod'] = int( valuation_section.get("minperiod", 10))
+    params['maxperiod'] = int( valuation_section.get("maxperiod", 100))
+    params['incperiod'] = int( valuation_section.get("incperiod", 10))
+    params['numdaysinfit'] = int( valuation_section.get("numdaysinfit", 100))
+    params['numdaysinfit2'] = int( valuation_section.get("numdaysinfit2", 200))
+    params['offset'] = int( valuation_section.get("offset", 0))
 
     params['stockList'] = config.get("Valuation")["stockList"]
     params['symbols_file'] = config.get("Valuation")["symbols_file"]

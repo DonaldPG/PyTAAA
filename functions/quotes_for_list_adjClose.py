@@ -2,6 +2,7 @@ import numpy as np
 import datetime
 
 import datetime
+import pandas as pd
 from numpy import random
 from scipy.stats import rankdata
 
@@ -885,7 +886,8 @@ def arrayFromQuotesForList(symbolsFile, json_fn, beginDate, endDate):
 
     # clean up quotes for missing values and varying starting date
     #x = quote.as_matrix().swapaxes(0,1)
-    quote = quote.convert_objects(convert_numeric=True)   ### test
+    # convert all columns to numeric where possible (replace deprecated convert_objects)
+    quote = quote.apply(pd.to_numeric, errors='coerce')
     x = quote.values.T
     ###print "x = ", x
     date = quote.index
@@ -1004,6 +1006,7 @@ def get_pe_google( symbol ):
 def get_pe_finviz(symbol: str, verbose: bool = False) -> float:
     """
     Use finviz to get calculated P/E ratios for a given symbol.
+    Handles errors gracefully and returns np.nan for unavailable data.
 
     Args:
         symbol: The stock ticker symbol.
@@ -1032,24 +1035,35 @@ def get_pe_finviz(symbol: str, verbose: bool = False) -> float:
             )
         }
         r = requests.get(url, headers=headers)
+        
+        # Handle rate limiting
         if r.status_code == 429:
             logger.warning(f"Rate limited by finviz for {symbol}. Sleeping and retrying...")
             time.sleep(5)
             r = requests.get(url, headers=headers)
-        if r.status_code != 200:
-            logger.error(f"HTTP {r.status_code} from finviz for {symbol}")
-            raise ValueError(f"HTTP {r.status_code} from finviz for {symbol}")
+        
+        # Handle HTTP 404 and other errors gracefully
+        if r.status_code == 404:
+            logger.warning(f"HTTP 404 from finviz for {symbol} - symbol may be delisted")
+            if verbose:
+                print(f"HTTP 404 from finviz for {symbol}")
+            return np.nan
+        elif r.status_code != 200:
+            logger.warning(f"HTTP {r.status_code} from finviz for {symbol}")
+            if verbose:
+                print(f"HTTP {r.status_code} from finviz for {symbol}")
+            return np.nan
+            
         html = r.text
         soup = bs.BeautifulSoup(html, "lxml")
         table = soup.find("table", class_="snapshot-table2")
+        
         if table is None:
             logger.warning(f"Could not find snapshot-table2 in finviz HTML for {symbol}")
-            market_cap = 0.0
-            earnings = 0.0
-            pe = np.nan
             if verbose:
-                print(f"{symbol} market cap, earnings, P/E = {market_cap}, {earnings}, {pe}")
-            return pe
+                print(f"Could not find data table for {symbol}")
+            return np.nan
+            
         values = []
         for tr in table.find_all("tr")[1:3]:
             td = tr.find_all("td")[1]
@@ -1066,20 +1080,32 @@ def get_pe_finviz(symbol: str, verbose: bool = False) -> float:
                 values.append(value)
             else:
                 values.append(0)
+                
         market_cap = values[0]
         earnings = values[1]
+        
         if float(earnings) != 0.0:
             pe = market_cap / earnings
         else:
             pe = np.nan
+            
+        if verbose:
+            print(f"{symbol} market cap, earnings, P/E = {market_cap}, {earnings}, {pe}")
+        return pe
+        
+    except ValueError as e:
+        # Handle specific parsing errors
+        if "could not convert string to float" in str(e):
+            logger.warning(f"Failed to parse P/E data for {symbol}: {e}")
+            if verbose:
+                print(f"Failed to fetch P/E for {symbol}: {e}")
+        return np.nan
     except Exception as exc:
-        market_cap = 0.0
-        earnings = 0.0
-        pe = np.nan
-        logger.error(f"Failed to fetch P/E for {symbol}: {exc}")
-    if verbose:
-        print(f"{symbol} market cap, earnings, P/E = {market_cap}, {earnings}, {pe}")
-    return pe
+        # Handle all other exceptions gracefully
+        logger.warning(f"Failed to fetch P/E for {symbol}: {exc}")
+        if verbose:
+            print(f"Failed to fetch P/E for {symbol}: {exc}")
+        return np.nan
 
 
 def get_SectorAndIndustry_google( symbol ):

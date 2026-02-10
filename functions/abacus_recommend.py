@@ -523,6 +523,7 @@ class ModelRecommender:
                 date_idx = self.monte_carlo.dates.index(closest_date)
             lookbacks = self.lookbacks
             config_path = os.path.join(os.path.dirname(self.monte_carlo.model_paths[next(iter(self.monte_carlo.model_paths))]), 'pytaaa_model_switching_params.json')
+            import json ### TODO: remove this line ???
             with open(config_path, 'r') as f:
                 config = json.load(f)
             metric_weights = config['model_selection']['performance_metrics']
