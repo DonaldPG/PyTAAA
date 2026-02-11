@@ -1,127 +1,0 @@
-Starting model recommendation generation
-Starting model recommendation generation
-Starting model recommendation generation...
-Using JSON configuration: /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pytaaa_naz100_sp500_abacus.json
-Target date: 2026-01-19
-First weekday of month: 2026-01-01
-Using lookback periods: [55, 157, 174]
-
-Initializing model recommendation system...
-Using backtested portfolio values
-Focus period blending enabled with ONE focus period:
-  Focus Period: 2005-01-01 to 2025-10-01
-Blending weights: Full period 0.2, Focus period 0.8
-Loading historical portfolio data...
-
-Processing naz100_pine data from /Users/donaldpg/pyTAAA_data/naz100_pine/data_store/pyTAAAweb_backtestPortfolioValue.params
-Using backtested portfolio values
-Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
-Loaded 8826 data points for naz100_pine
-
-Processing naz100_hma data from /Users/donaldpg/pyTAAA_data/naz100_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
-Using backtested portfolio values
-Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
-Loaded 8826 data points for naz100_hma
-
-Processing naz100_pi data from /Users/donaldpg/pyTAAA_data/naz100_pi/data_store/pyTAAAweb_backtestPortfolioValue.params
-Using backtested portfolio values
-Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
-Loaded 8826 data points for naz100_pi
-
-Processing sp500_hma data from /Users/donaldpg/pyTAAA_data/sp500_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
-Using backtested portfolio values
-Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...
-Loaded 6560 data points for sp500_hma
-
-Processing sp500_pine data from /Users/donaldpg/pyTAAA_data/sp500_pine/data_store/pyTAAAweb_backtestPortfolioValue.params
-Using backtested portfolio values
-Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...
-Loaded 6560 data points for sp500_pine
-
-Total unique dates across all models: 8835
-Date range: 1991-01-02 to 2026-01-16
-
-Aligning data across models...
-Aligned naz100_pine data starting at $10000.00
-Aligned naz100_hma data starting at $10000.00
-Aligned naz100_pi data starting at $10000.00
-Aligned sp500_hma data starting at $10000.00
-Aligned sp500_pine data starting at $10000.00
-
-Data loading complete!
-Applied JSON normalization values to Monte Carlo instance
-
-============================================================
-MODEL RECOMMENDATION RESULTS
-============================================================
-
-Recommendation Parameters:
-  Lookback periods: [55, 157, 174] days
-  Target date: 2026-01-19 (Monday)
-  First weekday of month: 2026-01-01 (Thursday)
-
-----------------------------------------
-Recommendation for 2026-01-19:
-----------------------------------------
-  Using closest available date: 2026-01-16 (3 days difference)
-  Best model: naz100_hma
-  Model rankings (Normalized Score):
-    1. naz100_hma   12.196
-    2. sp500_pine   11.857
-    3. naz100_pine  11.642
-    4. sp500_hma     6.510
-    5. naz100_pi     1.688
-    6. cash          0.000
-
-----------------------------------------
-Recommendation for 2026-01-01:
-----------------------------------------
-  Using closest available date: 2025-12-31 (1 days difference)
-  Best model: naz100_hma
-  Model rankings (Normalized Score):
-    1. sp500_pine   14.634
-    2. naz100_hma   12.739
-    3. sp500_hma    10.405
-    4. naz100_pine   9.575
-    5. cash          0.000
-    6. naz100_pi    -3.133
-
-============================================================
-SUMMARY
-============================================================
-Generated recommendations for manual portfolio updates
-Based on model-switching trading system methodology
-
-======================================================================
-PARAMETERS SUMMARY
-======================================================================
-
-Lookback Periods:
-  Values: [55, 157, 174] days
-  Count: 3 periods
-
-Normalization Parameters:
-  Metric             Central Value  Std Deviation 
-  ------------------ -------------- --------------
-  Annual Return              43.5%          4.0%
-  Sharpe Ratio               1.450         0.165
-  Sortino Ratio              1.300         0.140
-  Max Drawdown              -54.0%          7.5%
-  Avg Drawdown              -11.5%          7.2%
-
-Final Portfolio Results:
-  Initial Value        : $   10,000.00
-  Final Value          : $20,431,068,801.83
-  Annualized Return    :       51.4%
-  Time Period          :        35.1 years
-
-Model-Switching Effectiveness:
-  Outperformance Rate  :        45.0%
-  vs Equal-Weight Base :         0.0% excess annual return
-======================================================================
-
-Generating recommendation plot...
-Saving plot to: /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web/recommendation_plot.png
-Model recommendation generation completed successfully
-Model recommendation generation completed successfully
-Model recommendation generation completed successfully
