@@ -10,7 +10,7 @@ except:
     pass
 
 from functions.TAfunctions import SMS
-from functions.GetParams import get_json_params
+from functions.GetParams import get_json_params, get_symbols_file
 from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
 from functions.allstats import *
 
@@ -55,6 +55,19 @@ def newHighsAndLows(
     elif stockList == 'SP500':
         symbol_file = "SP500_Symbols.txt"
     symbols_file = os.path.join( symbol_directory, symbol_file )
+
+    # get symbols file from json
+    symbols_file = get_symbols_file(json_fn)
+
+    print("\n\n")
+    print(" ... inside functions/CountNewHighsAndLows/newHighsAndLows.py")
+    print(".  . stockList = ", stockList)
+    print("   . symbols_file = ", symbols_file)
+    print("   . json_fn = ", json_fn)
+    print("   . loading quotes from HDF5 file")
+    
+    if not os.path.isfile(symbols_file):
+        raise ValueError("symbols file does not exist")
 
     adjClose, symbols, datearray, _, _ = loadQuotes_fromHDF(symbols_file, json_fn)
 
@@ -199,25 +212,31 @@ def newHighsAndLows(
 
         today = datetime.datetime.now()
 
+        # Create figure first
+        plt.figure(figsize=(9, 7))
         plt.clf()
-        plt.grid(True)
 
-        # set up to use dates for labels
+        # Set up to use dates for labels
         xlocs = []
         xlabels = []
         for i in range(1,len(datearray)):
             if datearray[i].year != datearray[i-1].year:
                 xlocs.append(datearray[i])
                 xlabels.append(str(datearray[i].year))
-        #print "xlocs,xlabels = ", xlocs, xlabels
+
+        # Create subplots
+        subplotsize = gridspec.GridSpec(2,1,height_ratios=[5,3])
+        
+        # Upper subplot - Portfolio value
+        plt.subplot(subplotsize[0])
+        plt.grid(True)
+        
+        # Set x-axis labels for upper subplot
         if len(xlocs) < 12 :
             plt.xticks(xlocs, xlabels)
         else:
             plt.xticks(xlocs[::2], xlabels[::2])
-
-        subplotsize = gridspec.GridSpec(2,1,height_ratios=[5,3])
-        plt.subplot(subplotsize[0])
-        plt.grid(True)
+        
         plt.plot(datearray,BuyHoldValue,'k-')
         ymin = np.min(BuyHoldValue) * .75
         ymax = np.max(BuyHoldValue) * 1.5
@@ -265,8 +284,15 @@ def newHighsAndLows(
         plot_text6 = "traded sharpe = ", format(sharpe_traded,'4.2f')
         plt.text( datearray[-2500],text_y6, plot_text6, fontsize=10 )
 
+        # Lower subplot - New highs and lows
         plt.subplot(subplotsize[1])
         plt.grid(True)
+        
+        # Set x-axis labels for lower subplot
+        if len(xlocs) < 12 :
+            plt.xticks(xlocs, xlabels)
+        else:
+            plt.xticks(xlocs[::2], xlabels[::2])
 
         plt.plot(datearray,sumNewHighs,'g-',label='new highs')
         plt.plot(datearray,sumNewLows,'r-',label='new lows')
@@ -274,6 +300,9 @@ def newHighsAndLows(
         #print "ymax=",ymax
         plt.ylim((0,ymax))
         plt.legend(loc=2,fontsize=9)
+
+        # Adjust layout to prevent overlapping labels
+        plt.tight_layout()
 
         plotfilepath = os.path.join( filepath, "PyTAAA_newHighs_newLows_count__"+today.strftime("%Y-%m-%d-%I.%M.%S%p" ) )
         #plotfilepath = plotfilepath.replace(":","-")
@@ -391,7 +420,7 @@ def newHighsAndLows(
         with open( output_file, "a" ) as f:
             f.write(textmessage)
 
-    return newHighs_2D, newLows_2D, np.mean(TradedValue,axis=0)[-1]
+    return sumNewHighs, sumNewLows, np.mean(TradedValue,axis=0)[-1]
 
 def HighLowIterate(iterations=100):
     import random

@@ -2,6 +2,8 @@ import os
 import numpy as np
 import configparser
 import json
+import re
+from typing import Tuple, Dict, Optional
 
 def from_config_file(config_filename):
     with open(config_filename, "r") as fid:
@@ -63,6 +65,72 @@ def get_webpage_store(json_fn):
     w_store = valuation_section["webpage"]
 
     return w_store
+
+
+def get_web_output_dir(json_fn: str) -> str:
+    """
+    Get web output directory from JSON configuration.
+    
+    Args:
+        json_fn (str): Path to the JSON configuration file.
+        
+    Returns:
+        str: The web output directory path.
+        
+    Raises:
+        FileNotFoundError: If the JSON file doesn't exist.
+        KeyError: If the web_output_dir key is missing.
+        json.JSONDecodeError: If the JSON file is malformed.
+    """
+    with open(json_fn, 'r') as json_file:
+        config = json.load(json_file)
+    
+    if 'web_output_dir' not in config:
+        raise KeyError("'web_output_dir' key not found in JSON configuration")
+    
+    return config['web_output_dir']
+
+
+def get_central_std_values(json_fn: str) -> Dict[str, Dict[str, float]]:
+    """
+    Get normalization values (central_values and std_values) from JSON configuration.
+    
+    Args:
+        json_fn (str): Path to the JSON configuration file.
+        
+    Returns:
+        Dict[str, Dict[str, float]]: Dictionary containing central_values and 
+                                    std_values for normalization calculations.
+                                    
+    Raises:
+        FileNotFoundError: If the JSON file doesn't exist.
+        KeyError: If required normalization keys are missing.
+        json.JSONDecodeError: If the JSON file is malformed.
+    """
+    with open(json_fn, 'r') as json_file:
+        config = json.load(json_file)
+    
+    # Navigate through the nested JSON structure
+    model_selection = config.get('model_selection')
+    if model_selection is None:
+        raise KeyError("'model_selection' section not found in JSON configuration")
+    
+    normalization = model_selection.get('normalization')
+    if normalization is None:
+        raise KeyError("'normalization' section not found in model_selection")
+    
+    central_values = normalization.get('central_values')
+    std_values = normalization.get('std_values')
+    
+    if central_values is None:
+        raise KeyError("'central_values' not found in normalization section")
+    if std_values is None:
+        raise KeyError("'std_values' not found in normalization section")
+    
+    return {
+        'central_values': central_values,
+        'std_values': std_values
+    }
 
 
 def get_json_ftp_params(json_fn, verbose=False):
@@ -213,7 +281,7 @@ def get_json_params(json_fn, verbose=False):
     elif runtime.split(" ")[1] == 'months':
         factor = 60*60*24*30.4
     elif runtime.split(" ")[1] == 'years':
-        factor = 6060*60*24*365.25
+        factor = 6060*60*60*24*365.25
     else:
         # assume days
         factor = 60*60*24
@@ -231,7 +299,7 @@ def get_json_params(json_fn, verbose=False):
     elif pausetime.split(" ")[1] == 'months':
         factor = 60*60*24*30.4
     elif pausetime.split(" ")[1] == 'years':
-        factor = 6060*60*24*365.25
+        factor = 60*60*60*24*365.25
     else:
         # assume hour
         factor = 60*60
@@ -279,12 +347,13 @@ def get_json_params(json_fn, verbose=False):
     params['lowPct'] = config.get("Valuation")["lowPct"]
     params['hiPct'] = config.get("Valuation")["hiPct"]
 
-    params['minperiod'] = int( config.get("Valuation")["minperiod"])
-    params['maxperiod'] = int( config.get("Valuation")["maxperiod"])
-    params['incperiod'] = int( config.get("Valuation")["incperiod"])
-    params['numdaysinfit'] = int( config.get("Valuation")["numdaysinfit"])
-    params['numdaysinfit2'] = int( config.get("Valuation")["numdaysinfit2"])
-    params['offset'] = int( config.get("Valuation")["offset"])
+    valuation_section = config.get("Valuation")
+    params['minperiod'] = int( valuation_section.get("minperiod", 10))
+    params['maxperiod'] = int( valuation_section.get("maxperiod", 100))
+    params['incperiod'] = int( valuation_section.get("incperiod", 10))
+    params['numdaysinfit'] = int( valuation_section.get("numdaysinfit", 100))
+    params['numdaysinfit2'] = int( valuation_section.get("numdaysinfit2", 200))
+    params['offset'] = int( valuation_section.get("offset", 0))
 
     params['stockList'] = config.get("Valuation")["stockList"]
     params['symbols_file'] = config.get("Valuation")["symbols_file"]
@@ -837,9 +906,11 @@ def GetIP( ):
     f = urllib.request.urlopen("http://www.canyouseeme.org/")
     html_doc = f.read().decode('utf-8')
     f.close()
-    m = re.search('(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)',html_doc)
+    m = re.search(r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
+                  r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
+                  r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
+                  r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)',html_doc)
     return m.group(0)
-
 
 def GetEdition( ):
     ######################
@@ -882,3 +953,50 @@ def GetSymbolsFile( ):
     symbols_file = os.path.join( symbol_directory, symbol_file )
 
     return symbols_file
+
+def parse_pytaaa_status(file_path: str) -> Tuple[list, list]:
+    """
+    Parse the PyTAAA_status.params file to extract date and portfolio value columns.
+
+    Args:
+        file_path (str): Path to the PyTAAA_status.params file.
+
+    Returns:
+        Tuple[list, list]: A tuple containing two lists: dates and portfolio values.
+    """
+    dates = []
+    portfolio_values = []
+
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"File not found: {file_path}")
+
+    with open(file_path, "r") as file:
+        for line in file:
+            parts = line.split()
+            if len(parts) < 4:
+                continue  # Skip lines that do not have enough columns
+            try:
+                dates.append(parts[0])
+                portfolio_values.append(float(parts[3]))
+            except ValueError as e:
+                print(f"Skipping line due to parsing error: {line.strip()}\nError: {e}")
+
+    return dates, portfolio_values
+
+def validate_model_choices(model_choices: dict) -> dict:
+    """
+    Validate the paths in the `model_choices` dictionary to ensure all required files are present.
+
+    Args:
+        model_choices (dict): A dictionary where keys are model names and values are file paths.
+
+    Returns:
+        dict: A dictionary with validation results for each model.
+    """
+    validation_results = {}
+    for model, path in model_choices.items():
+        if path:
+            validation_results[model] = os.path.exists(path)
+        else:
+            validation_results[model] = True  # Cash model has no file path
+    return validation_results

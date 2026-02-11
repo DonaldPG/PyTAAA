@@ -1,0 +1,1842 @@
+Using search strategy: explore-exploit
+==============================================================
+Monte Carlo Loop Runner
+==============================================================
+Number of runs: 15
+Search strategy: explore-exploit
+Verbose mode: disabled
+Reset state after each run: --reset
+Start time: Sat Aug 23 22:38:32 EDT 2025
+Working directory: /Users/donaldpg/PyProjects/worktree2/PyTAAA
+==============================================================
+
+
+--------------------------------------------------------------
+Starting Monte Carlo Run 1 of 15
+Time: Sat Aug 23 22:38:32 EDT 2025
+--------------------------------------------------------------
+Executing: uv run python run_monte_carlo.py --search explore-exploit
+
+Starting Monte Carlo backtesting process
+Starting Monte Carlo backtesting process
+Search strategy: explore-exploit
+Search strategy: explore-exploit
+Starting Monte Carlo backtesting process
+Search strategy: explore-exploit
+
+Initializing Monte Carlo backtesting...
+Using backtested portfolio values
+Reading from: pyTAAAweb_backtestPortfolioValue.params
+Loading historical portfolio data...
+
+Processing naz100_pine data from /Users/donaldpg/pyTAAA_data/naz100_pine/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_pine
+
+Processing naz100_hma data from /Users/donaldpg/pyTAAA_data/naz100_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_hma
+
+Processing naz100_pi data from /Users/donaldpg/pyTAAA_data/naz100_pi/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_pi
+
+Processing sp500_hma data from /Users/donaldpg/pyTAAA_data/sp500_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...
+Loaded 6459 data points for sp500_hma
+
+Total unique dates across all models: 8734
+Date range: 1991-01-02 to 2025-08-22
+
+Aligning data across models...
+Aligned naz100_pine data starting at $10000.00
+Aligned naz100_hma data starting at $10000.00
+Aligned naz100_pi data starting at $10000.00
+Aligned sp500_hma data starting at $10000.00
+
+Data loading complete!
+
+Checking for previous state in monte_carlo_state.pkl...
+No previous state file found at monte_carlo_state.pkl
+Running Monte Carlo simulations with 750 iterations...
+Running Monte Carlo simulations with 750 iterations...
+
+Starting Monte Carlo simulations with 750 iterations...
+Note: This may take about 5 minutes to complete...
+Press Ctrl+C to stop early with current best result
+
+
+Running 750 Monte Carlo iterations...
+Using 5 models over 8734 trading days
+Press Ctrl+C to stop early with current best result
+
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $644,986,390
+Annual Return: 37.65%
+Sharpe Ratio: 1.31950
+Sortino Ratio: 1.216
+Max Drawdown: -57.8%
+Avg Drawdown: -11.6%
+Normalized Score: -0.532
+Lookback periods: [54, 58, 198] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $1,199,743,544
+Annual Return: 40.13%
+Sharpe Ratio: 1.37704
+Sortino Ratio: 1.309
+Max Drawdown: -52.3%
+Avg Drawdown: -12.2%
+Normalized Score: -0.157
+Lookback periods: [93, 102, 160] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $1,756,219,134
+Annual Return: 41.68%
+Sharpe Ratio: 1.42759
+Sortino Ratio: 1.354
+Max Drawdown: -52.3%
+Avg Drawdown: -11.9%
+Normalized Score: 0.103
+Lookback periods: [90, 102, 143] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $2,835,762,176
+Annual Return: 43.66%
+Sharpe Ratio: 1.47131
+Sortino Ratio: 1.417
+Max Drawdown: -57.3%
+Avg Drawdown: -12.1%
+Normalized Score: 0.135
+Lookback periods: [116, 137, 145] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $2,909,406,000
+Annual Return: 43.76%
+Sharpe Ratio: 1.48193
+Sortino Ratio: 1.398
+Max Drawdown: -59.0%
+Avg Drawdown: -11.2%
+Normalized Score: 0.262
+Lookback periods: [60, 156, 159] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 11/750... Est. remaining: 17m 11sRunning iteration 21/750... Est. remaining: 11m 31sRunning iteration 31/750... Est. remaining: 9m 31sRunning iteration 41/750... Est. remaining: 8m 30sRunning iteration 51/750... Est. remaining: 7m 51sRunning iteration 61/750... Est. remaining: 7m 22s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $5,509,656,983
+Annual Return: 46.44%
+Sharpe Ratio: 1.51926
+Sortino Ratio: 1.487
+Max Drawdown: -59.7%
+Avg Drawdown: -11.3%
+Normalized Score: 0.513
+Lookback periods: [150, 161, 165] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 71/750... Est. remaining: 7m 12s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $8,804,442,473
+Annual Return: 48.43%
+Sharpe Ratio: 1.57772
+Sortino Ratio: 1.538
+Max Drawdown: -55.0%
+Avg Drawdown: -10.6%
+Normalized Score: 1.048
+Lookback periods: [156, 159, 172] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 81/750... Est. remaining: 7m 4sRunning iteration 91/750... Est. remaining: 6m 48sRunning iteration 101/750... Est. remaining: 6m 33sbest_combination: {'lookbacks': [156, 159, 172], 'score': np.float64(1.0475060591938894), 'visits': 1}
+Running iteration 111/750... Est. remaining: 6m 20sRunning iteration 121/750... Est. remaining: 6m 8sRunning iteration 131/750... Est. remaining: 5m 58sRunning iteration 141/750... Est. remaining: 5m 48sRunning iteration 151/750... Est. remaining: 5m 39sRunning iteration 161/750... Est. remaining: 5m 31sRunning iteration 171/750... Est. remaining: 5m 24sRunning iteration 181/750... Est. remaining: 5m 16sRunning iteration 191/750... Est. remaining: 5m 9sRunning iteration 201/750... Est. remaining: 5m 2sbest_combination: {'lookbacks': [156, 159, 172], 'score': np.float64(1.0475060591938894), 'visits': 1}
+Running iteration 211/750... Est. remaining: 4m 55sRunning iteration 221/750... Est. remaining: 4m 49sRunning iteration 231/750... Est. remaining: 4m 43sRunning iteration 241/750... Est. remaining: 4m 36sRunning iteration 251/750... Est. remaining: 4m 30sRunning iteration 261/750... Est. remaining: 4m 24sRunning iteration 271/750... Est. remaining: 4m 17sRunning iteration 281/750... Est. remaining: 4m 11sRunning iteration 291/750... Est. remaining: 4m 5sRunning iteration 301/750... Est. remaining: 3m 59sbest_combination: {'lookbacks': [156, 159, 172], 'score': np.float64(1.0475060591938894), 'visits': 1}
+Running iteration 311/750... Est. remaining: 3m 53sRunning iteration 321/750... Est. remaining: 3m 47sRunning iteration 331/750... Est. remaining: 3m 41sRunning iteration 341/750... Est. remaining: 3m 36sRunning iteration 351/750... Est. remaining: 3m 30sRunning iteration 361/750... Est. remaining: 3m 24sRunning iteration 371/750... Est. remaining: 3m 19sRunning iteration 381/750... Est. remaining: 3m 13sRunning iteration 391/750... Est. remaining: 3m 8sRunning iteration 401/750... Est. remaining: 3m 2sbest_combination: {'lookbacks': [156, 159, 172], 'score': np.float64(1.0475060591938894), 'visits': 1}
+Running iteration 411/750... Est. remaining: 2m 57sRunning iteration 421/750... Est. remaining: 2m 51sRunning iteration 431/750... Est. remaining: 2m 46sRunning iteration 441/750... Est. remaining: 2m 41sRunning iteration 451/750... Est. remaining: 2m 35sRunning iteration 461/750... Est. remaining: 2m 30sRunning iteration 471/750... Est. remaining: 2m 24sRunning iteration 481/750... Est. remaining: 2m 19sRunning iteration 491/750... Est. remaining: 2m 14sRunning iteration 501/750... Est. remaining: 2m 8sbest_combination: {'lookbacks': [156, 159, 172], 'score': np.float64(1.0475060591938894), 'visits': 1}
+Running iteration 511/750... Est. remaining: 2m 3sRunning iteration 521/750... Est. remaining: 1m 58sRunning iteration 531/750... Est. remaining: 1m 53sRunning iteration 541/750... Est. remaining: 1m 48sRunning iteration 551/750... Est. remaining: 1m 42sRunning iteration 561/750... Est. remaining: 1m 37sRunning iteration 571/750... Est. remaining: 1m 32sRunning iteration 581/750... Est. remaining: 1m 27sRunning iteration 591/750... Est. remaining: 1m 22sRunning iteration 601/750... Est. remaining: 1m 17sbest_combination: {'lookbacks': [156, 159, 172], 'score': np.float64(1.0475060591938894), 'visits': 1}
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $11,475,254,678
+Annual Return: 49.57%
+Sharpe Ratio: 1.61090
+Sortino Ratio: 1.581
+Max Drawdown: -59.0%
+Avg Drawdown: -9.9%
+Normalized Score: 1.205
+Lookback periods: [156, 158, 168] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 611/750... Est. remaining: 1m 12sRunning iteration 621/750... Est. remaining: 1m 6sRunning iteration 631/750... Est. remaining: 1m 1sRunning iteration 641/750... Est. remaining: 0m 56sRunning iteration 651/750... Est. remaining: 0m 51sRunning iteration 661/750... Est. remaining: 0m 46sRunning iteration 671/750... Est. remaining: 0m 41sRunning iteration 681/750... Est. remaining: 0m 35sRunning iteration 691/750... Est. remaining: 0m 30sRunning iteration 701/750... Est. remaining: 0m 25sbest_combination: {'lookbacks': [156, 158, 168], 'score': np.float64(1.2052902172140763), 'visits': 1}
+Running iteration 711/750... Est. remaining: 0m 20sRunning iteration 721/750... Est. remaining: 0m 15sRunning iteration 731/750... Est. remaining: 0m 10sRunning iteration 741/750... Est. remaining: 0m 5s
+Monte Carlo simulation completed in 6.4 minutes
+Best normalized score: 1.21
+best_combination: {'lookbacks': [156, 158, 168], 'score': np.float64(1.2052902172140763), 'visits': 1}
+
+Permutation-Invariant Tracking Statistics:
+  Total canonical combinations explored: 750
+  Theoretical efficiency improvement: 0.008
+  Best performing lookbacks: [156, 158, 168] (score: 1.2053)
+
+Monte Carlo simulation completed in 6.4 minutes
+
+Saving exploration/exploitation state to monte_carlo_state.pkl...
+
+Creating final performance plot...
+
+Monte Carlo Backtesting Results:
+----------------------------------------
+Total iterations: 750
+Analyzed 8734 trading days
+Date range: 1991-01-02 to 2025-08-22
+
+Best performing configuration:
+Lookback periods: [156, 158, 168] days
+
+Model Selection Analysis:
+----------------------------------------
+1. naz100_hma: 115 selections (27.6%)
+2. sp500_hma: 109 selections (26.2%)
+3. naz100_pi: 79 selections (19.0%)
+4. naz100_pine: 78 selections (18.8%)
+5. cash: 35 selections (8.4%)
+
+Portfolio Statistics:
+----------------------------------------
+Initial Value: $10,000.00
+Final Value: $11,475,254,678.31
+Average Annualized Gain: 49.6%
+----------------------------------------
+Performance plot saved to: assets/model_switching_portfolio_performance.png
+
+✓ Run 1 completed successfully
+Resetting saved state for next run...
+Reset complete. monte_carlo_state.pkl has been removed.
+✓ State reset completed
+Progress: 1/15 runs completed (1 successful, 0 failed)
+Waiting 5 seconds before next run...
+
+--------------------------------------------------------------
+Starting Monte Carlo Run 2 of 15
+Time: Sat Aug 23 22:45:03 EDT 2025
+--------------------------------------------------------------
+Executing: uv run python run_monte_carlo.py --search explore-exploit
+
+Starting Monte Carlo backtesting process
+Starting Monte Carlo backtesting process
+Search strategy: explore-exploit
+Search strategy: explore-exploit
+Starting Monte Carlo backtesting process
+Search strategy: explore-exploit
+
+Initializing Monte Carlo backtesting...
+Using backtested portfolio values
+Reading from: pyTAAAweb_backtestPortfolioValue.params
+Loading historical portfolio data...
+
+Processing naz100_pine data from /Users/donaldpg/pyTAAA_data/naz100_pine/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_pine
+
+Processing naz100_hma data from /Users/donaldpg/pyTAAA_data/naz100_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_hma
+
+Processing naz100_pi data from /Users/donaldpg/pyTAAA_data/naz100_pi/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_pi
+
+Processing sp500_hma data from /Users/donaldpg/pyTAAA_data/sp500_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...
+Loaded 6459 data points for sp500_hma
+
+Total unique dates across all models: 8734
+Date range: 1991-01-02 to 2025-08-22
+
+Aligning data across models...
+Aligned naz100_pine data starting at $10000.00
+Aligned naz100_hma data starting at $10000.00
+Aligned naz100_pi data starting at $10000.00
+Aligned sp500_hma data starting at $10000.00
+
+Data loading complete!
+
+Checking for previous state in monte_carlo_state.pkl...
+No previous state file found at monte_carlo_state.pkl
+Running Monte Carlo simulations with 750 iterations...
+Running Monte Carlo simulations with 750 iterations...
+
+Starting Monte Carlo simulations with 750 iterations...
+Note: This may take about 5 minutes to complete...
+Press Ctrl+C to stop early with current best result
+
+
+Running 750 Monte Carlo iterations...
+Using 5 models over 8734 trading days
+Press Ctrl+C to stop early with current best result
+
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $805,010,890
+Annual Return: 38.53%
+Sharpe Ratio: 1.31524
+Sortino Ratio: 1.242
+Max Drawdown: -52.3%
+Avg Drawdown: -13.6%
+Normalized Score: -1.103
+Lookback periods: [93, 95, 104] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $9,449,071,155
+Annual Return: 48.73%
+Sharpe Ratio: 1.59020
+Sortino Ratio: 1.554
+Max Drawdown: -57.2%
+Avg Drawdown: -11.7%
+Normalized Score: 0.741
+Lookback periods: [135, 156, 200] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 11/750... Est. remaining: 12m 38sRunning iteration 21/750... Est. remaining: 9m 11sRunning iteration 31/750... Est. remaining: 7m 57sRunning iteration 41/750... Est. remaining: 7m 18sRunning iteration 51/750... Est. remaining: 6m 53sRunning iteration 61/750... Est. remaining: 6m 35sRunning iteration 71/750... Est. remaining: 6m 20sRunning iteration 81/750... Est. remaining: 6m 8sRunning iteration 91/750... Est. remaining: 5m 58sRunning iteration 101/750... Est. remaining: 5m 50sbest_combination: {'lookbacks': [135, 156, 200], 'score': np.float64(0.7413213021827826), 'visits': 1}
+Running iteration 111/750... Est. remaining: 5m 42sRunning iteration 121/750... Est. remaining: 5m 34sRunning iteration 131/750... Est. remaining: 5m 27sRunning iteration 141/750... Est. remaining: 5m 20sRunning iteration 151/750... Est. remaining: 5m 13sRunning iteration 161/750... Est. remaining: 5m 6sRunning iteration 171/750... Est. remaining: 4m 59sRunning iteration 181/750... Est. remaining: 4m 53sRunning iteration 191/750... Est. remaining: 4m 48sRunning iteration 201/750... Est. remaining: 4m 42sbest_combination: {'lookbacks': [135, 156, 200], 'score': np.float64(0.7413213021827826), 'visits': 1}
+Running iteration 211/750... Est. remaining: 4m 36sRunning iteration 221/750... Est. remaining: 4m 30sRunning iteration 231/750... Est. remaining: 4m 25sRunning iteration 241/750... Est. remaining: 4m 19sRunning iteration 251/750... Est. remaining: 4m 13sRunning iteration 261/750... Est. remaining: 4m 8sRunning iteration 271/750... Est. remaining: 4m 2sRunning iteration 281/750... Est. remaining: 3m 56sRunning iteration 291/750... Est. remaining: 3m 51sRunning iteration 301/750... Est. remaining: 3m 46sbest_combination: {'lookbacks': [135, 156, 200], 'score': np.float64(0.7413213021827826), 'visits': 1}
+Running iteration 311/750... Est. remaining: 3m 40sRunning iteration 321/750... Est. remaining: 3m 35sRunning iteration 331/750... Est. remaining: 3m 30sRunning iteration 341/750... Est. remaining: 3m 24sRunning iteration 351/750... Est. remaining: 3m 19sRunning iteration 361/750... Est. remaining: 3m 14sRunning iteration 371/750... Est. remaining: 3m 9sRunning iteration 381/750... Est. remaining: 3m 4sRunning iteration 391/750... Est. remaining: 2m 58sRunning iteration 401/750... Est. remaining: 2m 53sbest_combination: {'lookbacks': [135, 156, 200], 'score': np.float64(0.7413213021827826), 'visits': 1}
+Running iteration 411/750... Est. remaining: 2m 48sRunning iteration 421/750... Est. remaining: 2m 43sRunning iteration 431/750... Est. remaining: 2m 38sRunning iteration 441/750... Est. remaining: 2m 33sRunning iteration 451/750... Est. remaining: 2m 28sRunning iteration 461/750... Est. remaining: 2m 23sRunning iteration 471/750... Est. remaining: 2m 18sRunning iteration 481/750... Est. remaining: 2m 13sRunning iteration 491/750... Est. remaining: 2m 8sRunning iteration 501/750... Est. remaining: 2m 3sbest_combination: {'lookbacks': [135, 156, 200], 'score': np.float64(0.7413213021827826), 'visits': 1}
+Running iteration 511/750... Est. remaining: 1m 58sRunning iteration 521/750... Est. remaining: 1m 53sRunning iteration 531/750... Est. remaining: 1m 48sRunning iteration 541/750... Est. remaining: 1m 43sRunning iteration 551/750... Est. remaining: 1m 38sRunning iteration 561/750... Est. remaining: 1m 33sRunning iteration 571/750... Est. remaining: 1m 28sRunning iteration 581/750... Est. remaining: 1m 23sRunning iteration 591/750... Est. remaining: 1m 18sRunning iteration 601/750... Est. remaining: 1m 13sbest_combination: {'lookbacks': [135, 156, 200], 'score': np.float64(0.7413213021827826), 'visits': 1}
+Running iteration 611/750... Est. remaining: 1m 8sRunning iteration 621/750... Est. remaining: 1m 3sRunning iteration 631/750... Est. remaining: 0m 59sRunning iteration 641/750... Est. remaining: 0m 54sRunning iteration 651/750... Est. remaining: 0m 49sRunning iteration 661/750... Est. remaining: 0m 44sRunning iteration 671/750... Est. remaining: 0m 39sRunning iteration 681/750... Est. remaining: 0m 34sRunning iteration 691/750... Est. remaining: 0m 29sRunning iteration 701/750... Est. remaining: 0m 24sbest_combination: {'lookbacks': [135, 156, 200], 'score': np.float64(0.7413213021827826), 'visits': 1}
+Running iteration 711/750... Est. remaining: 0m 19sRunning iteration 721/750... Est. remaining: 0m 14sRunning iteration 731/750... Est. remaining: 0m 9sRunning iteration 741/750... Est. remaining: 0m 4s
+Monte Carlo simulation completed in 6.1 minutes
+Best normalized score: 0.74
+best_combination: {'lookbacks': [135, 156, 200], 'score': np.float64(0.7413213021827826), 'visits': 1}
+
+Permutation-Invariant Tracking Statistics:
+  Total canonical combinations explored: 750
+  Theoretical efficiency improvement: 0.008
+  Best performing lookbacks: [135, 156, 200] (score: 0.7413)
+
+Monte Carlo simulation completed in 6.1 minutes
+
+Saving exploration/exploitation state to monte_carlo_state.pkl...
+
+Creating final performance plot...
+
+Monte Carlo Backtesting Results:
+----------------------------------------
+Total iterations: 750
+Analyzed 8734 trading days
+Date range: 1991-01-02 to 2025-08-22
+
+Best performing configuration:
+Lookback periods: [135, 156, 200] days
+
+Model Selection Analysis:
+----------------------------------------
+1. naz100_hma: 116 selections (27.9%)
+2. sp500_hma: 111 selections (26.7%)
+3. naz100_pine: 79 selections (19.0%)
+4. naz100_pi: 73 selections (17.5%)
+5. cash: 37 selections (8.9%)
+
+Portfolio Statistics:
+----------------------------------------
+Initial Value: $10,000.00
+Final Value: $9,449,071,155.41
+Average Annualized Gain: 48.7%
+----------------------------------------
+Performance plot saved to: assets/model_switching_portfolio_performance.png
+
+✓ Run 2 completed successfully
+Resetting saved state for next run...
+Reset complete. monte_carlo_state.pkl has been removed.
+✓ State reset completed
+Progress: 2/15 runs completed (2 successful, 0 failed)
+Waiting 5 seconds before next run...
+
+--------------------------------------------------------------
+Starting Monte Carlo Run 3 of 15
+Time: Sat Aug 23 22:51:19 EDT 2025
+--------------------------------------------------------------
+Executing: uv run python run_monte_carlo.py --search explore-exploit
+
+Starting Monte Carlo backtesting process
+Starting Monte Carlo backtesting process
+Search strategy: explore-exploit
+Search strategy: explore-exploit
+Starting Monte Carlo backtesting process
+Search strategy: explore-exploit
+
+Initializing Monte Carlo backtesting...
+Using backtested portfolio values
+Reading from: pyTAAAweb_backtestPortfolioValue.params
+Loading historical portfolio data...
+
+Processing naz100_pine data from /Users/donaldpg/pyTAAA_data/naz100_pine/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_pine
+
+Processing naz100_hma data from /Users/donaldpg/pyTAAA_data/naz100_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_hma
+
+Processing naz100_pi data from /Users/donaldpg/pyTAAA_data/naz100_pi/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_pi
+
+Processing sp500_hma data from /Users/donaldpg/pyTAAA_data/sp500_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...
+Loaded 6459 data points for sp500_hma
+
+Total unique dates across all models: 8734
+Date range: 1991-01-02 to 2025-08-22
+
+Aligning data across models...
+Aligned naz100_pine data starting at $10000.00
+Aligned naz100_hma data starting at $10000.00
+Aligned naz100_pi data starting at $10000.00
+Aligned sp500_hma data starting at $10000.00
+
+Data loading complete!
+
+Checking for previous state in monte_carlo_state.pkl...
+No previous state file found at monte_carlo_state.pkl
+Running Monte Carlo simulations with 750 iterations...
+Running Monte Carlo simulations with 750 iterations...
+
+Starting Monte Carlo simulations with 750 iterations...
+Note: This may take about 5 minutes to complete...
+Press Ctrl+C to stop early with current best result
+
+
+Running 750 Monte Carlo iterations...
+Using 5 models over 8734 trading days
+Press Ctrl+C to stop early with current best result
+
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $205,839,107
+Annual Return: 33.19%
+Sharpe Ratio: 1.15561
+Sortino Ratio: 1.065
+Max Drawdown: -62.4%
+Avg Drawdown: -14.4%
+Normalized Score: -1.724
+Lookback periods: [67, 125, 139] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $340,263,199
+Annual Return: 35.13%
+Sharpe Ratio: 1.18777
+Sortino Ratio: 1.113
+Max Drawdown: -66.2%
+Avg Drawdown: -14.6%
+Normalized Score: -1.684
+Lookback periods: [71, 129, 130] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $2,207,756,149
+Annual Return: 42.62%
+Sharpe Ratio: 1.39121
+Sortino Ratio: 1.358
+Max Drawdown: -66.1%
+Avg Drawdown: -12.6%
+Normalized Score: -0.493
+Lookback periods: [152, 175, 194] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $4,130,475,719
+Annual Return: 45.22%
+Sharpe Ratio: 1.49625
+Sortino Ratio: 1.452
+Max Drawdown: -58.1%
+Avg Drawdown: -12.6%
+Normalized Score: 0.152
+Lookback periods: [144, 149, 178] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 11/750... Est. remaining: 15m 53s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $2,093,677,472
+Annual Return: 42.40%
+Sharpe Ratio: 1.45761
+Sortino Ratio: 1.369
+Max Drawdown: -55.9%
+Avg Drawdown: -10.8%
+Normalized Score: 0.158
+Lookback periods: [56, 145, 146] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 21/750... Est. remaining: 11m 37sRunning iteration 31/750... Est. remaining: 9m 37sRunning iteration 41/750... Est. remaining: 8m 35s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $7,471,741,292
+Annual Return: 47.73%
+Sharpe Ratio: 1.55176
+Sortino Ratio: 1.526
+Max Drawdown: -61.3%
+Avg Drawdown: -11.0%
+Normalized Score: 0.532
+Lookback periods: [155, 161, 163] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $9,096,365,967
+Annual Return: 48.57%
+Sharpe Ratio: 1.56490
+Sortino Ratio: 1.530
+Max Drawdown: -59.0%
+Avg Drawdown: -11.5%
+Normalized Score: 0.597
+Lookback periods: [179, 189, 197] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 51/750... Est. remaining: 8m 27sRunning iteration 61/750... Est. remaining: 7m 52sRunning iteration 71/750... Est. remaining: 7m 26sRunning iteration 81/750... Est. remaining: 7m 4sRunning iteration 91/750... Est. remaining: 6m 47sRunning iteration 101/750... Est. remaining: 6m 33sbest_combination: {'lookbacks': [179, 189, 197], 'score': np.float64(0.597068108356509), 'visits': 1}
+Running iteration 111/750... Est. remaining: 6m 20sRunning iteration 121/750... Est. remaining: 6m 8sRunning iteration 131/750... Est. remaining: 5m 58sRunning iteration 141/750... Est. remaining: 5m 49sRunning iteration 151/750... Est. remaining: 5m 40sRunning iteration 161/750... Est. remaining: 5m 32sRunning iteration 171/750... Est. remaining: 5m 24s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $6,977,143,225
+Annual Return: 47.44%
+Sharpe Ratio: 1.57366
+Sortino Ratio: 1.530
+Max Drawdown: -56.4%
+Avg Drawdown: -11.7%
+Normalized Score: 0.627
+Lookback periods: [132, 148, 156] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 181/750... Est. remaining: 5m 20sRunning iteration 191/750... Est. remaining: 5m 13sRunning iteration 201/750... Est. remaining: 5m 6sbest_combination: {'lookbacks': [132, 148, 156], 'score': np.float64(0.6274439725451172), 'visits': 1}
+Running iteration 211/750... Est. remaining: 4m 59sRunning iteration 221/750... Est. remaining: 4m 52sRunning iteration 231/750... Est. remaining: 4m 45sRunning iteration 241/750... Est. remaining: 4m 38sRunning iteration 251/750... Est. remaining: 4m 32sRunning iteration 261/750... Est. remaining: 4m 25sRunning iteration 271/750... Est. remaining: 4m 19sRunning iteration 281/750... Est. remaining: 4m 13sRunning iteration 291/750... Est. remaining: 4m 6sRunning iteration 301/750... Est. remaining: 4m 0sbest_combination: {'lookbacks': [132, 148, 156], 'score': np.float64(0.6274439725451172), 'visits': 1}
+Running iteration 311/750... Est. remaining: 3m 54sRunning iteration 321/750... Est. remaining: 3m 48sRunning iteration 331/750... Est. remaining: 3m 42sRunning iteration 341/750... Est. remaining: 3m 37sRunning iteration 351/750... Est. remaining: 3m 31sRunning iteration 361/750... Est. remaining: 3m 25sRunning iteration 371/750... Est. remaining: 3m 19sRunning iteration 381/750... Est. remaining: 3m 13sRunning iteration 391/750... Est. remaining: 3m 8sRunning iteration 401/750... Est. remaining: 3m 2sbest_combination: {'lookbacks': [132, 148, 156], 'score': np.float64(0.6274439725451172), 'visits': 1}
+Running iteration 411/750... Est. remaining: 2m 57sRunning iteration 421/750... Est. remaining: 2m 51s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $7,827,796,867
+Annual Return: 47.93%
+Sharpe Ratio: 1.55480
+Sortino Ratio: 1.529
+Max Drawdown: -59.0%
+Avg Drawdown: -10.2%
+Normalized Score: 0.723
+Lookback periods: [158, 163, 170] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 431/750... Est. remaining: 2m 47sRunning iteration 441/750... Est. remaining: 2m 42s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $8,192,106,184
+Annual Return: 48.12%
+Sharpe Ratio: 1.57543
+Sortino Ratio: 1.548
+Max Drawdown: -56.9%
+Avg Drawdown: -10.9%
+Normalized Score: 0.764
+Lookback periods: [159, 160, 163] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 451/750... Est. remaining: 2m 37sRunning iteration 461/750... Est. remaining: 2m 31sRunning iteration 471/750... Est. remaining: 2m 26sRunning iteration 481/750... Est. remaining: 2m 20sRunning iteration 491/750... Est. remaining: 2m 15sRunning iteration 501/750... Est. remaining: 2m 10sbest_combination: {'lookbacks': [159, 160, 163], 'score': np.float64(0.7637228873086446), 'visits': 1}
+Running iteration 511/750... Est. remaining: 2m 4s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $11,477,730,405
+Annual Return: 49.57%
+Sharpe Ratio: 1.60534
+Sortino Ratio: 1.572
+Max Drawdown: -58.5%
+Avg Drawdown: -11.3%
+Normalized Score: 0.793
+Lookback periods: [149, 154, 156] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 521/750... Est. remaining: 2m 0sRunning iteration 531/750... Est. remaining: 1m 54sRunning iteration 541/750... Est. remaining: 1m 49sRunning iteration 551/750... Est. remaining: 1m 44sRunning iteration 561/750... Est. remaining: 1m 38sRunning iteration 571/750... Est. remaining: 1m 33sRunning iteration 581/750... Est. remaining: 1m 28sRunning iteration 591/750... Est. remaining: 1m 22sRunning iteration 601/750... Est. remaining: 1m 17sbest_combination: {'lookbacks': [149, 154, 156], 'score': np.float64(0.792584198569209), 'visits': 1}
+Running iteration 611/750... Est. remaining: 1m 12sRunning iteration 621/750... Est. remaining: 1m 7sRunning iteration 631/750... Est. remaining: 1m 2sRunning iteration 641/750... Est. remaining: 0m 56sRunning iteration 651/750... Est. remaining: 0m 51sRunning iteration 661/750... Est. remaining: 0m 46sRunning iteration 671/750... Est. remaining: 0m 41sRunning iteration 681/750... Est. remaining: 0m 36sRunning iteration 691/750... Est. remaining: 0m 30sRunning iteration 701/750... Est. remaining: 0m 25sbest_combination: {'lookbacks': [149, 154, 156], 'score': np.float64(0.792584198569209), 'visits': 1}
+Running iteration 711/750... Est. remaining: 0m 20sRunning iteration 721/750... Est. remaining: 0m 15sRunning iteration 731/750... Est. remaining: 0m 10sRunning iteration 741/750... Est. remaining: 0m 5s
+Monte Carlo simulation completed in 6.4 minutes
+Best normalized score: 0.79
+best_combination: {'lookbacks': [149, 154, 156], 'score': np.float64(0.792584198569209), 'visits': 1}
+
+Permutation-Invariant Tracking Statistics:
+  Total canonical combinations explored: 750
+  Theoretical efficiency improvement: 0.008
+  Best performing lookbacks: [149, 154, 156] (score: 0.7926)
+
+Monte Carlo simulation completed in 6.4 minutes
+
+Saving exploration/exploitation state to monte_carlo_state.pkl...
+
+Creating final performance plot...
+
+Monte Carlo Backtesting Results:
+----------------------------------------
+Total iterations: 750
+Analyzed 8734 trading days
+Date range: 1991-01-02 to 2025-08-22
+
+Best performing configuration:
+Lookback periods: [149, 154, 156] days
+
+Model Selection Analysis:
+----------------------------------------
+1. sp500_hma: 113 selections (27.2%)
+2. naz100_hma: 111 selections (26.7%)
+3. naz100_pine: 79 selections (19.0%)
+4. naz100_pi: 78 selections (18.8%)
+5. cash: 35 selections (8.4%)
+
+Portfolio Statistics:
+----------------------------------------
+Initial Value: $10,000.00
+Final Value: $11,477,730,405.06
+Average Annualized Gain: 49.6%
+----------------------------------------
+Performance plot saved to: assets/model_switching_portfolio_performance.png
+
+✓ Run 3 completed successfully
+Resetting saved state for next run...
+Reset complete. monte_carlo_state.pkl has been removed.
+✓ State reset completed
+Progress: 3/15 runs completed (3 successful, 0 failed)
+Waiting 5 seconds before next run...
+
+--------------------------------------------------------------
+Starting Monte Carlo Run 4 of 15
+Time: Sat Aug 23 22:57:52 EDT 2025
+--------------------------------------------------------------
+Executing: uv run python run_monte_carlo.py --search explore-exploit
+
+Starting Monte Carlo backtesting process
+Starting Monte Carlo backtesting process
+Search strategy: explore-exploit
+Search strategy: explore-exploit
+Starting Monte Carlo backtesting process
+Search strategy: explore-exploit
+
+Initializing Monte Carlo backtesting...
+Using backtested portfolio values
+Reading from: pyTAAAweb_backtestPortfolioValue.params
+Loading historical portfolio data...
+
+Processing naz100_pine data from /Users/donaldpg/pyTAAA_data/naz100_pine/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_pine
+
+Processing naz100_hma data from /Users/donaldpg/pyTAAA_data/naz100_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_hma
+
+Processing naz100_pi data from /Users/donaldpg/pyTAAA_data/naz100_pi/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_pi
+
+Processing sp500_hma data from /Users/donaldpg/pyTAAA_data/sp500_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...
+Loaded 6459 data points for sp500_hma
+
+Total unique dates across all models: 8734
+Date range: 1991-01-02 to 2025-08-22
+
+Aligning data across models...
+Aligned naz100_pine data starting at $10000.00
+Aligned naz100_hma data starting at $10000.00
+Aligned naz100_pi data starting at $10000.00
+Aligned sp500_hma data starting at $10000.00
+
+Data loading complete!
+
+Checking for previous state in monte_carlo_state.pkl...
+No previous state file found at monte_carlo_state.pkl
+Running Monte Carlo simulations with 750 iterations...
+Running Monte Carlo simulations with 750 iterations...
+
+Starting Monte Carlo simulations with 750 iterations...
+Note: This may take about 5 minutes to complete...
+Press Ctrl+C to stop early with current best result
+
+
+Running 750 Monte Carlo iterations...
+Using 5 models over 8734 trading days
+Press Ctrl+C to stop early with current best result
+
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $253,142,066
+Annual Return: 33.98%
+Sharpe Ratio: 1.19534
+Sortino Ratio: 1.100
+Max Drawdown: -65.7%
+Avg Drawdown: -15.0%
+Normalized Score: -1.916
+Lookback periods: [57, 72, 105] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $4,044,202,980
+Annual Return: 45.14%
+Sharpe Ratio: 1.49882
+Sortino Ratio: 1.445
+Max Drawdown: -56.4%
+Avg Drawdown: -12.4%
+Normalized Score: 0.448
+Lookback periods: [125, 134, 148] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $4,735,942,580
+Annual Return: 45.80%
+Sharpe Ratio: 1.52097
+Sortino Ratio: 1.472
+Max Drawdown: -58.1%
+Avg Drawdown: -12.2%
+Normalized Score: 0.545
+Lookback periods: [144, 145, 152] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 11/750... Est. remaining: 14m 5s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $3,577,414,922
+Annual Return: 44.62%
+Sharpe Ratio: 1.47853
+Sortino Ratio: 1.439
+Max Drawdown: -55.0%
+Avg Drawdown: -11.7%
+Normalized Score: 0.561
+Lookback periods: [147, 165, 167] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $7,503,948,867
+Annual Return: 47.75%
+Sharpe Ratio: 1.57068
+Sortino Ratio: 1.537
+Max Drawdown: -60.1%
+Avg Drawdown: -11.7%
+Normalized Score: 0.843
+Lookback periods: [138, 153, 157] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 21/750... Est. remaining: 11m 25sRunning iteration 31/750... Est. remaining: 9m 30s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $4,266,971,288
+Annual Return: 45.36%
+Sharpe Ratio: 1.52905
+Sortino Ratio: 1.472
+Max Drawdown: -52.3%
+Avg Drawdown: -10.7%
+Normalized Score: 1.008
+Lookback periods: [88, 108, 144] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 41/750... Est. remaining: 8m 50sRunning iteration 51/750... Est. remaining: 8m 8sRunning iteration 61/750... Est. remaining: 7m 38sRunning iteration 71/750... Est. remaining: 7m 15sRunning iteration 81/750... Est. remaining: 6m 57sRunning iteration 91/750... Est. remaining: 6m 41sRunning iteration 101/750... Est. remaining: 6m 28sbest_combination: {'lookbacks': [88, 108, 144], 'score': np.float64(1.0083349023875745), 'visits': 1}
+Running iteration 111/750... Est. remaining: 6m 16sRunning iteration 121/750... Est. remaining: 6m 5sRunning iteration 131/750... Est. remaining: 5m 55sRunning iteration 141/750... Est. remaining: 5m 46sRunning iteration 151/750... Est. remaining: 5m 38sRunning iteration 161/750... Est. remaining: 5m 30sRunning iteration 171/750... Est. remaining: 5m 22sRunning iteration 181/750... Est. remaining: 5m 14sRunning iteration 191/750... Est. remaining: 5m 7sRunning iteration 201/750... Est. remaining: 5m 0sbest_combination: {'lookbacks': [88, 108, 144], 'score': np.float64(1.0083349023875745), 'visits': 1}
+Running iteration 211/750... Est. remaining: 4m 53sRunning iteration 221/750... Est. remaining: 4m 46sRunning iteration 231/750... Est. remaining: 4m 40sRunning iteration 241/750... Est. remaining: 4m 33sRunning iteration 251/750... Est. remaining: 4m 27sRunning iteration 261/750... Est. remaining: 4m 21sRunning iteration 271/750... Est. remaining: 4m 15sRunning iteration 281/750... Est. remaining: 4m 10sRunning iteration 291/750... Est. remaining: 4m 4sRunning iteration 301/750... Est. remaining: 3m 58sbest_combination: {'lookbacks': [88, 108, 144], 'score': np.float64(1.0083349023875745), 'visits': 1}
+Running iteration 311/750... Est. remaining: 3m 52sRunning iteration 321/750... Est. remaining: 3m 46sRunning iteration 331/750... Est. remaining: 3m 40sRunning iteration 341/750... Est. remaining: 3m 35sRunning iteration 351/750... Est. remaining: 3m 29sRunning iteration 361/750... Est. remaining: 3m 23sRunning iteration 371/750... Est. remaining: 3m 18sRunning iteration 381/750... Est. remaining: 3m 12sRunning iteration 391/750... Est. remaining: 3m 7sRunning iteration 401/750... Est. remaining: 3m 1sbest_combination: {'lookbacks': [88, 108, 144], 'score': np.float64(1.0083349023875745), 'visits': 1}
+Running iteration 411/750... Est. remaining: 2m 56sRunning iteration 421/750... Est. remaining: 2m 50sRunning iteration 431/750... Est. remaining: 2m 45sRunning iteration 441/750... Est. remaining: 2m 39sRunning iteration 451/750... Est. remaining: 2m 34sRunning iteration 461/750... Est. remaining: 2m 29sRunning iteration 471/750... Est. remaining: 2m 24sRunning iteration 481/750... Est. remaining: 2m 18sRunning iteration 491/750... Est. remaining: 2m 13sRunning iteration 501/750... Est. remaining: 2m 8sbest_combination: {'lookbacks': [88, 108, 144], 'score': np.float64(1.0083349023875745), 'visits': 1}
+Running iteration 511/750... Est. remaining: 2m 3sRunning iteration 521/750... Est. remaining: 1m 57sRunning iteration 531/750... Est. remaining: 1m 52sRunning iteration 541/750... Est. remaining: 1m 47sRunning iteration 551/750... Est. remaining: 1m 42sRunning iteration 561/750... Est. remaining: 1m 37sRunning iteration 571/750... Est. remaining: 1m 32sRunning iteration 581/750... Est. remaining: 1m 26sRunning iteration 591/750... Est. remaining: 1m 21sRunning iteration 601/750... Est. remaining: 1m 16sbest_combination: {'lookbacks': [88, 108, 144], 'score': np.float64(1.0083349023875745), 'visits': 1}
+Running iteration 611/750... Est. remaining: 1m 11sRunning iteration 621/750... Est. remaining: 1m 6sRunning iteration 631/750... Est. remaining: 1m 1sRunning iteration 641/750... Est. remaining: 0m 56sRunning iteration 651/750... Est. remaining: 0m 50sRunning iteration 661/750... Est. remaining: 0m 45sRunning iteration 671/750... Est. remaining: 0m 40sRunning iteration 681/750... Est. remaining: 0m 35sRunning iteration 691/750... Est. remaining: 0m 30sRunning iteration 701/750... Est. remaining: 0m 25sbest_combination: {'lookbacks': [88, 108, 144], 'score': np.float64(1.0083349023875745), 'visits': 1}
+Running iteration 711/750... Est. remaining: 0m 20sRunning iteration 721/750... Est. remaining: 0m 15sRunning iteration 731/750... Est. remaining: 0m 10sRunning iteration 741/750... Est. remaining: 0m 5s
+Monte Carlo simulation completed in 6.3 minutes
+Best normalized score: 1.01
+best_combination: {'lookbacks': [88, 108, 144], 'score': np.float64(1.0083349023875745), 'visits': 1}
+
+Permutation-Invariant Tracking Statistics:
+  Total canonical combinations explored: 750
+  Theoretical efficiency improvement: 0.008
+  Best performing lookbacks: [88, 108, 144] (score: 1.0083)
+
+Monte Carlo simulation completed in 6.3 minutes
+
+Saving exploration/exploitation state to monte_carlo_state.pkl...
+
+Creating final performance plot...
+
+Monte Carlo Backtesting Results:
+----------------------------------------
+Total iterations: 750
+Analyzed 8734 trading days
+Date range: 1991-01-02 to 2025-08-22
+
+Best performing configuration:
+Lookback periods: [88, 108, 144] days
+
+Model Selection Analysis:
+----------------------------------------
+1. sp500_hma: 111 selections (26.7%)
+2. naz100_hma: 102 selections (24.5%)
+3. naz100_pi: 92 selections (22.1%)
+4. naz100_pine: 71 selections (17.1%)
+5. cash: 40 selections (9.6%)
+
+Portfolio Statistics:
+----------------------------------------
+Initial Value: $10,000.00
+Final Value: $4,266,971,287.52
+Average Annualized Gain: 45.4%
+----------------------------------------
+Performance plot saved to: assets/model_switching_portfolio_performance.png
+
+✓ Run 4 completed successfully
+Resetting saved state for next run...
+Reset complete. monte_carlo_state.pkl has been removed.
+✓ State reset completed
+Progress: 4/15 runs completed (4 successful, 0 failed)
+Waiting 5 seconds before next run...
+
+--------------------------------------------------------------
+Starting Monte Carlo Run 5 of 15
+Time: Sat Aug 23 23:04:20 EDT 2025
+--------------------------------------------------------------
+Executing: uv run python run_monte_carlo.py --search explore-exploit
+
+Starting Monte Carlo backtesting process
+Starting Monte Carlo backtesting process
+Search strategy: explore-exploit
+Search strategy: explore-exploit
+Starting Monte Carlo backtesting process
+Search strategy: explore-exploit
+
+Initializing Monte Carlo backtesting...
+Using backtested portfolio values
+Reading from: pyTAAAweb_backtestPortfolioValue.params
+Loading historical portfolio data...
+
+Processing naz100_pine data from /Users/donaldpg/pyTAAA_data/naz100_pine/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_pine
+
+Processing naz100_hma data from /Users/donaldpg/pyTAAA_data/naz100_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_hma
+
+Processing naz100_pi data from /Users/donaldpg/pyTAAA_data/naz100_pi/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_pi
+
+Processing sp500_hma data from /Users/donaldpg/pyTAAA_data/sp500_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...
+Loaded 6459 data points for sp500_hma
+
+Total unique dates across all models: 8734
+Date range: 1991-01-02 to 2025-08-22
+
+Aligning data across models...
+Aligned naz100_pine data starting at $10000.00
+Aligned naz100_hma data starting at $10000.00
+Aligned naz100_pi data starting at $10000.00
+Aligned sp500_hma data starting at $10000.00
+
+Data loading complete!
+
+Checking for previous state in monte_carlo_state.pkl...
+No previous state file found at monte_carlo_state.pkl
+Running Monte Carlo simulations with 750 iterations...
+Running Monte Carlo simulations with 750 iterations...
+
+Starting Monte Carlo simulations with 750 iterations...
+Note: This may take about 5 minutes to complete...
+Press Ctrl+C to stop early with current best result
+
+
+Running 750 Monte Carlo iterations...
+Using 5 models over 8734 trading days
+Press Ctrl+C to stop early with current best result
+
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $255,633,978
+Annual Return: 34.02%
+Sharpe Ratio: 1.19323
+Sortino Ratio: 1.097
+Max Drawdown: -62.2%
+Avg Drawdown: -14.0%
+Normalized Score: -1.839
+Lookback periods: [63, 72, 179] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $905,192,389
+Annual Return: 39.00%
+Sharpe Ratio: 1.33872
+Sortino Ratio: 1.240
+Max Drawdown: -55.0%
+Avg Drawdown: -12.7%
+Normalized Score: -0.652
+Lookback periods: [53, 125, 177] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $5,862,109,923
+Annual Return: 46.70%
+Sharpe Ratio: 1.53785
+Sortino Ratio: 1.503
+Max Drawdown: -63.5%
+Avg Drawdown: -11.9%
+Normalized Score: 0.504
+Lookback periods: [138, 153, 172] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 11/750... Est. remaining: 14m 0s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $5,972,271,615
+Annual Return: 46.78%
+Sharpe Ratio: 1.55828
+Sortino Ratio: 1.509
+Max Drawdown: -57.2%
+Avg Drawdown: -11.7%
+Normalized Score: 0.742
+Lookback periods: [139, 152, 157] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 21/750... Est. remaining: 10m 37sRunning iteration 31/750... Est. remaining: 8m 57sRunning iteration 41/750... Est. remaining: 8m 3sRunning iteration 51/750... Est. remaining: 7m 29sRunning iteration 61/750... Est. remaining: 7m 5sRunning iteration 71/750... Est. remaining: 6m 47sRunning iteration 81/750... Est. remaining: 6m 32sRunning iteration 91/750... Est. remaining: 6m 19sRunning iteration 101/750... Est. remaining: 6m 9sbest_combination: {'lookbacks': [139, 152, 157], 'score': np.float64(0.74241835411915), 'visits': 1}
+Running iteration 111/750... Est. remaining: 5m 59sRunning iteration 121/750... Est. remaining: 5m 50sRunning iteration 131/750... Est. remaining: 5m 42sRunning iteration 141/750... Est. remaining: 5m 34sRunning iteration 151/750... Est. remaining: 5m 27sRunning iteration 161/750... Est. remaining: 5m 19sRunning iteration 171/750... Est. remaining: 5m 12sRunning iteration 181/750... Est. remaining: 5m 5sRunning iteration 191/750... Est. remaining: 4m 59sRunning iteration 201/750... Est. remaining: 4m 52sbest_combination: {'lookbacks': [139, 152, 157], 'score': np.float64(0.74241835411915), 'visits': 1}
+Running iteration 211/750... Est. remaining: 4m 46sRunning iteration 221/750... Est. remaining: 4m 40sRunning iteration 231/750... Est. remaining: 4m 34sRunning iteration 241/750... Est. remaining: 4m 28sRunning iteration 251/750... Est. remaining: 4m 22sRunning iteration 261/750... Est. remaining: 4m 16sRunning iteration 271/750... Est. remaining: 4m 10s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $7,397,349,988
+Annual Return: 47.69%
+Sharpe Ratio: 1.57586
+Sortino Ratio: 1.539
+Max Drawdown: -57.2%
+Avg Drawdown: -11.7%
+Normalized Score: 0.895
+Lookback periods: [142, 148, 156] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 281/750... Est. remaining: 4m 7s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $8,211,149,643
+Annual Return: 48.13%
+Sharpe Ratio: 1.56743
+Sortino Ratio: 1.536
+Max Drawdown: -57.2%
+Avg Drawdown: -11.7%
+Normalized Score: 0.921
+Lookback periods: [128, 154, 155] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $7,872,860,706
+Annual Return: 47.95%
+Sharpe Ratio: 1.58544
+Sortino Ratio: 1.539
+Max Drawdown: -56.8%
+Avg Drawdown: -11.1%
+Normalized Score: 1.010
+Lookback periods: [139, 157, 168] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 291/750... Est. remaining: 4m 5sRunning iteration 301/750... Est. remaining: 3m 59sbest_combination: {'lookbacks': [139, 157, 168], 'score': np.float64(1.0102440239898864), 'visits': 1}
+Running iteration 311/750... Est. remaining: 3m 53sRunning iteration 321/750... Est. remaining: 3m 48sRunning iteration 331/750... Est. remaining: 3m 42sRunning iteration 341/750... Est. remaining: 3m 36sRunning iteration 351/750... Est. remaining: 3m 30sRunning iteration 361/750... Est. remaining: 3m 25sRunning iteration 371/750... Est. remaining: 3m 19sRunning iteration 381/750... Est. remaining: 3m 13sRunning iteration 391/750... Est. remaining: 3m 8sRunning iteration 401/750... Est. remaining: 3m 2sbest_combination: {'lookbacks': [139, 157, 168], 'score': np.float64(1.0102440239898864), 'visits': 1}
+Running iteration 411/750... Est. remaining: 2m 57s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $9,029,643,518
+Annual Return: 48.54%
+Sharpe Ratio: 1.59793
+Sortino Ratio: 1.559
+Max Drawdown: -58.5%
+Avg Drawdown: -11.4%
+Normalized Score: 1.025
+Lookback periods: [139, 153, 171] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 421/750... Est. remaining: 2m 52sRunning iteration 431/750... Est. remaining: 2m 47sRunning iteration 441/750... Est. remaining: 2m 42sRunning iteration 451/750... Est. remaining: 2m 36sRunning iteration 461/750... Est. remaining: 2m 31sRunning iteration 471/750... Est. remaining: 2m 25s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $11,073,776,473
+Annual Return: 49.42%
+Sharpe Ratio: 1.62168
+Sortino Ratio: 1.582
+Max Drawdown: -57.2%
+Avg Drawdown: -10.9%
+Normalized Score: 1.259
+Lookback periods: [138, 157, 173] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 481/750... Est. remaining: 2m 20sRunning iteration 491/750... Est. remaining: 2m 15sRunning iteration 501/750... Est. remaining: 2m 10sbest_combination: {'lookbacks': [138, 157, 173], 'score': np.float64(1.259010699442762), 'visits': 1}
+Running iteration 511/750... Est. remaining: 2m 4sRunning iteration 521/750... Est. remaining: 1m 59sRunning iteration 531/750... Est. remaining: 1m 54sRunning iteration 541/750... Est. remaining: 1m 48sRunning iteration 551/750... Est. remaining: 1m 43sRunning iteration 561/750... Est. remaining: 1m 38sRunning iteration 571/750... Est. remaining: 1m 33sRunning iteration 581/750... Est. remaining: 1m 27sRunning iteration 591/750... Est. remaining: 1m 22sRunning iteration 601/750... Est. remaining: 1m 17sbest_combination: {'lookbacks': [138, 157, 173], 'score': np.float64(1.259010699442762), 'visits': 1}
+Running iteration 611/750... Est. remaining: 1m 12sRunning iteration 621/750... Est. remaining: 1m 6sRunning iteration 631/750... Est. remaining: 1m 1sRunning iteration 641/750... Est. remaining: 0m 56sRunning iteration 651/750... Est. remaining: 0m 51sRunning iteration 661/750... Est. remaining: 0m 46sRunning iteration 671/750... Est. remaining: 0m 41sRunning iteration 681/750... Est. remaining: 0m 35sRunning iteration 691/750... Est. remaining: 0m 30sRunning iteration 701/750... Est. remaining: 0m 25sbest_combination: {'lookbacks': [138, 157, 173], 'score': np.float64(1.259010699442762), 'visits': 1}
+Running iteration 711/750... Est. remaining: 0m 20sRunning iteration 721/750... Est. remaining: 0m 15sRunning iteration 731/750... Est. remaining: 0m 10sRunning iteration 741/750... Est. remaining: 0m 5s
+Monte Carlo simulation completed in 6.4 minutes
+Best normalized score: 1.26
+best_combination: {'lookbacks': [138, 157, 173], 'score': np.float64(1.259010699442762), 'visits': 1}
+
+Permutation-Invariant Tracking Statistics:
+  Total canonical combinations explored: 750
+  Theoretical efficiency improvement: 0.008
+  Best performing lookbacks: [138, 157, 173] (score: 1.2590)
+
+Monte Carlo simulation completed in 6.4 minutes
+
+Saving exploration/exploitation state to monte_carlo_state.pkl...
+
+Creating final performance plot...
+
+Monte Carlo Backtesting Results:
+----------------------------------------
+Total iterations: 750
+Analyzed 8734 trading days
+Date range: 1991-01-02 to 2025-08-22
+
+Best performing configuration:
+Lookback periods: [138, 157, 173] days
+
+Model Selection Analysis:
+----------------------------------------
+1. sp500_hma: 114 selections (27.4%)
+2. naz100_hma: 113 selections (27.2%)
+3. naz100_pine: 76 selections (18.3%)
+4. naz100_pi: 75 selections (18.0%)
+5. cash: 38 selections (9.1%)
+
+Portfolio Statistics:
+----------------------------------------
+Initial Value: $10,000.00
+Final Value: $11,073,776,473.42
+Average Annualized Gain: 49.4%
+----------------------------------------
+Performance plot saved to: assets/model_switching_portfolio_performance.png
+
+✓ Run 5 completed successfully
+Resetting saved state for next run...
+Reset complete. monte_carlo_state.pkl has been removed.
+✓ State reset completed
+Progress: 5/15 runs completed (5 successful, 0 failed)
+Waiting 5 seconds before next run...
+
+--------------------------------------------------------------
+Starting Monte Carlo Run 6 of 15
+Time: Sat Aug 23 23:10:51 EDT 2025
+--------------------------------------------------------------
+Executing: uv run python run_monte_carlo.py --search explore-exploit
+
+Starting Monte Carlo backtesting process
+Starting Monte Carlo backtesting process
+Search strategy: explore-exploit
+Search strategy: explore-exploit
+Starting Monte Carlo backtesting process
+Search strategy: explore-exploit
+
+Initializing Monte Carlo backtesting...
+Using backtested portfolio values
+Reading from: pyTAAAweb_backtestPortfolioValue.params
+Loading historical portfolio data...
+
+Processing naz100_pine data from /Users/donaldpg/pyTAAA_data/naz100_pine/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_pine
+
+Processing naz100_hma data from /Users/donaldpg/pyTAAA_data/naz100_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_hma
+
+Processing naz100_pi data from /Users/donaldpg/pyTAAA_data/naz100_pi/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_pi
+
+Processing sp500_hma data from /Users/donaldpg/pyTAAA_data/sp500_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...
+Loaded 6459 data points for sp500_hma
+
+Total unique dates across all models: 8734
+Date range: 1991-01-02 to 2025-08-22
+
+Aligning data across models...
+Aligned naz100_pine data starting at $10000.00
+Aligned naz100_hma data starting at $10000.00
+Aligned naz100_pi data starting at $10000.00
+Aligned sp500_hma data starting at $10000.00
+
+Data loading complete!
+
+Checking for previous state in monte_carlo_state.pkl...
+No previous state file found at monte_carlo_state.pkl
+Running Monte Carlo simulations with 750 iterations...
+Running Monte Carlo simulations with 750 iterations...
+
+Starting Monte Carlo simulations with 750 iterations...
+Note: This may take about 5 minutes to complete...
+Press Ctrl+C to stop early with current best result
+
+
+Running 750 Monte Carlo iterations...
+Using 5 models over 8734 trading days
+Press Ctrl+C to stop early with current best result
+
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $1,866,272,557
+Annual Return: 41.93%
+Sharpe Ratio: 1.38970
+Sortino Ratio: 1.333
+Max Drawdown: -59.1%
+Avg Drawdown: -13.0%
+Normalized Score: -0.540
+Lookback periods: [101, 157, 199] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $5,199,200,212
+Annual Return: 46.19%
+Sharpe Ratio: 1.50212
+Sortino Ratio: 1.471
+Max Drawdown: -62.5%
+Avg Drawdown: -12.6%
+Normalized Score: -0.062
+Lookback periods: [152, 153, 184] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $4,459,682,779
+Annual Return: 45.55%
+Sharpe Ratio: 1.50864
+Sortino Ratio: 1.465
+Max Drawdown: -59.7%
+Avg Drawdown: -12.0%
+Normalized Score: 0.112
+Lookback periods: [141, 149, 155] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 11/750... Est. remaining: 14m 5sRunning iteration 21/750... Est. remaining: 9m 57sRunning iteration 31/750... Est. remaining: 8m 30sRunning iteration 41/750... Est. remaining: 7m 43sRunning iteration 51/750... Est. remaining: 7m 14sRunning iteration 61/750... Est. remaining: 6m 51sRunning iteration 71/750... Est. remaining: 6m 34sRunning iteration 81/750... Est. remaining: 6m 20sRunning iteration 91/750... Est. remaining: 6m 9sRunning iteration 101/750... Est. remaining: 5m 58sbest_combination: {'lookbacks': [141, 149, 155], 'score': np.float64(0.11194956209111954), 'visits': 1}
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $6,491,096,986
+Annual Return: 47.13%
+Sharpe Ratio: 1.54847
+Sortino Ratio: 1.511
+Max Drawdown: -56.8%
+Avg Drawdown: -11.9%
+Normalized Score: 0.439
+Lookback periods: [139, 154, 166] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 111/750... Est. remaining: 5m 57sRunning iteration 121/750... Est. remaining: 5m 48sRunning iteration 131/750... Est. remaining: 5m 40sRunning iteration 141/750... Est. remaining: 5m 32sRunning iteration 151/750... Est. remaining: 5m 24sRunning iteration 161/750... Est. remaining: 5m 17sRunning iteration 171/750... Est. remaining: 5m 11sRunning iteration 181/750... Est. remaining: 5m 4sRunning iteration 191/750... Est. remaining: 4m 58s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $5,970,380,397
+Annual Return: 46.78%
+Sharpe Ratio: 1.54715
+Sortino Ratio: 1.501
+Max Drawdown: -57.2%
+Avg Drawdown: -11.3%
+Normalized Score: 0.480
+Lookback periods: [139, 156, 166] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 201/750... Est. remaining: 4m 55sbest_combination: {'lookbacks': [139, 156, 166], 'score': np.float64(0.4804694630504951), 'visits': 1}
+Running iteration 211/750... Est. remaining: 4m 49sRunning iteration 221/750... Est. remaining: 4m 43sRunning iteration 231/750... Est. remaining: 4m 36sRunning iteration 241/750... Est. remaining: 4m 30sRunning iteration 251/750... Est. remaining: 4m 24sRunning iteration 261/750... Est. remaining: 4m 18sRunning iteration 271/750... Est. remaining: 4m 12sRunning iteration 281/750... Est. remaining: 4m 6s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $7,649,569,660
+Annual Return: 47.83%
+Sharpe Ratio: 1.56184
+Sortino Ratio: 1.527
+Max Drawdown: -60.1%
+Avg Drawdown: -11.1%
+Normalized Score: 0.511
+Lookback periods: [152, 159, 161] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 291/750... Est. remaining: 4m 3sRunning iteration 301/750... Est. remaining: 3m 57sbest_combination: {'lookbacks': [152, 159, 161], 'score': np.float64(0.5111105976907966), 'visits': 1}
+Running iteration 311/750... Est. remaining: 3m 51s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $7,984,737,233
+Annual Return: 48.01%
+Sharpe Ratio: 1.55642
+Sortino Ratio: 1.523
+Max Drawdown: -57.2%
+Avg Drawdown: -11.0%
+Normalized Score: 0.624
+Lookback periods: [154, 156, 163] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 321/750... Est. remaining: 3m 47sRunning iteration 331/750... Est. remaining: 3m 41sRunning iteration 341/750... Est. remaining: 3m 35s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $9,676,121,662
+Annual Return: 48.83%
+Sharpe Ratio: 1.60082
+Sortino Ratio: 1.566
+Max Drawdown: -55.0%
+Avg Drawdown: -10.4%
+Normalized Score: 0.975
+Lookback periods: [157, 160, 168] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 351/750... Est. remaining: 3m 31sRunning iteration 361/750... Est. remaining: 3m 25sRunning iteration 371/750... Est. remaining: 3m 19sRunning iteration 381/750... Est. remaining: 3m 13sRunning iteration 391/750... Est. remaining: 3m 8sRunning iteration 401/750... Est. remaining: 3m 2sbest_combination: {'lookbacks': [157, 160, 168], 'score': np.float64(0.9746302350310341), 'visits': 1}
+Running iteration 411/750... Est. remaining: 2m 57sRunning iteration 421/750... Est. remaining: 2m 51sRunning iteration 431/750... Est. remaining: 2m 46sRunning iteration 441/750... Est. remaining: 2m 40sRunning iteration 451/750... Est. remaining: 2m 35sRunning iteration 461/750... Est. remaining: 2m 30sRunning iteration 471/750... Est. remaining: 2m 24sRunning iteration 481/750... Est. remaining: 2m 19sRunning iteration 491/750... Est. remaining: 2m 14sRunning iteration 501/750... Est. remaining: 2m 8sbest_combination: {'lookbacks': [157, 160, 168], 'score': np.float64(0.9746302350310341), 'visits': 1}
+Running iteration 511/750... Est. remaining: 2m 3sRunning iteration 521/750... Est. remaining: 1m 58sRunning iteration 531/750... Est. remaining: 1m 53sRunning iteration 541/750... Est. remaining: 1m 47sRunning iteration 551/750... Est. remaining: 1m 42sRunning iteration 561/750... Est. remaining: 1m 37sRunning iteration 571/750... Est. remaining: 1m 32sRunning iteration 581/750... Est. remaining: 1m 27sRunning iteration 591/750... Est. remaining: 1m 21sRunning iteration 601/750... Est. remaining: 1m 16sbest_combination: {'lookbacks': [157, 160, 168], 'score': np.float64(0.9746302350310341), 'visits': 1}
+Running iteration 611/750... Est. remaining: 1m 11sRunning iteration 621/750... Est. remaining: 1m 6sRunning iteration 631/750... Est. remaining: 1m 1sRunning iteration 641/750... Est. remaining: 0m 56sRunning iteration 651/750... Est. remaining: 0m 51sRunning iteration 661/750... Est. remaining: 0m 45sRunning iteration 671/750... Est. remaining: 0m 40sRunning iteration 681/750... Est. remaining: 0m 35sRunning iteration 691/750... Est. remaining: 0m 30sRunning iteration 701/750... Est. remaining: 0m 25sbest_combination: {'lookbacks': [157, 160, 168], 'score': np.float64(0.9746302350310341), 'visits': 1}
+Running iteration 711/750... Est. remaining: 0m 20sRunning iteration 721/750... Est. remaining: 0m 15sRunning iteration 731/750... Est. remaining: 0m 10sRunning iteration 741/750... Est. remaining: 0m 5s
+Monte Carlo simulation completed in 6.4 minutes
+Best normalized score: 0.97
+best_combination: {'lookbacks': [157, 160, 168], 'score': np.float64(0.9746302350310341), 'visits': 1}
+
+Permutation-Invariant Tracking Statistics:
+  Total canonical combinations explored: 750
+  Theoretical efficiency improvement: 0.008
+  Best performing lookbacks: [157, 160, 168] (score: 0.9746)
+
+Monte Carlo simulation completed in 6.4 minutes
+
+Saving exploration/exploitation state to monte_carlo_state.pkl...
+
+Creating final performance plot...
+
+Monte Carlo Backtesting Results:
+----------------------------------------
+Total iterations: 750
+Analyzed 8734 trading days
+Date range: 1991-01-02 to 2025-08-22
+
+Best performing configuration:
+Lookback periods: [157, 160, 168] days
+
+Model Selection Analysis:
+----------------------------------------
+1. naz100_hma: 115 selections (27.6%)
+2. sp500_hma: 113 selections (27.2%)
+3. naz100_pi: 76 selections (18.3%)
+4. naz100_pine: 76 selections (18.3%)
+5. cash: 36 selections (8.7%)
+
+Portfolio Statistics:
+----------------------------------------
+Initial Value: $10,000.00
+Final Value: $9,676,121,661.68
+Average Annualized Gain: 48.8%
+----------------------------------------
+Performance plot saved to: assets/model_switching_portfolio_performance.png
+
+✓ Run 6 completed successfully
+Resetting saved state for next run...
+Reset complete. monte_carlo_state.pkl has been removed.
+✓ State reset completed
+Progress: 6/15 runs completed (6 successful, 0 failed)
+Waiting 5 seconds before next run...
+
+--------------------------------------------------------------
+Starting Monte Carlo Run 7 of 15
+Time: Sat Aug 23 23:17:20 EDT 2025
+--------------------------------------------------------------
+Executing: uv run python run_monte_carlo.py --search explore-exploit
+
+Starting Monte Carlo backtesting process
+Starting Monte Carlo backtesting process
+Search strategy: explore-exploit
+Search strategy: explore-exploit
+Starting Monte Carlo backtesting process
+Search strategy: explore-exploit
+
+Initializing Monte Carlo backtesting...
+Using backtested portfolio values
+Reading from: pyTAAAweb_backtestPortfolioValue.params
+Loading historical portfolio data...
+
+Processing naz100_pine data from /Users/donaldpg/pyTAAA_data/naz100_pine/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_pine
+
+Processing naz100_hma data from /Users/donaldpg/pyTAAA_data/naz100_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_hma
+
+Processing naz100_pi data from /Users/donaldpg/pyTAAA_data/naz100_pi/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_pi
+
+Processing sp500_hma data from /Users/donaldpg/pyTAAA_data/sp500_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...
+Loaded 6459 data points for sp500_hma
+
+Total unique dates across all models: 8734
+Date range: 1991-01-02 to 2025-08-22
+
+Aligning data across models...
+Aligned naz100_pine data starting at $10000.00
+Aligned naz100_hma data starting at $10000.00
+Aligned naz100_pi data starting at $10000.00
+Aligned sp500_hma data starting at $10000.00
+
+Data loading complete!
+
+Checking for previous state in monte_carlo_state.pkl...
+No previous state file found at monte_carlo_state.pkl
+Running Monte Carlo simulations with 750 iterations...
+Running Monte Carlo simulations with 750 iterations...
+
+Starting Monte Carlo simulations with 750 iterations...
+Note: This may take about 5 minutes to complete...
+Press Ctrl+C to stop early with current best result
+
+
+Running 750 Monte Carlo iterations...
+Using 5 models over 8734 trading days
+Press Ctrl+C to stop early with current best result
+
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $390,283,506
+Annual Return: 35.67%
+Sharpe Ratio: 1.26126
+Sortino Ratio: 1.161
+Max Drawdown: -52.3%
+Avg Drawdown: -11.8%
+Normalized Score: -0.913
+Lookback periods: [52, 89, 100] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $3,658,788,480
+Annual Return: 44.72%
+Sharpe Ratio: 1.46843
+Sortino Ratio: 1.434
+Max Drawdown: -62.5%
+Avg Drawdown: -13.3%
+Normalized Score: -0.356
+Lookback periods: [132, 152, 185] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $4,863,295,825
+Annual Return: 45.91%
+Sharpe Ratio: 1.49024
+Sortino Ratio: 1.449
+Max Drawdown: -60.2%
+Avg Drawdown: -11.8%
+Normalized Score: 0.119
+Lookback periods: [157, 187, 191] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 11/750... Est. remaining: 14m 9s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $3,066,076,807
+Annual Return: 43.98%
+Sharpe Ratio: 1.43595
+Sortino Ratio: 1.403
+Max Drawdown: -55.0%
+Avg Drawdown: -11.3%
+Normalized Score: 0.141
+Lookback periods: [160, 165, 170] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 21/750... Est. remaining: 10m 37s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $7,097,751,775
+Annual Return: 47.51%
+Sharpe Ratio: 1.56695
+Sortino Ratio: 1.522
+Max Drawdown: -57.2%
+Avg Drawdown: -10.8%
+Normalized Score: 0.727
+Lookback periods: [137, 158, 171] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 31/750... Est. remaining: 9m 24sRunning iteration 41/750... Est. remaining: 8m 23sRunning iteration 51/750... Est. remaining: 7m 46sRunning iteration 61/750... Est. remaining: 7m 19sRunning iteration 71/750... Est. remaining: 6m 57sRunning iteration 81/750... Est. remaining: 6m 41sRunning iteration 91/750... Est. remaining: 6m 27sRunning iteration 101/750... Est. remaining: 6m 15sbest_combination: {'lookbacks': [137, 158, 171], 'score': np.float64(0.7269476511911462), 'visits': 1}
+Running iteration 111/750... Est. remaining: 6m 4sRunning iteration 121/750... Est. remaining: 5m 54sRunning iteration 131/750... Est. remaining: 5m 46sRunning iteration 141/750... Est. remaining: 5m 37sRunning iteration 151/750... Est. remaining: 5m 29sRunning iteration 161/750... Est. remaining: 5m 21sRunning iteration 171/750... Est. remaining: 5m 14sRunning iteration 181/750... Est. remaining: 5m 7sRunning iteration 191/750... Est. remaining: 5m 0sRunning iteration 201/750... Est. remaining: 4m 54sbest_combination: {'lookbacks': [137, 158, 171], 'score': np.float64(0.7269476511911462), 'visits': 1}
+Running iteration 211/750... Est. remaining: 4m 48sRunning iteration 221/750... Est. remaining: 4m 41sRunning iteration 231/750... Est. remaining: 4m 35s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $7,504,018,579
+Annual Return: 47.75%
+Sharpe Ratio: 1.55400
+Sortino Ratio: 1.517
+Max Drawdown: -55.0%
+Avg Drawdown: -10.6%
+Normalized Score: 0.811
+Lookback periods: [156, 161, 170] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 241/750... Est. remaining: 4m 31sRunning iteration 251/750... Est. remaining: 4m 25sRunning iteration 261/750... Est. remaining: 4m 20sRunning iteration 271/750... Est. remaining: 4m 14sRunning iteration 281/750... Est. remaining: 4m 8sRunning iteration 291/750... Est. remaining: 4m 2sRunning iteration 301/750... Est. remaining: 3m 56sbest_combination: {'lookbacks': [156, 161, 170], 'score': np.float64(0.8112441394021325), 'visits': 1}
+Running iteration 311/750... Est. remaining: 3m 50sRunning iteration 321/750... Est. remaining: 3m 44sRunning iteration 331/750... Est. remaining: 3m 39sRunning iteration 341/750... Est. remaining: 3m 33sRunning iteration 351/750... Est. remaining: 3m 28sRunning iteration 361/750... Est. remaining: 3m 22sRunning iteration 371/750... Est. remaining: 3m 17sRunning iteration 381/750... Est. remaining: 3m 11sRunning iteration 391/750... Est. remaining: 3m 6sRunning iteration 401/750... Est. remaining: 3m 0sbest_combination: {'lookbacks': [156, 161, 170], 'score': np.float64(0.8112441394021325), 'visits': 1}
+Running iteration 411/750... Est. remaining: 2m 55sRunning iteration 421/750... Est. remaining: 2m 49sRunning iteration 431/750... Est. remaining: 2m 44s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $9,053,657,621
+Annual Return: 48.55%
+Sharpe Ratio: 1.58440
+Sortino Ratio: 1.556
+Max Drawdown: -56.9%
+Avg Drawdown: -10.7%
+Normalized Score: 0.884
+Lookback periods: [157, 161, 162] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 441/750... Est. remaining: 2m 40sRunning iteration 451/750... Est. remaining: 2m 34sRunning iteration 461/750... Est. remaining: 2m 29sRunning iteration 471/750... Est. remaining: 2m 24sRunning iteration 481/750... Est. remaining: 2m 18sRunning iteration 491/750... Est. remaining: 2m 13sRunning iteration 501/750... Est. remaining: 2m 8sbest_combination: {'lookbacks': [157, 161, 162], 'score': np.float64(0.8840181702834181), 'visits': 1}
+Running iteration 511/750... Est. remaining: 2m 3sRunning iteration 521/750... Est. remaining: 1m 57sRunning iteration 531/750... Est. remaining: 1m 52sRunning iteration 541/750... Est. remaining: 1m 47sRunning iteration 551/750... Est. remaining: 1m 42sRunning iteration 561/750... Est. remaining: 1m 37sRunning iteration 571/750... Est. remaining: 1m 31s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $9,173,328,768
+Annual Return: 48.61%
+Sharpe Ratio: 1.58006
+Sortino Ratio: 1.546
+Max Drawdown: -55.0%
+Avg Drawdown: -10.8%
+Normalized Score: 0.890
+Lookback periods: [156, 157, 168] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 581/750... Est. remaining: 1m 27sRunning iteration 591/750... Est. remaining: 1m 21sRunning iteration 601/750... Est. remaining: 1m 16sbest_combination: {'lookbacks': [156, 157, 168], 'score': np.float64(0.890027729572149), 'visits': 1}
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $10,883,025,841
+Annual Return: 49.34%
+Sharpe Ratio: 1.61857
+Sortino Ratio: 1.577
+Max Drawdown: -57.2%
+Avg Drawdown: -10.8%
+Normalized Score: 0.979
+Lookback periods: [138, 157, 172] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 611/750... Est. remaining: 1m 11sRunning iteration 621/750... Est. remaining: 1m 6sRunning iteration 631/750... Est. remaining: 1m 1sRunning iteration 641/750... Est. remaining: 0m 56sRunning iteration 651/750... Est. remaining: 0m 51sRunning iteration 661/750... Est. remaining: 0m 45sRunning iteration 671/750... Est. remaining: 0m 40sRunning iteration 681/750... Est. remaining: 0m 35sRunning iteration 691/750... Est. remaining: 0m 30sRunning iteration 701/750... Est. remaining: 0m 25sbest_combination: {'lookbacks': [138, 157, 172], 'score': np.float64(0.9794835159412385), 'visits': 1}
+Running iteration 711/750... Est. remaining: 0m 20sRunning iteration 721/750... Est. remaining: 0m 15sRunning iteration 731/750... Est. remaining: 0m 10sRunning iteration 741/750... Est. remaining: 0m 5s
+Monte Carlo simulation completed in 6.4 minutes
+Best normalized score: 0.98
+best_combination: {'lookbacks': [138, 157, 172], 'score': np.float64(0.9794835159412385), 'visits': 1}
+
+Permutation-Invariant Tracking Statistics:
+  Total canonical combinations explored: 750
+  Theoretical efficiency improvement: 0.008
+  Best performing lookbacks: [138, 157, 172] (score: 0.9795)
+
+Monte Carlo simulation completed in 6.4 minutes
+
+Saving exploration/exploitation state to monte_carlo_state.pkl...
+
+Creating final performance plot...
+
+Monte Carlo Backtesting Results:
+----------------------------------------
+Total iterations: 750
+Analyzed 8734 trading days
+Date range: 1991-01-02 to 2025-08-22
+
+Best performing configuration:
+Lookback periods: [138, 157, 172] days
+
+Model Selection Analysis:
+----------------------------------------
+1. sp500_hma: 117 selections (28.1%)
+2. naz100_hma: 111 selections (26.7%)
+3. naz100_pine: 76 selections (18.3%)
+4. naz100_pi: 75 selections (18.0%)
+5. cash: 37 selections (8.9%)
+
+Portfolio Statistics:
+----------------------------------------
+Initial Value: $10,000.00
+Final Value: $10,883,025,840.70
+Average Annualized Gain: 49.3%
+----------------------------------------
+Performance plot saved to: assets/model_switching_portfolio_performance.png
+
+✓ Run 7 completed successfully
+Resetting saved state for next run...
+Reset complete. monte_carlo_state.pkl has been removed.
+✓ State reset completed
+Progress: 7/15 runs completed (7 successful, 0 failed)
+Waiting 5 seconds before next run...
+
+--------------------------------------------------------------
+Starting Monte Carlo Run 8 of 15
+Time: Sat Aug 23 23:23:49 EDT 2025
+--------------------------------------------------------------
+Executing: uv run python run_monte_carlo.py --search explore-exploit
+
+Starting Monte Carlo backtesting process
+Starting Monte Carlo backtesting process
+Search strategy: explore-exploit
+Search strategy: explore-exploit
+Starting Monte Carlo backtesting process
+Search strategy: explore-exploit
+
+Initializing Monte Carlo backtesting...
+Using backtested portfolio values
+Reading from: pyTAAAweb_backtestPortfolioValue.params
+Loading historical portfolio data...
+
+Processing naz100_pine data from /Users/donaldpg/pyTAAA_data/naz100_pine/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_pine
+
+Processing naz100_hma data from /Users/donaldpg/pyTAAA_data/naz100_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_hma
+
+Processing naz100_pi data from /Users/donaldpg/pyTAAA_data/naz100_pi/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8725 data points for naz100_pi
+
+Processing sp500_hma data from /Users/donaldpg/pyTAAA_data/sp500_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...
+Loaded 6459 data points for sp500_hma
+
+Total unique dates across all models: 8734
+Date range: 1991-01-02 to 2025-08-22
+
+Aligning data across models...
+Aligned naz100_pine data starting at $10000.00
+Aligned naz100_hma data starting at $10000.00
+Aligned naz100_pi data starting at $10000.00
+Aligned sp500_hma data starting at $10000.00
+
+Data loading complete!
+
+Checking for previous state in monte_carlo_state.pkl...
+No previous state file found at monte_carlo_state.pkl
+Running Monte Carlo simulations with 750 iterations...
+Running Monte Carlo simulations with 750 iterations...
+
+Starting Monte Carlo simulations with 750 iterations...
+Note: This may take about 5 minutes to complete...
+Press Ctrl+C to stop early with current best result
+
+
+Running 750 Monte Carlo iterations...
+Using 5 models over 8734 trading days
+Press Ctrl+C to stop early with current best result
+
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $358,967,711
+Annual Return: 35.34%
+Sharpe Ratio: 1.25230
+Sortino Ratio: 1.160
+Max Drawdown: -51.8%
+Avg Drawdown: -12.6%
+Normalized Score: -0.929
+Lookback periods: [50, 65, 69] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $1,076,632,609
+Annual Return: 39.70%
+Sharpe Ratio: 1.35661
+Sortino Ratio: 1.280
+Max Drawdown: -52.3%
+Avg Drawdown: -11.7%
+Normalized Score: -0.331
+Lookback periods: [79, 99, 109] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 11/750... Est. remaining: 12m 40s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $2,277,619,710
+Annual Return: 42.75%
+Sharpe Ratio: 1.42977
+Sortino Ratio: 1.370
+Max Drawdown: -56.6%
+Avg Drawdown: -12.3%
+Normalized Score: -0.289
+Lookback periods: [84, 160, 172] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 21/750... Est. remaining: 9m 58sRunning iteration 31/750... Est. remaining: 8m 32s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $5,154,070,160
+Annual Return: 46.15%
+Sharpe Ratio: 1.52723
+Sortino Ratio: 1.485
+Max Drawdown: -57.2%
+Avg Drawdown: -11.3%
+Normalized Score: 0.272
+Lookback periods: [137, 153, 156] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 41/750... Est. remaining: 8m 8sRunning iteration 51/750... Est. remaining: 7m 33sRunning iteration 61/750... Est. remaining: 7m 8s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $1,404,169,870
+Annual Return: 40.77%
+Sharpe Ratio: 1.46251
+Sortino Ratio: 1.377
+Max Drawdown: -38.5%
+Avg Drawdown: -9.7%
+Normalized Score: 0.902
+Lookback periods: [52, 53, 93] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 71/750... Est. remaining: 6m 59s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $1,358,188,906
+Annual Return: 40.64%
+Sharpe Ratio: 1.49183
+Sortino Ratio: 1.383
+Max Drawdown: -34.7%
+Avg Drawdown: -8.7%
+Normalized Score: 1.302
+Lookback periods: [50, 50, 92] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 81/750... Est. remaining: 6m 53s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $3,683,002,581
+Annual Return: 44.74%
+Sharpe Ratio: 1.62683
+Sortino Ratio: 1.529
+Max Drawdown: -34.7%
+Avg Drawdown: -8.0%
+Normalized Score: 1.932
+Lookback periods: [50, 51, 95] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 91/750... Est. remaining: 6m 47sRunning iteration 101/750... Est. remaining: 6m 33sbest_combination: {'lookbacks': [50, 51, 95], 'score': np.float64(1.9317480751619758), 'visits': 1}
+Running iteration 111/750... Est. remaining: 6m 19sRunning iteration 121/750... Est. remaining: 6m 8sRunning iteration 131/750... Est. remaining: 5m 57sRunning iteration 141/750... Est. remaining: 5m 47sRunning iteration 151/750... Est. remaining: 5m 38sRunning iteration 161/750... Est. remaining: 5m 30sRunning iteration 171/750... Est. remaining: 5m 22sRunning iteration 181/750... Est. remaining: 5m 14sRunning iteration 191/750... Est. remaining: 5m 6sRunning iteration 201/750... Est. remaining: 4m 59sbest_combination: {'lookbacks': [50, 51, 95], 'score': np.float64(1.9317480751619758), 'visits': 1}
+Running iteration 211/750... Est. remaining: 4m 52sRunning iteration 221/750... Est. remaining: 4m 45sRunning iteration 231/750... Est. remaining: 4m 39sRunning iteration 241/750... Est. remaining: 4m 32sRunning iteration 251/750... Est. remaining: 4m 26sRunning iteration 261/750... Est. remaining: 4m 20sRunning iteration 271/750... Est. remaining: 4m 14sRunning iteration 281/750... Est. remaining: 4m 8sRunning iteration 291/750... Est. remaining: 4m 2sRunning iteration 301/750... Est. remaining: 3m 56sbest_combination: {'lookbacks': [50, 51, 95], 'score': np.float64(1.9317480751619758), 'visits': 1}
+Running iteration 311/750... Est. remaining: 3m 50sRunning iteration 321/750... Est. remaining: 3m 44sRunning iteration 331/750... Est. remaining: 3m 38sRunning iteration 341/750... Est. remaining: 3m 33sRunning iteration 351/750... Est. remaining: 3m 27sRunning iteration 361/750... Est. remaining: 3m 21sRunning iteration 371/750... Est. remaining: 3m 16sRunning iteration 381/750... Est. remaining: 3m 10sRunning iteration 391/750... Est. remaining: 3m 5sRunning iteration 401/750... Est. remaining: 2m 59sbest_combination: {'lookbacks': [50, 51, 95], 'score': np.float64(1.9317480751619758), 'visits': 1}
+Running iteration 411/750... Est. remaining: 2m 54sRunning iteration 421/750... Est. remaining: 2m 48sRunning iteration 431/750... Est. remaining: 2m 43sRunning iteration 441/750... Est. remaining: 2m 38sRunning iteration 451/750... Est. remaining: 2m 32sRunning iteration 461/750... Est. remaining: 2m 27sRunning iteration 471/750... Est. remaining: 2m 22sRunning iteration 481/750... Est. remaining: 2m 16sRunning iteration 491/750... Est. remaining: 2m 11sRunning iteration 501/750... Est. remaining: 2m 6sbest_combination: {'lookbacks': [50, 51, 95], 'score': np.float64(1.9317480751619758), 'visits': 1}
+Running iteration 511/750... Est. remaining: 2m 1sRunning iteration 521/750... Est. remaining: 1m 56sRunning iteration 531/750... Est. remaining: 1m 51sRunning iteration 541/750... Est. remaining: 1m 46s
+==================================================
+NEW BEST PERFORMANCE FOUND!
+==================================================
+Final Value: $5,389,580,938
+Annual Return: 46.34%
+Sharpe Ratio: 1.67955
+Sortino Ratio: 1.584
+Max Drawdown: -34.7%
+Avg Drawdown: -7.9%
+Normalized Score: 2.149
+Lookback periods: [50, 52, 95] days
+==================================================
+Best parameters logged to: abacus_best_performers.csv
+Running iteration 551/750... Est. remaining: 1m 41sRunning iteration 561/750... Est. remaining: 1m 36sRunning iteration 571/750... Est. remaining: 1m 31sRunning iteration 581/750... Est. remaining: 1m 26sRunning iteration 591/750... Est. remaining: 1m 20sRunning iteration 601/750... Est. remaining: 1m 15sbest_combination: {'lookbacks': [50, 52, 95], 'score': np.float64(2.1486887497562512), 'visits': 1}
+Running iteration 611/750... Est. remaining: 1m 10sRunning iteration 621/750... Est. remaining: 1m 5sRunning iteration 631/750... Est. remaining: 1m 0sRunning iteration 641/750... Est. remaining: 0m 55sRunning iteration 651/750... Est. remaining: 0m 50sRunning iteration 661/750... Est. remaining: 0m 45sRunning iteration 671/750... Est. remaining: 0m 40sRunning iteration 681/750... Est. remaining: 0m 35sRunning iteration 691/750... Est. remaining: 0m 30sRunning iteration 701/750... Est. remaining: 0m 25sbest_combination: {'lookbacks': [50, 52, 95], 'score': np.float64(2.1486887497562512), 'visits': 1}
+Running iteration 711/750... Est. remaining: 0m 20sRunning iteration 721/750... Est. remaining: 0m 15sRunning iteration 731/750... Est. remaining: 0m 10sRunning iteration 741/750... Est. remaining: 0m 5s
+Monte Carlo simulation completed in 6.3 minutes
+Best normalized score: 2.15
+best_combination: {'lookbacks': [50, 52, 95], 'score': np.float64(2.1486887497562512), 'visits': 1}
+
+Permutation-Invariant Tracking Statistics:
+  Total canonical combinations explored: 750
+  Theoretical efficiency improvement: 0.008
+  Best performing lookbacks: [50, 52, 95] (score: 2.1487)
+
+Monte Carlo simulation completed in 6.3 minutes
+
+Saving exploration/exploitation state to monte_carlo_state.pkl...
+
+Creating final performance plot...
+
+Monte Carlo Backtesting Results:
+----------------------------------------
+Total iterations: 750
+Analyzed 8734 trading days
+Date range: 1991-01-02 to 2025-08-22
+
+Best performing configuration:
+Lookback periods: [50, 52, 95] days
+
+Model Selection Analysis:
+----------------------------------------
+1. sp500_hma: 108 selections (26.0%)
+2. naz100_hma: 100 selections (24.0%)
+3. naz100_pine: 76 selections (18.3%)
+4. naz100_pi: 74 selections (17.8%)
+5. cash: 58 selections (13.9%)
+
+Portfolio Statistics:
+----------------------------------------
+Initial Value: $10,000.00
+Final Value: $5,389,580,937.96
+Average Annualized Gain: 46.3%
+----------------------------------------
+Performance plot saved to: assets/model_switching_portfolio_performance.png
+
+✓ Run 8 completed successfully
+Resetting saved state for next run...
+Reset complete. monte_carlo_state.pkl has been removed.
+✓ State reset completed
+Progress: 8/15 runs completed (8 successful, 0 failed)
+Waiting 5 seconds before next run...
+
+--------------------------------------------------------------
+Starting Monte Carlo Run 9 of 15
+Time: Sat Aug 23 23:30:13 EDT 2025
+--------------------------------------------------------------
+Executing: uv run python run_monte_carlo.py --search explore-exploit
+
+Starting Monte Carlo backtesting process
+Starting Monte Carlo backtesting process
+Search strategy: explore-exploit
+Search strategy: explore-exploit
+Starting Monte Carlo backtesting process
+Search strategy: explore-exploit
+
+Initializing Monte Carlo backtesting...
+Using backtested portfolio values
+Reading from: pyTAAAweb_backtestPortfolioValue.params
+Monte Carlo backtesting failed: MonteCarloBacktest.__init__() got an unexpected keyword argument 'normalization_values'
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/run_monte_carlo.py", line 139, in main
+    monte_carlo = MonteCarloBacktest(
+                  ^^^^^^^^^^^^^^^^^^^
+TypeError: MonteCarloBacktest.__init__() got an unexpected keyword argument 'normalization_values'
+Monte Carlo backtesting failed: MonteCarloBacktest.__init__() got an unexpected keyword argument 'normalization_values'
+Traceback (most recent call last):
+  File "/Users/donaldpg/PyProjects/worktree2/PyTAAA/run_monte_carlo.py", line 139, in main
+    monte_carlo = MonteCarloBacktest(
+                  ^^^^^^^^^^^^^^^^^^^
+TypeError: MonteCarloBacktest.__init__() got an unexpected keyword argument 'normalization_values'
+
+✗ Run 9 failed with exit code 0
+

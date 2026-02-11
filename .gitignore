@@ -1,0 +1,47 @@
+# Ignore logs and temporary runtime files
+*.log
+*.log.*
+daily_abacus_update*.log
+pytaaa_*.log
+
+# Ignore Python cache
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Ignore generated images and plots
+*.png
+pngs/
+
+# Ignore CSV and Excel files and other generated data
+*.csv
+*.xlsx
+*.xls
+~$*
+
+# Ignore backup and temporary json/copy files
+*.backup
+*.bak
+*~
+
+# Ignore env and lock files managed separately
+venv/
+.venv/
+
+# Additional ignores requested by user
+# Compiled python files
+*.pyc
+*.pyo
+*.pyd
+
+# Log files and log directory
+*.log
+logs/
+
+# pngs directory
+pngs/
+
+# Backup patterns
+*.bak
+*bak*
+purgatory/
