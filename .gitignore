@@ -44,3 +44,4 @@ pngs/
 # Backup patterns
 *.bak
 *bak*
+purgatory/
