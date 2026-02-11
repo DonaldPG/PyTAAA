@@ -1,0 +1,9 @@
+{
+    "id": "sp500_pine",
+    "name": "S&P 500 Pine model",
+    "description": "Canonical model manifest for sp500_pine used for local development.",
+    "data_store": "pyTAAA_data/sp500_pine/data_store",
+    "params": {
+        "example_param": 42
+    }
+}

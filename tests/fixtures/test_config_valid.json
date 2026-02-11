@@ -1,0 +1,39 @@
+{
+    "web_output_dir": "/Users/donaldpg/pyTAAA_data/test_output",
+    "model_selection": {
+        "n_lookbacks": 3,
+        "performance_metrics": {
+            "sharpe_ratio_weight": 1.0,
+            "sortino_ratio_weight": 1.0,
+            "max_drawdown_weight": 1.0,
+            "avg_drawdown_weight": 1.0,
+            "annualized_return_weight": 1.0
+        },
+        "normalization": {
+            "lookback_days": [136, 146, 158],
+            "central_values": {
+                "annual_return": 0.445,
+                "sharpe_ratio": 1.450,
+                "sortino_ratio": 1.400,
+                "max_drawdown": -0.560,
+                "avg_drawdown": -0.120
+            },
+            "std_values": {
+                "annual_return": 0.020,
+                "sharpe_ratio": 0.180,
+                "sortino_ratio": 0.140,
+                "max_drawdown": 0.060,
+                "avg_drawdown": 0.013
+            }
+        }
+    },
+    "Email": {
+        "From": "test@example.com",
+        "To": "test@example.com",
+        "PW": "test_password"
+    },
+    "Valuation": {
+        "stockList": "test_list",
+        "symbols_file": "/path/to/test_symbols.txt"
+    }
+}

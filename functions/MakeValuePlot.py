@@ -52,7 +52,10 @@ def makeValuePlot(json_fn):
                     if len( statusline_list ) >= 4:
                         date.append( datetime.datetime.strptime( statusline_list[1], '%Y-%m-%d') )
                         value.append( float(statusline_list[3]) )
-                except:
+                except Exception as e:
+                    if statusline.strip():  # Only print if line is not empty
+                        print(f" Warning: Error parsing line {i} in PyTAAA_status.params: {e}")
+                        print(f"   Line content: {statusline[:100]}")
                     break
 
             #print "rankingMessage -----"
@@ -157,6 +160,25 @@ def makeValuePlot(json_fn):
             verticalalignment='top'
         )
 
+    if params['stockList'] == 'SP500' and params['uptrendSignalMethod'] == "percentileChannels":
+        switch_date = datetime.date(2025,12,12)
+        switch_date = datetime.datetime(
+            switch_date.year, switch_date.month, switch_date.day
+        )
+        switch_value_index = np.argmin(np.abs(sortedDailyDate-switch_date))
+        plt.plot(
+            [switch_date, switch_date],
+            [sortedDailyValue[switch_value_index]//2., sortedDailyValue.max()],
+            'g-', lw=.75
+        )
+        plt.text(
+            switch_date, sortedDailyValue[switch_value_index]//2.,
+            "switch to percentileChannels",
+            rotation=90,
+            horizontalalignment = 'left',
+            verticalalignment='top'
+        )
+
     plt.xlim((date[0],date[-1]+datetime.timedelta(10) ))
     plt.title("pyTAAA Value History Plot ("+edition+" edition)")
     # put text line with most recent date at bottom of plot
@@ -184,14 +206,15 @@ def makeUptrendingPlot(json_fn):
 
     from functions.TAfunctions import SMA, MoveMax, dpgchannel
 
-    ##########################################
-    # read uptrending stocks status file
-    ##########################################
+    #############
+    # Read uptrending stocks status file
+    #############
 
     json_folder = os.path.split(json_fn)[0]
     p_store = get_performance_store(json_fn)
-    file2path = os.path.join(p_store, "pyTAAAweb_numberUptrendingStocks_status.params" )
-
+    webpage_dir = get_webpage_store(json_fn)
+    file2path = os.path.join(webpage_dir, "pyTAAAweb_numberUptrendingStocks_status.params" )
+    
     date = []
     value = []
     active = []
@@ -208,7 +231,10 @@ def makeUptrendingPlot(json_fn):
                         date.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                         value.append( float(statusline_list[2]) )
                         active.append( float(statusline_list[4]) )
-                except:
+                except Exception as e:
+                    if statusline.strip():
+                        print(f" Warning: Error parsing line {i} in numberUptrendingStocks (2nd): {e}")
+                        print(f"   Line content: {statusline[:100]}")
                     break
     except:
         print(" Error: unable to read updates from pyTAAAweb_numberUptrendingStocks_status.params")
@@ -236,7 +262,10 @@ def makeUptrendingPlot(json_fn):
                         dates.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                         medianSharpe.append( float(statusline_list[2]) )
                         signalSharpe.append( float(statusline_list[4]) )
-                except:
+                except Exception as e:
+                    if statusline.strip():
+                        print(f" Warning: Error parsing line {i} in MeanTrendDispersion (file2): {e}")
+                        print(f"   Line content: {statusline[:100]}")
                     break
     except:
         print(" Error: unable to read updates from pyTAAAweb_multiSharpeIndicator_status.params")
@@ -295,22 +324,26 @@ def makeNewHighsAndLowsPlot(json_fn):
     params = get_json_params(json_fn)
 
     if params['stockList'] == 'Naz100':
-        _, _, _ = newHighsAndLows(json_fn, num_days_highlow=(73,293),\
-                                num_days_cumu=(50,159),\
-                                HighLowRatio=(1.654,2.019),\
-                                HighPctile=(8.499,8.952),\
-                                HGamma=(1.,1.),\
-                                LGamma=(1.176,1.223),\
-                                makeQCPlots=True)
+        _, _, _ = newHighsAndLows(
+            json_fn, num_days_highlow=(73,293),
+            num_days_cumu=(50,159),
+            HighLowRatio=(1.654,2.019),
+            HighPctile=(8.499,8.952),
+            HGamma=(1.,1.),
+            LGamma=(1.176,1.223),
+            makeQCPlots=True
+        )
 
     elif params['stockList'] == 'SP500':
-        _, _, _ = newHighsAndLows(json_fn, num_days_highlow=(73,146),\
-                                num_days_cumu=(76,108),\
-                                HighLowRatio=(2.293,1.573),\
-                                HighPctile=(12.197,11.534),\
-                                HGamma=(1.157,.568),\
-                                LGamma=(.667,1.697),\
-                                makeQCPlots=True)
+        _, _, _ = newHighsAndLows(
+            json_fn, num_days_highlow=(73,146),
+            num_days_cumu=(76,108),
+            HighLowRatio=(2.293,1.573),
+            HighPctile=(12.197,11.534),
+            HGamma=(1.157,.568),
+            LGamma=(.667,1.697),
+            makeQCPlots=True
+        )
 
     ########################################################################
     ### write html for web page
@@ -354,7 +387,10 @@ def makeTrendDispersionPlot(json_fn):
                         dateMedians.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                         valueMeans.append( float(statusline_list[2]) )
                         valueMedians.append( float(statusline_list[4]) )
-                except:
+                except Exception as e:
+                    if statusline.strip():
+                        print(f" Warning: Error parsing line {i} in DailyChannelOffsetSignal: {e}")
+                        print(f"   Line content: {statusline[:100]}")
                     break
     except:
         print(" Error: unable to read updates from pyTAAAweb_MeanTrendDispersion_status.params")
@@ -384,7 +420,8 @@ def makeTrendDispersionPlot(json_fn):
     ### make a combined plot
     ### 1. get percent of uptrending stocks
     ###
-    file2path = os.path.join(p_store, "pyTAAAweb_numberUptrendingStocks_status.params" )
+    webpage_dir = get_webpage_store(json_fn)
+    file2path = os.path.join(webpage_dir, "pyTAAAweb_numberUptrendingStocks_status.params" )
     date = []
     value = []
     active = []
@@ -431,12 +468,16 @@ def makeTrendDispersionPlot(json_fn):
             for i in range(numlines):
                 try:
                     statusline = lines[i]
-                    statusline_list = statusline.split(" ")
-                    if len( statusline_list ) == 5:
+                    statusline_list = [x for x in statusline.split(" ") if x]  # Filter empty strings
+                    if len( statusline_list ) >= 3:
                         backtestDate.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
-                        backtestBHvalue.append( float(statusline_list[2]) )
-                        backtestSystemvalue.append( float(statusline_list[4]) )
-                except:
+                        backtestBHvalue.append( float(statusline_list[1]) )
+                        backtestSystemvalue.append( float(statusline_list[2]) )
+                except Exception as e:
+                    if statusline.strip():
+                        print(f" Warning: Error parsing line {i} in backtestPortfolioValue: {e}")
+                        print(f"   Line content: {statusline[:100]}")
+                        print(f"   Split result length: {len(statusline_list)}, content: {statusline_list}")
                     break
     except:
         print(" Error: unable to read updates from pyTAAAweb_backtestPortfolioValue.params")
@@ -492,9 +533,6 @@ def makeTrendDispersionPlot(json_fn):
     plt.legend(loc=3,prop={'size':6})
     plt.savefig(figure5path)
     #figure5path = 'PyTAAA_backtestWithTrend.png'  # re-set to name without full path
-    #figure5_htmlText = "\n<br><h3>Daily backtest with trend indicators</h3>\n"
-    #figure5_htmlText = figure5_htmlText + "\nCombined backtest with Trend indicators.\n"
-    #figure5_htmlText = figure5_htmlText + '''<br><img src="'''+figure5path+'''" alt="PyTAAA by DonaldPG" width="850" height="500"><br>\n'''
     figure5path = 'PyTAAA_backtestWithTrend.png'  # re-set to name without full path
     figure5_htmlText = "\n<br><h3>Monthly backtest</h3>\n"
     figure5_htmlText = figure5_htmlText + "\nMost recent backtest for PyTAAA. "
@@ -579,7 +617,13 @@ def makeDailyMonteCarloBacktest(json_fn):
 
     if modified_hours > 20.0:
         dailyBacktest_pctLong(json_fn)
-    #dailyBacktest_pctLong()   ### TODO: remove this line !!!!!!!!
+    if "abacus" in json_fn.lower():
+        # Update abacus backtest portfolio values (column 3) with model-switching results
+        from functions.abacus_backtest import write_abacus_backtest_portfolio_values
+        write_abacus_backtest_portfolio_values(json_fn)
+
+    # for abacus, re-populate the saved abacus backtest portfolio values
+
 
     ##########################################
     # create html markup for backtest plot
@@ -796,30 +840,40 @@ def makeDailyChannelOffsetSignal(json_fn):
     ### make a combined plot
     ### 1. get percent of uptrending stocks
     ###
-    _dates = []
-    avgPctChannel = []
-    numAboveBelowChannel = []
-    try:
-        with open( file4path, "r" ) as f:
-            # get number of lines in file
-            lines = f.read().split("\n")
-            numlines = len (lines)
-            for i in range(numlines):
-                statusline = lines[i]
-                statusline_list = statusline.split(" ")
-                statusline_list = [_f for _f in statusline_list if _f]
-                if len( statusline_list ) == 3:
-                    _dates.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
-                    avgPctChannel.append( float(statusline_list[1].split('%')[0])/100. )
-                    numAboveBelowChannel.append( float(statusline_list[2]) )
-
-    except:
-        print(" Error: unable to read updates from pyTAAAweb_numberUptrendingStocks_status.params")
-        print("")
-
     _dates = np.array(_dates)
     avgPctChannel = np.array(avgPctChannel)
     numAboveBelowChannel = np.array(numAboveBelowChannel)
+    
+    # Debug: Show what we have before trying to use these arrays
+    print("\n=== makeDailyChannelOffsetSignal Debug Info ===")
+    print(f"file4path (file just read): {file4path}")
+    print(f"File exists: {os.path.exists(file4path)}")
+    if os.path.exists(file4path):
+        file_size = os.path.getsize(file4path)
+        print(f"File size: {file_size} bytes")
+        if file_size > 0:
+            with open(file4path, "r") as f:
+                lines = f.read().split("\n")
+                print(f"Number of lines in file: {len(lines)}")
+                print(f"First 3 lines:")
+                for i, line in enumerate(lines[:3], 1):
+                    print(f"  Line {i}: '{line}'")
+    print(f"_dates array length: {len(_dates)}")
+    print(f"avgPctChannel array length: {len(avgPctChannel)}")
+    print(f"numAboveBelowChannel array length: {len(numAboveBelowChannel)}")
+    print("=" * 50)
+    
+    # Check if arrays are empty before calling .min(), .mean(), .max()
+    if len(avgPctChannel) == 0:
+        print("WARNING: avgPctChannel is empty! Cannot compute min/mean/max.")
+        print("This likely means the status file has no valid data.")
+        # Return early to avoid crash
+        figure4_htmlText = "\n<br><h3>Channel Offset Signal</h3>\n"
+        figure4_htmlText = figure4_htmlText + "\n<p>No data available for Channel Offset Signal plot.</p>\n"
+        figure5_htmlText = "\n<br><h3>Daily backtest with offset Channel trend signal</h3>\n"
+        figure5_htmlText = figure5_htmlText + "\n<p>No data available for backtest plot.</p>\n"
+        return figure4_htmlText, figure5_htmlText
+    
     print(" avgPctChannel shape = " + str(avgPctChannel.shape))
     print(" avgPctChannel min, mean, max = ", avgPctChannel.min(),avgPctChannel.mean(),avgPctChannel.max())
     print("\n\n numAboveBelowChannel = ", numAboveBelowChannel)
@@ -853,12 +907,16 @@ def makeDailyChannelOffsetSignal(json_fn):
             for i in range(numlines):
                 try:
                     statusline = lines[i]
-                    statusline_list = statusline.split(" ")
-                    if len( statusline_list ) == 5:
+                    statusline_list = [x for x in statusline.split(" ") if x]  # Filter empty strings
+                    if len( statusline_list ) >= 3:
                         backtestDate.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
-                        backtestBHvalue.append( float(statusline_list[2]) )
-                        backtestSystemvalue.append( float(statusline_list[4]) )
-                except:
+                        backtestBHvalue.append( float(statusline_list[1]) )
+                        backtestSystemvalue.append( float(statusline_list[2]) )
+                except Exception as e:
+                    if statusline.strip():
+                        print(f" Warning: Error parsing line {i} in backtestPortfolioValue (2nd plot): {e}")
+                        print(f"   Line content: {statusline[:100]}")
+                        print(f"   Split result length: {len(statusline_list)}, content: {statusline_list}")
                     break
     except:
         print(" Error: unable to read updates from pyTAAAweb_backtestPortfolioValue.params")

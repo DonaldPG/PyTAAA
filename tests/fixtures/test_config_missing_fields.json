@@ -1,0 +1,10 @@
+{
+    "model_selection": {
+        "normalization": {
+            "central_values": {
+                "annual_return": 0.445,
+                "sharpe_ratio": 1.450
+            }
+        }
+    }
+}

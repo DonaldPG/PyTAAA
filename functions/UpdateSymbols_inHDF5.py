@@ -69,8 +69,8 @@ def loadQuotes_fromHDF(symbols_file, json_fn):
     print(" ... inside loadQuotes_fromHDF")
     print("   . json_fn = " + json_fn)
 
-    symbols_fn = get_symbols_file(json_fn)
-    hdf_folder = os.path.split(symbols_fn)[0]
+    symbols_fn = symbols_file
+    hdf_folder = os.path.split(symbols_file)[0]
     hdf5filename = os.path.join(hdf_folder, listname + "_.hdf5")
     
     # hdf5_directory = directory_name

@@ -2,6 +2,7 @@ import numpy as np
 import datetime
 
 import datetime
+import pandas as pd
 from numpy import random
 from scipy.stats import rankdata
 
@@ -885,7 +886,8 @@ def arrayFromQuotesForList(symbolsFile, json_fn, beginDate, endDate):
 
     # clean up quotes for missing values and varying starting date
     #x = quote.as_matrix().swapaxes(0,1)
-    quote = quote.convert_objects(convert_numeric=True)   ### test
+    # convert all columns to numeric where possible (replace deprecated convert_objects)
+    quote = quote.apply(pd.to_numeric, errors='coerce')
     x = quote.values.T
     ###print "x = ", x
     date = quote.index
@@ -1001,59 +1003,109 @@ def get_pe_google( symbol ):
     return quote
 
 
-def get_pe_finviz( symbol, verbose=False ):
-    ' use finviz to get calculated P/E ratios '
+def get_pe_finviz(symbol: str, verbose: bool = False) -> float:
+    """
+    Use finviz to get calculated P/E ratios for a given symbol.
+    Handles errors gracefully and returns np.nan for unavailable data.
+
+    Args:
+        symbol: The stock ticker symbol.
+        verbose: If True, print detailed output.
+
+    Returns:
+        The P/E ratio as a float, or np.nan if unavailable.
+    """
     import numpy as np
     import bs4 as bs
     import requests
     import os
     import csv
+    import time
+    import logging
+
+    logger = logging.getLogger(__name__)
 
     try:
-        # Get source table
-        url = 'https://finviz.com/quote.ashx?t='+symbol.upper()
-        r = requests.get(url)
-        html = r .text
-        soup = bs.BeautifulSoup(html, 'lxml')
-        table = soup.find('table', class_= 'snapshot-table2')
-
-        # Split by row and extract values
+        url = "https://finviz.com/quote.ashx?t=" + symbol.upper()
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/115.0.0.0 Safari/537.36"
+            )
+        }
+        r = requests.get(url, headers=headers)
+        
+        # Handle rate limiting
+        if r.status_code == 429:
+            logger.warning(f"Rate limited by finviz for {symbol}. Sleeping and retrying...")
+            time.sleep(5)
+            r = requests.get(url, headers=headers)
+        
+        # Handle HTTP 404 and other errors gracefully
+        if r.status_code == 404:
+            logger.warning(f"HTTP 404 from finviz for {symbol} - symbol may be delisted")
+            if verbose:
+                print(f"HTTP 404 from finviz for {symbol}")
+            return np.nan
+        elif r.status_code != 200:
+            logger.warning(f"HTTP {r.status_code} from finviz for {symbol}")
+            if verbose:
+                print(f"HTTP {r.status_code} from finviz for {symbol}")
+            return np.nan
+            
+        html = r.text
+        soup = bs.BeautifulSoup(html, "lxml")
+        table = soup.find("table", class_="snapshot-table2")
+        
+        if table is None:
+            logger.warning(f"Could not find snapshot-table2 in finviz HTML for {symbol}")
+            if verbose:
+                print(f"Could not find data table for {symbol}")
+            return np.nan
+            
         values = []
-        for tr in table.find_all('tr')[1:3]:
-            td = tr.find_all('td')[1]
+        for tr in table.find_all("tr")[1:3]:
+            td = tr.find_all("td")[1]
             value = td.text
-
-            #Convert to numeric
-            if 'B' in value:
-                value = value.replace('B',"")
+            if "B" in value:
+                value = value.replace("B", "")
                 value = float(value.strip())
                 value = value * 1000000000
                 values.append(value)
-
-            elif 'M' in value:
-                value = value.replace('M',"")
+            elif "M" in value:
+                value = value.replace("M", "")
                 value = float(value.strip())
                 value = value * 1000000
                 values.append(value)
-
-            #Account for blank values
             else:
                 values.append(0)
-
-        #Append to respective lists
+                
         market_cap = values[0]
         earnings = values[1]
-        if float(earnings) != 0.:
+        
+        if float(earnings) != 0.0:
             pe = market_cap / earnings
         else:
             pe = np.nan
-    except:
-        market_cap = 0.
-        earnings = 0.
-        pe = np.nan
-    if verbose:
-        print(symbol+' market cap, earnings, P/E = '+str(market_cap)+', '+str(earnings)+', '+str(pe))
-    return pe
+            
+        if verbose:
+            print(f"{symbol} market cap, earnings, P/E = {market_cap}, {earnings}, {pe}")
+        return pe
+        
+    except ValueError as e:
+        # Handle specific parsing errors
+        if "could not convert string to float" in str(e):
+            logger.warning(f"Failed to parse P/E data for {symbol}: {e}")
+            if verbose:
+                print(f"Failed to fetch P/E for {symbol}: {e}")
+        return np.nan
+    except Exception as exc:
+        # Handle all other exceptions gracefully
+        logger.warning(f"Failed to fetch P/E for {symbol}: {exc}")
+        if verbose:
+            print(f"Failed to fetch P/E for {symbol}: {exc}")
+        return np.nan
 
 
 def get_SectorAndIndustry_google( symbol ):
