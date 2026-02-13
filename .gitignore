@@ -45,3 +45,7 @@ pngs/
 *.bak
 *bak*
 purgatory/
+
+# Refactoring support files (temporary)
+refactor_tools/
+.refactor_baseline/
