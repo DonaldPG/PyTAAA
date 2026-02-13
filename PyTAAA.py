@@ -28,7 +28,13 @@ print(sys.path)
 
 try:
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
-except:
+except OSError:
+    # Expected: file not found, permission denied, etc.
+    os.chdir("C:\\Users\\Don\\Py3TAAA")
+except Exception as e:
+    # Safety fallback for unexpected exceptions
+    import logging
+    logging.getLogger(__name__).warning(f"Unexpected exception in os.chdir: {type(e).__name__}: {e}")
     os.chdir("C:\\Users\\Don\\Py3TAAA")
 
 
@@ -46,7 +52,15 @@ stockList = params['stockList']
 quote_server = params['quote_server']
 try:
     ip = GetIP()
-except:
+except (urllib.error.URLError, OSError, TimeoutError) as e:
+    # Expected: network unavailable, timeout, etc.
+    import logging
+    logging.getLogger(__name__).debug(f"Could not get external IP: {e}")
+    ip = '0.0.0.0'
+except Exception as e:
+    # Safety fallback for unexpected exceptions
+    import logging
+    logging.getLogger(__name__).warning(f"Unexpected exception in GetIP: {type(e).__name__}: {e}")
     ip = '0.0.0.0'
 print("Current ip address is ", ip)
 print("An email with updated analysis will be sent to ", params['toaddrs'], " every ", params['pausetime'], " seconds")
@@ -100,7 +114,13 @@ def IntervalTask():
         daily_update_done in locals()
         if hourOfDay <= 15:
             daily_update_done = False
-    except:
+    except NameError:
+        # Expected: variable doesn't exist on first run
+        daily_update_done = False
+    except Exception as e:
+        # Safety fallback for unexpected exceptions
+        import logging
+        logging.getLogger(__name__).warning(f"Unexpected exception checking daily_update_done: {type(e).__name__}: {e}")
         daily_update_done = False
     print("hourOfDay, daily_update_done =", hourOfDay, daily_update_done)
     if quote_server != computerName:
@@ -116,7 +136,14 @@ def IntervalTask():
     # Re-compute stock ranks and weightings
     try:
         last_symbols_text in locals()
-    except:
+    except NameError:
+        # Expected: variable doesn't exist on first run
+        CalcsUpdateCount = 0
+        not_Calculated = True
+    except Exception as e:
+        # Safety fallback for unexpected exceptions
+        import logging
+        logging.getLogger(__name__).warning(f"Unexpected exception checking last_symbols_text: {type(e).__name__}: {e}")
         CalcsUpdateCount = 0
         not_Calculated = True
     if (daily_update_done and CalcsUpdateCount == 0) or not_Calculated:
@@ -150,7 +177,15 @@ def IntervalTask():
     # retrieve cluster labels for holdings
     try:
         holdings_cluster_labels = getClusterForSymbolsList( holdings_symbols )
-    except:
+    except (FileNotFoundError, KeyError, OSError) as e:
+        # Expected: cluster data missing or symbol not found
+        import logging
+        logging.getLogger(__name__).debug(f"Cluster data unavailable: {e}")
+        holdings_cluster_labels = np.zeros((len(holdings_symbols)), 'int')
+    except Exception as e:
+        # Safety fallback for unexpected exceptions
+        import logging
+        logging.getLogger(__name__).warning(f"Unexpected exception in getClusterForSymbolsList: {type(e).__name__}: {e}")
         holdings_cluster_labels = np.zeros((len(holdings_symbols)), 'int')
 
     # calculate holdings value
