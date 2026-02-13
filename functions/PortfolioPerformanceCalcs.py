@@ -16,16 +16,11 @@ plt.rcParams['figure.dpi'] = 150
 plt.rcParams['savefig.dpi'] = 150
 
 from functions.readSymbols import *
-from functions.UpdateSymbols_inHDF5 import (
-    loadQuotes_fromHDF
-)
+from functions.data_loaders import load_quotes_for_analysis
 from functions.allstats import *
 from functions.dailyBacktest import computeDailyBacktest
 from functions.TAfunctions import (
     computeSignal2D,
-    interpolate,
-    cleantobeginning,
-    cleantoend,
     despike_2D,
     recentTrendAndMidTrendChannelFitWithAndWithoutGap,
     sharpeWeightedRank_2D
@@ -46,12 +41,8 @@ def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
 
     ## update quotes from list of symbols
     filename = os.path.join(symbol_directory, symbol_file)
-    print("   . filename for loadQuotes_fromHDF = " + filename)
-    adjClose, symbols, datearray, _, _ = loadQuotes_fromHDF(filename, json_fn)
-    for i in range(adjClose.shape[0]):
-        adjClose[i,:] = interpolate(adjClose[i,:])
-        adjClose[i,:] = cleantobeginning(adjClose[i,:])
-        adjClose[i,:] = cleantoend(adjClose[i,:])
+    print("   . filename for load_quotes_for_analysis = " + filename)
+    adjClose, symbols, datearray = load_quotes_for_analysis(filename, json_fn, verbose=True)
 
     gainloss = np.ones((adjClose.shape[0],adjClose.shape[1]),dtype=float)
     activeCount = np.zeros(adjClose.shape[1],dtype=float)
