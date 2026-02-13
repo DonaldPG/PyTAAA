@@ -1,80 +1,94 @@
-import datetime
-import numpy as np
-import os
-import time
-import urllib.error
-import platform
-from functions.SendEmail import SendEmail
-from functions.WriteWebPage_pi import writeWebPage
-from functions.GetParams import (
-    get_json_params, get_symbols_file,
-    get_holdings, get_status, GetIP, GetEdition,
-    put_status
-)
-from functions.UpdateSymbols_inHDF5 import UpdateHDF_yf
-from functions.CheckMarketOpen import (get_MarketOpenOrClosed,
-                                       CheckMarketOpen)
-from functions.PortfolioPerformanceCalcs import PortfolioPerformanceCalcs
-from functions.quotes_for_list_adjClose import LastQuotesForSymbolList_hdf, get_SectorAndIndustry_google
-from functions.calculateTrades import calculateTrades
-# from functions.quotes_for_list_adjClose import get_Naz100List, get_SP500List
-from functions.readSymbols import get_symbols_changes
-from functions.stock_cluster import getClusterForSymbolsList
-from functions.ftp_quotes import copy_updated_quotes
-import sys
-print(sys.path)
+#!/usr/bin/env python3
+"""Legacy entry point for PyTAAA system.
 
-try:
-    os.chdir(os.path.abspath(os.path.dirname(__file__)))
-except OSError:
-    # Expected: file not found, permission denied, etc.
-    os.chdir("/Users/donaldpg/PyProjects/PyTAAA.master")
-except Exception as e:
+**DEPRECATED:** This file is deprecated and will be removed in a future release.
+
+Use `pytaaa_main.py` with JSON configuration instead:
+    uv run python pytaaa_main.py --json your_config.json
+
+This file is kept for backward compatibility only. When executed, it displays
+a deprecation warning and redirects to the modern JSON-based entry point using
+`pytaaa_generic.json` as the default configuration.
+
+For more information, see:
+- pytaaa_main.py - Modern JSON-based entry point
+- docs/PYTAAA_SYSTEM_SUMMARY_AND_JSON_GUIDE.md - JSON configuration guide
+- docs/ARCHITECTURE.md - System architecture documentation
+"""
+
+import warnings
+import sys
+import os
+
+
+def main():
+    """Main function with deprecation warning and redirect."""
+    warnings.warn(
+        "\n\n"
+        "=" * 70 + "\n"
+        "DEPRECATION WARNING: PyTAAA.py is deprecated\n"
+        "=" * 70 + "\n"
+        "This legacy entry point will be removed in a future release.\n"
+        "\n"
+        "Please use the modern JSON-based entry point instead:\n"
+        "    uv run python pytaaa_main.py --json your_config.json\n"
+        "\n"
+        "Redirecting to pytaaa_main.py with pytaaa_generic.json...\n"
+        "=" * 70 + "\n",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    
+    # Redirect to modern entry point
+    try:
+        from pytaaa_main import main as modern_main
+        
+        # Set up arguments for JSON-based entry point
+        default_json = 'pytaaa_generic.json'
+        if not os.path.exists(default_json):
+            print(f"\nERROR: Default configuration file '{default_json}' not found.")
+            print("Please create a JSON configuration file or specify one:")
+            print("    uv run python pytaaa_main.py --json your_config.json")
+            sys.exit(1)
+        
+        # Update sys.argv to pass JSON file to modern entry point
+        sys.argv = ['pytaaa_main.py', '--json', default_json]
+        
+        # Call modern entry point
+        modern_main()
+        
+    except ImportError as e:
+        print(f"\nERROR: Could not import pytaaa_main: {e}")
+        print("Please ensure pytaaa_main.py exists in the current directory.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\nERROR during execution: {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
     # Safety fallback for unexpected exceptions
     import logging
-    logging.getLogger(__name__).warning(f"Unexpected exception in os.chdir: {type(e).__name__}: {e}")
-    os.chdir("/Users/donaldpg/PyProjects/PyTAAA.master")
+    logging.getLogger(__name__).warning(f"Unexpected exception in GetIP: {type(e).__name__}: {e}")
+    ip = '0.0.0.0'
+print("Current ip address is ", ip)
+print("An email with updated analysis will be sent to ", params['toaddrs'], " every ", params['pausetime'], " seconds")
+print(params['pausetime'], " seconds is ", format(params['pausetime']/60/60., '2.1f'), " hours, or ",  \
+                                            format(params['pausetime']/60/60/24., '3.1f'), " days.")
+print("")
 
 
-def run_pytaaa(json_fn):
-
-    computerName = platform.uname()[1]
-
-    # Get Credentials for sending email
-    params = get_json_params(json_fn, verbose=True)
-    symbols_file = get_symbols_file(json_fn)
-
-    username = str(params['fromaddr']).split("@")[0]
-    emailpassword = str(params['PW'])
-    stockList = params['stockList']
-    # get name of server used to download and serve quotes
-    quote_server = params['quote_server']
-    try:
-        ip = GetIP()
-    except (urllib.error.URLError, OSError, TimeoutError) as e:
-        # Expected: network unavailable, timeout, etc.
-        import logging
-        logging.getLogger(__name__).debug(f"Could not get external IP: {e}")
-        ip = '0.0.0.0'
-    except Exception as e:
-        # Safety fallback for unexpected exceptions
-        import logging
-        logging.getLogger(__name__).warning(f"Unexpected exception in GetIP: {type(e).__name__}: {e}")
-        ip = '0.0.0.0'
-    print("Current ip address is ", ip)
-    print(
-        "An email with updated analysis will be sent to ",
-        params['toaddrs'], " every ", params['pausetime'], " seconds"
-    )
+def IntervalTask():
 
     # keep track of total time to update everything
     start_time_total = time.time()
 
     # set value to compare with cumu_value as test of info content
-    cumu_value_prior = get_status(json_fn)
+    cumu_value_prior = GetStatus()
 
     # Get Holdings from file
-    holdings = get_holdings(json_fn)
+    holdings = GetHoldings()
     print("")
     print("current Holdings :")
     print("stocks: ", holdings['stocks'])
@@ -90,23 +104,21 @@ def run_pytaaa(json_fn):
     hourOfDay = today.hour
     start_time_updateStockList = time.time()
     if hourOfDay <= 17:
-        if stockList == 'Naz100' or stockList == 'SP500':
-            # _, removedTickers, addedTickers = get_SP500List(symbols_file, verbose=True)
-            _, removedTickers, addedTickers = get_symbols_changes(json_fn)
+        if stockList == 'Naz100':
+            _, removedTickers, addedTickers = get_Naz100List(verbose=True)
+        elif stockList == 'SP500':
+            _, removedTickers, addedTickers = get_SP500List(verbose=True)
     else:
         removedTickers, addedTickers = [], []
     elapsed_time_updateStockList = time.time() - start_time_updateStockList
 
-    # symbol_directory = os.path.join(os.getcwd(), "symbols")
+    symbol_directory = os.path.join(os.getcwd(), "symbols")
 
-    # if stockList == 'Naz100':
-    #     symbol_file = "Naz100_Symbols.txt"
-    # elif stockList == 'SP500':
-    #     symbol_file = "SP500_Symbols.txt"
-    # symbols_file = os.path.join( symbol_directory, symbol_file )
-    symbols_file = get_symbols_file(json_fn)
-    symbol_directory, symbol_file = os.path.split(symbols_file)
-
+    if stockList == 'Naz100':
+        symbol_file = "Naz100_Symbols.txt"
+    elif stockList == 'SP500':
+        symbol_file = "SP500_Symbols.txt"
+    symbols_file = os.path.join( symbol_directory, symbol_file )
     start_time = time.time()
     try:
         daily_update_done in locals()
@@ -122,21 +134,14 @@ def run_pytaaa(json_fn):
         daily_update_done = False
     print("hourOfDay, daily_update_done =", hourOfDay, daily_update_done)
     if quote_server != computerName:
-        copy_updated_quotes(json_fn)
-    if not daily_update_done:
-        # Check if quote server has _NO suffix to disable updates
-        if quote_server == computerName and not quote_server.endswith('_NO'):
-            UpdateHDF_yf(symbol_directory, symbols_file, json_fn)
-        elif quote_server.endswith('_NO'):
-            print("Stock quote updating disabled due to _NO suffix in quote_server setting")
+        copy_updated_quotes()
+    if not daily_update_done :
+        if  quote_server == computerName:
+            UpdateHDF_yf( symbol_directory, symbols_file )
         if hourOfDay > 15:
             daily_update_done = True
     marketOpen, lastDayOfMonth = CheckMarketOpen()
     elapsed_time = time.time() - start_time
-
-    print("\n   . inside run_taaa: UpdateHDF_yf completed...")
-    print("  . inside run_taaa: symbol_dirctory" + symbol_directory)
-    print("  . inside run_taaa: symbol_file" + symbol_file)
 
     # Re-compute stock ranks and weightings
     try:
@@ -152,16 +157,11 @@ def run_pytaaa(json_fn):
         CalcsUpdateCount = 0
         not_Calculated = True
     if (daily_update_done and CalcsUpdateCount == 0) or not_Calculated:
-        lastdate, \
-        last_symbols_text, \
-        last_symbols_weight, \
-        last_symbols_price = PortfolioPerformanceCalcs(
-            symbol_directory, symbol_file, params, json_fn,
-        )
+        lastdate, last_symbols_text, last_symbols_weight, last_symbols_price = PortfolioPerformanceCalcs( symbol_directory, symbol_file, params )
         CalcsUpdateCount += 1
 
     # Get updated Holdings from file (ranks are updated)
-    holdings = get_holdings(json_fn)
+    holdings = GetHoldings()
     print("")
     print("current Holdings :")
     print("stocks: ", holdings['stocks'])
@@ -179,18 +179,14 @@ def run_pytaaa(json_fn):
 
     #holdings_currentPrice = LastQuotesForList( holdings_symbols )
     #holdings_currentPrice = LastQuotesForSymbolList( holdings_symbols )
-    holdings_currentPrice = LastQuotesForSymbolList_hdf(
-        holdings_symbols, symbol_file, json_fn
-    )
+    holdings_currentPrice = LastQuotesForSymbolList_hdf( holdings_symbols, symbol_file )
     print("holdings_symbols = ", holdings_symbols)
     print("holdings_shares = ", holdings_shares)
     print("holdings_currentPrice = ", holdings_currentPrice)
 
     # retrieve cluster labels for holdings
     try:
-        holdings_cluster_labels = getClusterForSymbolsList(
-            holdings_symbols, json_fn
-        )
+        holdings_cluster_labels = getClusterForSymbolsList( holdings_symbols )
     except (FileNotFoundError, KeyError, OSError) as e:
         # Expected: cluster data missing or symbol not found
         import logging
@@ -288,13 +284,8 @@ def run_pytaaa(json_fn):
     monthsToHold = params['monthsToHold']
     trade_message = "<br>"
     if 0 == 0 :
-        trade_message = calculateTrades(
-            holdings, last_symbols_text,
-            last_symbols_weight, last_symbols_price, json_fn
-        )
+        trade_message = calculateTrades( holdings, last_symbols_text, last_symbols_weight, last_symbols_price )
         message_text = message_text + trade_message
-    print("   . returned from calculateTrades ...\n\n")
-
 
     edition = GetEdition()
     message_text = message_text+"</table><br></font><p>Lifetime profit = $"+str(lifetimeProfit)+"   = "+format(lifetimeProfit/float(holdings['cumulativecashin'][0]),'6.1%')+"</p>"
@@ -360,13 +351,9 @@ def run_pytaaa(json_fn):
     # If there are changes to Nasdaq100 stock list, add message
 
     # build the updated web page
-    writeWebPage(
-        regulartext, boldtext, headlinetext, lastdate,
-        last_symbols_text, last_symbols_weight, last_symbols_price,
-        json_fn
-    )
+    writeWebPage( regulartext,boldtext,headlinetext,lastdate, last_symbols_text, last_symbols_weight, last_symbols_price )
     # set value to compare with cumu_value as test of info content
-    put_status(cumu_value, json_fn)
+    PutStatus( cumu_value )
 
     # print market status to terminal window
     get_MarketOpenOrClosed()
@@ -379,7 +366,24 @@ Main program
 '''
 if __name__ == '__main__':
 
-    json_folder = os.getcwd()
-    json_fn = os.path.join(json_folder, "pytaaa.json")
+    # Create a scheduler
+    my_scheduler = scheduler.Scheduler()
 
-    run_pytaaa(json_fn)
+    # Add the mail task, a receipt is returned that can be used to drop the task from the scheduler
+    mail_task = scheduler.Task("Interval_Task",
+                          datetime.datetime.now(),
+                          scheduler.every_x_secs(params['pausetime']),
+                          scheduler.RunUntilSuccess( func=IntervalTask, num_tries=1 ) )
+
+    mail_receipt = my_scheduler.schedule_task(mail_task)
+
+    # Once started, the scheduler will identify the next task to run and execute it.
+    my_scheduler.start()
+
+    # Stop the scheduler after runtime
+    from time import sleep
+    sleep(params['runtime'])
+    my_scheduler.halt()
+
+    # Give it a timeout to halt any running tasks and stop gracefully
+    my_scheduler.join(100)

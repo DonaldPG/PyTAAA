@@ -6,7 +6,7 @@ Created on Tue Jun 26 19:06:54 2018
 """
 
 
-def ftp_copy_quotes_hdf(computerName, local_path):
+def ftp_copy_quotes_hdf(computerName, local_path, json_fn=None):
 
     # based on a demo in ptyhon package paramiko.
     #
@@ -15,15 +15,24 @@ def ftp_copy_quotes_hdf(computerName, local_path):
     import sys
     import traceback
     import paramiko
-
-    # local imports
-    current_dir = os.getcwd()
-    os.chdir(os.path.join(local_path, '..'))
-    from functions.GetParams import GetFTPParams
-    os.chdir(current_dir)
+    from functions.GetParams import get_json_ftp_params
 
     # get hostname and credentials
-    ftpparams = GetFTPParams()
+    if json_fn is None:
+        # Try to find JSON config in common locations
+        possible_configs = [
+            'pytaaa_generic.json',
+            os.path.join(os.path.expanduser('~'), 'pyTAAA_data', 'pytaaa_generic.json')
+        ]
+        for config in possible_configs:
+            if os.path.exists(config):
+                json_fn = config
+                break
+        if json_fn is None:
+            print("*** Error: No JSON config file found. Please specify json_fn parameter.")
+            sys.exit(1)
+    
+    ftpparams = get_json_ftp_params(json_fn)
     print("\n\n\n ... ftpparams = ", ftpparams, "\n\n\n")
     hostname = ftpparams['ftpHostname']
     hostIP   = ftpparams['remoteIP']
@@ -83,7 +92,7 @@ def ftp_copy_quotes_hdf(computerName, local_path):
 
 
 #if __name__ == "__main__":
-def copy_updated_quotes():
+def copy_updated_quotes(json_fn=None):
 
     import os
     import platform
@@ -110,7 +119,7 @@ def copy_updated_quotes():
 
         print("  ...on dpg_envy, PyTAAADL_tracker")
         local_folder = 'C:\\Users\\dp\\raspberrypi\\PyTAAADL_tracker\\symbols'
-        ftp_copy_quotes_hdf(computerName, local_folder)
+        ftp_copy_quotes_hdf(computerName, local_folder, json_fn)
 
         '''
         try:
@@ -126,14 +135,14 @@ def copy_updated_quotes():
 
         print("  ...on dpg_envy, pine64 methods, PyTAAA_web")
         local_folder = 'C:\\Users\\Don\\Desktop\\pine_backup\\PyTAAA-analyzestocksPy3\\py3\\symbols'
-        ftp_copy_quotes_hdf(computerName, local_folder)
+        ftp_copy_quotes_hdf(computerName, local_folder, json_fn)
 
 
     elif operatingSystem == 'Linux' and computerName == 'pine64' :
         try:
             print("  ...on pine, PyTAAA-analyzestocks")
             local_folder = 'C:\\Users\\dp\\raspberrypi\\PyTAAADL_tracker\\symbols'
-            ftp_copy_quotes_hdf(computerName, local_folder)
+            ftp_copy_quotes_hdf(computerName, local_folder, json_fn)
         except:
             print("Could not update quotes hdf from pi pyTAAApi...")
 

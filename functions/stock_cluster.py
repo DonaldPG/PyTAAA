@@ -106,7 +106,7 @@ def getClusterForSymbolsList(holdings_symbols, json_fn):
 
     ###############################################################################################
     ###  UpdateHDF5( symbols_directory, symbols_file )  ### assume hdf is already up to date
-    symbols_file = GetSymbolsFile()
+    symbols_file = GetSymbolsFile(json_fn)
     adjClose, quotes_symbols, datearray, _, _ = loadQuotes_fromHDF(symbols_file, json_fn)
 
     print(" ... adjClose.shape = ", adjClose.shape)
