@@ -43,13 +43,8 @@ class TestExceptionHandlingPatterns:
     def test_urllib_error_imported(self):
         """Verify urllib.error is imported in both files."""
         # Check by reading file content rather than importing
-        # (PyTAAA.py has legacy imports that may fail)
+        # (PyTAAA.py is now a deprecation wrapper as of Phase 3, skip it)
         import run_pytaaa
-        
-        pytaaa_path = Path(__file__).parent.parent / "PyTAAA.py"
-        with open(pytaaa_path, 'r') as f:
-            content = f.read()
-        assert 'urllib.error' in content
         
         # run_pytaaa should import successfully
         assert run_pytaaa is not None
@@ -189,22 +184,8 @@ class TestSafetyFallbackPattern:
     
     def test_safety_fallback_present_in_pytaaa(self):
         """Verify PyTAAA.py has safety fallback handlers."""
-        pytaaa_path = Path(__file__).parent.parent / "PyTAAA.py"
-        with open(pytaaa_path, 'r') as f:
-            content = f.read()
-        
-        # Count specific exception handlers
-        specific_handlers = content.count('except OSError:')
-        specific_handlers += content.count('except NameError:')
-        specific_handlers += content.count('except (urllib.error.URLError, OSError, TimeoutError)')
-        specific_handlers += content.count('except (FileNotFoundError, KeyError, OSError)')
-        
-        # Count safety fallbacks
-        safety_fallbacks = content.count('except Exception as e:')
-        
-        # Each try block should have specific handler(s) + safety fallback
-        # We have 5 try blocks in PyTAAA.py, so expect at least 5 safety fallbacks
-        assert safety_fallbacks >= 5, f"Expected at least 5 safety fallbacks, found {safety_fallbacks}"
+        # PyTAAA.py replaced with deprecation wrapper in Phase 3
+        pytest.skip("PyTAAA.py replaced with deprecation wrapper in Phase 3")
     
     def test_safety_fallback_present_in_run_pytaaa(self):
         """Verify run_pytaaa.py has safety fallback handlers."""
@@ -224,13 +205,8 @@ class TestLoggingPresence:
     
     def test_warning_logging_for_unexpected(self):
         """Verify warning-level logging for unexpected exceptions."""
-        pytaaa_path = Path(__file__).parent.parent / "PyTAAA.py"
-        with open(pytaaa_path, 'r') as f:
-            content = f.read()
-        
-        # Should have warning logs in safety fallbacks
-        assert 'logging.getLogger(__name__).warning' in content
-        assert 'Unexpected exception' in content
+        # PyTAAA.py is now a deprecation wrapper (Phase 3), skip this test
+        pytest.skip("PyTAAA.py replaced with deprecation wrapper in Phase 3")
     
     def test_debug_logging_for_expected(self):
         """Verify debug-level logging for expected exceptions."""
@@ -267,16 +243,10 @@ class TestImportIntegrity:
     
     def test_urllib_error_available(self):
         """Verify urllib.error is available in both modules."""
-        # Test run_pytaaa imports successfully
+        # PyTAAA.py replaced with deprecation wrapper in Phase 3, test only run_pytaaa
         import run_pytaaa
         assert hasattr(run_pytaaa, 'run_pytaaa')
-        
+    
         # Verify urllib.error module itself
         import urllib.error
         assert hasattr(urllib.error, 'URLError')
-        
-        # Check PyTAAA.py has urllib.error in imports (via file read)
-        pytaaa_path = Path(__file__).parent.parent / "PyTAAA.py"
-        with open(pytaaa_path, 'r') as f:
-            content = f.read()
-        assert 'import urllib.request, urllib.parse, urllib.error' in content
