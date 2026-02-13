@@ -1,3 +1,25 @@
+"""Configuration parameter extraction from JSON and config files.
+
+This module provides functions to read and extract various configuration
+parameters from JSON configuration files used throughout the PyTAAA system.
+It handles paths, FTP settings, valuation parameters, and status tracking.
+
+Key Functions:
+    get_json_params: Load main valuation parameters from JSON config
+    get_symbols_file: Get path to stock symbols list file
+    get_performance_store: Get path to performance history storage
+    get_webpage_store: Get path to webpage output directory
+    get_web_output_dir: Get web output directory path
+    get_holdings: Extract portfolio holdings from params file
+    get_status: Read cumulative status tracking data
+    put_status: Write cumulative status tracking data
+
+Legacy Functions (deprecated, use JSON-based equivalents):
+    GetParams: Legacy config file reader
+    GetHoldings: Legacy holdings reader
+    GetStatus: Legacy status reader
+"""
+
 import os
 import numpy as np
 import configparser
@@ -5,14 +27,42 @@ import json
 import re
 from typing import Tuple, Dict, Optional
 
-def from_config_file(config_filename):
+
+def from_config_file(config_filename: str):
+    """Load configuration from an INI-style config file.
+    
+    Args:
+        config_filename: Path to configuration file
+        
+    Returns:
+        ConfigParser object with parsed configuration
+        
+    Note:
+        This is a legacy function. New code should use get_json_params().
+    """
     with open(config_filename, "r") as fid:
         config = configparser.ConfigParser(strict=False)
         params = config.read_file(fid)
     return params
 
 
-def get_symbols_file(json_fn):
+def get_symbols_file(json_fn: str) -> str:
+    """Get path to file containing list of stock symbols to process.
+    
+    Reads the JSON configuration to determine which symbol list to use
+    (Naz100 or SP500) and constructs the full path to the symbols file.
+    
+    Args:
+        json_fn: Path to JSON configuration file
+        
+    Returns:
+        str: Full path to symbols file (e.g., "symbols/Naz100_Symbols.txt")
+        
+    Example:
+        >>> symbols_file = get_symbols_file("config/pytaaa_naz100_pine.json")
+        >>> print(symbols_file)
+        '/path/to/symbols/Naz100_Symbols.txt'
+    """
     ######################
     ### get filename where list of symbols is stored
     ######################
@@ -38,7 +88,27 @@ def get_symbols_file(json_fn):
     return symbols_file
 
 
-def get_performance_store(json_fn):
+def get_performance_store(json_fn: str) -> str:
+    """Get path to directory where performance history files are stored.
+    
+    Performance history files (*.params files) contain backtest results,
+    portfolio allocations, and trading history for each model configuration.
+    
+    Args:
+        json_fn: Path to JSON configuration file
+        
+    Returns:
+        str: Path to performance_store directory from config
+        
+    Raises:
+        FileNotFoundError: If json_fn doesn't exist
+        KeyError: If Valuation section or performance_store key missing
+        
+    Example:
+        >>> store = get_performance_store("config/pytaaa_sp500_pine.json")
+        >>> print(store)
+        '/Users/user/pyTAAA_data_static/sp500_pine/data_store'
+    """
     ######################
     ### get folder where performance history files (*.params) are stored
     ######################
@@ -52,7 +122,27 @@ def get_performance_store(json_fn):
     return p_store
 
 
-def get_webpage_store(json_fn):
+def get_webpage_store(json_fn: str) -> str:
+    """Get path to directory where updated webpage files are created.
+    
+    The webpage directory contains HTML files, plots, and other assets
+    for displaying portfolio recommendations and performance metrics.
+    
+    Args:
+        json_fn: Path to JSON configuration file
+        
+    Returns:
+        str: Path to webpage directory from config
+        
+    Raises:
+        FileNotFoundError: If json_fn doesn't exist
+        KeyError: If Valuation section or webpage key missing
+        
+    Example:
+        >>> webpage = get_webpage_store("config/pytaaa_naz100_hma.json")
+        >>> print(webpage)
+        '/Users/user/pyTAAA_data_static/naz100_hma/webpage'
+    """
     ######################
     ### get folder where updated webpage is created
     ######################

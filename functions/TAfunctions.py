@@ -1,7 +1,28 @@
+"""Technical analysis and signal computation functions.
+
+This module contains the core technical analysis functions for PyTAAA,
+including signal generation, ranking algorithms, moving averages, and
+portfolio optimization routines.
+
+Key Functions:
+    computeSignal2D: Generate buy/sell signals from price data
+    sharpeWeightedRank_2D: Rank stocks by Sharpe ratio
+    interpolate: Fill missing values with linear interpolation
+    cleantobeginning: Forward-fill missing values at start of series
+    cleantoend: Backward-fill missing values at end of series
+    strip_accents: Remove accent marks from Unicode text
+    normcorrcoef: Compute normalized correlation coefficient
+    
+The module uses matplotlib for plotting and supports both interactive
+and non-interactive (Agg) backends depending on display availability.
+"""
+
 import os
 import numpy as np
 from numpy import isnan
 import datetime
+from typing import Union
+from numpy.typing import NDArray
 #from yahooFinance import getQuote
 from functions.quotes_adjClose import get_pe
 # from functions.readSymbols import readSymbolList
@@ -14,8 +35,25 @@ if os.environ.get('DISPLAY','') == '':
     matplotlib.use('Agg')
 
 
-def strip_accents(text):
-
+def strip_accents(text: str) -> str:
+    """Remove accent marks and diacritics from Unicode text.
+    
+    Converts text to NFD normalized form, encodes to ASCII (ignoring
+    non-ASCII characters), and decodes back to UTF-8. This is useful
+    for cleaning company names and symbols that may contain accents.
+    
+    Args:
+        text: Input text string (may contain Unicode accents)
+        
+    Returns:
+        str: Text with all accent marks removed
+        
+    Example:
+        >>> strip_accents("Café")
+        'Cafe'
+        >>> strip_accents("Zürich")
+        'Zurich'
+    """
     import unicodedata
     try:
         text = unicode(text, 'utf-8')
@@ -29,9 +67,24 @@ def strip_accents(text):
     return str(text)
 
 
-def normcorrcoef(a,b):
+def normcorrcoef(a: NDArray[np.floating], b: NDArray[np.floating]) -> np.floating:
+    """Compute normalized correlation coefficient between two arrays.
+    
+    This is a more numerically stable version of correlation computation
+    than the standard formula, using numpy's correlate function.
+    
+    Args:
+        a: First numpy array
+        b: Second numpy array (must have same length as a)
+        
+    Returns:
+        float: Normalized correlation coefficient between a and b
+        
+    Note:
+        This differs from numpy.corrcoef in that it uses numpy.correlate
+        for the computation, which can be more stable for certain inputs.
+    """
     return np.correlate(a,b)/np.sqrt(np.correlate(a,a)*np.correlate(b,b))[0]
-
 
 def cleantobeginning(self):
     """
@@ -49,21 +102,36 @@ def cleantobeginning(self):
     return values
 
 
-def interpolate(self, method='linear', verbose=False):
-    """
-    Interpolate missing values (after the first valid value)
-    Parameters
-    ----------
-    method : {'linear'}
-    Interpolation method.
-    Time interpolation works on daily and higher resolution
-    data to interpolate given length of interval
-    Returns
-    -------
-    interpolated : Series
-    from-- https://github.com/wesm/pandas/blob/master/pandas/core/series.py
-    edited to keep only 'linear' method
-    Usage: infill NaN values with linear interpolated values
+def interpolate(self: NDArray[np.floating], method: str = 'linear', verbose: bool = False) -> NDArray[np.floating]:
+    """Interpolate missing values using linear interpolation after the first valid value.
+    
+    This function fills NaN values in a time series array using linear interpolation,
+    but only for values that occur after the first valid (non-NaN) value. Values
+    before the first valid value are left as NaN.
+    
+    The implementation is adapted from pandas Series.interpolate() but simplified
+    to support only linear interpolation method.
+    
+    Args:
+        self: 1D numpy array containing time series data with potential NaN values
+        method: Interpolation method. Only 'linear' is currently supported
+        verbose: If True, print detailed debug information during processing
+        
+    Returns:
+        NDArray[np.floating]: Array with NaN values interpolated (after first valid value)
+        
+    Example:
+        >>> data = np.array([np.nan, np.nan, 1.0, np.nan, 3.0, np.nan])
+        >>> result = interpolate(data)
+        >>> # Result: [nan, nan, 1.0, 2.0, 3.0, 3.0]
+        
+    Note:
+        - Python version < 2.7.12 and >= 2.7.12 use slightly different logic
+        - NaN values at the beginning of the series are preserved
+        - Uses numpy.interp for linear interpolation
+        
+    References:
+        Adapted from https://github.com/wesm/pandas/blob/master/pandas/core/series.py
     """
 
     import sys
@@ -224,11 +292,30 @@ def interpolate(self, method='linear'):
 
 
 #----------------------------------------------
-def cleantobeginning(self):
-    """
-    Copy missing values (to all dates prior the first valid value)
-
-    Usage: infill NaN values at beginning with copy of first valid value
+def cleantobeginning(self: NDArray[np.floating]) -> NDArray[np.floating]:
+    """Forward-fill NaN values at the beginning of a time series.
+    
+    Replaces all NaN values that occur before the first valid (non-NaN) value
+    with a copy of that first valid value. This is useful for cleaning time
+    series data where early historical values may be missing.
+    
+    Args:
+        self: 1D numpy array containing time series data with potential NaN values
+            at the beginning
+            
+    Returns:
+        NDArray[np.floating]: Array with leading NaN values replaced by the first
+            valid value
+            
+    Example:
+        >>> data = np.array([np.nan, np.nan, 100.0, 101.0, np.nan, 102.0])
+        >>> result = cleantobeginning(data)
+        >>> # Result: [100.0, 100.0, 100.0, 101.0, nan, 102.0]
+        
+    Note:
+        - Only affects NaN values before the first valid value
+        - NaN values after the first valid value are preserved
+        - Python version < 2.7.12 and >= 2.7.12 use different implementations
     """
 
     import sys
@@ -279,11 +366,30 @@ def cleantobeginning(self):
 
 #----------------------------------------------
 
-def cleantoend(self):
-    """
-    Copy missing values (to all dates after the last valid value)
-
-    Usage: infill NaN values at end with copy of last valid value
+def cleantoend(self: NDArray[np.floating]) -> NDArray[np.floating]:
+    """Backward-fill NaN values at the end of a time series.
+    
+    Replaces all NaN values that occur after the last valid (non-NaN) value
+    with a copy of that last valid value. This is useful for cleaning time
+    series data where recent values may be missing.
+    
+    Args:
+        self: 1D numpy array containing time series data with potential NaN values
+            at the end
+            
+    Returns:
+        NDArray[np.floating]: Array with trailing NaN values replaced by the last
+            valid value
+            
+    Example:
+        >>> data = np.array([100.0, 101.0, np.nan, 102.0, np.nan, np.nan])
+        >>> result = cleantoend(data)
+        >>> # Result: [100.0, 101.0, nan, 102.0, 102.0, 102.0]
+        
+    Note:
+        - Only affects NaN values after the last valid value
+        - NaN values before the last valid value are preserved
+        - Implemented by reversing array, applying cleantobeginning, then reversing back
     """
     # reverse input 1D array and use cleantobeginning
     reverse = self[::-1]
@@ -292,7 +398,31 @@ def cleantoend(self):
 
 #----------------------------------------------
 
-def clean_signal(array1D,symbol_name):
+def clean_signal(array1D: NDArray[np.floating], symbol_name: str) -> NDArray[np.floating]:
+    """Apply comprehensive cleaning to a price signal time series.
+    
+    Performs a three-step cleaning process on price data:
+    1. Linear interpolation of missing values (after first valid value)
+    2. Forward-fill NaN values at the beginning
+    3. Backward-fill NaN values at the end
+    
+    Args:
+        array1D: 1D numpy array containing price data with potential NaN values
+        symbol_name: Stock symbol or identifier (used for logging)
+        
+    Returns:
+        NDArray[np.floating]: Cleaned price array with all NaN values filled
+        
+    Example:
+        >>> prices = np.array([np.nan, np.nan, 100.0, np.nan, 102.0, np.nan])
+        >>> clean_prices = clean_signal(prices, "AAPL")
+        >>> # Result: [100.0, 100.0, 100.0, 101.0, 102.0, 102.0]
+        
+    Note:
+        - Prints a message if the cleaning process modified any values
+        - The three cleaning steps are applied sequentially
+        - Used to ensure complete price data for technical analysis
+    """
     ### clean input signals (again)
     quotes_before_cleaning = array1D.copy()
     adjClose = interpolate( array1D )
@@ -304,7 +434,31 @@ def clean_signal(array1D,symbol_name):
 
 #----------------------------------------------
 
-def cleanspikes(x,periods=20,stddevThreshold=5.0):
+def cleanspikes(x: NDArray[np.floating], periods: int = 20, stddevThreshold: float = 5.0) -> NDArray[np.floating]:
+    """Remove outlier spikes from price data based on gradient analysis.
+    
+    Identifies and removes price spikes by analyzing forward and backward
+    gain/loss ratios. Points that show abnormal jumps in both directions
+    (indicating a spike) are replaced with NaN.
+    
+    Args:
+        x: 1D numpy array of price data
+        periods: Number of periods for calculating moving statistics (currently unused)
+        stddevThreshold: Number of standard deviations above median to flag as spike
+        
+    Returns:
+        NDArray[np.floating]: Price array with spikes replaced by NaN
+        
+    Example:
+        >>> prices = np.array([100, 101, 200, 102, 103])  # 200 is a spike
+        >>> cleaned = cleanspikes(prices, stddevThreshold=3.0)
+        >>> # Middle spike would be replaced with nan
+        
+    Note:
+        - Computes forward ratio: x[i+1]/x[i] and reverse ratio: x[i]/x[i+1]
+        - Spikes are detected when both forward and reverse ratios exceed threshold
+        - Uses median-normalized deviations to identify outliers
+    """
     # remove outliers from gradient of x (in 2 directions)
     x_clean = np.array(x).copy()
     test = np.zeros(x.shape[0],'float')
@@ -351,7 +505,37 @@ def cleanspikes(x,periods=20,stddevThreshold=5.0):
 
 #----------------------------------------------
 
-def percentileChannel(x,minperiod,maxperiod,incperiod,lowPct,hiPct):
+def percentileChannel(x: NDArray[np.floating], minperiod: int, maxperiod: int, 
+                      incperiod: int, lowPct: float, hiPct: float) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
+    """Calculate percentile-based price channels for 1D time series.
+    
+    Computes upper and lower price channels by averaging percentiles across
+    multiple lookback periods. This creates a smoothed envelope around the
+    price data.
+    
+    Args:
+        x: 1D numpy array of price data
+        minperiod: Minimum lookback period for channel calculation
+        maxperiod: Maximum lookback period for channel calculation
+        incperiod: Increment step between periods
+        lowPct: Lower percentile value (e.g., 10 for 10th percentile)
+        hiPct: Upper percentile value (e.g., 90 for 90th percentile)
+        
+    Returns:
+        tuple containing:
+            - minchannel: Lower channel values (average of low percentiles)
+            - maxchannel: Upper channel values (average of high percentiles)
+            
+    Example:
+        >>> prices = np.array([100, 102, 101, 105, 103, 106])
+        >>> low_ch, high_ch = percentileChannel(prices, 2, 5, 1, 20, 80)
+        >>> # Returns 20th and 80th percentile channels
+        
+    Note:
+        - Channels are averaged across all periods from minperiod to maxperiod
+        - For early data points with insufficient history, uses available data
+        - Useful for identifying support and resistance levels
+    """
     periods = np.arange(minperiod,maxperiod,incperiod)
     minchannel = np.zeros(len(x),dtype=float)
     maxchannel = np.zeros(len(x),dtype=float)
@@ -371,7 +555,37 @@ def percentileChannel(x,minperiod,maxperiod,incperiod,lowPct,hiPct):
         maxchannel[i] /= divisor
     return minchannel,maxchannel
 #----------------------------------------------
-def percentileChannel_2D(x,minperiod,maxperiod,incperiod,lowPct,hiPct):
+def percentileChannel_2D(x: NDArray[np.floating], minperiod: int, maxperiod: int, 
+                         incperiod: int, lowPct: float, hiPct: float) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
+    """Calculate percentile-based price channels for 2D multi-stock data.
+    
+    Computes upper and lower price channels for multiple stocks simultaneously
+    by averaging percentiles across multiple lookback periods. Each stock gets
+    its own channel calculated independently.
+    
+    Args:
+        x: 2D numpy array of shape (n_stocks, n_dates) containing price data
+        minperiod: Minimum lookback period for channel calculation
+        maxperiod: Maximum lookback period for channel calculation
+        incperiod: Increment step between periods
+        lowPct: Lower percentile value (e.g., 10 for 10th percentile)
+        hiPct: Upper percentile value (e.g., 90 for 90th percentile)
+        
+    Returns:
+        tuple containing:
+            - minchannel: 2D array of lower channel values
+            - maxchannel: 2D array of upper channel values
+            
+    Example:
+        >>> prices = np.random.rand(10, 100)  # 10 stocks, 100 days
+        >>> low_ch, high_ch = percentileChannel_2D(prices, 5, 20, 5, 20, 80)
+        >>> # Returns channels for all 10 stocks
+        
+    Note:
+        - Prints diagnostic information about channel parameters and data range
+        - For early data points with insufficient history, uses available data
+        - More efficient than calling percentileChannel in a loop
+    """
     print(" ... inside percentileChannel_2D ...  x min,mean,max = ", x.min(),x.mean(),x.max())
     periods = np.arange(minperiod,maxperiod,incperiod)
     minchannel = np.zeros( (x.shape[0],x.shape[1]), dtype=float)
@@ -398,7 +612,35 @@ def percentileChannel_2D(x,minperiod,maxperiod,incperiod,lowPct,hiPct):
 
 
 #----------------------------------------------
-def dpgchannel(x,minperiod,maxperiod,incperiod):
+def dpgchannel(x: NDArray[np.floating], minperiod: int, maxperiod: int, 
+               incperiod: int) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
+    """Calculate min/max price channels for 1D time series (DPG method).
+    
+    Computes upper and lower price channels by averaging minimum and maximum
+    values across multiple lookback periods. The DPG (dynamic price channel)
+    method creates an envelope that tracks price extremes.
+    
+    Args:
+        x: 1D numpy array of price data
+        minperiod: Minimum lookback period for channel calculation
+        maxperiod: Maximum lookback period for channel calculation
+        incperiod: Increment step between periods
+        
+    Returns:
+        tuple containing:
+            - minchannel: Lower channel values (average of minimums)
+            - maxchannel: Upper channel values (average of maximums)
+            
+    Example:
+        >>> prices = np.array([100, 102, 101, 105, 103, 106])
+        >>> low_ch, high_ch = dpgchannel(prices, 2, 5, 1)
+        >>> # Returns min/max channels averaged over periods 2-5
+        
+    Note:
+        - Channels are averaged across all periods from minperiod to maxperiod
+        - For early data points with insufficient history, uses available data
+        - Named 'dpg' for Donald P. Galanis (original developer)
+    """
     periods = np.arange(minperiod,maxperiod,incperiod)
     minchannel = np.zeros(len(x),dtype=float)
     maxchannel = np.zeros(len(x),dtype=float)
@@ -418,7 +660,35 @@ def dpgchannel(x,minperiod,maxperiod,incperiod):
         maxchannel[i] /= divisor
     return minchannel,maxchannel
 #----------------------------------------------
-def dpgchannel_2D(x,minperiod,maxperiod,incperiod):
+def dpgchannel_2D(x: NDArray[np.floating], minperiod: int, maxperiod: int, 
+                  incperiod: int) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
+    """Calculate min/max price channels for 2D multi-stock data (DPG method).
+    
+    Computes upper and lower price channels for multiple stocks simultaneously
+    by averaging minimum and maximum values across multiple lookback periods.
+    Each stock gets its own channel calculated independently.
+    
+    Args:
+        x: 2D numpy array of shape (n_stocks, n_dates) containing price data
+        minperiod: Minimum lookback period for channel calculation
+        maxperiod: Maximum lookback period for channel calculation
+        incperiod: Increment step between periods
+        
+    Returns:
+        tuple containing:
+            - minchannel: 2D array of lower channel values
+            - maxchannel: 2D array of upper channel values
+            
+    Example:
+        >>> prices = np.random.rand(10, 100)  # 10 stocks, 100 days
+        >>> low_ch, high_ch = dpgchannel_2D(prices, 5, 20, 5)
+        >>> # Returns min/max channels for all 10 stocks
+        
+    Note:
+        - More efficient than calling dpgchannel in a loop
+        - For early data points with insufficient history, uses available data
+        - Named 'dpg' for Donald P. Galanis (original developer)
+    """
     periods = np.arange(minperiod,maxperiod,incperiod)
     minchannel = np.zeros( (x.shape[0],x.shape[1]), dtype=float)
     maxchannel = np.zeros( (x.shape[0],x.shape[1]), dtype=float)
@@ -1093,7 +1363,28 @@ def textmessageOutsideTrendChannel(symbols, adjClose, json_fn):
 
 #----------------------------------------------
 
-def SMA(x,periods):
+def SMA(x: NDArray[np.floating], periods: int) -> NDArray[np.floating]:
+    """Calculate Simple Moving Average for 1D time series.
+    
+    Computes the simple moving average (arithmetic mean) over a rolling
+    window of specified length.
+    
+    Args:
+        x: 1D numpy array of price or indicator data
+        periods: Number of periods (window size) for moving average
+        
+    Returns:
+        NDArray[np.floating]: Array of simple moving average values
+        
+    Example:
+        >>> prices = np.array([100, 102, 101, 105, 103])
+        >>> sma_3 = SMA(prices, 3)
+        >>> # Returns 3-period moving average
+        
+    Note:
+        - Early values (before window fills) use all available data
+        - Each point computes mean from max(0, i-periods) to i+1
+    """
     SMA = np.zeros( (x.shape[0]), dtype=float)
     for i in range( x.shape[0] ):
         minx = np.max((0,i-periods))
@@ -1101,8 +1392,37 @@ def SMA(x,periods):
     return SMA
 
 
-def hma(x, period):
-    """Compute Hull moving average"""
+def hma(x: NDArray[np.floating], period: int) -> NDArray[np.floating]:
+    """Compute Hull Moving Average (HMA) for 2D multi-stock data.
+    
+    The Hull Moving Average is a sophisticated moving average that reduces lag
+    while improving smoothness. It uses weighted moving averages and a square
+    root period for the final smoothing.
+    
+    Formula: HMA = WMA(2*WMA(n/2) - WMA(n), sqrt(n))
+    where WMA is weighted moving average and n is the period.
+    
+    Args:
+        x: 2D numpy array of shape (n_stocks, n_dates) containing price data
+        period: Period length for HMA calculation
+        
+    Returns:
+        NDArray[np.floating]: 2D array of HMA values with same shape as input
+        
+    Example:
+        >>> prices = np.random.rand(10, 100)  # 10 stocks, 100 days
+        >>> hma_50 = hma(prices, 50)
+        >>> # Returns 50-period HMA for all stocks
+        
+    Note:
+        - Converts numpy array to pandas DataFrame for rolling window operations
+        - Uses weighted moving average with linearly increasing weights
+        - Final smoothing uses sqrt(period) as the window
+        - More responsive than SMA while filtering noise better than EMA
+        
+    References:
+        Hull, Alan (2005). "Hull Moving Average". Alanhull.com
+    """
     # convert ndarray to pandas dataframe
     # x should have shape x[num_companies, n_days]
     import pandas as pd
@@ -1172,7 +1492,29 @@ def hma_pd(data, period):
 
 #----------------------------------------------
 
-def SMS(x,periods):
+def SMS(x: NDArray[np.floating], periods: int) -> NDArray[np.floating]:
+    """Calculate Simple Moving Sum for 1D time series.
+    
+    Computes the sum over a rolling window of specified length. This is
+    the non-averaged version of SMA, useful for accumulation calculations.
+    
+    Args:
+        x: 1D numpy array of values to sum
+        periods: Number of periods (window size) for moving sum
+        
+    Returns:
+        NDArray[np.floating]: Array of simple moving sum values
+        
+    Example:
+        >>> values = np.array([1, 2, 3, 4, 5])
+        >>> sms_3 = SMS(values, 3)
+        >>> # Returns cumulative 3-period sums: [1, 3, 6, 9, 12]
+        
+    Note:
+        - For each point i, returns sum(x[max(0,i-periods):i+1])
+        - Early values use all available data
+        - Related to SMA but without division by window size
+    """
     _SMS = np.zeros( (x.shape[0]), dtype=float)
     for i in range( x.shape[0] ):
         minx = np.max((0,i-periods))
@@ -1180,7 +1522,30 @@ def SMS(x,periods):
     return _SMS
 
 
-def SMA_2D(x,periods):
+def SMA_2D(x: NDArray[np.floating], periods: int) -> NDArray[np.floating]:
+    """Calculate Simple Moving Average for 2D multi-stock data.
+    
+    Computes the simple moving average for multiple stocks simultaneously.
+    Each stock's moving average is calculated independently along the time axis.
+    This version processes columns (dates) rather than rows.
+    
+    Args:
+        x: 2D numpy array of shape (n_stocks, n_dates) containing price/indicator data
+        periods: Number of periods (window size) for moving average
+        
+    Returns:
+        NDArray[np.floating]: 2D array of simple moving average values
+        
+    Example:
+        >>> prices = np.random.rand(10, 100)  # 10 stocks, 100 days
+        >>> sma_20 = SMA_2D(prices, 20)
+        >>> # Returns 20-day SMA for all 10 stocks
+        
+    Note:
+        - Loops over dates (axis 1) computing mean across stocks
+        - More efficient than calling SMA in a loop
+        - Early values use partial windows (before window fills)
+    """
     SMA = np.zeros( (x.shape[0],x.shape[1]), dtype=float)
     for i in range( x.shape[1] ):
         minx = np.max((0,i-periods))
@@ -1270,7 +1635,30 @@ def despike_2D(x,periods,stddevThreshold=5.0):
 
 #----------------------------------------------
 
-def MoveMax_2D(x,periods):
+def MoveMax_2D(x: NDArray[np.floating], periods: int) -> NDArray[np.floating]:
+    """Calculate moving maximum for 2D multi-stock data.
+    
+    Computes the maximum value over a rolling window for multiple stocks
+    simultaneously. Each stock's moving maximum is calculated independently.
+    
+    Args:
+        x: 2D numpy array of shape (n_stocks, n_dates) containing price/indicator data
+        periods: Number of periods (window size) for moving maximum
+        
+    Returns:
+        NDArray[np.floating]: 2D array of moving maximum values
+        
+    Example:
+        >>> prices = np.random.rand(10, 100)  # 10 stocks, 100 days
+        >>> move_max = MoveMax_2D(prices, 20)
+        >>> # Returns 20-day rolling maximum for all 10 stocks
+        
+    Note:
+        - For each date i, returns max(x[:,max(0,i-periods):i+1])
+        - Early values use all available data
+        - Useful for tracking recent highs across multiple stocks
+        - More efficient than calling MoveMax in a loop
+    """
     MMax = np.zeros( (x.shape[0],x.shape[1]), dtype=float)
     for i in range( x.shape[1] ):
         minx = max(0,i-periods)
@@ -1280,7 +1668,28 @@ def MoveMax_2D(x,periods):
 
 #----------------------------------------------
 
-def MoveMax(x,periods):
+def MoveMax(x: NDArray[np.floating], periods: int) -> NDArray[np.floating]:
+    """Calculate moving maximum for 1D time series.
+    
+    Computes the maximum value over a rolling window of specified length.
+    
+    Args:
+        x: 1D numpy array of price or indicator data
+        periods: Number of periods (window size) for moving maximum
+        
+    Returns:
+        NDArray[np.floating]: Array of moving maximum values
+        
+    Example:
+        >>> prices = np.array([100, 102, 101, 105, 103])
+        >>> move_max = MoveMax(prices, 3)
+        >>> # Returns highest value in each 3-period window
+        
+    Note:
+        - For each point i, returns max(x[max(0,i-periods):i+1])
+        - Early values use all available data
+        - Useful for tracking recent highs in technical analysis
+    """
     MMax = np.zeros( (x.shape[0]), dtype=float)
     for i in range( x.shape[0] ):
         minx = max(0,i-periods)
@@ -1342,7 +1751,52 @@ def move_sharpe_2D(adjClose,dailygainloss,period):
 
 #----------------------------------------------
 
-def computeSignal2D( adjClose, gainloss, params ):
+def computeSignal2D(adjClose: NDArray[np.floating], gainloss: NDArray[np.floating], 
+                    params: dict) -> Union[NDArray[np.floating], tuple[NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]]]:
+    """Compute buy/sell signals for multiple stocks using technical indicators.
+    
+    This is a core function that generates trading signals (1=buy, 0=sell) for each
+    stock on each date based on price trends. Supports multiple signal generation
+    methods: simple moving averages (SMAs), Hull moving averages (HMAs), min/max
+    channels, and percentile channels.
+    
+    Args:
+        adjClose: 2D array of shape (n_stocks, n_dates) with adjusted closing prices
+        gainloss: 2D array of shape (n_stocks, n_dates) with daily gain/loss ratios
+        params: Dictionary containing signal parameters including:
+            - MA1 (int): Longest moving average period
+            - MA2 (int): Shortest moving average period
+            - MA2offset (int): Offset for middle moving average
+            - MA2factor (float): Multiplier for longest MA
+            - uptrendSignalMethod (str): Method name ('SMAs', 'HMAs', 
+              'minmaxChannels', 'percentileChannels')
+            - narrowDays, mediumDays, wideDays (list): Channel periods
+            - lowPct, hiPct (float): Percentile levels for channels
+            
+    Returns:
+        For 'SMAs', 'HMAs', 'minmaxChannels': NDArray of shape (n_stocks, n_dates)
+            with 1.0 for buy signal, 0.0 for sell signal
+        For 'percentileChannels': Tuple of (signal2D, lowChannel, hiChannel)
+        
+    Example:
+        >>> adjClose = np.random.rand(100, 500)  # 100 stocks, 500 days
+        >>> gainloss = np.ones_like(adjClose)
+        >>> params = {'MA1': 200, 'MA2': 50, 'MA2offset': 50, 
+        ...           'MA2factor': 1.0, 'uptrendSignalMethod': 'SMAs'}
+        >>> signals = computeSignal2D(adjClose, gainloss, params)
+        >>> # Returns 2D array of buy/sell signals
+        
+    Note:
+        - Stocks with NaN prices on last date get signal set to 0
+        - Constant prices at series beginning get signal set to 0
+        - SMAs method: Signal=1 if price > long MA OR (price > min(short,mid) AND short rising)
+        - HMAs method: Same logic as SMAs but uses Hull Moving Averages
+        - minmaxChannels: Signal=1 if combined medium+wide channel signals > 0
+        - percentileChannels: Signal=1 on crossing above low channel or above high channel
+        
+    Raises:
+        No explicit raises, but will fail if params dict is missing required keys
+    """
 
     print(" ... inside computeSignal2D ... ")
     print(" params = ",params)
@@ -1479,7 +1933,29 @@ def computeSignal2D( adjClose, gainloss, params ):
 
 #----------------------------------------------
 
-def nanrms(x, axis=None):
+def nanrms(x: NDArray[np.floating], axis: Union[int, None] = None) -> Union[float, NDArray[np.floating]]:
+    """Calculate root mean square ignoring NaN values.
+    
+    Computes the RMS (root mean square) of an array while safely handling
+    NaN values by excluding them from the calculation.
+    
+    Args:
+        x: Numpy array (any shape) containing data with potential NaN values
+        axis: Axis along which to compute RMS. If None, compute over flattened array
+        
+    Returns:
+        float or NDArray: Root mean square value(s)
+        
+    Example:
+        >>> data = np.array([1.0, 2.0, np.nan, 3.0])
+        >>> rms = nanrms(data)
+        >>> # Returns sqrt(mean([1, 4, 9])) = sqrt(14/3)
+        
+    Note:
+        - Uses bottleneck.nanmean for efficient NaN handling
+        - RMS = sqrt(mean(x^2))
+        - Useful for volatility and risk calculations
+    """
     from bottleneck import nanmean
     return np.sqrt(nanmean(x**2, axis=axis))
 
@@ -2581,11 +3057,92 @@ def move_martin_2D(adjClose,period):
 
 
 def sharpeWeightedRank_2D(
-        json_fn, datearray,symbols,adjClose,signal2D,signal2D_daily,
-        LongPeriod,rankthreshold,riskDownside_min,riskDownside_max,
-        rankThresholdPct,stddevThreshold=4.,
-        is_backtest=True, makeQCPlots=False, verbose=False
-):
+        json_fn: str, 
+        datearray: NDArray[np.datetime64],
+        symbols: list[str],
+        adjClose: NDArray[np.floating],
+        signal2D: NDArray[np.floating],
+        signal2D_daily: NDArray[np.floating],
+        LongPeriod: int,
+        rankthreshold: int,
+        riskDownside_min: float,
+        riskDownside_max: float,
+        rankThresholdPct: float,
+        stddevThreshold: float = 4.,
+        is_backtest: bool = True, 
+        makeQCPlots: bool = False, 
+        verbose: bool = False
+) -> tuple:
+    """Rank stocks by Sharpe ratio and performance metrics for portfolio selection.
+    
+    This is one of the most critical functions in PyTAAA. It ranks stocks based on
+    risk-adjusted returns (Sharpe ratio) over a lookback period, applies uptrend
+    signals, and selects the top performers for portfolio allocation. Also tracks
+    uptrending stock counts and can generate quality control plots.
+    
+    The function:
+    1. Removes price spikes from data
+    2. Calculates daily and period returns
+    3. Applies trend signals to filter stocks
+    4. Ranks stocks by performance metrics
+    5. Selects top performers for portfolio
+    6. Tracks and logs daily uptrending stock counts
+    
+    Args:
+        json_fn: Path to JSON configuration file containing parameters
+        datearray: 1D array of dates corresponding to price data
+        symbols: List of stock ticker symbols
+        adjClose: 2D array (n_stocks, n_dates) of adjusted closing prices
+        signal2D: 2D array (n_stocks, n_dates) of trend signals (1=uptrend, 0=downtrend)
+        signal2D_daily: 2D array used for daily uptrending count tracking
+        LongPeriod: Lookback period in days for performance calculation
+        rankthreshold: Number of top-ranked stocks to select for portfolio
+        riskDownside_min: Minimum acceptable downside risk level
+        riskDownside_max: Maximum acceptable downside risk level
+        rankThresholdPct: Percentage threshold for rank-based selection
+        stddevThreshold: Number of standard deviations for spike detection (default 4.0)
+        is_backtest: Whether this is a backtest run (affects certain behaviors)
+        makeQCPlots: Whether to generate quality control diagnostic plots
+        verbose: Whether to print detailed debug information
+        
+    Returns:
+        tuple containing multiple portfolio metrics and selections (exact structure
+        depends on the full implementation - returns various arrays and dataframes
+        related to stock rankings, weights, and performance metrics)
+        
+    Example:
+        >>> # Typically called from main portfolio optimization routine
+        >>> results = sharpeWeightedRank_2D(
+        ...     json_fn=\"config.json\",
+        ...     datearray=dates,
+        ...     symbols=[\"AAPL\", \"MSFT\", \"GOOGL\"],
+        ...     adjClose=price_data,
+        ...     signal2D=signals,
+        ...     signal2D_daily=daily_signals,
+        ...     LongPeriod=60,
+        ...     rankthreshold=10,
+        ...     riskDownside_min=0.8,
+        ...     riskDownside_max=1.2,
+        ...     rankThresholdPct=0.1
+        ... )
+        
+    Note:
+        - Uses despike_2D to remove outliers before calculations
+        - Tracks daily uptrending stock counts in a text file
+        - Applies signal2D as a filter (non-uptrending stocks get 1.0 gain/loss)
+        - Uses bottleneck.rankdata for efficient ranking
+        - Prints extensive diagnostic information during execution
+        - Reads additional parameters from JSON configuration file
+        
+    Raises:
+        FileNotFoundError: If JSON configuration file not found
+        KeyError: If required parameters missing from JSON config
+        
+    See Also:
+        computeSignal2D: Generates the signal2D input
+        despike_2D: Used internally for outlier removal
+        MAA_WeightedRank_2D: Alternative ranking method
+    """
 
     # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
     # rankthreshold --     # select this many funds with best recent performance
