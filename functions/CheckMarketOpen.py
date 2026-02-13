@@ -1,14 +1,35 @@
+"""Market status checking utilities.
+
+This module provides functions to determine if US stock markets are currently
+open or closed, accounting for trading hours, weekends, and holidays.
+
+Functions:
+    get_MarketOpenOrClosed: Check current market status
+    CheckMarketOpen: Check market status and last trading day of month
+"""
+
 import datetime
+from typing import Tuple
 
 
-#############################################################################
-# Perform a check to see if the stock market is open.
-# Purpose is to stop calculating and sending emails when nothing has changed.
-#############################################################################
-
-
-def get_MarketOpenOrClosed():
-
+def get_MarketOpenOrClosed() -> str:
+    """Check if US stock markets are currently open or closed.
+    
+    Uses Eastern Time timezone and the US holidays calendar to determine
+    market status based on time of day, day of week, and holidays.
+    
+    Market hours: Monday-Friday, 9:30 AM - 4:00 PM ET
+    Closed on: Weekends and US federal holidays
+    
+    Returns:
+        str: " Markets are open" if currently within trading hours,
+             " Markets are closed" otherwise.
+             
+    Example:
+        >>> status = get_MarketOpenOrClosed()
+        >>> print(status)
+        ' Markets are closed'
+    """
     import datetime, pytz, holidays
 
     tz = pytz.timezone('US/Eastern')
@@ -37,7 +58,29 @@ def get_MarketOpenOrClosed():
     return status
 
 
-def CheckMarketOpen() :
+def CheckMarketOpen() -> Tuple[bool, bool]:
+    """Check if markets are open and if today is last trading day of month.
+    
+    Performs two checks:
+    1. Whether markets are currently open (based on get_MarketOpenOrClosed)
+    2. Whether today is the last trading day of the month (after 1 PM)
+    
+    The last trading day check accounts for weekends by looking ahead to
+    determine if the next trading day falls in a different month.
+    
+    Returns:
+        tuple: (marketOpen, lastDayOfMonth)
+            marketOpen (bool): True if markets are open, False otherwise
+            lastDayOfMonth (bool): True if today is last trading day of month
+                (after 1 PM), False otherwise
+                
+    Example:
+        >>> is_open, is_month_end = CheckMarketOpen()
+        >>> if is_open:
+        ...     print("Markets are open")
+        >>> if is_month_end:
+        ...     print("Last trading day of month")
+    """
 
     today = datetime.datetime.now()
     hourOfDay = today.hour
