@@ -34,6 +34,22 @@ if os.environ.get('DISPLAY','') == '':
     print('no display found. Using non-interactive Agg backend')
     matplotlib.use('Agg')
 
+#############################################################################
+# NOTE: Phase 5 Refactoring - Many functions have been extracted to functions/ta/*
+# 
+# The following functions are now available in modular form:
+# - functions/ta/utils.py: strip_accents, normcorrcoef, nanrms
+# - functions/ta/data_cleaning.py: interpolate, cleantobeginning, cleantoend, etc.
+# - functions/ta/moving_averages.py: SMA, SMA_2D, hma, MoveMax, MoveMin, etc.
+# - functions/ta/channels.py: percentileChannel, dpgchannel (both 1D and 2D)
+# - functions/ta/signal_generation.py: computeSignal2D
+# - functions/ta/rolling_metrics.py: move_sharpe_2D, move_martin_2D, etc.
+#
+# For backward compatibility, all functions remain defined in this file.
+# New code should import from functions.ta.* modules for better organization.
+# Future phases will remove duplicate definitions from this file.
+#############################################################################
+
 
 def strip_accents(text: str) -> str:
     """Remove accent marks and diacritics from Unicode text.
