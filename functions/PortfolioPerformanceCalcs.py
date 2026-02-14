@@ -326,223 +326,25 @@ def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
     ########################################################################
     ### 1. make plots for all stocks of adjusted price history
     ########################################################################
-
-    import functions.ystockquote as ysq
-    # import matplotlib
-    # matplotlib.use('Agg')
-    # from matplotlib import pylab as plt
+    
+    # Phase 4b1: Plot generation extracted to output_generators.py
+    from functions.output_generators import generate_portfolio_plots
+    
     filepath = get_webpage_store(json_fn)
-    # filepath = os.path.join(json_dir, "pyTAAA_web")
-
-    today = datetime.datetime.now()
-    hourOfDay = today.hour
-
-    if hourOfDay >= 1  or 11<hourOfDay<13:
-        for ii in range( len(datearray) ):
-            if datearray[ii].year > datearray[ii-1].year and datearray[ii].year == 2013:
-                firstdate_index = ii
-                break
-        for i in range( len(symbols) ) :
-            # get 'despiked' quotes for this symbol
-
-            # check recency of plot file and skip if less than 20 hours old
-            # Get the modification time in seconds since the epoch
-            plotfilepath = os.path.join(
-                filepath, "0_"+symbols[i]+".png"
-            )
-            if os.path.isfile(plotfilepath):
-                mtime = datetime.datetime.fromtimestamp(
-                    os.path.getmtime(plotfilepath)
-                )
-                # Convert to elpased time in hours
-                # modified_time = (datetime.datetime.now() - mtime).seconds
-                # modified_hours = modified_time / (60. * 60.)
-                modified_time = (datetime.datetime.now() - mtime)
-                modified_hours = modified_time.days * 24 + modified_time.seconds / 3600
-                if modified_hours < 20.0:
-                    continue
-
-            quotes = adjClose[i,:].copy()
-            quotes = quotes.reshape(1,len(quotes))
-            quotes_despike = despike_2D( quotes, LongPeriod, stddevThreshold=stddevThreshold )
-            # '''
-            # try:
-            #     plt.clf()
-            #     plt.grid(True)
-            #     plt.plot(datearray,adjClose[i,:])
-            #     plt.plot(datearray,signal2D[i,:]*adjClose[i,-1],lw=.2)
-            #     plt.plot(datearray,quotes_despike[0,:])
-            #     if params['uptrendSignalMethod'] == 'percentileChannels':
-            #         plt.plot(datearray,lowChannel[i,:],'m-')
-            #         plt.plot(datearray,hiChannel[i,:],'m-')
-            #     plot_text = str(adjClose[i,-7:])
-            #     plt.text(datearray[50],0,plot_text)
-            #     # put text line with most recent date at bottom of plot
-            #     # - get 7.5% of x-scale and y-scale for text location
-            #     x_range = datearray[-1] - datearray[0]
-            #     text_x = datearray[0] + datetime.timedelta( x_range.days / 20. )
-            #     text_y = ( np.max(adjClose[i,:]) - np.min(adjClose[i,:]) )* .085 + np.min(adjClose[i,:])
-            #     plt.text( text_x,text_y, "most recent value from "+str(datearray[-1])+"\nplotted at "+today.strftime("%A, %d. %B %Y %I:%M%p")+"\nvalue = "+str(adjClose[i,-1]), fontsize=8 )
-            #     plt.title(symbols[i]+"\n"+ysq.get_company_name(symbols[i]))
-            #     plotfilepath = os.path.join( filepath, "0_"+symbols[i]+".png" )
-            #     print " ...inside PortfolioPerformancealcs... plotfilepath = ", plotfilepath
-            #     plt.savefig( plotfilepath, format='png' )
-            # except:
-            #     pass
-            # '''
-            plt.clf()
-            plt.grid(True)
-            plt.plot(datearray,adjClose[i,:])
-            plt.plot(datearray,signal2D[i,:]*adjClose[i,-1],lw=.2)
-            despiked_quotes = quotes_despike[0,:]
-            number_nans = despiked_quotes[np.isnan(despiked_quotes)].shape[0]
-            if number_nans == 0:
-                plt.plot(datearray,quotes_despike[0,:])
-            if params['uptrendSignalMethod'] == 'percentileChannels':
-                plt.plot(datearray,lowChannel[i,:],'m-')
-                plt.plot(datearray,hiChannel[i,:],'m-')
-            plot_text = str(adjClose[i,-7:])
-            plt.text(datearray[50],0,plot_text)
-            # put text line with most recent date at bottom of plot
-            # - get 7.5% of x-scale and y-scale for text location
-            x_range = datearray[-1] - datearray[0]
-            text_x = datearray[0] + datetime.timedelta( x_range.days / 20. )
-            adjClose_noNaNs = adjClose[i,:].copy()
-            adjClose_noNaNs = adjClose_noNaNs[~np.isnan(adjClose_noNaNs)]
-            text_y = ( np.max(adjClose_noNaNs) - np.min(adjClose_noNaNs) )* .085 + np.min(adjClose_noNaNs)
-            plt.text( text_x,text_y, "most recent value from "+str(datearray[-1])+"\nplotted at "+today.strftime("%A, %d. %B %Y %I:%M%p")+"\nvalue = "+str(adjClose[i,-1]), fontsize=8 )
-            plt.title(symbols[i]+"\n"+ysq.get_company_name(symbols[i]))
-            plt.yscale('log')
-            plotfilepath = os.path.join( filepath, "0_"+symbols[i]+".png" )
-            print(" ...inside PortfolioPerformancealcs... plotfilepath = ", plotfilepath)
-            plt.savefig( plotfilepath, format='png' )
-
-
-        for i in range( len(symbols) ) :
-
-            # check recency of plot file and skip if less than 20 hours old
-            # Get the modification time in seconds since the epoch
-            plotfilepath = os.path.join(
-                filepath, "0_recent_"+symbols[i]+".png"
-            )
-            if os.path.isfile(plotfilepath):
-                mtime = datetime.datetime.fromtimestamp(
-                    os.path.getmtime(plotfilepath)
-                )
-                # Convert to elpased time in hours
-                # modified_time = (datetime.datetime.now() - mtime).seconds
-                # modified_hours = modified_time / (60. * 60.)
-                modified_time = (datetime.datetime.now() - mtime)
-                modified_hours = modified_time.days * 24 + modified_time.seconds / 3600
-                if modified_hours < 20.0:
-                    continue
-            # mtime = datetime.datetime.fromtimestamp(
-            #     os.path.getmtime(plotfilepath)
-            # )
-            # # Convert to elpased time in hours
-            # modified_time = (datetime.datetime.now() - mtime).seconds
-            # modified_hours = modified_time / (60. * 60.)
-            # if modified_hours < 20.0:
-            #     continue
-
-            # fit short-term recent trend channel for plotting
-            quotes = adjClose[i,:].copy()
-            quotes = quotes.reshape(1,len(quotes))
-            quotes_despike = despike_2D( quotes, LongPeriod, stddevThreshold=stddevThreshold )
-            # re-scale to have same value at beginning of plot
-            quotes_despike *= quotes[0,firstdate_index]/quotes_despike[0,firstdate_index]
-
-            # '''
-            # upperFit, lowerFit = recentChannelFit( adjClose[i,:],
-            #                                        minperiod=params['minperiod'],
-            #                                        maxperiod=params['maxperiod'],
-            #                                        incperiod=params['incperiod'],
-            #                                        numdaysinfit=params['numdaysinfit'],
-            #                                        offset=params['offset'])
-            # '''
-
-            lowerTrend, upperTrend, NoGapLowerTrend, NoGapUpperTrend = \
-                     recentTrendAndMidTrendChannelFitWithAndWithoutGap( \
-                                   adjClose[i,:], \
-                                   minperiod=params['minperiod'], \
-                                   maxperiod=params['maxperiod'], \
-                                   incperiod=params['incperiod'], \
-                                   numdaysinfit=params['numdaysinfit'], \
-                                   numdaysinfit2=params['numdaysinfit2'], \
-                                   offset=params['offset'])
-
-
-            #recentFitDates = datearray[-params['numdaysinfit']-params['offset']:-params['offset']+1]
-            #recentFitDates2 = datearray[-params['numdaysinfit']:]
-            # '''
-            # upperTrend = []
-            # lowerTrend = []
-            # for iii in range(-params['numdaysinfit']-params['offset'],-params['offset']+1):
-            #     p = np.poly1d(upperFit)
-            #     upperTrend.append( p(iii) )
-            #     p = np.poly1d(lowerFit)
-            #     lowerTrend.append( p(iii) )
-            # '''
-
-
-            try:
-                # plot recent (about 2 years) performance for each symbol in stock universe
-                # plt.figure(10,figsize=(9,5))
-                plt.figure(10)
-                plt.clf()
-                plt.grid(True)
-                #plt.plot(datearray[firstdate_index:],adjClose[i,firstdate_index:])
-                plt.plot(datearray[firstdate_index:],signal2D[i,firstdate_index:]*adjClose[i,-1],lw=.25,alpha=.6)
-                plt.plot(datearray[firstdate_index:],signal2D_daily[i,firstdate_index:]*adjClose[i,-1],lw=.25,alpha=.6)
-                plt.plot(datearray[firstdate_index:],quotes_despike[0,firstdate_index:],lw=.15)
-                adjClose_noNaNs = adjClose[i,:].copy()
-                adjClose_noNaNs = adjClose_noNaNs[~np.isnan(adjClose_noNaNs)]
-                ymax = np.around(np.max(adjClose_noNaNs[firstdate_index:]) * 1.1)
-                if params['uptrendSignalMethod'] == 'percentileChannels':
-                    ymin = np.around(np.min(lowChannel[i,firstdate_index:]) * 0.85)
-                else:
-                    ymin = np.around(np.min(adjClose[i,firstdate_index:]) * 0.90)
-                plt.ylim((ymin,ymax))
-                xmin = datearray[firstdate_index]
-                xmax = datearray[-1] + datetime.timedelta( 10 )
-                plt.xlim((xmin,xmax))
-                if params['uptrendSignalMethod'] == 'percentileChannels':
-                    plt.plot(datearray[firstdate_index:],lowChannel[i,firstdate_index:],'m-')
-                    plt.plot(datearray[firstdate_index:],hiChannel[i,firstdate_index:],'m-')
-                #plt.plot(recentFitDates,upperTrend,'y-')
-                #plt.plot(recentFitDates,lowerTrend,'y-')
-
-                relativedates = list(range(-params['numdaysinfit']-params['offset'],-params['offset']+1))
-                plt.plot(np.array(datearray)[relativedates],upperTrend,'y-',lw=.5)
-                plt.plot(np.array(datearray)[relativedates],lowerTrend,'y-',lw=.5)
-                #plt.plot(datearray[np.array(relativedates)],upperTrend,'y-')
-                #plt.plot(datearray[np.array(relativedates)],lowerTrend,'y-')
-                plt.plot([datearray[-1]],[(upperTrend[-1]+lowerTrend[-1])/2.],'y.',ms=10,alpha=.6)
-                plt.plot(np.array(datearray)[-params['numdaysinfit2']:],NoGapUpperTrend,ls='-',c=(0,0,1),lw=1.)
-                plt.plot(np.array(datearray)[-params['numdaysinfit2']:],NoGapLowerTrend,ls='-',c=(0,0,1),lw=1.)
-                plt.plot([datearray[-1]],[(NoGapUpperTrend[-1]+NoGapLowerTrend[-1])/2.],'.',c=(0,0,1),ms=10,alpha=.6)
-
-                plt.plot(datearray[firstdate_index:],adjClose[i,firstdate_index:],'k-',lw=.5)
-
-                plot_text = str(adjClose[i,-7:])
-                plt.text(datearray[firstdate_index+10],ymin,plot_text, fontsize=10)
-                # put text line with most recent date at bottom of plot
-                # - get 7.5% of x-scale and y-scale for text location
-                x_range = datearray[-1] - datearray[firstdate_index]
-                text_x = datearray[firstdate_index] + datetime.timedelta( x_range.days / 20. )
-                text_y = ( np.max(adjClose_noNaNs) - np.min(adjClose_noNaNs) )* .085 + np.min(adjClose_noNaNs)
-                text_y = ( ymax - ymin )* .085 + ymin
-                plt.text( text_x,text_y, "most recent value from "+str(datearray[-1])+"\nplotted at "+today.strftime("%A, %d. %B %Y %I:%M%p")+"\nvalue = "+str(adjClose[i,-1]), fontsize=8 )
-                plt.title(symbols[i]+"\n"+ysq.get_company_name(symbols[i]))
-                # We change the fontsize of minor ticks label
-                plt.tick_params(axis='both', which='major', labelsize=8)
-                plt.tick_params(axis='both', which='minor', labelsize=6)
-                plotfilepath = os.path.join( filepath, "0_recent_"+symbols[i]+".png" )
-                print(" ...inside PortfolioPerformancealcs... plotfilepath = ", plotfilepath)
-                plt.savefig( plotfilepath, format='png' )
-            except:
-                print(" ERROR in PortfoloioPerformanceCalcs -- no plot generated for symbol ", symbols[i])
-                pass
+    
+    # Generate plots (conditional on time of day, handled inside function)
+    if params['uptrendSignalMethod'] == 'percentileChannels':
+        generate_portfolio_plots(
+            adjClose, symbols, datearray, signal2D, signal2D_daily,
+            params, filepath, lowChannel=lowChannel, hiChannel=hiChannel
+        )
+    else:
+        generate_portfolio_plots(
+            adjClose, symbols, datearray, signal2D, signal2D_daily,
+            params, filepath
+        )
+    
+    # End of plot generation (Phase 4b1: extracted to output_generators.py)
 
     # print list of currently uptrending stocks
     if uptrendSignalMethod == 'percentileChannels' :
