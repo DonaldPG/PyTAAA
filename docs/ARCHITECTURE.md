@@ -147,9 +147,9 @@ graph TB
     Q --> S
 ```
 
-### Technical Analysis Module Structure (Phase 5 Refactoring)
+### Technical Analysis Module Structure
 
-As of February 14, 2026, the technical analysis functions have been modularized from the monolithic `TAfunctions.py` (4,638 lines) into focused submodules within `functions/ta/`:
+The technical analysis functions are organized into focused submodules within `functions/ta/`:
 
 **Module Organization:**
 
@@ -185,30 +185,28 @@ As of February 14, 2026, the technical analysis functions have been modularized 
   - `move_martin_2D()`: Rolling Martin ratio (Ulcer Index-based)
   - `move_informationRatio()`: Rolling information ratio vs benchmark
 
-- **`functions/ta/trend_analysis.py`** — Placeholder for future trend analysis function extraction
+- **`functions/ta/trend_analysis.py`** — Reserved for trend analysis functions (future)
 
-- **`functions/ta/ranking.py`** — Placeholder for future ranking function extraction
+- **`functions/ta/ranking.py`** — Reserved for ranking algorithms (future)
 
-**Backward Compatibility:**
+**Import Patterns:**
 
-The original `functions/TAfunctions.py` remains unchanged and contains all original implementations. Both import styles are supported:
+The system supports two import styles:
 
 ```python
-# Legacy imports (still fully supported)
-from functions.TAfunctions import SMA, computeSignal2D
-
-# New modular imports (recommended for new code)
+# Direct module imports (recommended)
 from functions.ta.moving_averages import SMA
 from functions.ta.signal_generation import computeSignal2D
+
+# Legacy imports via TAfunctions.py (for backward compatibility)
+from functions.TAfunctions import SMA, computeSignal2D
 ```
 
-This modular structure improves:
-- **Discoverability:** Related functions grouped logically
+Both styles work identically. The modular structure provides:
+- **Discoverability:** Related functions grouped logically by category
 - **Testability:** Each module can be tested independently
-- **Maintainability:** Smaller, focused files are easier to understand
-- **Import clarity:** Clear namespace indicating function purpose
-
-See [docs/copilot_sessions/2026-02-14_phase5-tafunctions-modularization.md](copilot_sessions/2026-02-14_phase5-tafunctions-modularization.md) for detailed refactoring documentation.
+- **Maintainability:** Smaller, focused files are easier to understand and modify
+- **Import clarity:** Module name indicates function purpose (`functions.ta.channels` contains channel functions)
 
 ---
 
