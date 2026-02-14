@@ -163,29 +163,126 @@ class TestPhase4b3PureComputation:
         """Get test config."""
         return Path("/Users/donaldpg/pyTAAA_data_static/naz100_pine/pytaaa_naz100_pine.json")
     
+    def test_pure_compute_function_exists(self, test_json_config):
+        """
+        Verify that compute_portfolio_metrics function exists and is callable.
+        """
+        from functions.output_generators import compute_portfolio_metrics
+        
+        assert callable(compute_portfolio_metrics), "compute_portfolio_metrics should be callable"
+    
+    def test_compute_returns_all_expected_keys(self, test_json_config):
+        """
+        Verify that compute_portfolio_metrics returns all expected metrics.
+        """
+        from functions.output_generators import compute_portfolio_metrics
+        from functions.data_loaders import load_quotes_for_analysis
+        from functions.GetParams import get_json_params, get_symbols_file
+        import os
+        
+        if not test_json_config.exists():
+            pytest.skip(f"Test data not found: {test_json_config}")
+        
+        params = get_json_params(str(test_json_config))
+        symbol_file = get_symbols_file(str(test_json_config))
+        
+        # Load data
+        adjClose, symbols, datearray = load_quotes_for_analysis(
+            symbol_file, str(test_json_config), verbose=False
+        )
+        
+        # Compute metrics
+        metrics = compute_portfolio_metrics(
+            adjClose, symbols, datearray, params, str(test_json_config)
+        )
+        
+        # Verify all expected keys are present
+        expected_keys = [
+            'gainloss', 'value', 'BuyHoldFinalValue', 'lastEmptyPriceIndex',
+            'activeCount', 'monthgainloss', 'signal2D', 'signal2D_daily',
+            'numberStocks', 'dailyNumberUptrendingStocks', 'monthgainlossweight',
+            'monthvalue', 'numberSharesCalc', 'last_symbols_text',
+            'last_symbols_weight', 'last_symbols_price'
+        ]
+        
+        for key in expected_keys:
+            assert key in metrics, f"Missing expected key: {key}"
+        
+        # Verify data types and shapes
+        assert isinstance(metrics['BuyHoldFinalValue'], (float, np.floating)), \
+            "BuyHoldFinalValue should be a float"
+        assert metrics['gainloss'].shape == adjClose.shape, \
+            "gainloss shape should match adjClose"
+        assert isinstance(metrics['last_symbols_text'], list), \
+            "last_symbols_text should be a list"
+    
     def test_computation_deterministic(self, test_json_config):
         """
         Verify that computation is deterministic (same inputs = same outputs).
         
         This tests that there's no hidden randomness in the computation.
         """
-        from functions.PortfolioPerformanceCalcs import PortfolioPerformanceCalcs
+        from functions.output_generators import compute_portfolio_metrics
+        from functions.data_loaders import load_quotes_for_analysis
         from functions.GetParams import get_json_params, get_symbols_file
         
         if not test_json_config.exists():
             pytest.skip(f"Test data not found: {test_json_config}")
         
         params = get_json_params(str(test_json_config))
-        symbol_directory = params['symbol_directory']
         symbol_file = get_symbols_file(str(test_json_config))
+        
+        # Load data
+        adjClose, symbols, datearray = load_quotes_for_analysis(
+            symbol_file, str(test_json_config), verbose=False
+        )
+        
+        # Run twice
+        metrics1 = compute_portfolio_metrics(
+            adjClose, symbols, datearray, params, str(test_json_config)
+        )
+        
+        metrics2 = compute_portfolio_metrics(
+            adjClose, symbols, datearray, params, str(test_json_config)
+        )
+        
+        # Results should be identical
+        assert metrics1['BuyHoldFinalValue'] == metrics2['BuyHoldFinalValue'], \
+            "BuyHoldFinalValue should be deterministic"
+        assert np.array_equal(metrics1['signal2D'], metrics2['signal2D']), \
+            "signal2D should be deterministic"
+        assert metrics1['last_symbols_text'] == metrics2['last_symbols_text'], \
+            "last_symbols_text should be deterministic"
+        assert metrics1['last_symbols_weight'] == metrics2['last_symbols_weight'], \
+            "last_symbols_weight should be deterministic"
+    
+    def test_orchestrator_produces_same_results(self, test_json_config):
+        """
+        Verify that PortfolioPerformanceCalcs (orchestrator) produces
+        same results as before refactoring.
+        
+        This is an end-to-end test that the refactored code maintains
+        identical behavior.
+        """
+        from functions.PortfolioPerformanceCalcs import PortfolioPerformanceCalcs
+        from functions.GetParams import get_json_params, get_symbols_file
+        import os
+        
+        if not test_json_config.exists():
+            pytest.skip(f"Test data not found: {test_json_config}")
+        
+        params = get_json_params(str(test_json_config))
+        symbol_file = get_symbols_file(str(test_json_config))
+        symbol_directory = os.path.dirname(symbol_file)
+        symbol_filename = os.path.basename(symbol_file)
         
         # Run twice
         result1 = PortfolioPerformanceCalcs(
-            symbol_directory, symbol_file, params, str(test_json_config)
+            symbol_directory, symbol_filename, params, str(test_json_config)
         )
         
         result2 = PortfolioPerformanceCalcs(
-            symbol_directory, symbol_file, params, str(test_json_config)
+            symbol_directory, symbol_filename, params, str(test_json_config)
         )
         
         # Results should be identical

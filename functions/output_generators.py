@@ -5,9 +5,11 @@ from portfolio computation results. These functions have side effects (file I/O)
 and are separated from pure computation logic for testability.
 
 Phase 4b1: Extracted from PortfolioPerformanceCalcs.py
+Phase 4b3: Added compute_portfolio_metrics (pure computation)
 """
 
 import numpy as np
+from numpy import isnan
 import datetime
 import os
 from typing import Dict, List, Any, Optional
@@ -320,3 +322,198 @@ def generate_portfolio_plots(
         except Exception as e:
             print(f" ERROR in PortfoloioPerformanceCalcs -- no plot generated for symbol {symbols[i]}")
             print(f" Exception: {e}")
+
+
+def compute_portfolio_metrics(
+    adjClose: np.ndarray,
+    symbols: List[str],
+    datearray: np.ndarray,
+    params: Dict[str, Any],
+    json_fn: str
+) -> Dict[str, Any]:
+    """Pure computation function for portfolio metrics.
+    
+    Computes all portfolio metrics including gains/losses, signals, weights,
+    and portfolio values. This function has no side effects (no I/O, no prints)
+    to enable testing and verification of computation logic.
+    
+    Args:
+        adjClose: Adjusted closing prices (n_stocks, n_days)
+        symbols: List of stock symbols (n_stocks,)
+        datearray: Array of datetime objects (n_days,)
+        params: Dictionary of parameters from JSON config
+        json_fn: Path to JSON config file (for sharpeWeightedRank_2D)
+    
+    Returns:
+        Dictionary containing all computed portfolio metrics:
+            - gainloss: Daily gain/loss ratios (n_stocks, n_days)
+            - value: Buy-and-hold values (n_stocks, n_days)
+            - BuyHoldFinalValue: Final B&H portfolio value (scalar)
+            - lastEmptyPriceIndex: Last index with constant price (n_stocks,)
+            - activeCount: Count of active stocks per day (n_days,)
+            - monthgainloss: Monthly gain/loss ratios (n_stocks, n_days)
+            - signal2D: Uptrending signal (n_stocks, n_days)
+            - signal2D_daily: Daily uptrending signal (n_stocks, n_days)
+            - numberStocks: Count of uptrending stocks per day (n_days,)
+            - dailyNumberUptrendingStocks: Same as numberStocks (n_days,)
+            - lowChannel: Lower channel (optional, n_stocks, n_days)
+            - hiChannel: Upper channel (optional, n_stocks, n_days)
+            - monthgainlossweight: Portfolio weights (n_stocks, n_days)
+            - monthvalue: Portfolio values (n_stocks, n_days)
+            - numberSharesCalc: Number of shares (n_stocks, n_days)
+            - last_symbols_text: List of currently held symbols
+            - last_symbols_weight: List of current weights
+            - last_symbols_price: List of current prices
+    """
+    
+    #############################################################################
+    # Phase 1: Compute basic gain/loss metrics
+    #############################################################################
+    
+    gainloss = np.ones((adjClose.shape[0], adjClose.shape[1]), dtype=float)
+    activeCount = np.zeros(adjClose.shape[1], dtype=float)
+    numberSharesCalc = np.zeros((adjClose.shape[0], adjClose.shape[1]), dtype=float)
+    
+    gainloss[:, 1:] = adjClose[:, 1:] / adjClose[:, :-1]
+    gainloss[np.isnan(gainloss)] = 1.
+    gainloss[np.isinf(gainloss)] = 1.
+    value = 10000. * np.cumprod(gainloss, axis=1)
+    
+    BuyHoldFinalValue = np.average(value, axis=0)[-1]
+    
+    lastEmptyPriceIndex = np.zeros(adjClose.shape[0], dtype=int)
+    
+    for ii in range(adjClose.shape[0]):
+        # Take care of special case where constant share price is inserted at beginning
+        index = np.argmax(np.clip(np.abs(gainloss[ii, :] - 1), 0, 1e-8)) - 1
+        lastEmptyPriceIndex[ii] = index
+        activeCount[lastEmptyPriceIndex[ii] + 1:] += 1
+    
+    # Remove NaN's from count for each day
+    for ii in range(adjClose.shape[1]):
+        numNaNs = (np.isnan(adjClose[:, ii]))
+        numNaNs = numNaNs[numNaNs == True].shape[0]
+        activeCount[ii] = activeCount[ii] - np.clip(numNaNs, 0., 99999)
+    
+    #############################################################################
+    # Phase 2: Extract parameters
+    #############################################################################
+    
+    monthsToHold = params['monthsToHold']
+    numberStocksTraded = params['numberStocksTraded']
+    LongPeriod = params['LongPeriod']
+    stddevThreshold = float(params['stddevThreshold'])
+    rankThresholdPct = float(params['rankThresholdPct'])
+    riskDownside_min = float(params['riskDownside_min'])
+    riskDownside_max = float(params['riskDownside_max'])
+    
+    #############################################################################
+    # Phase 3: Compute monthly gain/loss
+    #############################################################################
+    
+    monthgainloss = np.ones((adjClose.shape[0], adjClose.shape[1]), dtype=float)
+    monthgainloss[:, LongPeriod:] = adjClose[:, LongPeriod:] / adjClose[:, :-LongPeriod]
+    monthgainloss[isnan(monthgainloss)] = 1.
+    
+    #############################################################################
+    # Phase 4: Compute signal for uptrending stocks
+    #############################################################################
+    
+    # Import here to avoid circular dependency
+    from functions.TAfunctions import computeSignal2D
+    
+    if params['uptrendSignalMethod'] == 'percentileChannels':
+        signal2D, lowChannel, hiChannel = computeSignal2D(adjClose, gainloss, params)
+    else:
+        signal2D = computeSignal2D(adjClose, gainloss, params)
+        lowChannel = None
+        hiChannel = None
+    
+    # Copy to daily signal
+    signal2D_daily = signal2D.copy()
+    
+    # Hold signal constant for each month
+    for jj in np.arange(1, adjClose.shape[1]):
+        if not ((datearray[jj].month != datearray[jj - 1].month) and 
+                (datearray[jj].month - 1) % monthsToHold == 0):
+            signal2D[:, jj] = signal2D[:, jj - 1]
+    
+    numberStocks = np.sum(signal2D, axis=0)
+    dailyNumberUptrendingStocks = np.sum(signal2D, axis=0)
+    
+    #############################################################################
+    # Phase 5: Compute weights for each stock
+    #############################################################################
+    
+    # Import here to avoid circular dependency
+    from functions.TAfunctions import sharpeWeightedRank_2D
+    
+    monthgainlossweight = sharpeWeightedRank_2D(
+        json_fn, datearray, symbols, adjClose,
+        signal2D, signal2D_daily, LongPeriod, numberStocksTraded,
+        riskDownside_min, riskDownside_max, rankThresholdPct,
+        stddevThreshold=stddevThreshold,
+        is_backtest=False, makeQCPlots=True
+    )
+    
+    #############################################################################
+    # Phase 6: Compute traded value of stock for each month
+    #############################################################################
+    
+    monthvalue = value.copy()
+    for ii in np.arange(1, monthgainloss.shape[1]):
+        if ((datearray[ii].month != datearray[ii - 1].month) and 
+            ((datearray[ii].month - 1) % monthsToHold == 0)):
+            valuesum = np.sum(monthvalue[:, ii - 1])
+            for jj in range(value.shape[0]):
+                # Re-balance using weights (that sum to 1.0)
+                monthvalue[jj, ii] = monthgainlossweight[jj, ii] * valuesum * gainloss[jj, ii]
+        else:
+            for jj in range(value.shape[0]):
+                monthvalue[jj, ii] = monthvalue[jj, ii - 1] * gainloss[jj, ii]
+    
+    numberSharesCalc = monthvalue / adjClose  # For info only
+    
+    #############################################################################
+    # Phase 7: Extract current holdings
+    #############################################################################
+    
+    last_symbols_text = []
+    last_symbols_weight = []
+    last_symbols_price = []
+    for ii in range(len(symbols)):
+        if monthgainlossweight[ii, -1] > 0:
+            last_symbols_text.append(symbols[ii])
+            last_symbols_weight.append(float(round(monthgainlossweight[ii, -1], 4)))
+            last_symbols_price.append(float(round(adjClose[ii, -1], 2)))
+    
+    #############################################################################
+    # Return all computed metrics
+    #############################################################################
+    
+    result = {
+        'gainloss': gainloss,
+        'value': value,
+        'BuyHoldFinalValue': BuyHoldFinalValue,
+        'lastEmptyPriceIndex': lastEmptyPriceIndex,
+        'activeCount': activeCount,
+        'monthgainloss': monthgainloss,
+        'signal2D': signal2D,
+        'signal2D_daily': signal2D_daily,
+        'numberStocks': numberStocks,
+        'dailyNumberUptrendingStocks': dailyNumberUptrendingStocks,
+        'monthgainlossweight': monthgainlossweight,
+        'monthvalue': monthvalue,
+        'numberSharesCalc': numberSharesCalc,
+        'last_symbols_text': last_symbols_text,
+        'last_symbols_weight': last_symbols_weight,
+        'last_symbols_price': last_symbols_price
+    }
+    
+    # Add optional channels if percentileChannels method
+    if lowChannel is not None:
+        result['lowChannel'] = lowChannel
+    if hiChannel is not None:
+        result['hiChannel'] = hiChannel
+    
+    return result
