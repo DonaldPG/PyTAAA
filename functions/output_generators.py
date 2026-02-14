@@ -28,6 +28,50 @@ from functions.TAfunctions import (
 import functions.ystockquote as ysq
 
 
+def write_portfolio_status_files(
+    dailyNumberUptrendingStocks: np.ndarray,
+    activeCount: np.ndarray,
+    datearray: np.ndarray,
+    output_dir: str
+) -> None:
+    """Write portfolio status files for web display.
+    
+    Writes the number of uptrending stocks and active count for each date
+    to a .params file that can be displayed on the web page.
+    
+    Args:
+        dailyNumberUptrendingStocks: Count of uptrending stocks per day (n_days,)
+        activeCount: Count of active (non-NaN) stocks per day (n_days,)
+        datearray: Array of datetime objects for each day (n_days,)
+        output_dir: Directory to write status file
+    
+    Returns:
+        None (writes file to output_dir)
+    
+    Side Effects:
+        - Writes pyTAAAweb_numberUptrendingStocks_status.params to output_dir
+        - Prints success/error messages to stdout
+    """
+    try:
+        filepath = os.path.join(output_dir, "pyTAAAweb_numberUptrendingStocks_status.params")
+        textmessage = ""
+        for jj in range(dailyNumberUptrendingStocks.shape[0]):
+            textmessage = textmessage + str(datearray[jj]) + "  " + \
+                         str(dailyNumberUptrendingStocks[jj]) + "  " + \
+                         str(activeCount[jj]) + "\n"
+        with open(filepath, "w") as f:
+            f.write(textmessage)
+        print(
+            f" Successfully updated to pyTAAAweb_numberUptrendingStocks_status.params at "
+            f"{datetime.datetime.now().strftime('%A, %d. %B %Y %I:%M%p')}"
+        )
+        print("")
+    except Exception as e:
+        print(" Error: unable to update pyTAAAweb_numberUptrendingStocks_status.params")
+        print(f" Exception: {e}")
+        print("")
+
+
 def generate_portfolio_plots(
     adjClose: np.ndarray,
     symbols: List[str],

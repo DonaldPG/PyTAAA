@@ -117,13 +117,15 @@ class TestPhase4b2FileWriting:
         """
         from functions.PortfolioPerformanceCalcs import PortfolioPerformanceCalcs
         from functions.GetParams import get_json_params, get_symbols_file, get_webpage_store
+        import os
         
         if not test_json_config.exists():
             pytest.skip(f"Test data not found: {test_json_config}")
         
         params = get_json_params(str(test_json_config))
-        symbol_directory = params['symbol_directory']
-        symbol_file = get_symbols_file(str(test_json_config))
+        symbols_file_path = get_symbols_file(str(test_json_config))
+        symbol_directory = os.path.dirname(symbols_file_path)
+        symbol_file = os.path.basename(symbols_file_path)
         
         # Get expected output file
         web_dir = get_webpage_store(str(test_json_config))

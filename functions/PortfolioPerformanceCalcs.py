@@ -262,20 +262,14 @@ def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
     ##########################################
     # Write date and Percent of up-trending stocks to file for web page
     ##########################################
-
+    
+    # Phase 4b2: File writing extracted to output_generators.py
+    from functions.output_generators import write_portfolio_status_files
+    
     web_dir = get_webpage_store(json_fn)
-    try:
-        filepath = os.path.join(web_dir, "pyTAAAweb_numberUptrendingStocks_status.params")
-        textmessage = ""
-        for jj in range(dailyNumberUptrendingStocks.shape[0]):
-            textmessage = textmessage + str(datearray[jj])+"  "+str(dailyNumberUptrendingStocks[jj])+"  "+str(activeCount[jj])+"\n"
-        with open( filepath, "w" ) as f:
-            f.write(textmessage)
-        print(" Successfully updated to pyTAAAweb_numberUptrendingStocks_status.params at ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"))
-        print("")
-    except :
-        print(" Error: unable to update pyTAAAweb_numberUptrendingStocks_status.params")
-        print("")
+    write_portfolio_status_files(
+        dailyNumberUptrendingStocks, activeCount, datearray, web_dir
+    )
 
 
     # '''
