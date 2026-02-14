@@ -295,21 +295,123 @@ class TestPhase4b3PureComputation:
 class TestPhase4b4Orchestration:
     """Tests for final orchestration refactor."""
     
-    def test_orchestrator_calls_all_phases(self):
-        """
-        After Phase 4b4, verify orchestrator calls all sub-functions.
-        
-        This test will be implemented after extraction is complete.
-        """
-        pytest.skip("To be implemented after Phase 4b4")
+    @pytest.fixture
+    def test_json_config(self):
+        """Get test config."""
+        return Path("/Users/donaldpg/pyTAAA_data_static/naz100_pine/pytaaa_naz100_pine.json")
     
-    def test_backwards_compatibility(self):
+    def test_orchestrator_structure_clean(self):
+        """
+        Verify orchestrator has clean structure after Phase 4b4.
+        
+        Check that main function follows load → compute → output pattern.
+        """
+        import inspect
+        from functions.PortfolioPerformanceCalcs import PortfolioPerformanceCalcs
+        
+        # Get function source
+        source = inspect.getsource(PortfolioPerformanceCalcs)
+        
+        # Verify it calls the key functions
+        assert 'load_quotes_for_analysis' in source, \
+            "Should call load_quotes_for_analysis for data loading"
+        assert 'compute_portfolio_metrics' in source, \
+            "Should call compute_portfolio_metrics for computation"
+        assert 'generate_portfolio_plots' in source, \
+            "Should call generate_portfolio_plots for output"
+        assert 'write_portfolio_status_files' in source, \
+            "Should call write_portfolio_status_files for output"
+        
+        # Verify helper functions exist
+        assert '_write_daily_backtest' in source or 'computeDailyBacktest' in source, \
+            "Should handle daily backtest writing"
+        assert '_print_portfolio_summary' in source or 'print' in source, \
+            "Should print portfolio summary"
+    
+    def test_helper_functions_extracted(self):
+        """
+        Verify that helper functions were extracted for cleaner code.
+        """
+        from functions.PortfolioPerformanceCalcs import (
+            _write_daily_backtest,
+            _print_portfolio_summary
+        )
+        
+        # Verify helper functions are callable
+        assert callable(_write_daily_backtest), \
+            "_write_daily_backtest should be a callable function"
+        assert callable(_print_portfolio_summary), \
+            "_print_portfolio_summary should be a callable function"
+    
+    def test_backwards_compatibility(self, test_json_config):
         """
         Verify that function signature and return values remain compatible.
         
-        This test will be implemented after Phase 4b4.
+        After Phase 4b4, the orchestrator should maintain the same interface.
         """
-        pytest.skip("To be implemented after Phase 4b4")
+        from functions.PortfolioPerformanceCalcs import PortfolioPerformanceCalcs
+        from functions.GetParams import get_json_params, get_symbols_file
+        import os
+        
+        if not test_json_config.exists():
+            pytest.skip(f"Test data not found: {test_json_config}")
+        
+        params = get_json_params(str(test_json_config))
+        symbol_file = get_symbols_file(str(test_json_config))
+        symbol_directory = os.path.dirname(symbol_file)
+        symbol_filename = os.path.basename(symbol_file)
+        
+        # Call function
+        result = PortfolioPerformanceCalcs(
+            symbol_directory, symbol_filename, params, str(test_json_config)
+        )
+        
+        # Verify return value structure (4-tuple)
+        assert isinstance(result, tuple), "Should return a tuple"
+        assert len(result) == 4, "Should return 4 values"
+        
+        date, symbols_list, weights_list, prices_list = result
+        
+        # Verify types
+        assert isinstance(symbols_list, list), "Symbols should be a list"
+        assert isinstance(weights_list, list), "Weights should be a list"
+        assert isinstance(prices_list, list), "Prices should be a list"
+        
+        # Verify list lengths match
+        assert len(symbols_list) == len(weights_list), \
+            "Symbols and weights lists should have same length"
+        assert len(symbols_list) == len(prices_list), \
+            "Symbols and prices lists should have same length"
+    
+    def test_orchestrator_produces_deterministic_results(self, test_json_config):
+        """
+        Verify orchestrator produces same results on repeated calls.
+        
+        This is an end-to-end test for Phase 4b4 orchestration.
+        """
+        from functions.PortfolioPerformanceCalcs import PortfolioPerformanceCalcs
+        from functions.GetParams import get_json_params, get_symbols_file
+        import os
+        
+        if not test_json_config.exists():
+            pytest.skip(f"Test data not found: {test_json_config}")
+        
+        params = get_json_params(str(test_json_config))
+        symbol_file = get_symbols_file(str(test_json_config))
+        symbol_directory = os.path.dirname(symbol_file)
+        symbol_filename = os.path.basename(symbol_file)
+        
+        # Run twice
+        result1 = PortfolioPerformanceCalcs(
+            symbol_directory, symbol_filename, params, str(test_json_config)
+        )
+        
+        result2 = PortfolioPerformanceCalcs(
+            symbol_directory, symbol_filename, params, str(test_json_config)
+        )
+        
+        # Results should be identical
+        assert result1 == result2, "Orchestrator should produce deterministic results"
 
 
 if __name__ == "__main__":
