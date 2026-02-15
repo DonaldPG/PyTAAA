@@ -10,6 +10,7 @@ Phase 4b refactoring: Separated concerns into load → compute → output patter
 - Phase 4b4: Clean orchestration (this module)
 """
 
+import logging
 import numpy as np
 import os
 import datetime
@@ -25,6 +26,8 @@ from functions.output_generators import (
     generate_portfolio_plots,
     write_portfolio_status_files
 )
+
+logger = logging.getLogger(__name__)
 
 
 def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
@@ -46,15 +49,15 @@ def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
     # PHASE 1: LOAD DATA
     #############################################################################
     
-    print("\n\n ... inside PortfolioPerformanceCalcs...")
-    print("   . symbol_directory = " + symbol_directory)
-    print("   . symbol_file = " + symbol_file)
+    logger.info("Starting PortfolioPerformanceCalcs")
+    logger.debug("symbol_directory = %s", symbol_directory)
+    logger.debug("symbol_file = %s", symbol_file)
 
     json_dir = os.path.split(json_fn)[0]
-    print("   . json_dir = " + json_dir)
+    logger.debug("json_dir = %s", json_dir)
 
     filename = os.path.join(symbol_directory, symbol_file)
-    print("   . filename for load_quotes_for_analysis = " + filename)
+    logger.debug("filename for load_quotes_for_analysis = %s", filename)
     
     adjClose, symbols, datearray = load_quotes_for_analysis(
         filename, json_fn, verbose=True
@@ -81,10 +84,10 @@ def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
     lowChannel = metrics.get('lowChannel', None)
     hiChannel = metrics.get('hiChannel', None)
     
-    # Print diagnostic info
-    print(" signal2D check: ", signal2D[isnan(signal2D)].shape)
-    print(" signal2D min, mean,max: ", signal2D.min(), signal2D.mean(), signal2D.max())
-    print(" numberStocks (uptrending) min, mean,max: ", 
+    # Log diagnostic info
+    logger.debug("signal2D check: %s", signal2D[isnan(signal2D)].shape)
+    logger.debug("signal2D min=%f, mean=%f, max=%f", signal2D.min(), signal2D.mean(), signal2D.max())
+    logger.debug("numberStocks (uptrending) min=%f, mean=%f, max=%f", 
           numberStocks.min(), numberStocks.mean(), numberStocks.max())
 
     #############################################################################

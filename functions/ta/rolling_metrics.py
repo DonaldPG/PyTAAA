@@ -4,6 +4,7 @@ This module provides functions for calculating rolling performance metrics
 such as Sharpe ratios, Martin ratios, and information ratios over moving windows.
 """
 
+import logging
 import numpy as np
 from numpy import isnan
 from numpy.typing import NDArray
@@ -11,6 +12,8 @@ from math import sqrt
 
 # Import from sibling modules
 from functions.ta.moving_averages import SMA_2D, MoveMax_2D
+
+logger = logging.getLogger(__name__)
 
 
 def move_sharpe_2D(adjClose: NDArray[np.floating], dailygainloss: NDArray[np.floating], 

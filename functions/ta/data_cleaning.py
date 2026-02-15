@@ -5,9 +5,12 @@ interpolation of missing values, boundary handling, and spike removal.
 """
 
 import sys
+import logging
 import numpy as np
 from numpy import isnan
 from numpy.typing import NDArray
+
+logger = logging.getLogger(__name__)
 
 
 def interpolate(self: NDArray[np.floating], method: str = 'linear', verbose: bool = False) -> NDArray[np.floating]:
@@ -43,44 +46,44 @@ def interpolate(self: NDArray[np.floating], method: str = 'linear', verbose: boo
     """
     if sys.version_info < (2, 7, 12):
         if verbose:
-            print(" ... inside interpolate (old).... len(self) = ", len(self))
+            logger.debug(" ... inside interpolate (old).... len(self) = %d", len(self))
 
         inds = np.arange(len(self))
         values = np.array(self.copy())
         if verbose:
-            print(" ... values = ", values)
-            print(" ... values.dtype = ", values.dtype)
-            print(" ... type(values) = ", type(values))
+            logger.debug(" ... values = %s", values)
+            logger.debug(" ... values.dtype = %s", values.dtype)
+            logger.debug(" ... type(values) = %s", type(values))
         invalid = np.isnan(values)
         valid = -1 * invalid
         firstIndex = valid.argmax()
 
         if verbose:
-            print(" ... inside interpolate .... firstIndex = ", firstIndex)
+            logger.debug(" ... inside interpolate .... firstIndex = %d", firstIndex)
 
         valid = valid[firstIndex:]
         invalid = invalid[firstIndex:]
 
         if verbose:
-            print(" ... inside interpolate .... len(valid) = ", len(valid))
-            print(" ... inside interpolate .... len(invalid) = ", len(invalid))
+            logger.debug(" ... inside interpolate .... len(valid) = %d", len(valid))
+            logger.debug(" ... inside interpolate .... len(invalid) = %d", len(invalid))
 
         inds = inds[firstIndex:]
         result = values.copy()
         result[firstIndex:][invalid] = np.interp(inds[invalid], inds[valid == 0], values[firstIndex:][valid == 0])
 
         if verbose:
-            print(" ... interpolate (old) finished")
+            logger.debug(" ... interpolate (old) finished")
 
     else:
         if verbose:
-            print(" ... inside interpolate (new) .... len(self) = ", len(self))
+            logger.debug(" ... inside interpolate (new) .... len(self) = %d", len(self))
         inds = np.arange(len(self))
         values = np.array(self.copy())
         if verbose:
-            print(" ... values = ", values)
-            print(" ... values.dtype = ", values.dtype)
-            print(" ... type(values) = ", type(values))
+            logger.debug(" ... values = %s", values)
+            logger.debug(" ... values.dtype = %s", values.dtype)
+            logger.debug(" ... type(values) = %s", type(values))
 
         invalid_bool = np.isnan(values)
         valid = np.ones((len(self)), 'int')
@@ -90,9 +93,9 @@ def interpolate(self: NDArray[np.floating], method: str = 'linear', verbose: boo
         lastIndex = valid.shape[0] - valid[::-1].argmax()
 
         if verbose:
-            print(" ... inside interpolate .... len(valid) = ", len(valid))
-            print(" ... inside interpolate .... len(invalid) = ", len(invalid))
-            print(" ... inside interpolate .... firstIndex,lastIndex = ", firstIndex, lastIndex)
+            logger.debug(" ... inside interpolate .... len(valid) = %d", len(valid))
+            logger.debug(" ... inside interpolate .... len(invalid) = %d", len(invalid))
+            logger.debug(" ... inside interpolate .... firstIndex,lastIndex = %d, %d", firstIndex, lastIndex)
 
         valid = valid[valid >= firstIndex]
         valid = valid[valid <= lastIndex]
@@ -200,7 +203,7 @@ def clean_signal(array1D: NDArray[np.floating], symbol_name: str) -> NDArray[np.
     adjClose = cleantobeginning(adjClose)
     adjClose = cleantoend(adjClose)
     adjClose_changed = False in (adjClose == quotes_before_cleaning)
-    print("   ... inside clean_signal ... symbol, did cleaning change adjClose? ", symbol_name, adjClose_changed)
+    logger.debug("   ... inside clean_signal ... symbol=%s, did cleaning change adjClose? %s", symbol_name, adjClose_changed)
     return adjClose
 
 
