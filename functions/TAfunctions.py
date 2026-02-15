@@ -3258,27 +3258,35 @@ def sharpeWeightedRank_2D(
 
     ########################################################################
     ## Calculate change in rank of active stocks each day (without duplicates as ties)
+    ## FIX: Rank stocks independently at each date to avoid look-ahead bias
     ########################################################################
     monthgainlossRank = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=int)
     monthgainlossPrevious = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
     monthgainlossPreviousRank = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=int)
 
-    monthgainlossRank = bn.rankdata(monthgainloss,axis=0)
-    # reverse the ranks (low ranks are biggest gainers)
-    maxrank = np.max(monthgainlossRank)
-    monthgainlossRank -= maxrank-1
-    monthgainlossRank *= -1
-    monthgainlossRank += 2
-    print("TAFunctions.sharpeWeightedRank_2D ... monthgainlossRank computed ...")
+    # FIX: Rank each date independently using only data available at that date
+    for jj in range(monthgainloss.shape[1]):
+        monthgainlossRank[:, jj] = bn.rankdata(monthgainloss[:, jj])
+        # reverse the ranks (low ranks are biggest gainers)
+        # Use maxrank from THIS date only, not global maxrank
+        maxrank_jj = np.max(monthgainlossRank[:, jj])
+        monthgainlossRank[:, jj] -= maxrank_jj - 1
+        monthgainlossRank[:, jj] *= -1
+        monthgainlossRank[:, jj] += 2
+    print("TAFunctions.sharpeWeightedRank_2D ... monthgainlossRank computed (point-in-time) ...")
 
     monthgainlossPrevious[:,LongPeriod:] = monthgainloss[:,:-LongPeriod]
-    monthgainlossPreviousRank = bn.rankdata(monthgainlossPrevious,axis=0)
-    # reverse the ranks (low ranks are biggest gainers)
-    maxrank = np.max(monthgainlossPreviousRank)
-    monthgainlossPreviousRank -= maxrank-1
-    monthgainlossPreviousRank *= -1
-    monthgainlossPreviousRank += 2
-    print("TAFunctions.sharpeWeightedRank_2D ... monthgainlossPreviousRank computed ...")
+    
+    # FIX: Rank each date independently for previous period as well
+    for jj in range(monthgainlossPrevious.shape[1]):
+        monthgainlossPreviousRank[:, jj] = bn.rankdata(monthgainlossPrevious[:, jj])
+        # reverse the ranks (low ranks are biggest gainers)
+        # Use maxrank from THIS date only, not global maxrank
+        maxrank_jj = np.max(monthgainlossPreviousRank[:, jj])
+        monthgainlossPreviousRank[:, jj] -= maxrank_jj - 1
+        monthgainlossPreviousRank[:, jj] *= -1
+        monthgainlossPreviousRank[:, jj] += 2
+    print("TAFunctions.sharpeWeightedRank_2D ... monthgainlossPreviousRank computed (point-in-time) ...")
 
     # weight deltaRank for best and worst performers differently
     rankoffsetchoice = rankthreshold
@@ -3336,14 +3344,17 @@ def sharpeWeightedRank_2D(
     print("TAFunctions.sharpeWeightedRank_2D ... 2nd loop completed ...")
 
 
-    deltaRank = bn.rankdata( delta, axis=0 )
-    print("TAFunctions.sharpeWeightedRank_2D ... deltaRank computed ...")
-
-    # reverse the ranks (low deltaRank have the fastest improving rank)
-    maxrank = np.max(deltaRank)
-    deltaRank -= maxrank-1
-    deltaRank *= -1
-    deltaRank += 2
+    # FIX: Rank deltaRank independently per date to avoid look-ahead bias
+    deltaRank = np.zeros_like(delta, dtype=int)
+    for jj in range(delta.shape[1]):
+        deltaRank[:, jj] = bn.rankdata(delta[:, jj])
+        # reverse the ranks (low deltaRank have the fastest improving rank)
+        # Use maxrank from THIS date only
+        maxrank_jj = np.max(deltaRank[:, jj])
+        deltaRank[:, jj] -= maxrank_jj - 1
+        deltaRank[:, jj] *= -1
+        deltaRank[:, jj] += 2
+    print("TAFunctions.sharpeWeightedRank_2D ... deltaRank computed (point-in-time) ...")
 
     for ii in range(monthgainloss.shape[1]):
         if deltaRank[:,ii].min() == deltaRank[:,ii].max():
