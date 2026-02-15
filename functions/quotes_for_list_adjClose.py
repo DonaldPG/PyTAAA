@@ -1141,19 +1141,14 @@ def get_SectorAndIndustry_google( symbol ):
 
 
 def get_SectorAndIndustry_google( symbol ):
-    ' use finviz from package finvizfinance to get sector and industry '
-    import pandas as pd
-    from finvizfinance.quote import finvizfinance
-
-    try:
-        stock = finvizfinance(symbol)
-        stock_fundament = stock.ticker_fundament()
-        industry = stock_fundament["Industry"]
-        sector = stock_fundament["Sector"]
-    except:
-        industry = "unknown"
-        sector = "unknown"
-    return sector, industry
+    """Get sector and industry with caching for rate limit avoidance.
+    
+    Uses cached values if available and fresh (<5 days old).
+    Falls back to web scraping (yfinance first, then finviz) if needed.
+    Thread-safe for concurrent pytaaa_main.py instances.
+    """
+    from functions.stock_fundamentals_cache import get_sector_industry_cached
+    return get_sector_industry_cached(symbol)
 
 
 def LastQuotesForSymbolList( symbolList ):

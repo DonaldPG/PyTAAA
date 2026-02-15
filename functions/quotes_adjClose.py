@@ -264,9 +264,14 @@ def get_pe(ticker):
 
 
 def get_pe(ticker):
-
-    from functions.quotes_for_list_adjClose import get_pe_finviz
-    return get_pe_finviz(ticker, verbose=True)
+    """Get PE ratio with caching for rate limit avoidance.
+    
+    Uses cached values if available and fresh (<5 days old).
+    Falls back to web scraping (yfinance first, then finviz) if needed.
+    Thread-safe for concurrent pytaaa_main.py instances.
+    """
+    from functions.stock_fundamentals_cache import get_pe_cached
+    return get_pe_cached(ticker)
 
 
 def get_quote_and_pe(ticker):

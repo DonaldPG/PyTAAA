@@ -48,4 +48,16 @@ purgatory/
 
 # Refactoring support files (temporary)
 refactor_tools/
+
+# macOS
+.DS_Store
+
+# Cache directory
+cache/
+
+# Pickle files
+*.pkl
+
+# Refactor baseline directory
+.refactor_baseline/
 .refactor_baseline/
