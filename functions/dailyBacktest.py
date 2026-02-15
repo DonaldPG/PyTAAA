@@ -391,7 +391,6 @@ def computeDailyBacktest(
         with open( filepath, "w" ) as f:
             f.write(textmessage)
 
-
     ########################################################################
     ### compute some portfolio performance statistics and print summary
     ########################################################################
