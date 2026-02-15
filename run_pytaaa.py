@@ -83,6 +83,17 @@ def run_pytaaa(json_fn):
     print("current ranks: ", holdings['ranks'])
     print("cumulativecashin: ", holdings['cumulativecashin'][0])
     print("")
+    
+    # Proactively update fundamentals cache for current holdings
+    # This avoids rate limiting by batching updates and using cached data
+    try:
+        from functions.stock_fundamentals_cache import get_cache
+        cache = get_cache()
+        active_symbols = [s for s in holdings['stocks'] if s != 'CASH']
+        cache.update_for_current_symbols(active_symbols, force_refresh=False)
+        print(f"Updated fundamentals cache for {len(active_symbols)} holdings")
+    except Exception as e:
+        print(f"Warning: Failed to update fundamentals cache: {e}")
 
     # Update prices in HDF5 file for symbols in list
     # - check web for current stocks in Naz100, update files if changes needed
