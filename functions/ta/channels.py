@@ -5,8 +5,11 @@ methods: percentile-based channels and min/max (DPG) channels. Channels help
 identify support and resistance levels in price data.
 """
 
+import logging
 import numpy as np
 from numpy.typing import NDArray
+
+logger = logging.getLogger(__name__)
 
 
 def percentileChannel(x: NDArray[np.floating], minperiod: int, maxperiod: int, 

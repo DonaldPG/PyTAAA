@@ -4,6 +4,7 @@ This module provides the core computeSignal2D function that generates buy/sell
 signals based on various technical indicators including moving averages and channels.
 """
 
+import logging
 import numpy as np
 from numpy import isnan
 from numpy.typing import NDArray
@@ -12,6 +13,8 @@ from typing import Union
 # Import from sibling modules
 from functions.ta.moving_averages import SMA_2D, hma
 from functions.ta.channels import dpgchannel_2D, percentileChannel_2D
+
+logger = logging.getLogger(__name__)
 
 
 def computeSignal2D(adjClose: NDArray[np.floating], gainloss: NDArray[np.floating], 
@@ -60,8 +63,8 @@ def computeSignal2D(adjClose: NDArray[np.floating], gainloss: NDArray[np.floatin
     Raises:
         No explicit raises, but will fail if params dict is missing required keys
     """
-    print(" ... inside computeSignal2D ... ")
-    print(" params = ", params)
+    logger.debug(" ... inside computeSignal2D ... ")
+    logger.debug(" params = %s", params)
     MA1 = int(params['MA1'])
     MA2 = int(params['MA2'])
     MA2offset = int(params['MA2offset'])
@@ -76,8 +79,8 @@ def computeSignal2D(adjClose: NDArray[np.floating], gainloss: NDArray[np.floatin
     uptrendSignalMethod = params['uptrendSignalMethod']
 
     if uptrendSignalMethod == 'SMAs':
-        print("  ...using 3 SMA's for signal2D")
-        print("\n\n ...calculating signal2D using '"+uptrendSignalMethod+"' method...")
+        logger.info("Using 3 SMA's for signal2D")
+        logger.info("Calculating signal2D using '%s' method", uptrendSignalMethod)
         #############################################################################
         # Calculate signal for all stocks based on 3 simple moving averages (SMA's)
         #############################################################################
@@ -100,8 +103,8 @@ def computeSignal2D(adjClose: NDArray[np.floating], gainloss: NDArray[np.floatin
         return signal2D
 
     if uptrendSignalMethod == 'HMAs':
-        print("  ...using 3 HMA's (hull moving average) for signal2D")
-        print("\n\n ...calculating signal2D using '"+uptrendSignalMethod+"' method...")
+        logger.info("Using 3 HMA's (hull moving average) for signal2D")
+        logger.info("Calculating signal2D using '%s' method", uptrendSignalMethod)
         #############################################################################
         # Calculate signal for all stocks based on 3 Hull moving averages (HMA's)
         #############################################################################
@@ -124,15 +127,15 @@ def computeSignal2D(adjClose: NDArray[np.floating], gainloss: NDArray[np.floatin
         return signal2D
 
     elif uptrendSignalMethod == 'minmaxChannels':
-        print("  ...using 3 minmax channels for signal2D")
-        print("\n\n ...calculating signal2D using '"+uptrendSignalMethod+"' method...")
+        logger.info("Using 3 minmax channels for signal2D")
+        logger.info("Calculating signal2D using '%s' method", uptrendSignalMethod)
 
         #############################################################################
         # Calculate signal for all stocks based on 3 minmax channels (dpgchannels)
         #############################################################################
 
         # narrow channel is designed to remove day-to-day variability
-        print("narrow days min,max,inc = ", narrowDays[0], narrowDays[-1], (narrowDays[-1]-narrowDays[0])/7.)
+        logger.debug("narrow days min=%d, max=%d, inc=%f", narrowDays[0], narrowDays[-1], (narrowDays[-1]-narrowDays[0])/7.)
         narrow_minChannel, narrow_maxChannel = dpgchannel_2D(adjClose, narrowDays[0], narrowDays[-1], (narrowDays[-1]-narrowDays[0])/7.)
         narrow_midChannel = (narrow_minChannel+narrow_maxChannel)/2.
 
@@ -158,7 +161,7 @@ def computeSignal2D(adjClose: NDArray[np.floating], gainloss: NDArray[np.floatin
         return signal2D
 
     elif uptrendSignalMethod == 'percentileChannels':
-        print("\n\n ...calculating signal2D using '"+uptrendSignalMethod+"' method...")
+        logger.info("Calculating signal2D using '%s' method", uptrendSignalMethod)
         signal2D = np.zeros((adjClose.shape[0], adjClose.shape[1]), dtype=float)
         lowChannel, hiChannel = percentileChannel_2D(adjClose, MA1, MA2+.01, MA2offset, lowPct, hiPct)
         for ii in range(adjClose.shape[0]):
@@ -176,6 +179,6 @@ def computeSignal2D(adjClose: NDArray[np.floating], gainloss: NDArray[np.floatin
             index = np.argmax(np.clip(np.abs(gainloss[ii, :]-1), 0, 1e-8)) - 1
             signal2D[ii, 0:index] = 0
 
-        print(" finished calculating signal2D... mean signal2D = ", signal2D.mean())
+        logger.debug("Finished calculating signal2D... mean signal2D = %f", signal2D.mean())
 
         return signal2D, lowChannel, hiChannel

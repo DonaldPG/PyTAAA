@@ -36,7 +36,7 @@ with suppress_stderr():
     import matplotlib.pyplot as plt
 
 # Now safe to import other modules
-import argparse
+import click
 import json
 import logging
 from datetime import datetime
@@ -770,27 +770,27 @@ def verify_web_files_created(json_fn: str) -> None:
         logger.warning(f"Could not verify web files: {e}")
 
 
-def main() -> None:
-    """Main entry point for daily abacus update."""
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(
-        description='Daily abacus portfolio update with active model detection'
-    )
-    parser.add_argument(
-        '--json', 
-        required=True,
-        help='Path to JSON configuration file'
-    )
-    parser.add_argument(
-        '--verbose', 
-        action='store_true',
-        help='Enable verbose logging'
-    )
+@click.command()
+@click.option(
+    '--json',
+    'json_path',
+    required=True,
+    type=click.Path(exists=True),
+    help='Path to JSON configuration file'
+)
+@click.option(
+    '--verbose',
+    is_flag=True,
+    help='Enable verbose logging'
+)
+def main(json_path: str, verbose: bool) -> None:
+    """Daily abacus portfolio update with active model detection.
     
-    args = parser.parse_args()
-    
+    This tool automatically detects the active trading model, updates stock
+    prices only if needed, and generates web content for the HTML dashboard.
+    """
     # Setup logging with matplotlib suppression
-    logger = setup_logging(args.verbose)
+    logger = setup_logging(verbose)
     
     # Suppress matplotlib output at startup
     suppress_matplotlib_output()
@@ -799,13 +799,13 @@ def main() -> None:
     
     try:
         print("=== Daily Abacus Portfolio Update ===")
-        print(f"Configuration file: {args.json}")
+        print(f"Configuration file: {json_path}")
         print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print()
         
         # Load and validate configuration
         logger.info("Loading configuration file...")
-        config = load_config_file(args.json)
+        config = load_config_file(json_path)
         
         logger.info("Validating configuration structure...")
         validate_config_structure(config)
@@ -862,7 +862,7 @@ def main() -> None:
             
             # Use saved lookbacks or defaults from config
             success = write_abacus_backtest_portfolio_values(
-                json_config_path=args.json,
+                json_config_path=json_path,
                 lookbacks=None  # Will auto-detect from saved state or config
             )
             
