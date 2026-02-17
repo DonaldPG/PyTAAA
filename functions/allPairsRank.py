@@ -46,7 +46,7 @@ def allPairsRanking( adjClose, symbols, datearray, span=150 ):
 
 
 
-def allPairs_sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthreshold,riskDownside_min,riskDownside_max,rankThresholdPct):
+def allPairs_sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthreshold,riskDownside_min,riskDownside_max,rankThresholdPct,stockList='Naz100'):
 
     # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
     # rankthreshold --     # select this many funds with best recent performance
@@ -201,6 +201,15 @@ def allPairs_sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPerio
     ### calculate equal weights for ranks below threshold
     ########################################################################
 
+    # Define minimum active stocks threshold for portfolio allocation
+    # Use different thresholds based on index size
+    if stockList == 'SP500':
+        min_active_stocks_threshold = 250
+    elif stockList == 'Naz100':
+        min_active_stocks_threshold = 50
+    else:
+        min_active_stocks_threshold = 50  # Default fallback
+
     elsecount = 0
     elsedate  = 0
     for ii in np.arange(1,monthgainloss.shape[1]) :
@@ -212,9 +221,12 @@ def allPairs_sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPerio
                     monthgainlossweight[jj,ii]  = monthgainlossweight[jj,ii] / riskDownside[jj,ii]
                 else:
                     monthgainlossweight[jj,ii]  = 0.
-        elif activeCount[ii] == 0 :
-            monthgainlossweight[:,ii]  *= 0.
-            monthgainlossweight[:,ii]  += 1./adjClose.shape[0]
+        elif activeCount[ii] < min_active_stocks_threshold :
+            # When insufficient active stocks, allocate 100% to CASH
+            monthgainlossweight[:,ii]  = 0.
+            cash_index = symbols.index("CASH")
+            monthgainlossweight[cash_index,ii]  = 1.0
+            print(f"Insufficient active stocks ({activeCount[ii]} < {min_active_stocks_threshold}) on {datearray[ii]}, allocating 100% to CASH")
         else :
             elsedate = datearray[ii]
             elsecount += 1
