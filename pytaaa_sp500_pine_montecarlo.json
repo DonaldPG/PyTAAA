@@ -60,7 +60,7 @@
         "numdaysinfit2": 200,
         "offset": 7,
         "window_size": 50,
-        "enable_rolling_filter": false,
+        "enable_rolling_filter": true,
         "sma_filt_val": 0.01916716575659826,
         "MA2offset": 24,
         "trial": 35,
