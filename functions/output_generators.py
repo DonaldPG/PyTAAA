@@ -367,14 +367,38 @@ def compute_portfolio_metrics(
     """
     
     #############################################################################
-    # Phase 1: Compute basic gain/loss metrics
+    # Phase 1: Initialize arrays (placeholder)
     #############################################################################
     
-    gainloss = np.ones((adjClose.shape[0], adjClose.shape[1]), dtype=float)
+    # Note: gainloss will be computed after despiking in Phase 2b
+    # This placeholder section is kept for organizational clarity
     activeCount = np.zeros(adjClose.shape[1], dtype=float)
     numberSharesCalc = np.zeros((adjClose.shape[0], adjClose.shape[1]), dtype=float)
     
-    gainloss[:, 1:] = adjClose[:, 1:] / adjClose[:, :-1]
+    #############################################################################
+    # Phase 2: Extract parameters
+    #############################################################################
+    
+    monthsToHold = params['monthsToHold']
+    numberStocksTraded = params['numberStocksTraded']
+    LongPeriod = params['LongPeriod']
+    stddevThreshold = float(params['stddevThreshold'])
+    rankThresholdPct = float(params['rankThresholdPct'])
+    riskDownside_min = float(params['riskDownside_min'])
+    riskDownside_max = float(params['riskDownside_max'])
+    
+    #############################################################################
+    # Phase 2b: Apply despike filter to remove interpolated/anomalous data
+    #############################################################################
+    
+    # Apply despike_2D to detect and filter out stocks with interpolated or
+    # linear-trending prices that would artificially inflate Sharpe ratios
+    # (e.g., JEF 2015-2018 with linearly interpolated missing data)
+    adjClose_despike = despike_2D(adjClose, LongPeriod, stddevThreshold=stddevThreshold)
+    
+    # Compute gainloss from despiked prices
+    gainloss = np.ones((adjClose.shape[0], adjClose.shape[1]), dtype=float)
+    gainloss[:, 1:] = adjClose_despike[:, 1:] / adjClose_despike[:, :-1]
     gainloss[np.isnan(gainloss)] = 1.
     gainloss[np.isinf(gainloss)] = 1.
     value = 10000. * np.cumprod(gainloss, axis=1)
@@ -391,28 +415,16 @@ def compute_portfolio_metrics(
     
     # Remove NaN's from count for each day
     for ii in range(adjClose.shape[1]):
-        numNaNs = (np.isnan(adjClose[:, ii]))
+        numNaNs = (np.isnan(adjClose_despike[:, ii]))
         numNaNs = numNaNs[numNaNs == True].shape[0]
         activeCount[ii] = activeCount[ii] - np.clip(numNaNs, 0., 99999)
-    
-    #############################################################################
-    # Phase 2: Extract parameters
-    #############################################################################
-    
-    monthsToHold = params['monthsToHold']
-    numberStocksTraded = params['numberStocksTraded']
-    LongPeriod = params['LongPeriod']
-    stddevThreshold = float(params['stddevThreshold'])
-    rankThresholdPct = float(params['rankThresholdPct'])
-    riskDownside_min = float(params['riskDownside_min'])
-    riskDownside_max = float(params['riskDownside_max'])
     
     #############################################################################
     # Phase 3: Compute monthly gain/loss
     #############################################################################
     
     monthgainloss = np.ones((adjClose.shape[0], adjClose.shape[1]), dtype=float)
-    monthgainloss[:, LongPeriod:] = adjClose[:, LongPeriod:] / adjClose[:, :-LongPeriod]
+    monthgainloss[:, LongPeriod:] = adjClose_despike[:, LongPeriod:] / adjClose_despike[:, :-LongPeriod]
     monthgainloss[isnan(monthgainloss)] = 1.
     
     #############################################################################
@@ -423,24 +435,32 @@ def compute_portfolio_metrics(
     from functions.TAfunctions import computeSignal2D
     
     if params['uptrendSignalMethod'] == 'percentileChannels':
-        signal2D, lowChannel, hiChannel = computeSignal2D(adjClose, gainloss, params)
+        signal2D, lowChannel, hiChannel = computeSignal2D(adjClose_despike, gainloss, params)
     else:
-        signal2D = computeSignal2D(adjClose, gainloss, params)
+        signal2D = computeSignal2D(adjClose_despike, gainloss, params)
         lowChannel = None
         hiChannel = None
     
     # SP500 pre-2002 condition: Force 100% CASH allocation (overrides rolling window filter)
+    # Apply rolling window data quality filter (enabled by default to catch interpolated data)
+    print(f"DEBUG: About to check enable_rolling_filter, value = {params.get('enable_rolling_filter', True)}")
+    if params.get('enable_rolling_filter', True):  # Changed default to True for data quality
+        from functions.rolling_window_filter import apply_rolling_window_filter
+        print(" ... Applying rolling window data quality filter to detect interpolated data...")
+        signal2D = apply_rolling_window_filter(
+            adjClose_despike, signal2D, params.get('window_size', 50),
+            symbols=symbols, datearray=datearray, verbose=True
+        )
+        print(" ... Rolling window filter complete")
+    else:
+        print("DEBUG: Rolling filter SKIPPED because enable_rolling_filter is False or not set")
+    
     if params.get('stockList') == 'SP500':
         cutoff_date = datetime.date(2002, 1, 1)
         for date_idx in range(len(datearray)):
             if datearray[date_idx] < cutoff_date:
                 # Zero all stock signals for 100% CASH allocation
                 signal2D[:, date_idx] = 0.0
-    else:
-        # Apply rolling window data quality filter if enabled (only for non-SP500)
-        if params.get('enable_rolling_filter', False):  # Default disabled for performance
-            from functions.rolling_window_filter import apply_rolling_window_filter
-            signal2D = apply_rolling_window_filter(adjClose, signal2D, params.get('window_size', 50))
     
     # Copy to daily signal
     signal2D_daily = signal2D.copy()
@@ -462,7 +482,7 @@ def compute_portfolio_metrics(
     from functions.TAfunctions import sharpeWeightedRank_2D
     
     monthgainlossweight = sharpeWeightedRank_2D(
-        json_fn, datearray, symbols, adjClose,
+        json_fn, datearray, symbols, adjClose_despike,
         signal2D, signal2D_daily, LongPeriod, numberStocksTraded,
         riskDownside_min, riskDownside_max, rankThresholdPct,
         stddevThreshold=stddevThreshold,
@@ -486,7 +506,7 @@ def compute_portfolio_metrics(
             for jj in range(value.shape[0]):
                 monthvalue[jj, ii] = monthvalue[jj, ii - 1] * gainloss[jj, ii]
     
-    numberSharesCalc = monthvalue / adjClose  # For info only
+    numberSharesCalc = monthvalue / adjClose_despike  # For info only
     
     #############################################################################
     # Phase 7: Extract current holdings
@@ -499,7 +519,7 @@ def compute_portfolio_metrics(
         if monthgainlossweight[ii, -1] > 0:
             last_symbols_text.append(symbols[ii])
             last_symbols_weight.append(float(round(monthgainlossweight[ii, -1], 4)))
-            last_symbols_price.append(float(round(adjClose[ii, -1], 2)))
+            last_symbols_price.append(float(round(adjClose_despike[ii, -1], 2)))
     
     #############################################################################
     # Return all computed metrics

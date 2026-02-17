@@ -348,7 +348,7 @@ def validate_backtest_parameters(params: Dict) -> Dict:
         'absolute_max_weight': 0.9,
         'apply_constraints': True,
         'stockList': 'SP500',  # Default to SP500 for this backtest script
-        'enable_rolling_filter': False,
+        'enable_rolling_filter': True,  # Enable by default to catch interpolated data
         'window_size': 50,
     }
     
@@ -792,13 +792,23 @@ def execute_single_backtest(
     signal2D_daily = signal2D.copy()
     
     # Apply rolling window data quality filter if enabled
-    if validated_params.get('enable_rolling_filter', False):  # Default disabled for performance
+    print(f"DEBUG: enable_rolling_filter = {validated_params.get('enable_rolling_filter', True)}")
+    if validated_params.get('enable_rolling_filter', True):  # Default enabled to catch interpolated data
         from functions.rolling_window_filter import apply_rolling_window_filter
+        print(" ... Applying rolling window data quality filter to detect interpolated data...")
         original_signal_count = np.sum(signal2D > 0)
-        signal2D = apply_rolling_window_filter(adjClose, signal2D, validated_params.get('window_size', 50))
-        signal2D_daily = apply_rolling_window_filter(adjClose, signal2D_daily, validated_params.get('window_size', 50))
+        signal2D = apply_rolling_window_filter(
+            adjClose, signal2D, validated_params.get('window_size', 50),
+            symbols=symbols, datearray=datearray, verbose=True
+        )
+        signal2D_daily = apply_rolling_window_filter(
+            adjClose, signal2D_daily, validated_params.get('window_size', 50),
+            symbols=symbols, datearray=datearray, verbose=True
+        )
         filtered_signal_count = np.sum(signal2D > 0)
-        print(f" ... Rolling window filter: {original_signal_count} -> {filtered_signal_count} signals (window_size={validated_params.get('window_size', 50)})")
+        print(f" ... Rolling window filter complete: {original_signal_count} -> {filtered_signal_count} signals (window_size={validated_params.get('window_size', 50)})")
+    else:
+        print("DEBUG: Rolling filter SKIPPED because enable_rolling_filter is False")
     
     # Hold signal constant for each month based on monthsToHold parameter
     for jj in np.arange(1, adjClose.shape[1]):
