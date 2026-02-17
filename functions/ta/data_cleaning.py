@@ -86,25 +86,41 @@ def interpolate(self: NDArray[np.floating], method: str = 'linear', verbose: boo
             logger.debug(" ... type(values) = %s", type(values))
 
         invalid_bool = np.isnan(values)
-        valid = np.ones((len(self)), 'int')
-        valid[invalid_bool == True] = 0
-        invalid = 1 - valid
-        firstIndex = valid.argmax()
-        lastIndex = valid.shape[0] - valid[::-1].argmax()
+        valid_mask = ~invalid_bool
+        
+        # Check if there are any valid values
+        if not np.any(valid_mask):
+            # All values are NaN, return unchanged
+            return values.copy()
+        
+        firstIndex = np.where(valid_mask)[0][0]
+        lastIndex = np.where(valid_mask)[0][-1]
 
         if verbose:
-            logger.debug(" ... inside interpolate .... len(valid) = %d", len(valid))
-            logger.debug(" ... inside interpolate .... len(invalid) = %d", len(invalid))
             logger.debug(" ... inside interpolate .... firstIndex,lastIndex = %d, %d", firstIndex, lastIndex)
 
-        valid = valid[valid >= firstIndex]
-        valid = valid[valid <= lastIndex]
-        invalid = invalid[invalid >= firstIndex]
-        invalid = invalid[invalid <= lastIndex]
-
-        result = values.copy()
-        if len(invalid[invalid == 1]) > 0:
-            result[invalid == 1] = np.interp(inds[invalid == 1], inds[valid == 1], values[valid == 1])
+        # Only interpolate between firstIndex and lastIndex
+        # Create masks for the range we want to interpolate
+        range_mask = np.arange(len(values)) >= firstIndex
+        range_mask &= np.arange(len(values)) <= lastIndex
+        
+        # Within this range, interpolate NaN values
+        valid_in_range = valid_mask & range_mask
+        invalid_in_range = invalid_bool & range_mask
+        
+        if np.any(invalid_in_range):
+            # Get indices and values for interpolation
+            all_inds = np.arange(len(values))
+            interp_inds = all_inds[invalid_in_range]
+            valid_inds = all_inds[valid_in_range]
+            valid_values = values[valid_in_range]
+            
+            # Interpolate
+            interpolated = np.interp(interp_inds, valid_inds, valid_values)
+            result = values.copy()
+            result[invalid_in_range] = interpolated
+        else:
+            result = values.copy()
 
     return result
 

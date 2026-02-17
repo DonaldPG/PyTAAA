@@ -77,6 +77,11 @@ def computeSignal2D(adjClose: NDArray[np.floating], gainloss: NDArray[np.floatin
     hiPct = float(params['hiPct'])
     sma2factor = float(params['MA2factor'])
     uptrendSignalMethod = params['uptrendSignalMethod']
+    
+    # Parameters for percentile channels
+    minperiod = int(params.get('minperiod', 4))
+    maxperiod = int(params.get('maxperiod', 12))
+    incperiod = int(params.get('incperiod', 3))
 
     if uptrendSignalMethod == 'SMAs':
         logger.info("Using 3 SMA's for signal2D")
@@ -163,7 +168,7 @@ def computeSignal2D(adjClose: NDArray[np.floating], gainloss: NDArray[np.floatin
     elif uptrendSignalMethod == 'percentileChannels':
         logger.info("Calculating signal2D using '%s' method", uptrendSignalMethod)
         signal2D = np.zeros((adjClose.shape[0], adjClose.shape[1]), dtype=float)
-        lowChannel, hiChannel = percentileChannel_2D(adjClose, MA1, MA2+.01, MA2offset, lowPct, hiPct)
+        lowChannel, hiChannel = percentileChannel_2D(adjClose, minperiod, maxperiod, incperiod, lowPct, hiPct)
         for ii in range(adjClose.shape[0]):
             for jj in range(1, adjClose.shape[1]):
                 if (adjClose[ii, jj] > lowChannel[ii, jj] and adjClose[ii, jj-1] <= lowChannel[ii, jj-1]) or adjClose[ii, jj] > hiChannel[ii, jj]:
