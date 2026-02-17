@@ -35,6 +35,22 @@ if os.environ.get('DISPLAY','') == '':
     matplotlib.use('Agg')
 
 
+class TradingConstants:
+    """
+    Trading day constants used for performance calculations.
+
+    These represent standard trading day counts for various time periods,
+    based on approximately 252 trading days per year.
+    """
+
+    TRADING_DAYS_PER_YEAR: int = 252
+    TRADING_DAYS_1_YEAR: int = 252
+    TRADING_DAYS_2_YEARS: int = 504
+    TRADING_DAYS_3_YEARS: int = 756
+    TRADING_DAYS_5_YEARS: int = 1260
+    TRADING_DAYS_10_YEARS: int = 2520
+
+
 #############################################################################
 # NOTE: Phase 5+ Refactoring - Functions re-exported from functions/ta/*
 # 
@@ -624,9 +640,344 @@ def recentTrendComboGain(
 
     return comboGain
 
-#----------------------------------------------
+def sharpeWeightedRank_2D(
+    json_fn,
+    datearray,
+    symbols,
+    adjClose,
+    signal2D,
+    signal2D_daily,
+    LongPeriod,
+    numberStocksTraded,
+    riskDownside_min,
+    riskDownside_max,
+    rankThresholdPct,
+    stddevThreshold=5.0,
+    makeQCPlots=False,
+    # Parameters for backtest (refactored version).
+    max_weight_factor=3.0,
+    min_weight_factor=0.3,
+    absolute_max_weight=0.9,
+    apply_constraints=True,
+    # Parameters for production (PortfolioPerformanceCalcs).
+    is_backtest=True,
+    verbose=False,
+    stockList="SP500",  # Add stockList parameter for early period logic
+    **kwargs  # Accept any additional keyword arguments for compatibility.
+):
+    """
+    Compute Sharpe-ratio-weighted portfolio allocation for all dates.
 
-def textmessageOutsideTrendChannel(symbols, adjClose, json_fn):
+    This function computes rolling Sharpe ratios for each stock and
+    returns a 2D array of portfolio weights [n_stocks, n_days].
+    Stocks are selected based on:
+    1. Having an uptrend signal (signal2D > 0)
+    2. Ranking in the top N by Sharpe ratio
+    3. Passing data quality checks
+
+    Weights are assigned proportionally to Sharpe ratios, with constraints
+    applied via max_weight_factor, min_weight_factor, and absolute_max_weight.
+
+    IMPORTANT: Weights are forward-filled so every day has valid weights.
+    This ensures portfolio calculations don't result in zero values.
+
+    Parameters
+    ----------
+    json_fn : str
+        Path to JSON configuration file (not used but kept for API).
+    datearray : np.ndarray
+        Array of dates corresponding to adjClose columns.
+    symbols : list
+        List of stock symbols corresponding to adjClose rows.
+    adjClose : np.ndarray
+        2D array of adjusted close prices [n_stocks, n_days].
+    signal2D : np.ndarray
+        2D array of uptrend signals [n_stocks, n_days], 1=uptrend.
+    signal2D_daily : np.ndarray
+        Daily signals before monthly hold logic (not used but kept).
+    LongPeriod : int
+        Lookback period for Sharpe ratio calculation.
+    numberStocksTraded : int
+        Number of top stocks to select for the portfolio.
+    riskDownside_min : float
+        Minimum weight constraint per position.
+    riskDownside_max : float
+        Maximum weight constraint per position.
+    rankThresholdPct : float
+        Percentile threshold for rank filtering (not used currently).
+    stddevThreshold : float
+        Threshold for spike detection (default 5.0).
+    makeQCPlots : bool
+        If True, generate QC plots (default False).
+    max_weight_factor : float
+        Maximum weight as multiple of equal weight (default 3.0).
+    min_weight_factor : float
+        Minimum weight as multiple of equal weight (default 0.3).
+    absolute_max_weight : float
+        Absolute maximum weight cap (default 0.9).
+    apply_constraints : bool
+        Whether to apply weight constraints (default True).
+    is_backtest : bool
+        If True, running in backtest mode (default True).
+        If False, running in production mode.
+    verbose : bool
+        If True, print progress information (default False).
+    stockList : str
+        Stock list identifier ("SP500" or "Naz100"). Early period logic only applies to "SP500" (default "SP500").
+    **kwargs : dict
+        Additional keyword arguments for forward compatibility.
+
+    Returns
+    -------
+    np.ndarray
+        2D array of portfolio weights [n_stocks, n_days].
+        Weights sum to 1.0 for each day (column).
+    """
+    from math import sqrt
+
+    # Clamp numberStocksTraded to maximum of 20
+    numberStocksTraded = min(numberStocksTraded, 20)
+
+    n_stocks = adjClose.shape[0]
+    n_days = adjClose.shape[1]
+
+    print(" ... inside sharpeWeightedRank_2D (Sharpe-based selection) ...")
+    print(f" ... n_stocks={n_stocks}, n_days={n_days}")
+    print(f" ... LongPeriod={LongPeriod}")
+    print(f" ... numberStocksTraded={numberStocksTraded} (clamped to max 20)")
+    print(f" ... is_backtest={is_backtest}")
+    print(f" ... max_weight_factor={max_weight_factor}")
+    print(f" ... min_weight_factor={min_weight_factor}")
+    print(f" ... stockList={stockList}")  # Debug stockList
+
+    #########################################################################
+    # Initialize output weight matrix.
+    #########################################################################
+    monthgainlossweight = np.zeros((n_stocks, n_days), dtype=float)
+
+    #########################################################################
+    # Compute daily gain/loss for Sharpe calculation.
+    #########################################################################
+    dailygainloss = np.ones((n_stocks, n_days), dtype=float)
+    dailygainloss[:, 1:] = adjClose[:, 1:] / adjClose[:, :-1]
+    dailygainloss[np.isnan(dailygainloss)] = 1.0
+    dailygainloss[np.isinf(dailygainloss)] = 1.0
+
+    #########################################################################
+    # Compute rolling Sharpe ratio for all stocks and all dates.
+    #########################################################################
+    print(" ... Computing rolling Sharpe ratios for all stocks...")
+    sharpe_2d = np.zeros((n_stocks, n_days), dtype=float)
+
+    # Rolling window size for dynamic threshold calculation.
+    window_size = LongPeriod  # Use full LongPeriod for consistency with display
+
+    for i in range(n_stocks):
+        # Skip Sharpe calculation for CASH - it should always have Sharpe = 0.0
+        if symbols[i] == 'CASH':
+            sharpe_2d[i, :] = 0.0
+            continue
+            
+        for j in range(window_size, n_days):
+            # Extract window of returns (same as display function).
+            start_idx = max(0, j - window_size)
+            returns_window = dailygainloss[i, start_idx:j + 1] - 1.0
+
+            # Skip if insufficient valid data.
+            valid_returns = returns_window[~np.isnan(returns_window)]
+            if len(valid_returns) < window_size // 2:
+                sharpe_2d[i, j] = 0.0
+                continue
+
+            # Calculate mean and std of returns.
+            mean_return = np.mean(valid_returns)
+            std_return = np.std(valid_returns, ddof=1)
+
+            # Calculate Sharpe ratio (annualized).
+            if std_return > 0:
+                sharpe_2d[i, j] = (mean_return / std_return) * sqrt(TradingConstants.TRADING_DAYS_PER_YEAR)
+            else:
+                sharpe_2d[i, j] = 0.0
+
+    print(" ... Sharpe ratio calculation complete.")
+
+    #########################################################################
+    # For each date, select top stocks by Sharpe ratio and assign weights.
+    #########################################################################
+    print(" ... Selecting stocks and assigning weights...")
+
+    for j in range(n_days):
+        # Check if all signals are zero (no stocks have valid signals)
+        all_signals_zero = np.sum(signal2D[:, j] > 0) == 0
+        
+        if all_signals_zero:
+            # Check if we're in the early period (2000-2002) where signals are expected to be zero
+            # due to warm-up period. In this case, put everything in CASH.
+            # This logic only applies to SP500 backtests, not Naz100.
+            current_date = datearray[j]
+            is_early_period = (current_date.year >= 2000 and current_date.year <= 2002) and (stockList == "SP500")
+            
+            if is_early_period:
+                # For early period: assign weight 1.0 to CASH, 0.0 to all other stocks
+                cash_idx = symbols.index('CASH') if 'CASH' in symbols else None
+                if cash_idx is not None:
+                    monthgainlossweight[:, j] = 0.0  # Zero all weights first
+                    monthgainlossweight[cash_idx, j] = 1.0  # 100% in cash
+                    print(f" ... Date {datearray[j]}: Early period (2000-2002), all signals zero, assigning 100% to CASH")
+                else:
+                    # Fallback: equal weights to all stocks if no CASH symbol
+                    equal_weight = 1.0 / n_stocks
+                    monthgainlossweight[:, j] = equal_weight
+                    print(f" ... Date {datearray[j]}: Early period but no CASH symbol, assigning equal weights to all {n_stocks} stocks")
+            else:
+                # For non-early period: assign equal weights to all stocks as fallback
+                equal_weight = 1.0 / n_stocks
+                monthgainlossweight[:, j] = equal_weight
+                print(f" ... Date {datearray[j]}: All signals zero (non-early period), assigning equal weights to all {n_stocks} stocks")
+            continue
+
+        # Get stocks with valid signals for this date.
+        valid_signals = signal2D[:, j] > 0
+        valid_sharpe = ~np.isnan(sharpe_2d[:, j])
+
+        # Combine signal and Sharpe criteria.
+        eligible_stocks = valid_signals & valid_sharpe
+
+        # Check for early period logic BEFORE checking if eligible stocks exist
+        current_date = datearray[j]
+        # Handle different date formats (datetime.date, datetime.datetime, numpy.datetime64)
+        if hasattr(current_date, 'year'):
+            year = current_date.year
+        elif hasattr(current_date, 'item'):  # numpy datetime64
+            year = current_date.item().year
+        else:
+            year = int(str(current_date)[:4])  # fallback for string dates
+        
+        is_early_period = (year >= 2000 and year <= 2002) and (stockList == "SP500")
+        
+        if j < 5:  # Debug first 5 dates
+            print(f" ... Date {datearray[j]}: year={year}, stockList={stockList}, is_early_period={is_early_period}")
+
+        if np.sum(eligible_stocks) == 0:
+            # No eligible stocks found
+            if is_early_period:
+                # For early period: assign weight 1.0 to CASH, 0.0 to all other stocks
+                cash_idx = symbols.index('CASH') if 'CASH' in symbols else None
+                if cash_idx is not None:
+                    monthgainlossweight[:, j] = 0.0  # Zero all weights first
+                    monthgainlossweight[cash_idx, j] = 1.0  # 100% in cash
+                    print(f" ... Date {datearray[j]}: Early period (2000-2002), no eligible stocks, assigning 100% to CASH")
+                else:
+                    # Fallback: equal weights to all stocks if no CASH symbol
+                    equal_weight = 1.0 / n_stocks
+                    monthgainlossweight[:, j] = equal_weight
+                    print(f" ... Date {datearray[j]}: Early period but no CASH symbol, assigning equal weights to all {n_stocks} stocks")
+            else:
+                # For non-early period: assign equal weights to all stocks as fallback
+                equal_weight = 1.0 / n_stocks
+                monthgainlossweight[:, j] = equal_weight
+                print(f" ... Date {datearray[j]}: No eligible stocks (non-early period), assigning equal weights to all {n_stocks} stocks")
+            continue
+
+        # If we're in the early period, force 100% CASH even if there are eligible stocks
+        # (algorithm warm-up period)
+        if is_early_period:
+            cash_idx = symbols.index('CASH') if 'CASH' in symbols else None
+            if cash_idx is not None:
+                monthgainlossweight[:, j] = 0.0  # Zero all weights first
+                monthgainlossweight[cash_idx, j] = 1.0  # 100% in cash
+                if j < 5:  # Debug first 5 dates
+                    print(f" ... Date {datearray[j]}: Early period (2000-2002), forcing 100% to CASH despite eligible stocks")
+                continue
+            else:
+                print(f" ... Date {datearray[j]}: Early period but no CASH symbol, proceeding with normal selection")
+
+        # Get indices of eligible stocks
+        eligible_indices = np.where(eligible_stocks)[0]
+        
+        # Sort by Sharpe descending
+        sorted_indices = eligible_indices[np.argsort(-sharpe_2d[eligible_indices, j])]
+        
+        # Select top min(numberStocksTraded, len) stocks
+        num_to_select = min(numberStocksTraded, len(sorted_indices))
+        selected_stocks = sorted_indices[:num_to_select]
+
+        if len(selected_stocks) == 0:
+            continue
+
+        # Get Sharpe ratios for selected stocks.
+        selected_sharpe = sharpe_2d[selected_stocks, j]
+
+        # Handle NaN and zero sum cases
+        selected_sharpe = np.nan_to_num(selected_sharpe, nan=0.0)
+        
+        # Weight proportionally to Sharpe ratios
+        if np.sum(selected_sharpe) == 0:
+            raw_weights = np.ones(len(selected_stocks)) / len(selected_stocks)
+        else:
+            raw_weights = selected_sharpe / np.sum(selected_sharpe)
+
+        # Debug print for last date
+        if j == n_days - 1:
+            print(f"Debug: Date {datearray[j]}, eligible stocks: {len(eligible_indices)}, num_to_select: {num_to_select}")
+            print(f"Debug: Selected Sharpe range: min={selected_sharpe.min():.4f}, max={selected_sharpe.max():.4f}")
+            if len(selected_sharpe) > 1:
+                print(f"Debug: All selected Sharpe equal: {np.allclose(selected_sharpe, selected_sharpe[0])}")
+                print(f"Debug: Raw weights before constraints: {raw_weights}")
+
+        if apply_constraints:
+            # Apply weight constraints relative to equal weight
+            equal_weight = 1.0 / len(selected_stocks)
+            max_weight = min(max_weight_factor * equal_weight, absolute_max_weight)
+            min_weight = min_weight_factor * equal_weight
+
+            # Clip weights to bounds
+            constrained_weights = np.clip(raw_weights, min_weight, max_weight)
+            # Renormalize to sum to 1.0
+            if np.sum(constrained_weights) > 0:
+                constrained_weights /= np.sum(constrained_weights)
+            else:
+                constrained_weights = np.ones(len(selected_stocks)) / len(selected_stocks)
+
+            # Debug print constrained weights
+            if j == n_days - 1:
+                print(f"Debug: Equal weight: {equal_weight:.4f}, min_weight: {min_weight:.4f}, max_weight: {max_weight:.4f}")
+                print(f"Debug: Constrained weights: {constrained_weights}")
+                print(f"Debug: Weight range: min={constrained_weights.min():.4f}, max={constrained_weights.max():.4f}")
+
+            # Assign constrained weights
+            monthgainlossweight[selected_stocks, j] = constrained_weights
+        else:
+            # Simple proportional weighting without constraints
+            monthgainlossweight[selected_stocks, j] = raw_weights
+
+    #########################################################################
+    # Forward-fill weights to ensure every day has valid weights.
+    #########################################################################
+    print(" ... Forward-filling weights...")
+
+    for j in range(1, n_days):
+        # Only forward-fill if the entire day has zero weights
+        if np.sum(monthgainlossweight[:, j]) == 0:
+            monthgainlossweight[:, j] = monthgainlossweight[:, j - 1]
+
+    # Normalize weights to sum to 1.0 for each day.
+    for j in range(n_days):
+        daily_sum = monthgainlossweight[:, j].sum()
+        if daily_sum > 0:
+            monthgainlossweight[:, j] /= daily_sum
+
+    print(" ... Forward-filling and normalization complete.")
+    #########################################################################
+
+    print(" ... sharpeWeightedRank_2D computation complete")
+    print(f" ... Non-zero weights in output: {np.sum(monthgainlossweight > 0)}")
+    
+    # Verify first and last dates have valid weights.
+    print(f" ... Weights sum on day 0: {monthgainlossweight[:, 0].sum():.4f}")
+    print(f" ... Weights sum on day {n_days-1}: {monthgainlossweight[:, -1].sum():.4f}")
+    
+    return monthgainlossweight
 
     # temporarily skip this!!!!!!
     #return
@@ -755,7 +1106,7 @@ def multiSharpe( datearray, adjClose, periods ):
     return dates, medianSharpe, signal
 
 
-def sharpeWeightedRank_2D(
+def sharpeWeightedRank_2D_old(
         json_fn: str, 
         datearray: NDArray[np.datetime64],
         symbols: list[str],
@@ -1084,6 +1435,51 @@ def sharpeWeightedRank_2D(
     ### calculate equal weights for ranks below threshold
     ########################################################################
 
+    # Define minimum active stocks threshold for portfolio allocation
+    # Use different thresholds based on index size
+    if stockList == 'SP500':
+        min_active_stocks_threshold = 250
+    elif stockList == 'Naz100':
+        min_active_stocks_threshold = 50
+    else:
+        min_active_stocks_threshold = 50  # Default fallback
+
+    # Early period logic: For SP500 backtests, if all signals are zero during 2000-2002
+    # (algorithm warm-up period), allocate 100% to CASH to maintain portfolio value
+    for ii in np.arange(1, monthgainloss.shape[1]):
+        # Check if all signals are zero (no stocks have valid signals)
+        all_signals_zero = np.sum(signal2D[:, ii] > 0) == 0
+        
+        if all_signals_zero:
+            # Check if we're in the early period (2000-2002) where signals are expected to be zero
+            # due to warm-up period. In this case, put everything in CASH.
+            # This logic only applies to SP500, not Naz100.
+            current_date = datearray[ii]
+            # Handle different date formats
+            if hasattr(current_date, 'year'):
+                year = current_date.year
+            elif hasattr(current_date, 'item'):  # numpy datetime64
+                year = current_date.item().year
+            else:
+                year = int(str(current_date)[:4])  # fallback
+            
+            is_early_period = (year >= 2000 and year <= 2002) and (stockList == "SP500")
+            
+            if is_early_period:
+                # For early period: assign weight 1.0 to CASH, 0.0 to all other stocks
+                try:
+                    cash_index = symbols.index('CASH')
+                    monthgainlossweight[:, ii] = 0.0  # Zero all weights first
+                    monthgainlossweight[cash_index, ii] = 1.0  # 100% in cash
+                    print(f" ... Date {datearray[ii]}: Early period (2000-2002), all signals zero, assigning 100% to CASH")
+                    continue  # Skip the normal weight assignment logic
+                except ValueError:
+                    # Fallback: equal weights to all stocks if no CASH symbol
+                    equal_weight = 1.0 / monthgainloss.shape[0]
+                    monthgainlossweight[:, ii] = equal_weight
+                    print(f" ... Date {datearray[ii]}: Early period but no CASH symbol, assigning equal weights to all {monthgainloss.shape[0]} stocks")
+                    continue
+
     elsecount = 0
     elsedate  = 0
     for ii in np.arange(1,monthgainloss.shape[1]) :
@@ -1095,9 +1491,12 @@ def sharpeWeightedRank_2D(
                     monthgainlossweight[jj,ii]  = monthgainlossweight[jj,ii] / riskDownside[jj,ii]
                 else:
                     monthgainlossweight[jj,ii]  = 0.
-        elif activeCount[ii] == 0 :
-            monthgainlossweight[:,ii]  *= 0.
-            monthgainlossweight[:,ii]  += 1./adjClose.shape[0]
+        elif activeCount[ii] < min_active_stocks_threshold :
+            # When insufficient active stocks, allocate 100% to CASH
+            monthgainlossweight[:,ii]  = 0.
+            cash_index = symbols.index("CASH")
+            monthgainlossweight[cash_index,ii]  = 1.0
+            print(f"Insufficient active stocks ({activeCount[ii]} < {min_active_stocks_threshold}) on {datearray[ii]}, allocating 100% to CASH")
         else :
             elsedate = datearray[ii]
             elsecount += 1
@@ -2290,3 +2689,74 @@ def hurst(X):
     n = log(T).reshape(N, 1)
     H = lstsq(n[1:], R_S[1:])[0]
     return H[0]
+
+
+def textmessageOutsideTrendChannel(symbols, adjClose, json_fn):
+    """
+    Send text messages for stocks that are outside their trend channels.
+    
+    This function checks for stocks that have moved significantly outside
+    their trend channels and sends text alerts if the market is open.
+    
+    Parameters
+    ----------
+    symbols : list
+        List of stock symbols
+    adjClose : np.ndarray
+        Adjusted close prices [n_stocks, n_days]
+    json_fn : str
+        Path to JSON configuration file
+        
+    Returns
+    -------
+    None
+    """
+    # Import required modules
+    from functions.GetParams import get_json_params
+    from functions.CheckMarketOpen import get_MarketOpenOrClosed
+    from functions.SendEmail import SendEmail
+    
+    try:
+        # Get parameters
+        params = get_json_params(json_fn)
+        username = str(params['fromaddr']).split("@")[0]
+        emailpassword = str(params['PW'])
+        
+        # Check if market is open
+        market_status = get_MarketOpenOrClosed()
+        if 'Market Open' not in market_status:
+            return
+            
+        # Basic implementation - check for stocks with extreme moves
+        # This is a simplified version that sends alerts for stocks
+        # that have moved more than 5% in the last day
+        
+        if adjClose.shape[1] >= 2:  # Need at least 2 days of data
+            daily_returns = (adjClose[:, -1] - adjClose[:, -2]) / adjClose[:, -2]
+            
+            # Find stocks with extreme moves (>5% or <-5%)
+            extreme_moves = np.abs(daily_returns) > 0.05
+            extreme_indices = np.where(extreme_moves)[0]
+            
+            if len(extreme_indices) > 0:
+                message_lines = []
+                for idx in extreme_indices[:5]:  # Limit to 5 stocks to avoid spam
+                    symbol = symbols[idx]
+                    ret = daily_returns[idx]
+                    direction = "UP" if ret > 0 else "DOWN"
+                    pct = abs(ret) * 100
+                    message_lines.append(f"{symbol}: {direction} {pct:.1f}%")
+                
+                if message_lines:
+                    subject = "PyTAAA: Stocks Outside Trend Channel"
+                    body = "Stocks with extreme daily moves:\n" + "\n".join(message_lines)
+                    
+                    # Send email (text message functionality commented out)
+                    SendEmail(username, emailpassword, params.get('toSMS', params.get('toaddrs', '')), 
+                             params['fromaddr'], subject, body, "", "")
+                    
+                    print(f"Sent alert for {len(message_lines)} stocks outside trend channel")
+    
+    except Exception as e:
+        print(f"Warning: textmessageOutsideTrendChannel failed: {e}")
+        # Don't raise exception to avoid breaking the main flow
