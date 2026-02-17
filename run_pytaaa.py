@@ -86,12 +86,29 @@ def run_pytaaa(json_fn):
     
     # Proactively update fundamentals cache for current holdings
     # This avoids rate limiting by batching updates and using cached data
+    # Only update symbols that are currently in the active universe
     try:
         from functions.stock_fundamentals_cache import get_cache
+        from functions.data_loaders import load_quotes_for_analysis
+        
+        # Load current universe symbols to validate holdings
+        try:
+            _, universe_symbols, _ = load_quotes_for_analysis(symbols_file, json_fn, verbose=False)
+            valid_symbols = set(universe_symbols)
+        except Exception as e:
+            print(f"Warning: Could not load universe symbols, skipping validation: {e}")
+            valid_symbols = None
+        
         cache = get_cache()
         active_symbols = [s for s in holdings['stocks'] if s != 'CASH']
-        cache.update_for_current_symbols(active_symbols, force_refresh=False)
-        print(f"Updated fundamentals cache for {len(active_symbols)} holdings")
+        
+        # Only update symbols that are both in holdings AND in current universe
+        if valid_symbols is not None:
+            cache.update_for_current_symbols(active_symbols, force_refresh=False, valid_symbols=universe_symbols)
+            print(f"Updated fundamentals cache for holdings validated against universe")
+        else:
+            cache.update_for_current_symbols(active_symbols, force_refresh=False)
+            print(f"Updated fundamentals cache for {len(active_symbols)} holdings (no universe validation)")
     except Exception as e:
         print(f"Warning: Failed to update fundamentals cache: {e}")
 

@@ -52,6 +52,15 @@ def load_quotes_for_analysis(
     # Load from HDF5 (returns 5-tuple, we use first 3)
     adjClose, symbols, datearray, _, _ = loadQuotes_fromHDF(symbols_file, json_fn)
     
+    # Add CASH to symbols list if not present
+    if 'CASH' not in symbols:
+        symbols.append('CASH')
+        # Add a row of 1.0s for CASH prices
+        cash_prices = np.ones((1, adjClose.shape[1]), dtype=float)
+        adjClose = np.vstack([adjClose, cash_prices])
+        if verbose:
+            print(f"   . Added CASH symbol to symbols list")
+    
     if verbose:
         print(f"   . Loaded {adjClose.shape[0]} symbols, {adjClose.shape[1]} days")
         print(f"   . Cleaning data (interpolate, cleantobeginning, cleantoend)")
@@ -61,5 +70,13 @@ def load_quotes_for_analysis(
         adjClose[i, :] = interpolate(adjClose[i, :])
         adjClose[i, :] = cleantobeginning(adjClose[i, :])
         adjClose[i, :] = cleantoend(adjClose[i, :])
+    
+    # Special handling for CASH: ensure prices are constant 1.0
+    if 'CASH' in symbols:
+        cash_idx = symbols.index('CASH')
+        # Ensure all values are 1.0 (cash should be constant)
+        adjClose[cash_idx, :] = 1.0
+        if verbose:
+            print(f"   . Set CASH prices to constant 1.0 for all dates")
     
     return adjClose, symbols, datearray

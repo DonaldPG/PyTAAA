@@ -217,13 +217,19 @@ class StockFundamentalsCache:
             logger.warning(f"Failed to fetch sector/industry for {symbol}: {e}")
             return "unknown", "unknown"
     
-    def update_for_current_symbols(self, symbols: list, force_refresh: bool = False):
+    def update_for_current_symbols(self, symbols: list, force_refresh: bool = False, valid_symbols: list = None):
         """Update cache for currently active symbols only.
         
         Args:
             symbols: List of ticker symbols to update
             force_refresh: If True, refresh even if not stale
+            valid_symbols: Optional list of valid symbols. If provided, only update symbols in this list.
         """
+        if valid_symbols is not None:
+            valid_set = set(valid_symbols)
+            symbols = [s for s in symbols if s in valid_set]
+            logger.info(f"Filtered to {len(symbols)} symbols that are in valid universe")
+        
         logger.info(f"Updating cache for {len(symbols)} active symbols")
         
         for symbol in symbols:
