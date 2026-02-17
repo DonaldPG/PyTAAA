@@ -429,6 +429,19 @@ def compute_portfolio_metrics(
         lowChannel = None
         hiChannel = None
     
+    # SP500 pre-2002 condition: Force 100% CASH allocation (overrides rolling window filter)
+    if params.get('stockList') == 'SP500':
+        cutoff_date = datetime.date(2002, 1, 1)
+        for date_idx in range(len(datearray)):
+            if datearray[date_idx] < cutoff_date:
+                # Zero all stock signals for 100% CASH allocation
+                signal2D[:, date_idx] = 0.0
+    else:
+        # Apply rolling window data quality filter if enabled (only for non-SP500)
+        if params.get('enable_rolling_filter', False):  # Default disabled for performance
+            from functions.rolling_window_filter import apply_rolling_window_filter
+            signal2D = apply_rolling_window_filter(adjClose, signal2D, params.get('window_size', 50))
+    
     # Copy to daily signal
     signal2D_daily = signal2D.copy()
     
@@ -453,7 +466,8 @@ def compute_portfolio_metrics(
         signal2D, signal2D_daily, LongPeriod, numberStocksTraded,
         riskDownside_min, riskDownside_max, rankThresholdPct,
         stddevThreshold=stddevThreshold,
-        is_backtest=False, makeQCPlots=True
+        is_backtest=False, makeQCPlots=True,
+        stockList=params.get('stockList', 'SP500')  # Pass stockList for early period logic
     )
     
     #############################################################################
