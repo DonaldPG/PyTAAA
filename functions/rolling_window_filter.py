@@ -48,13 +48,29 @@ def apply_rolling_window_filter(adjClose: np.ndarray, signal2D: np.ndarray, wind
     """
     n_stocks, n_days = adjClose.shape
     filtered_count = 0
-    
+
+    gainloss = np.ones((adjClose.shape[0], adjClose.shape[1]), dtype=float)
+    gainloss[:,1:] = adjClose[:,1:] / adjClose[:,:-1]
+
     for stock_idx in range(n_stocks):
         for date_idx in range(window_size - 1, n_days):
             # Extract window: from date_idx - window_size + 1 to date_idx + 1
             start_idx = max(0, date_idx - window_size + 1)
             window_data = adjClose[stock_idx, start_idx:date_idx + 1]
-            
+            window_gainloss = gainloss[stock_idx, start_idx:date_idx + 1]
+            window_gainloss_std = np.std(window_gainloss)
+
+            # check for low volatility (std of gain/loss < 0.001) to indicate 
+            # possible interpolation
+            if window_gainloss_std < 0.001:
+                signal2D[stock_idx, date_idx] = 0.0
+                continue
+
+            # Apply valid length >= 50% threshold
+            valid_length = len(window_gainloss[np.abs(window_gainloss -1) >= 0.001])
+            if valid_length < window_size * 0.5:
+                signal2D[stock_idx, date_idx] = 0.0
+
             # Find valid (non-NaN) data
             valid_mask = ~np.isnan(window_data)
             valid_data = window_data[valid_mask]
@@ -64,51 +80,51 @@ def apply_rolling_window_filter(adjClose: np.ndarray, signal2D: np.ndarray, wind
                 signal2D[stock_idx, date_idx] = 0.0
                 continue
             
-            # Check if data is constant (all values equal)
-            if np.allclose(valid_data, valid_data[0]):
-                # All valid values are the same - consider as no valid non-constant data
-                valid_non_constant_count = 0
-            else:
-                # Check for linear interpolation by detecting overly constant derivatives
-                # Linear interpolation creates constant or near-constant price differences
-                # Real stock prices have varying derivatives with high coefficient of variation
-                if len(valid_data) >= 3:
-                    derivatives = np.diff(valid_data)  # Price differences: price[i+1] - price[i]
+            # # Check if data is constant (all values equal)
+            # if np.allclose(valid_data, valid_data[0]):
+            #     # All valid values are the same - consider as no valid non-constant data
+            #     valid_non_constant_count = 0
+            # else:
+            #     # Check for linear interpolation by detecting overly constant derivatives
+            #     # Linear interpolation creates constant or near-constant price differences
+            #     # Real stock prices have varying derivatives with high coefficient of variation
+            #     if len(valid_data) >= 3:
+            #         derivatives = np.diff(valid_data)  # Price differences: price[i+1] - price[i]
                     
-                    # Method 1: Check if derivatives are perfectly constant (catches pure linear fill)
-                    is_perfectly_constant = len(derivatives) > 0 and np.allclose(derivatives, derivatives[0], rtol=1e-6)
+            #         # Method 1: Check if derivatives are perfectly constant (catches pure linear fill)
+            #         is_perfectly_constant = len(derivatives) > 0 and np.allclose(derivatives, derivatives[0], rtol=1e-6)
                     
-                    # Method 2: Check coefficient of variation (std/mean ratio)
-                    # Interpolated data has very low CV (<0.2), real stocks have high CV (>1.0)
-                    mean_deriv = np.mean(derivatives)
-                    if mean_deriv != 0:
-                        coef_variation = np.std(derivatives) / np.abs(mean_deriv)
-                        is_too_constant = coef_variation < 0.5  # Threshold: CV < 0.5 indicates interpolation
-                    else:
-                        is_too_constant = True  # Zero mean derivative = no real price movement
+            #         # Method 2: Check coefficient of variation (std/mean ratio)
+            #         # Interpolated data has very low CV (<0.2), real stocks have high CV (>1.0)
+            #         mean_deriv = np.mean(derivatives)
+            #         if mean_deriv != 0:
+            #             coef_variation = np.std(derivatives) / np.abs(mean_deriv)
+            #             is_too_constant = coef_variation < 0.5  # Threshold: CV < 0.5 indicates interpolation
+            #         else:
+            #             is_too_constant = True  # Zero mean derivative = no real price movement
                     
-                    if is_perfectly_constant or is_too_constant:
-                        # Constant or near-constant slope detected = linear interpolation
-                        valid_non_constant_count = 0
+            #         if is_perfectly_constant or is_too_constant:
+            #             # Constant or near-constant slope detected = linear interpolation
+            #             valid_non_constant_count = 0
                         
-                        # Log JEF filtering for debugging
-                        if symbols and stock_idx < len(symbols) and symbols[stock_idx] == 'JEF':
-                            if datearray is not None and date_idx < len(datearray):
-                                date_str = str(datearray[date_idx])
-                                if verbose or '2015' in date_str or '2016' in date_str or '2017' in date_str or '2018' in date_str:
-                                    mean_val = np.mean(derivatives)
-                                    std_val = np.std(derivatives)
-                                    cv = coef_variation if mean_deriv != 0 else np.inf
-                                    print(f"  ⚠️  FILTERING JEF on {date_str}: CV={cv:.4f}, mean_deriv={mean_val:.6f}, std_deriv={std_val:.6f}, perfectly_constant={is_perfectly_constant}")
-                                    filtered_count += 1
-                    else:
-                        valid_non_constant_count = len(valid_data)
-                else:
-                    # Not enough data to check derivatives
-                    valid_non_constant_count = len(valid_data)
+            #             # Log JEF filtering for debugging
+            #             if symbols and stock_idx < len(symbols) and symbols[stock_idx] == 'JEF':
+            #                 if datearray is not None and date_idx < len(datearray):
+            #                     date_str = str(datearray[date_idx])
+            #                     if verbose or '2015' in date_str or '2016' in date_str or '2017' in date_str or '2018' in date_str:
+            #                         mean_val = np.mean(derivatives)
+            #                         std_val = np.std(derivatives)
+            #                         cv = coef_variation if mean_deriv != 0 else np.inf
+            #                         print(f"  ⚠️  FILTERING JEF on {date_str}: CV={cv:.4f}, mean_deriv={mean_val:.6f}, std_deriv={std_val:.6f}, perfectly_constant={is_perfectly_constant}")
+            #                         filtered_count += 1
+            #         else:
+            #             valid_non_constant_count = len(valid_data)
+            #     else:
+            #         # Not enough data to check derivatives
+            #         valid_non_constant_count = len(valid_data)
             
-            # Apply 50% threshold
-            if valid_non_constant_count < window_size * 0.5:
-                signal2D[stock_idx, date_idx] = 0.0
+            # # Apply 50% threshold
+            # if valid_non_constant_count < window_size * 0.5:
+            #     signal2D[stock_idx, date_idx] = 0.0
     
     return signal2D
