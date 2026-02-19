@@ -12,7 +12,7 @@ from math import sqrt
 ## local imports
 from functions.quotes_for_list_adjClose import *
 from functions.TAfunctions import *
-from functions.GetParams import get_performance_store
+from functions.GetParams import get_json_params, get_performance_store
 from functions.CountNewHighsLows import newHighsAndLows
 # from functions.UpdateSymbols_inHDF5 import UpdateHDF5
 
@@ -62,6 +62,13 @@ def computeDailyBacktest(
     params['uptrendSignalMethod'] = uptrendSignalMethod
     params['lowPct'] = lowPct
     params['hiPct'] = hiPct
+    _params = get_json_params(json_fn)
+    params['stockList'] = _params['stockList']
+
+    print("\n\n\n ... inside dailyBacktest.py/computeDailyBacktest ...")
+    print("\n   . params = " + str(params))
+    print("\n   . _params = " + str(_params))
+    print("\n   . params.get('stockList') = " + str(params.get('stockList')))
 
     print("\n\n ... inside dailyBacktest.py")
     print("   . params = " + str(params))
@@ -120,6 +127,7 @@ def computeDailyBacktest(
 
     # SP500 pre-2002 condition: Force 100% CASH allocation (overrides rolling window filter)
     if params.get('stockList') == 'SP500':
+        print("\n   . DEBUG: Applying SP500 pre-2002 condition: Forcing 100% CASH allocation for all stocks before 2002-01-01")
         cutoff_date = datetime.date(2002, 1, 1)
         for date_idx in range(len(datearray)):
             if datearray[date_idx] < cutoff_date:
@@ -159,7 +167,8 @@ def computeDailyBacktest(
     monthgainlossweight = sharpeWeightedRank_2D(
         json_fn, datearray, symbols, adjClose, signal2D ,signal2D_daily,
         LongPeriod, numberStocksTraded, riskDownside_min, riskDownside_max,
-        rankThresholdPct, stddevThreshold=stddevThreshold
+        rankThresholdPct, stddevThreshold=stddevThreshold,
+        stockList=params.get('stockList', 'SP500')
     )
 
     ########################################################################
