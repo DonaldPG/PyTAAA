@@ -858,6 +858,10 @@ def sharpeWeightedRank_2D(
         if j < 5:  # Debug first 5 dates
             print(f" ... Date {datearray[j]}: year={year}, stockList={stockList}, is_early_period={is_early_period}")
 
+        # Debug: print number of eligible stocks at beginning of each month
+        if j == 0 or datearray[j].month != datearray[j-1].month:
+            print(f" ... DEBUG: Date {datearray[j]}: {np.sum(eligible_stocks)} eligible stocks")
+
         if np.sum(eligible_stocks) == 0:
             # No eligible stocks found
             if is_early_period:
@@ -966,6 +970,11 @@ def sharpeWeightedRank_2D(
         daily_sum = monthgainlossweight[:, j].sum()
         if daily_sum > 0:
             monthgainlossweight[:, j] /= daily_sum
+
+    print(" ... DEBUG: Show non-zero weights at beginning of each month...")
+    for j in range(n_days):
+        if j == 0 or datearray[j].month != datearray[j-1].month:
+            print(f" ... DEBUG: Date {datearray[j]}: {np.sum(monthgainlossweight[:, j] > 0)} non-zero weights")
 
     print(" ... Forward-filling and normalization complete.")
     #########################################################################
