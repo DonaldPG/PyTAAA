@@ -15,6 +15,8 @@ import os
 from typing import Dict, List, Any, Optional
 
 import matplotlib
+
+from functions.GetParams import get_json_params
 matplotlib.use('Agg')
 from matplotlib import pylab as plt
 
@@ -455,7 +457,10 @@ def compute_portfolio_metrics(
     else:
         print("DEBUG: Rolling filter SKIPPED because enable_rolling_filter is False or not set")
     
-    if params.get('stockList') == 'SP500':
+    # SP500 pre-2002 condition: Force 100% CASH allocation
+    _params = get_json_params(json_fn)
+    if _params.get('stockList') == 'SP500':
+        print("\n   . DEBUG: Applying SP500 pre-2002 condition: Forcing 100% CASH allocation for all stocks before 2002-01-01")
         cutoff_date = datetime.date(2002, 1, 1)
         for date_idx in range(len(datearray)):
             if datearray[date_idx] < cutoff_date:
