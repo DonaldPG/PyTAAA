@@ -1426,11 +1426,11 @@ elif basename == "sp500_symbols.txt" :
     plotmax = 1.e8     # maximum value for plot (figure 3)
     holdMonths = [1,2,3,4,6,12]
 elif basename == "cmg_symbols.txt" :
-    runnum = 'run2508'
+    runnum = 'run2508b'
     plotmax = 1.e7     # maximum value for plot (figure 3)
     holdMonths = [3,4,6,12]
 else :
-    runnum = 'run2508'
+    runnum = 'run2508b'
     plotmax = 1.e9     # maximum value for plot (figure 3)
     holdMonths = [1,2,3,4,6,12]
 
@@ -1592,7 +1592,7 @@ column_text = "run,trial, \
 for i in range(50):
     column_text = column_text.replace(", ", ",")
 
-with open(outfilename,"w") as OUTFILE:
+with open(outfilename,"a") as OUTFILE:
     OUTFILE.write(column_text)
 
 
@@ -1617,13 +1617,16 @@ riskDownside_max_montecarlo = np.zeros(randomtrials,dtype=float)
 sma2factor_montecarlo = np.zeros(randomtrials,dtype=float)
 rankThresholdPct_montecarlo = np.zeros(randomtrials,dtype=float)
 
+first_trial = 0
+for iter_num in range(first_trial, first_trial + randomtrials + 1):
 
-for iter in range(randomtrials):
-
+    iter = iter_num - first_trial
     # Enhanced progress tracking
     if iter % max(1, randomtrials // 20) == 0 or iter == 0:  # Show progress every 5% or first iteration
         progress_pct = (iter / randomtrials) * 100
-        print(f"\n🔄 Monte Carlo Progress: Trial {iter}/{randomtrials} ({progress_pct:.1f}%)")
+        print(
+            f"\n🔄 Monte Carlo Progress: Trial {iter}/"
+            f"{randomtrials} ({progress_pct:.1f}%)")
 
         # Show current best Sharpe so far
         if iter > 0:
@@ -1681,9 +1684,11 @@ for iter in range(randomtrials):
     
     print("")
     print("months to hold = ",holdMonths,monthsToHold)
-    print(f"weight constraints: max_factor={max_weight_factor:.3f}, "
-          f"min_factor={min_weight_factor:.3f}, "
-          f"abs_max={absolute_max_weight:.3f}")
+    print(
+        f"weight constraints: max_factor={max_weight_factor:.3f}, "
+        f"min_factor={min_weight_factor:.3f}, "
+        f"abs_max={absolute_max_weight:.3f}"
+    )
     print("")
 
     riskDownside_min = random.triangular(.2,.25,.3)
@@ -2646,7 +2651,7 @@ for iter in range(randomtrials):
         two_year_stdev = np.nan
     print(" two year gain, daily geom mean, stdev = ", two_year_gain, two_year_geom, two_year_stdev)
 
-    title_text = str(iter)+":  "+ \
+    title_text = str(iter_num)+":  "+ \
                   str(int(numberStocksTraded))+"__"+   \
                   str(int(monthsToHold))+"__"+   \
                   str(int(LongPeriod))+"-"+   \
@@ -2876,7 +2881,7 @@ for iter in range(randomtrials):
             "sp500_pctChannel_montecarlo_" + \
             str(dateForFilename) + "__" + \
             str(runnum) + "__" + \
-            format(iter,'03d') + ".png"
+            format(iter_num, '03d') + ".png"
         )
         # plot_fn = os.path.join(
         #     os.getcwd(),
@@ -2935,7 +2940,7 @@ for iter in range(randomtrials):
     Portfolioannualgainfromtargetdate = ( gmean(PortfolioDailyGains[-lag:])**252 )
     print("portfolio annualized gains & sharpe from target date: ", Portfolioannualgainfromtargetdate,Portfoliosharpefromtargetdate)
 
-    csv_text = runnum+","+str(iter)+","+    \
+    csv_text = runnum+","+str(iter_num)+","+    \
                   str(numberStocksTraded)+","+   \
                   str(monthsToHold)+","+  \
                   str(LongPeriod)+","+   \
