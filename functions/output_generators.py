@@ -443,6 +443,25 @@ def compute_portfolio_metrics(
         lowChannel = None
         hiChannel = None
     
+    signal2D_1 = signal2D.copy()
+
+    # SP500 pre-2002 condition: Force 100% CASH allocation (overrides rolling window filter)
+    if params.get('stockList') == 'SP500':
+        print("\n   . DEBUG: Applying SP500 pre-2002 condition: Forcing 100% CASH allocation for all stocks before 2002-01-01")
+        cutoff_date = datetime.date(2002, 1, 1)
+        for date_idx in range(len(datearray)):
+            if datearray[date_idx] < cutoff_date:
+                # Zero all stock signals for 100% CASH allocation
+                signal2D[:, date_idx] = 0.0
+
+    signal2D_2 = signal2D.copy()
+    iii,jjj = np.where(signal2D_1 != signal2D_2)
+
+    print(
+        "\n   . DEBUG: output_generators: Completed SP500 pre-2002 condition (if applicable). "
+        "number of changed signals in signal2D = ", len(iii)
+    )
+
     # SP500 pre-2002 condition: Force 100% CASH allocation (overrides rolling window filter)
     # Apply rolling window data quality filter (enabled by default to catch interpolated data)
     print(f"DEBUG: About to check enable_rolling_filter, value = {params.get('enable_rolling_filter', True)}")
@@ -456,16 +475,23 @@ def compute_portfolio_metrics(
         print(" ... Rolling window filter complete")
     else:
         print("DEBUG: Rolling filter SKIPPED because enable_rolling_filter is False or not set")
-    
-    # SP500 pre-2002 condition: Force 100% CASH allocation
-    _params = get_json_params(json_fn)
-    if _params.get('stockList') == 'SP500':
-        print("\n   . DEBUG: Applying SP500 pre-2002 condition: Forcing 100% CASH allocation for all stocks before 2002-01-01")
-        cutoff_date = datetime.date(2002, 1, 1)
-        for date_idx in range(len(datearray)):
-            if datearray[date_idx] < cutoff_date:
-                # Zero all stock signals for 100% CASH allocation
-                signal2D[:, date_idx] = 0.0
+
+    signal2D_3 = signal2D.copy()
+    iii,jjj = np.where(signal2D_3 != signal2D_2)
+    print(
+        "\n   . DEBUG: output_generators: Completed rolling_window_filter application. "
+         "number of changed signals in signal2D = ", len(iii)
+    )
+
+    # # SP500 pre-2002 condition: Force 100% CASH allocation
+    # _params = get_json_params(json_fn)
+    # if _params.get('stockList') == 'SP500':
+    #     print("\n   . DEBUG: Applying SP500 pre-2002 condition: Forcing 100% CASH allocation for all stocks before 2002-01-01")
+    #     cutoff_date = datetime.date(2002, 1, 1)
+    #     for date_idx in range(len(datearray)):
+    #         if datearray[date_idx] < cutoff_date:
+    #             # Zero all stock signals for 100% CASH allocation
+    #             signal2D[:, date_idx] = 0.0
     
     # Copy to daily signal
     signal2D_daily = signal2D.copy()
@@ -475,6 +501,33 @@ def compute_portfolio_metrics(
         if not ((datearray[jj].month != datearray[jj - 1].month) and 
                 (datearray[jj].month - 1) % monthsToHold == 0):
             signal2D[:, jj] = signal2D[:, jj - 1]
+
+    # Transient overwrite check: ensure monthly-held signals at rebalance
+    # dates were taken from the filtered daily signals (signal2D_daily).
+    try:
+        print(f"DEBUG ids post-fill: id(signal2D)={id(signal2D)}, id(signal2D_daily)={id(signal2D_daily)}")
+        rebalance_indices = []
+        for jj in range(1, adjClose.shape[1]):
+            is_rebalance = (
+                (datearray[jj].month != datearray[jj-1].month) and
+                ((datearray[jj].month - 1) % monthsToHold == 0)
+            )
+            if is_rebalance:
+                rebalance_indices.append(jj)
+        mismatches = []
+        for jj in rebalance_indices:
+            if not np.array_equal(signal2D[:, jj], signal2D_daily[:, jj]):
+                mismatches.append((jj, int(np.sum(signal2D_daily[:, jj] > 0)), int(np.sum(signal2D[:, jj] > 0))))
+        if mismatches:
+            print("\nOUTPUT_GENERATORS OVERWRITE ASSERT: mismatches at rebalance dates")
+            for m in mismatches[:10]:
+                print(m)
+            raise AssertionError("Monthly signals differ from filtered daily signals after forward-fill in output_generators.py")
+    except AssertionError:
+        raise
+    except Exception:
+        # Be permissive if variables or shapes are unexpected
+        pass
     
     numberStocks = np.sum(signal2D, axis=0)
     dailyNumberUptrendingStocks = np.sum(signal2D, axis=0)
@@ -486,6 +539,8 @@ def compute_portfolio_metrics(
     # Import here to avoid circular dependency
     from functions.TAfunctions import sharpeWeightedRank_2D
     
+    signal2D_4before = signal2D.copy()
+
     monthgainlossweight = sharpeWeightedRank_2D(
         json_fn, datearray, symbols, adjClose_despike,
         signal2D, signal2D_daily, LongPeriod, numberStocksTraded,
@@ -494,7 +549,19 @@ def compute_portfolio_metrics(
         is_backtest=False, makeQCPlots=True,
         stockList=params.get('stockList', 'SP500')  # Pass stockList for early period logic
     )
-    
+
+    signal2D_4after = signal2D.copy()
+    iii,jjj = np.where(signal2D_4after != signal2D_4before)
+    print(
+        "\n   . DEBUG: output_generators: Completed sharpeWeightedRank_2D. "
+         "number of changed signals in signal2D = ", len(iii)
+    )
+    del signal2D_4after
+    del signal2D_4before
+    del signal2D_3
+    del signal2D_2
+    del signal2D_1
+
     #############################################################################
     # Phase 6: Compute traded value of stock for each month
     #############################################################################
