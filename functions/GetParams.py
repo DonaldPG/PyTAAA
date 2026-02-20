@@ -448,6 +448,15 @@ def get_json_params(json_fn, verbose=False):
     params['stockList'] = config.get("Valuation")["stockList"]
     params['symbols_file'] = config.get("Valuation")["symbols_file"]
 
+    # Rolling window data-quality filter settings.
+    # These keys exist in the JSON Valuation section but were never read,
+    # causing dailyBacktest.py to skip the filter unconditionally
+    # (it defaulted enable_rolling_filter to False).
+    params['enable_rolling_filter'] = bool(
+        valuation_section.get('enable_rolling_filter', False)
+    )
+    params['window_size'] = int(valuation_section.get('window_size', 50))
+
     return params
 
 

@@ -881,10 +881,19 @@ def sharpeWeightedRank_2D(
                     monthgainlossweight[:, j] = equal_weight
                     print(f" ... Date {datearray[j]}: Early period but no CASH symbol, assigning equal weights to all {n_stocks} stocks")
             else:
-                # For non-early period: assign equal weights to all stocks as fallback
-                equal_weight = 1.0 / n_stocks
-                monthgainlossweight[:, j] = equal_weight
-                print(f" ... Date {datearray[j]}: All signals zero (non-early period), assigning equal weights to all {n_stocks} stocks")
+                # Non-early period with all signals zero: the rolling window filter
+                # has excluded all stocks (e.g. infilled prices). Assign 100% to
+                # CASH to stay flat, or leave weights at 0.0 if CASH is absent.
+                # Do NOT spread equal weight to all stocks - that would re-enable
+                # filtered-out symbols (e.g. JEF during its 2015-2018 infill period).
+                cash_idx = symbols.index('CASH') if 'CASH' in symbols else None
+                if cash_idx is not None:
+                    monthgainlossweight[:, j] = 0.0
+                    monthgainlossweight[cash_idx, j] = 1.0
+                    print(f" ... Date {datearray[j]}: All signals zero (non-early period), assigning 100% to CASH")
+                else:
+                    # monthgainlossweight[:, j] already 0.0 from initialization.
+                    print(f" ... Date {datearray[j]}: All signals zero (non-early period), no CASH symbol, leaving weights at 0.0")
             continue
 
         # Get stocks with valid signals for this date (from mask).
@@ -928,10 +937,17 @@ def sharpeWeightedRank_2D(
                     monthgainlossweight[:, j] = equal_weight
                     print(f" ... Date {datearray[j]}: Early period but no CASH symbol, assigning equal weights to all {n_stocks} stocks")
             else:
-                # For non-early period: assign equal weights to all stocks as fallback
-                equal_weight = 1.0 / n_stocks
-                monthgainlossweight[:, j] = equal_weight
-                print(f" ... Date {datearray[j]}: No eligible stocks (non-early period), assigning equal weights to all {n_stocks} stocks")
+                # Non-early period with no eligible stocks (signals present but
+                # Sharpe filtering excluded all candidates). Assign 100% to CASH
+                # or leave weights at 0.0. Do NOT spread equal weight to all stocks.
+                cash_idx = symbols.index('CASH') if 'CASH' in symbols else None
+                if cash_idx is not None:
+                    monthgainlossweight[:, j] = 0.0
+                    monthgainlossweight[cash_idx, j] = 1.0
+                    print(f" ... Date {datearray[j]}: No eligible stocks (non-early period), assigning 100% to CASH")
+                else:
+                    # monthgainlossweight[:, j] already 0.0 from initialization.
+                    print(f" ... Date {datearray[j]}: No eligible stocks (non-early period), no CASH symbol, leaving weights at 0.0")
             continue
 
         # If we're in the early period, force 100% CASH even if there are eligible stocks
@@ -1322,7 +1338,7 @@ def sharpeWeightedRank_2D_old(
 
     # Create a binary mask from `signal2D` and do not modify the input array.
     # This preserves any zeros set by upstream filters (e.g. rolling window).
-    signal_mask = (signal2D > 0).astype(float)
+    signal_mask = (signal2D > 0.5).astype(float)
 
     # apply signal mask to daily gainloss
     print("\n\n\n######################\n...gainloss min,median,max = ",gainloss.min(),gainloss.mean(),np.median(gainloss),gainloss.max())
@@ -2376,7 +2392,7 @@ def MAA_WeightedRank_2D(
     gainloss[isnan(gainloss)]=1.
 
     # Create a binary mask from `signal2D` and do not modify the input array.
-    signal_mask = (signal2D > 0).astype(float)
+    signal_mask = (signal2D > 0.5).astype(float)
 
     ############################
     ###
@@ -2577,7 +2593,7 @@ def UnWeightedRank_2D(datearray,adjClose,signal2D,LongPeriod,rankthreshold,riskD
     gainloss[isnan(gainloss)]=1.
 
     # Create a binary mask from `signal2D` and do not modify the input array.
-    signal_mask = (signal2D > 0).astype(float)
+    signal_mask = (signal2D > 0.5).astype(float)
 
     # apply signal mask to daily gainloss
     gainloss = gainloss * signal_mask
