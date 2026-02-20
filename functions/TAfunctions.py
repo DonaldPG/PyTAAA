@@ -750,6 +750,19 @@ def sharpeWeightedRank_2D(
     print(f" ... min_weight_factor={min_weight_factor}")
     print(f" ... stockList={stockList}")  # Debug stockList
 
+    # Identity and symbol-order diagnostics to help track whether the
+    # array returned by the rolling filter is the same object received
+    # here by the selector.
+    try:
+        print(f"DEBUG ids in selector: id(signal2D)={id(signal2D)}, id(signal2D_daily)={id(signal2D_daily)}")
+        print(f"DEBUG ids in selector: id(signal_mask)={id(signal_mask)}")
+        if symbols is not None and len(symbols) > 0:
+            print(f"DEBUG symbols[0:10]={symbols[:10]}")
+            if 'JEF' in symbols:
+                print(f"DEBUG: JEF index in selector = {symbols.index('JEF')}")
+    except Exception:
+        pass
+
     #########################################################################
     # Initialize output weight matrix.
     #########################################################################
@@ -762,6 +775,43 @@ def sharpeWeightedRank_2D(
     dailygainloss[:, 1:] = adjClose[:, 1:] / adjClose[:, :-1]
     dailygainloss[np.isnan(dailygainloss)] = 1.0
     dailygainloss[np.isinf(dailygainloss)] = 1.0
+
+    # Create a binary mask from `signal2D` to ensure upstream filters
+    # (like rolling_window_filter) that set zeros are respected.
+    # Define it early so it's available to all subsequent logic.
+    signal_mask = (signal2D > 0).astype(float)
+
+    # Sanity assertions / diagnostics: ensure shapes align and that
+    # the mask reflects the filtered daily/monthly signals. Print
+    # JEF-specific diagnostics at month starts to track where zeros
+    # should have been applied by the rolling filter.
+    try:
+        assert signal2D.shape == signal_mask.shape, (
+            f"signal2D shape {signal2D.shape} != signal_mask shape {signal_mask.shape}"
+        )
+        assert signal2D_daily.shape == signal2D.shape, (
+            f"signal2D_daily shape {signal2D_daily.shape} != signal2D shape {signal2D.shape}"
+        )
+    except AssertionError:
+        print("DIAG ASSERTION FAILED: shape mismatch between signals and mask")
+        raise
+
+    jef_idx = symbols.index("JEF") if "JEF" in symbols else None
+    if jef_idx is not None:
+        # Print a short diagnostic line at the start of every month
+        for _j in range(n_days):
+            try:
+                if _j == 0 or datearray[_j].month != datearray[_j-1].month:
+                    daily_val = float(signal2D_daily[jef_idx, _j])
+                    month_val = float(signal2D[jef_idx, _j])
+                    mask_val = float(signal_mask[jef_idx, _j])
+                    print(f" ... DIAG: Date {datearray[_j]} JEF daily={daily_val:.6f} month={month_val:.6f} mask={mask_val:.1f}")
+            except Exception:
+                # Be robust to date types and continue
+                try:
+                    print(f" ... DIAG: Date index {_j} JEF entries: daily={signal2D_daily[jef_idx,_j]} month={signal2D[jef_idx,_j]} mask={signal_mask[jef_idx,_j]}")
+                except Exception:
+                    pass
 
     #########################################################################
     # Compute rolling Sharpe ratio for all stocks and all dates.
@@ -808,7 +858,8 @@ def sharpeWeightedRank_2D(
 
     for j in range(n_days):
         # Check if all signals are zero (no stocks have valid signals)
-        all_signals_zero = np.sum(signal2D[:, j] > 0) == 0
+        # Use the binary mask so upstream filters (rolling window) are respected.
+        all_signals_zero = np.sum(signal_mask[:, j] > 0) == 0
         
         if all_signals_zero:
             # Check if we're in the early period (2000-2002) where signals are expected to be zero
@@ -836,8 +887,8 @@ def sharpeWeightedRank_2D(
                 print(f" ... Date {datearray[j]}: All signals zero (non-early period), assigning equal weights to all {n_stocks} stocks")
             continue
 
-        # Get stocks with valid signals for this date.
-        valid_signals = signal2D[:, j] > 0
+        # Get stocks with valid signals for this date (from mask).
+        valid_signals = signal_mask[:, j] > 0
         valid_sharpe = ~np.isnan(sharpe_2d[:, j])
 
         # Combine signal and Sharpe criteria.
@@ -951,9 +1002,38 @@ def sharpeWeightedRank_2D(
 
             # Assign constrained weights
             monthgainlossweight[selected_stocks, j] = constrained_weights
+            # Debug: print selected symbols and their assigned weights at
+            # the beginning of each month (selection/rebalance points).
+            try:
+                if j == 0 or datearray[j].month != datearray[j-1].month:
+                    sel_list = [(symbols[idx], float(w)) for idx, w in zip(selected_stocks, constrained_weights)]
+                    sel_text = ", ".join([f"{s}:{wt:.4f}" for s, wt in sel_list])
+                    print(f" ... SELECTION DEBUG: Date {datearray[j]} -> {len(sel_list)} selected: {sel_text}")
+                    # Also print JEF specifically if present
+                    if "JEF" in symbols:
+                        jef_idx = symbols.index("JEF")
+                        jef_w = float(monthgainlossweight[jef_idx, j])
+                        if jef_w > 0:
+                            print(f" ... SELECTION DEBUG: JEF selected with weight {jef_w:.4f} on {datearray[j]}")
+            except Exception:
+                pass
         else:
             # Simple proportional weighting without constraints
             monthgainlossweight[selected_stocks, j] = raw_weights
+            # Debug: print selected symbols and their assigned weights at
+            # the beginning of each month (selection/rebalance points).
+            try:
+                if j == 0 or datearray[j].month != datearray[j-1].month:
+                    sel_list = [(symbols[idx], float(w)) for idx, w in zip(selected_stocks, raw_weights)]
+                    sel_text = ", ".join([f"{s}:{wt:.4f}" for s, wt in sel_list])
+                    print(f" ... SELECTION DEBUG: Date {datearray[j]} -> {len(sel_list)} selected: {sel_text}")
+                    if "JEF" in symbols:
+                        jef_idx = symbols.index("JEF")
+                        jef_w = float(monthgainlossweight[jef_idx, j])
+                        if jef_w > 0:
+                            print(f" ... SELECTION DEBUG: JEF selected with weight {jef_w:.4f} on {datearray[j]}")
+            except Exception:
+                pass
 
     #########################################################################
     # Forward-fill weights to ensure every day has valid weights.
@@ -1240,14 +1320,14 @@ def sharpeWeightedRank_2D_old(
     gainloss[:,1:] = adjClose_despike[:,1:] / adjClose_despike[:,:-1]  ## experimental
     gainloss[isnan(gainloss)]=1.
 
-    # convert signal2D to contain either 1 or 0 for weights
-    signal2D -= signal2D.min()
-    signal2D *= signal2D.max()
+    # Create a binary mask from `signal2D` and do not modify the input array.
+    # This preserves any zeros set by upstream filters (e.g. rolling window).
+    signal_mask = (signal2D > 0).astype(float)
 
-    # apply signal to daily gainloss
+    # apply signal mask to daily gainloss
     print("\n\n\n######################\n...gainloss min,median,max = ",gainloss.min(),gainloss.mean(),np.median(gainloss),gainloss.max())
-    print("...signal2D min,median,max = ",signal2D.min(),signal2D.mean(),np.median(signal2D),signal2D.max(),"\n\n\n")
-    gainloss = gainloss * signal2D
+    print("...signal_mask min,median,max = ",signal_mask.min(),signal_mask.mean(),np.median(signal_mask),signal_mask.max(),"\n\n\n")
+    gainloss = gainloss * signal_mask
     gainloss[gainloss == 0] = 1.0
 
     # update file with daily count of uptrending symbols in index universe
@@ -1289,8 +1369,8 @@ def sharpeWeightedRank_2D_old(
     monthgainloss[:,LongPeriod:] = adjClose_despike[:,LongPeriod:] / adjClose_despike[:,:-LongPeriod]  ## experimental
     monthgainloss[isnan(monthgainloss)]=1.
 
-    # apply signal to daily monthgainloss
-    monthgainloss = monthgainloss * signal2D
+    # apply signal mask to period monthgainloss
+    monthgainloss = monthgainloss * signal_mask
     monthgainloss[monthgainloss == 0] = 1.0
 
     monthgainlossweight = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
@@ -1457,7 +1537,8 @@ def sharpeWeightedRank_2D_old(
     # (algorithm warm-up period), allocate 100% to CASH to maintain portfolio value
     for ii in np.arange(1, monthgainloss.shape[1]):
         # Check if all signals are zero (no stocks have valid signals)
-        all_signals_zero = np.sum(signal2D[:, ii] > 0) == 0
+        # Use the binary mask so upstream filters are respected.
+        all_signals_zero = np.sum(signal_mask[:, ii] > 0) == 0
         
         if all_signals_zero:
             # Check if we're in the early period (2000-2002) where signals are expected to be zero
@@ -2294,9 +2375,8 @@ def MAA_WeightedRank_2D(
     gainloss[:,1:] = adjClose_despike[:,1:] / adjClose_despike[:,:-1]  ## experimental
     gainloss[isnan(gainloss)]=1.
 
-    # convert signal2D to contain either 1 or 0 for weights
-    signal2D -= signal2D.min()
-    signal2D *= signal2D.max()
+    # Create a binary mask from `signal2D` and do not modify the input array.
+    signal_mask = (signal2D > 0).astype(float)
 
     ############################
     ###
@@ -2496,12 +2576,11 @@ def UnWeightedRank_2D(datearray,adjClose,signal2D,LongPeriod,rankthreshold,riskD
     gainloss[:,1:] = adjClose[:,1:] / adjClose[:,:-1]
     gainloss[isnan(gainloss)]=1.
 
-    # convert signal2D to contain either 1 or 0 for weights
-    signal2D -= signal2D.min()
-    signal2D *= signal2D.max()
+    # Create a binary mask from `signal2D` and do not modify the input array.
+    signal_mask = (signal2D > 0).astype(float)
 
-    # apply signal to daily gainloss
-    gainloss = gainloss * signal2D
+    # apply signal mask to daily gainloss
+    gainloss = gainloss * signal_mask
     gainloss[gainloss == 0] = 1.0
 
     value = 10000. * np.cumprod(gainloss,axis=1)

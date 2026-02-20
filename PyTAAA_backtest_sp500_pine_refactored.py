@@ -17,6 +17,7 @@ from typing import Dict, List, Tuple
 
 import pandas as pd
 from scipy.stats import gmean
+import argparse
 
 ## local imports
 from functions.ta.data_cleaning import interpolate, cleantobeginning, cleantoend
@@ -788,8 +789,8 @@ def execute_single_backtest(
             signal2D = np.ones_like(adjClose) * 0.5  # Neutral signal
             print(" ... Using neutral signals as final fallback")
     
-    # Create signal2D_daily for daily signals (before monthly hold logic)
-    signal2D_daily = signal2D.copy()
+    # # Create signal2D_daily for daily signals (before monthly hold logic)
+    # signal2D_daily = signal2D.copy()
     
     # Apply rolling window data quality filter if enabled
     print(f"DEBUG: enable_rolling_filter = {validated_params.get('enable_rolling_filter', True)}")
@@ -801,20 +802,49 @@ def execute_single_backtest(
             adjClose, signal2D, validated_params.get('window_size', 50),
             symbols=symbols, datearray=datearray, verbose=True
         )
-        signal2D_daily = apply_rolling_window_filter(
-            adjClose, signal2D_daily, validated_params.get('window_size', 50),
-            symbols=symbols, datearray=datearray, verbose=True
-        )
+        # signal2D_daily = apply_rolling_window_filter(
+        #     adjClose, signal2D_daily, validated_params.get('window_size', 50),
+        #     symbols=symbols, datearray=datearray, verbose=True
+        # )
         filtered_signal_count = np.sum(signal2D > 0)
         print(f" ... Rolling window filter complete: {original_signal_count} -> {filtered_signal_count} signals (window_size={validated_params.get('window_size', 50)})")
     else:
         print("DEBUG: Rolling filter SKIPPED because enable_rolling_filter is False")
-    
+
+    # Create signal2D_daily for daily signals (before monthly hold logic)
+    signal2D_daily = signal2D.copy()
+        
     # Hold signal constant for each month based on monthsToHold parameter
     for jj in np.arange(1, adjClose.shape[1]):
         if not ((datearray[jj].month != datearray[jj-1].month) and 
                 (datearray[jj].month - 1) % monthsToHold == 0):
             signal2D[:, jj] = signal2D[:, jj-1]
+
+    # Transient overwrite check: ensure monthly-held signals at rebalance
+    # dates were taken from the filtered daily signals (signal2D_daily).
+    try:
+        print(f"DEBUG ids post-fill: id(signal2D)={id(signal2D)}, id(signal2D_daily)={id(signal2D_daily)}")
+        rebalance_indices = []
+        for jj in range(1, adjClose.shape[1]):
+            is_rebalance = (
+                (datearray[jj].month != datearray[jj-1].month) and
+                ((datearray[jj].month - 1) % monthsToHold == 0)
+            )
+            if is_rebalance:
+                rebalance_indices.append(jj)
+        mismatches = []
+        for jj in rebalance_indices:
+            if not np.array_equal(signal2D[:, jj], signal2D_daily[:, jj]):
+                mismatches.append((jj, int(np.sum(signal2D_daily[:, jj] > 0)), int(np.sum(signal2D[:, jj] > 0))))
+        if mismatches:
+            print("\nBACKTEST_OVERWRITE ASSERT: mismatches at rebalance dates")
+            for m in mismatches[:10]:
+                print(m)
+            raise AssertionError("Monthly signals differ from filtered daily signals after forward-fill in PyTAAA_backtest_sp500_pine_refactored.py")
+    except AssertionError:
+        raise
+    except Exception:
+        pass
 
     # Apply SP500 pre-2002 constraint to signals: no signals for dates before 2002-01-01
     if validated_params.get('stockList') == 'SP500':
@@ -1355,7 +1385,17 @@ params = get_json_params(json_fn,verbose=True)
 ## Make a plot showing all symbols in list
 ##
 
-randomtrials = 250
+# Determine number of Monte Carlo trials. Allow CLI override with --trials/-t.
+parser = argparse.ArgumentParser(add_help=False)
+parser.add_argument("-t", "--trials", type=int,
+                    help="Number of Monte Carlo random trials to run (overrides default)")
+# parse_known_args so other scripts that import this file are not broken by argparse
+args, _ = parser.parse_known_args()
+if args.trials is not None:
+    randomtrials = int(args.trials)
+else:
+    randomtrials = BacktestConfig.DEFAULT_RANDOM_TRIALS
+# Backwards-compatible commented examples retained below
 # randomtrials = 1
 # randomtrials = 250
 # randomtrials = 3
@@ -1426,11 +1466,11 @@ elif basename == "sp500_symbols.txt" :
     plotmax = 1.e8     # maximum value for plot (figure 3)
     holdMonths = [1,2,3,4,6,12]
 elif basename == "cmg_symbols.txt" :
-    runnum = 'run2508b'
+    runnum = 'run2508c'
     plotmax = 1.e7     # maximum value for plot (figure 3)
     holdMonths = [3,4,6,12]
 else :
-    runnum = 'run2508b'
+    runnum = 'run2508c'
     plotmax = 1.e9     # maximum value for plot (figure 3)
     holdMonths = [1,2,3,4,6,12]
 

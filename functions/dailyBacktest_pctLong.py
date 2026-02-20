@@ -2069,11 +2069,14 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
                 if datearray[date_idx] < cutoff_date:
                     # Zero all stock signals for 100% CASH allocation
                     signal2D[:, date_idx] = 0.0
-        else:
-            # Apply rolling window data quality filter if enabled (only for non-SP500)
-            if params.get('enable_rolling_filter', False):  # Default disabled for performance
-                from functions.rolling_window_filter import apply_rolling_window_filter
-                signal2D = apply_rolling_window_filter(adjClose, signal2D, params.get('window_size', 50))
+        # else:
+        # Apply rolling window data quality filter if enabled (only for non-SP500)
+        # if params.get('enable_rolling_filter', False):  # Default disabled for performance
+        from functions.rolling_window_filter import apply_rolling_window_filter
+        signal2D = apply_rolling_window_filter(
+            adjClose, signal2D, params.get('window_size', 50),
+            symbols=symbols, datearray=datearray
+        )
 
         # copy to daily signal
         signal2D_daily = signal2D.copy()
