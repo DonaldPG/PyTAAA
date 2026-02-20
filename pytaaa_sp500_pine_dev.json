@@ -1,0 +1,70 @@
+{
+    "Email": {
+        "From": "donaldpg@gmail.com",
+        "To": "donpg1@yahoo.com",
+        "PW": "tRa-u2as3ube",
+        "IPaddress": "98.201.234.203"
+    },
+    "Text_from_email": {
+        "phoneEmail": "8322440788@tmomail.net",
+        "send_texts": false
+    },
+    "FTP": {
+        "hostname": "piDonaldPG",
+        "remoteIP": "192.168.1.10",
+        "username": "pipyTAAA",
+        "password": "pyTAAA012345",
+        "remotepath": "/var/www/mysite/pyTAAA_sp500pine/"
+    },
+    "stock_server": {
+        "quote_download_server": "Donalds-MacBook-Pro.local_NO"
+    },
+    "Setup": {
+        "runtime": "15 days",
+        "pausetime": "24 hours"
+    },
+    "Valuation": {
+        "symbols_file": "/Users/donaldpg/pyTAAA_data/SP500/symbols/SP500_Symbols.txt",
+        "performance_store": "/Users/donaldpg/pyTAAA_data/sp500_pine/data_store",
+        "webpage": "/Users/donaldpg/pyTAAA_data/sp500_pine/webpage",
+        "stockList": "SP500",
+        "uptrendSignalMethod": "percentileChannels",
+        "numberStocksTraded": 5,
+        "monthsToHold": 1,
+        "LongPeriod": 396,
+        "stddevThreshold": 7.034774639854001,
+        "MA1": 76,
+        "MA2": 100,
+        "MA3": 124,
+        "sma2factor": 2.393607017170333,
+        "rankThresholdPct": 0.1801514251057514,
+        "riskDownside_min": 0.6487252773779426,
+        "riskDownside_max": 10.398126871519404,
+        "longShort_mindays": 5,
+        "longShort_maxdays": 18,
+        "longShort_percent": 0.985,
+        "longShort_longinc": 15,
+        "narrowDays_min": 6.0,
+        "narrowDays_max": 40.2,
+        "mediumDays_min": 25.2,
+        "mediumDays_max": 38.3,
+        "wideDays_min": 75.2,
+        "wideDays_max": 512.3,
+        "lowPct": 12.844977008331437,
+        "hiPct": 78.61971008192938,
+        "trade_cost": 0.0,
+        "minperiod": 4,
+        "maxperiod": 12,
+        "incperiod": 3,
+        "offset": 7,
+        "sma_filt_val": 0.01916716575659826,
+        "MA2offset": 24,
+        "trial": 35,
+        "window_size": 50,
+        "enable_rolling_filter": true,
+        "run_id": "run_20251214_1243"
+    },
+    "web_output_dir": "/Users/donaldpg/pyTAAA_data/sp500_pine/webpage",
+    "start_date": "2020-01-01",
+    "end_date": "2025-12-31"
+}
