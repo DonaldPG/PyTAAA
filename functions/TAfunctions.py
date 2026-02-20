@@ -748,20 +748,7 @@ def sharpeWeightedRank_2D(
     print(f" ... is_backtest={is_backtest}")
     print(f" ... max_weight_factor={max_weight_factor}")
     print(f" ... min_weight_factor={min_weight_factor}")
-    print(f" ... stockList={stockList}")  # Debug stockList
-
-    # Identity and symbol-order diagnostics to help track whether the
-    # array returned by the rolling filter is the same object received
-    # here by the selector.
-    try:
-        print(f"DEBUG ids in selector: id(signal2D)={id(signal2D)}, id(signal2D_daily)={id(signal2D_daily)}")
-        print(f"DEBUG ids in selector: id(signal_mask)={id(signal_mask)}")
-        if symbols is not None and len(symbols) > 0:
-            print(f"DEBUG symbols[0:10]={symbols[:10]}")
-            if 'JEF' in symbols:
-                print(f"DEBUG: JEF index in selector = {symbols.index('JEF')}")
-    except Exception:
-        pass
+    print(f" ... stockList={stockList}")
 
     #########################################################################
     # Initialize output weight matrix.
@@ -781,37 +768,12 @@ def sharpeWeightedRank_2D(
     # Define it early so it's available to all subsequent logic.
     signal_mask = (signal2D > 0).astype(float)
 
-    # Sanity assertions / diagnostics: ensure shapes align and that
-    # the mask reflects the filtered daily/monthly signals. Print
-    # JEF-specific diagnostics at month starts to track where zeros
-    # should have been applied by the rolling filter.
-    try:
-        assert signal2D.shape == signal_mask.shape, (
-            f"signal2D shape {signal2D.shape} != signal_mask shape {signal_mask.shape}"
-        )
-        assert signal2D_daily.shape == signal2D.shape, (
-            f"signal2D_daily shape {signal2D_daily.shape} != signal2D shape {signal2D.shape}"
-        )
-    except AssertionError:
-        print("DIAG ASSERTION FAILED: shape mismatch between signals and mask")
-        raise
-
-    jef_idx = symbols.index("JEF") if "JEF" in symbols else None
-    if jef_idx is not None:
-        # Print a short diagnostic line at the start of every month
-        for _j in range(n_days):
-            try:
-                if _j == 0 or datearray[_j].month != datearray[_j-1].month:
-                    daily_val = float(signal2D_daily[jef_idx, _j])
-                    month_val = float(signal2D[jef_idx, _j])
-                    mask_val = float(signal_mask[jef_idx, _j])
-                    print(f" ... DIAG: Date {datearray[_j]} JEF daily={daily_val:.6f} month={month_val:.6f} mask={mask_val:.1f}")
-            except Exception:
-                # Be robust to date types and continue
-                try:
-                    print(f" ... DIAG: Date index {_j} JEF entries: daily={signal2D_daily[jef_idx,_j]} month={signal2D[jef_idx,_j]} mask={signal_mask[jef_idx,_j]}")
-                except Exception:
-                    pass
+    assert signal2D.shape == signal_mask.shape, (
+        f"signal2D shape {signal2D.shape} != signal_mask shape {signal_mask.shape}"
+    )
+    assert signal2D_daily.shape == signal2D.shape, (
+        f"signal2D_daily shape {signal2D_daily.shape} != signal2D shape {signal2D.shape}"
+    )
 
     #########################################################################
     # Compute rolling Sharpe ratio for all stocks and all dates.
@@ -914,13 +876,6 @@ def sharpeWeightedRank_2D(
             year = int(str(current_date)[:4])  # fallback for string dates
         
         is_early_period = (year >= 2000 and year <= 2002) and (stockList == "SP500")
-        
-        if j < 5:  # Debug first 5 dates
-            print(f" ... Date {datearray[j]}: year={year}, stockList={stockList}, is_early_period={is_early_period}")
-
-        # Debug: print number of eligible stocks at beginning of each month
-        if j == 0 or datearray[j].month != datearray[j-1].month:
-            print(f" ... DEBUG: Date {datearray[j]}: {np.sum(eligible_stocks)} eligible stocks")
 
         if np.sum(eligible_stocks) == 0:
             # No eligible stocks found
@@ -957,8 +912,6 @@ def sharpeWeightedRank_2D(
             if cash_idx is not None:
                 monthgainlossweight[:, j] = 0.0  # Zero all weights first
                 monthgainlossweight[cash_idx, j] = 1.0  # 100% in cash
-                if j < 5:  # Debug first 5 dates
-                    print(f" ... Date {datearray[j]}: Early period (2000-2002), forcing 100% to CASH despite eligible stocks")
                 continue
             else:
                 print(f" ... Date {datearray[j]}: Early period but no CASH symbol, proceeding with normal selection")
@@ -988,14 +941,6 @@ def sharpeWeightedRank_2D(
         else:
             raw_weights = selected_sharpe / np.sum(selected_sharpe)
 
-        # Debug print for last date
-        if j == n_days - 1:
-            print(f"Debug: Date {datearray[j]}, eligible stocks: {len(eligible_indices)}, num_to_select: {num_to_select}")
-            print(f"Debug: Selected Sharpe range: min={selected_sharpe.min():.4f}, max={selected_sharpe.max():.4f}")
-            if len(selected_sharpe) > 1:
-                print(f"Debug: All selected Sharpe equal: {np.allclose(selected_sharpe, selected_sharpe[0])}")
-                print(f"Debug: Raw weights before constraints: {raw_weights}")
-
         if apply_constraints:
             # Apply weight constraints relative to equal weight
             equal_weight = 1.0 / len(selected_stocks)
@@ -1010,46 +955,11 @@ def sharpeWeightedRank_2D(
             else:
                 constrained_weights = np.ones(len(selected_stocks)) / len(selected_stocks)
 
-            # Debug print constrained weights
-            if j == n_days - 1:
-                print(f"Debug: Equal weight: {equal_weight:.4f}, min_weight: {min_weight:.4f}, max_weight: {max_weight:.4f}")
-                print(f"Debug: Constrained weights: {constrained_weights}")
-                print(f"Debug: Weight range: min={constrained_weights.min():.4f}, max={constrained_weights.max():.4f}")
-
             # Assign constrained weights
             monthgainlossweight[selected_stocks, j] = constrained_weights
-            # Debug: print selected symbols and their assigned weights at
-            # the beginning of each month (selection/rebalance points).
-            try:
-                if j == 0 or datearray[j].month != datearray[j-1].month:
-                    sel_list = [(symbols[idx], float(w)) for idx, w in zip(selected_stocks, constrained_weights)]
-                    sel_text = ", ".join([f"{s}:{wt:.4f}" for s, wt in sel_list])
-                    print(f" ... SELECTION DEBUG: Date {datearray[j]} -> {len(sel_list)} selected: {sel_text}")
-                    # Also print JEF specifically if present
-                    if "JEF" in symbols:
-                        jef_idx = symbols.index("JEF")
-                        jef_w = float(monthgainlossweight[jef_idx, j])
-                        if jef_w > 0:
-                            print(f" ... SELECTION DEBUG: JEF selected with weight {jef_w:.4f} on {datearray[j]}")
-            except Exception:
-                pass
         else:
             # Simple proportional weighting without constraints
             monthgainlossweight[selected_stocks, j] = raw_weights
-            # Debug: print selected symbols and their assigned weights at
-            # the beginning of each month (selection/rebalance points).
-            try:
-                if j == 0 or datearray[j].month != datearray[j-1].month:
-                    sel_list = [(symbols[idx], float(w)) for idx, w in zip(selected_stocks, raw_weights)]
-                    sel_text = ", ".join([f"{s}:{wt:.4f}" for s, wt in sel_list])
-                    print(f" ... SELECTION DEBUG: Date {datearray[j]} -> {len(sel_list)} selected: {sel_text}")
-                    if "JEF" in symbols:
-                        jef_idx = symbols.index("JEF")
-                        jef_w = float(monthgainlossweight[jef_idx, j])
-                        if jef_w > 0:
-                            print(f" ... SELECTION DEBUG: JEF selected with weight {jef_w:.4f} on {datearray[j]}")
-            except Exception:
-                pass
 
     #########################################################################
     # Forward-fill weights to ensure every day has valid weights.
@@ -1066,11 +976,6 @@ def sharpeWeightedRank_2D(
         daily_sum = monthgainlossweight[:, j].sum()
         if daily_sum > 0:
             monthgainlossweight[:, j] /= daily_sum
-
-    print(" ... DEBUG: Show non-zero weights at beginning of each month...")
-    for j in range(n_days):
-        if j == 0 or datearray[j].month != datearray[j-1].month:
-            print(f" ... DEBUG: Date {datearray[j]}: {np.sum(monthgainlossweight[:, j] > 0)} non-zero weights")
 
     print(" ... Forward-filling and normalization complete.")
     #########################################################################

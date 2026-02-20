@@ -49,23 +49,6 @@ def apply_rolling_window_filter(adjClose: np.ndarray, signal2D: np.ndarray, wind
         full window is available. Earlier dates are left unchanged.
     """
 
-    print("\n\n ... inside apply_rolling_window_filter")
-    print(f"DEBUG: input signal2D shape = {signal2D.shape}")
-    try:
-        print(f"DEBUG: input signal2D ones count = {np.sum(signal2D == 1)}")
-    except Exception:
-        pass
-    # Identity and symbol-order diagnostics to help confirm the caller
-    # is using the returned array and that symbol indexing matches.
-    try:
-        print(f"DEBUG ids: id(input_signal2D)={id(signal2D)}")
-        if symbols is not None and len(symbols) > 0:
-            print(f"DEBUG symbols[0:10]={symbols[:10]}")
-            if 'JEF' in symbols:
-                print(f"DEBUG: JEF index in symbols = {symbols.index('JEF')}")
-    except Exception:
-        pass
-
     # Work on a copy to avoid mutating the caller's array in-place.
     signal_out = signal2D.copy()
 
@@ -89,20 +72,9 @@ def apply_rolling_window_filter(adjClose: np.ndarray, signal2D: np.ndarray, wind
             date_str = str(datearray[date_idx]) if datearray is not None else f"idx{date_idx}"
             symbol_str = symbols[stock_idx] if symbols is not None else f"stk{stock_idx}"
             month_start_date = (datearray[date_idx].month != datearray[date_idx - 1].month) if (datearray is not None and date_idx > 0) else False
-            if (
-                symbol_str == 'JEF' and \
-                month_start_date and \
-                (
-                    '2015' in date_str or \
-                    '2016' in date_str or \
-                    '2017' in date_str or \
-                    '2018' in date_str
-                )
-            ):
-                print("DEBUG: Checking JEF on {}: gainloss_std={:.6f}".format(date_str, window_gainloss_std))
             if window_gainloss_std < 0.001:
                 # Low volatility in gain/loss indicates possible interpolation
-                if verbose or (symbols and symbol_str == 'JEF'):
+                if verbose:
                     print(f"RollingFilter: Zeroing {symbol_str} on {date_str} due to low gainloss_std={window_gainloss_std:.6f}")
                 signal_out[stock_idx, date_idx] = 0.0
                 filtered_count += 1
@@ -111,7 +83,7 @@ def apply_rolling_window_filter(adjClose: np.ndarray, signal2D: np.ndarray, wind
             # Apply valid length >= 50% threshold
             valid_length = len(window_gainloss[np.abs(window_gainloss -1) >= 0.001])
             if valid_length < window_size * 0.5:
-                if verbose or (symbols and symbol_str == 'JEF'):
+                if verbose:
                     print(f"RollingFilter: Zeroing {symbol_str} on {date_str} due to insufficient valid_length={valid_length} (threshold={window_size*0.5})")
                 signal_out[stock_idx, date_idx] = 0.0
                 filtered_count += 1
@@ -122,64 +94,12 @@ def apply_rolling_window_filter(adjClose: np.ndarray, signal2D: np.ndarray, wind
             
             if len(valid_data) == 0:
                 # No valid data in window
-                if verbose or (symbols and symbol_str == 'JEF'):
+                if verbose:
                     print(f"RollingFilter: Zeroing {symbol_str} on {date_str} due to no valid data in window")
                 signal_out[stock_idx, date_idx] = 0.0
                 filtered_count += 1
                 continue
             
-            # # Check if data is constant (all values equal)
-            # if np.allclose(valid_data, valid_data[0]):
-            #     # All valid values are the same - consider as no valid non-constant data
-            #     valid_non_constant_count = 0
-            # else:
-            #     # Check for linear interpolation by detecting overly constant derivatives
-            #     # Linear interpolation creates constant or near-constant price differences
-            #     # Real stock prices have varying derivatives with high coefficient of variation
-            #     if len(valid_data) >= 3:
-            #         derivatives = np.diff(valid_data)  # Price differences: price[i+1] - price[i]
-                    
-            #         # Method 1: Check if derivatives are perfectly constant (catches pure linear fill)
-            #         is_perfectly_constant = len(derivatives) > 0 and np.allclose(derivatives, derivatives[0], rtol=1e-6)
-                    
-            #         # Method 2: Check coefficient of variation (std/mean ratio)
-            #         # Interpolated data has very low CV (<0.2), real stocks have high CV (>1.0)
-            #         mean_deriv = np.mean(derivatives)
-            #         if mean_deriv != 0:
-            #             coef_variation = np.std(derivatives) / np.abs(mean_deriv)
-            #             is_too_constant = coef_variation < 0.5  # Threshold: CV < 0.5 indicates interpolation
-            #         else:
-            #             is_too_constant = True  # Zero mean derivative = no real price movement
-                    
-            #         if is_perfectly_constant or is_too_constant:
-            #             # Constant or near-constant slope detected = linear interpolation
-            #             valid_non_constant_count = 0
-                        
-            #             # Log JEF filtering for debugging
-            #             if symbols and stock_idx < len(symbols) and symbols[stock_idx] == 'JEF':
-            #                 if datearray is not None and date_idx < len(datearray):
-            #                     date_str = str(datearray[date_idx])
-            #                     if verbose or '2015' in date_str or '2016' in date_str or '2017' in date_str or '2018' in date_str:
-            #                         mean_val = np.mean(derivatives)
-            #                         std_val = np.std(derivatives)
-            #                         cv = coef_variation if mean_deriv != 0 else np.inf
-            #                         print(f"  ⚠️  FILTERING JEF on {date_str}: CV={cv:.4f}, mean_deriv={mean_val:.6f}, std_deriv={std_val:.6f}, perfectly_constant={is_perfectly_constant}")
-            #                         filtered_count += 1
-            #         else:
-            #             valid_non_constant_count = len(valid_data)
-            #     else:
-            #         # Not enough data to check derivatives
-            #         valid_non_constant_count = len(valid_data)
-            
-            # # Apply 50% threshold
-            # if valid_non_constant_count < window_size * 0.5:
-            #     signal2D[stock_idx, date_idx] = 0.0
-    
-    try:
-        print(f"DEBUG after: output signal2D ones count = {np.sum(signal_out == 1)}")
-        print(f"DEBUG ids: id(output_signal_out)={id(signal_out)}")
-    except Exception:
-        pass
     print(f"RollingFilter: Total filtered entries = {filtered_count}")
 
     return signal_out

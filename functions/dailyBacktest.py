@@ -90,32 +90,6 @@ def print_even_year_selections(
     print("=" * 80)
 
 
-def print_JEF_selections(
-        datearray=None,
-        symbols=None,
-        signal2D=None,
-        monthgainlossweight=None
-    ):
-    """
-    summarize the selection of symbol "JEF" over time,
-    showing when it was selected and its weight in the portfolio.
-    """
-    print("\n\n\n ... inside print_JEF_selections ...")
-
-    jef_index = symbols.index("JEF") if "JEF" in symbols else None
-    if jef_index is None:
-        print("Symbol 'JEF' not found in symbols list.")
-        return  
-    print(f"Date       | Signal2D | JEF Weight")
-    print(f"-----------------------------------------")
-    for date_idx in range(len(datearray)):
-        date_str = datearray[date_idx].strftime("%Y-%m-%d")
-        jef_selected = signal2D[jef_index, date_idx] > 0
-        jef_weight = monthgainlossweight[jef_index, date_idx] if jef_selected else 0.0
-        if jef_selected:
-            print(f"{date_str} | {signal2D[jef_index, date_idx]:.6f} | {jef_weight:.4f}")
-
-
 def computeDailyBacktest(
         json_fn,
         datearray,
@@ -227,31 +201,6 @@ def computeDailyBacktest(
 
     signal2D_1 = signal2D.copy()
 
-    # Extra diagnostics: identity, shape, dtype, nonzero counts
-    try:
-        nz = int(np.sum(signal2D > 0))
-        print(f"DEBUG computeSignal2D: id(signal2D)={id(signal2D)}, shape={signal2D.shape}, dtype={signal2D.dtype}, nonzero={nz}")
-    except Exception:
-        pass
-
-    # # SP500 pre-2002 condition: Force 100% CASH allocation (overrides rolling window filter)
-    # if params.get('stockList') == 'SP500':
-    #     print("\n   . DEBUG: Applying SP500 pre-2002 condition: Forcing 100% CASH allocation for all stocks before 2002-01-01")
-    #     cutoff_date = datetime.date(2002, 1, 1)
-    #     for date_idx in range(len(datearray)):
-    #         if datearray[date_idx] < cutoff_date:
-    #             # Zero all stock signals for 100% CASH allocation
-    #             signal2D[:, date_idx] = 0.0
-    # # else:
-
-    # signal2D_2 = signal2D.copy()
-    # iii,jjj = np.where(signal2D_1 != signal2D_2)
-
-    # print(
-    #     "\n   . DEBUG: computeDailyBacktest: Completed SP500 pre-2002 condition (if applicable). "
-    #      "number of changed signals in signal2D = ", len(iii)
-    # )
-
     # Apply rolling window data quality filter if enabled (read from
     # the JSON params object `_params` so CLI/json overrides work)
     if _params.get('enable_rolling_filter', False):  # Default disabled for performance
@@ -260,36 +209,6 @@ def computeDailyBacktest(
             adjClose, signal2D, _params.get('window_size', 50),
             symbols=symbols, datearray=datearray
         )
-
-    signal2D_2 = signal2D.copy()
-    iii,jjj = np.where(signal2D_2 != signal2D_1)
-    print(
-        "\n   . DEBUG: computeDailyBacktest: Completed rolling_window_filter application. "
-         "number of changed signals in signal2D = ", len(iii)
-    )
-
-    # Additional per-rebalance diagnostics for years 2015-2018 (quick check)
-    try:
-        jef_idx = symbols.index("JEF") if "JEF" in symbols else None
-        years_to_check = {2015,2016,2017,2018}
-        for jj in range(1, len(datearray)):
-            is_reb = ((datearray[jj].month != datearray[jj-1].month) and ((datearray[jj].month - 1) % monthsToHold == 0))
-            if is_reb and datearray[jj].year in years_to_check:
-                total_daily = int(np.sum(signal2D_1[:, jj] > 0))
-                total_filtered = int(np.sum(signal2D[:, jj] > 0))
-                jf = signal2D[jef_idx, jj] if jef_idx is not None else None
-                jfd = signal2D_1[jef_idx, jj] if jef_idx is not None else None
-                print(f"REBALANCE {datearray[jj]}: jef_daily={jfd}, jef_filtered={jf}, daily_nonzero={total_daily}, filtered_nonzero={total_filtered}")
-    except Exception:
-        pass
-
-    print("\n ... signal2D before/after Completed rolling_window_filter application. \n")
-    print_JEF_selections(
-        datearray=datearray,
-        symbols=symbols,
-        signal2D=signal2D_1,
-        monthgainlossweight=signal2D
-    )
 
     # copy to daily signal
     signal2D_daily = signal2D.copy()
@@ -315,40 +234,12 @@ def computeDailyBacktest(
 
     print(" signal2D check: ",signal2D[isnan(signal2D)].shape)
 
-    # Debug: log JEF signal status on rebalance dates before weighting
-    try:
-        jef_index = symbols.index("JEF") if "JEF" in symbols else None
-    except Exception:
-        jef_index = None
-    if jef_index is not None:
-        rebalance_indices = []
-        for jj in range(1, adjClose.shape[1]):
-            is_rebalance = (
-                (datearray[jj].month != datearray[jj-1].month) and
-                ((datearray[jj].month - 1) % monthsToHold == 0)
-            )
-            if is_rebalance:
-                rebalance_indices.append(jj)
-        print(f" ... DEBUG: Found {len(rebalance_indices)} rebalance dates. Showing JEF signals at those dates:")
-        for idx in rebalance_indices:
-            d = datearray[idx]
-            jef_daily = signal2D_daily[jef_index, idx]
-            jef_month = signal2D[jef_index, idx]
-            nonzero_daily = int(np.sum(signal2D_daily[:, idx] > 0))
-            nonzero_month = int(np.sum(signal2D[:, idx] > 0))
-            print(f" ... {d}: JEF daily={jef_daily:.6f}, month={jef_month:.6f}, nonzero_daily={nonzero_daily}, nonzero_month={nonzero_month}")
-    else:
-        print(" ... DEBUG: JEF not present in symbols list; skipping JEF-specific debug.")
-
-
     ########################################################################
     ### compute weights for each stock based on:
     ### 1. uptrending signal in "signal2D"
     ### 1. delta-rank computed from gain/loss over "LongPeriod_random"
     ### 2. sharpe ratio computed from daily gains over "LongPeriod"
     ########################################################################
-
-    signal2D_4before = signal2D.copy()
 
     # Index-consistency assertions: ensure symbol ordering and
     # filtered daily signals are used at rebalance dates.
@@ -395,48 +286,12 @@ def computeDailyBacktest(
         # Re-raise after printing to make failure visible in logs
         raise
 
-    # Identity diagnostics: print object ids to ensure the filtered
-    # arrays are the ones passed into the selector.
-    try:
-        print(f"DEBUG ids before selection: id(signal2D)={id(signal2D)}, id(signal2D_daily)={id(signal2D_daily)}")
-    except Exception:
-        pass
-
     monthgainlossweight = sharpeWeightedRank_2D(
         json_fn, datearray, symbols, adjClose, signal2D ,signal2D_daily,
         LongPeriod, numberStocksTraded, riskDownside_min, riskDownside_max,
         rankThresholdPct, stddevThreshold=stddevThreshold,
         stockList=params.get('stockList', 'SP500')
     )
-
-    signal2D_4after = signal2D.copy()
-    iii,jjj = np.where(signal2D_4after != signal2D_4before)
-    print(
-        "\n   . DEBUG: computeDailyBacktest: Completed sharpeWeightedRank_2D. "
-         "number of changed signals in signal2D = ", len(iii)
-    )
-
-    # SP500 pre-2002 condition: Force 100% CASH allocation (overrides rolling window filter)
-    if params.get('stockList') == 'SP500':
-        print("\n   . DEBUG: Applying SP500 pre-2002 condition: Forcing 100% CASH allocation for all stocks before 2002-01-01")
-        cutoff_date = datetime.date(2002, 1, 1)
-        for date_idx in range(len(datearray)):
-            if datearray[date_idx] < cutoff_date:
-                # Zero all stock signals for 100% CASH allocation
-                signal2D[:, date_idx] = 0.0
-    # else:
-
-    signal2D_final = signal2D.copy()
-    iii,jjj = np.where(signal2D_4after != signal2D_final)
-    print(
-        "\n   . DEBUG: computeDailyBacktest: Completed SP500 pre-2002 condition (if applicable). "
-         "number of changed signals in signal2D = ", len(iii)
-    )
-    del signal2D_final
-    del signal2D_4after
-    del signal2D_4before
-    del signal2D_2
-    del signal2D_1
 
     print_even_year_selections(
         datearray=datearray,
@@ -445,12 +300,6 @@ def computeDailyBacktest(
     )
 
     print("\n ... completed signal2D and monthgainlossweight calculations. Now computing portfolio values ... \n")
-    print_JEF_selections(
-        datearray=datearray,
-        symbols=symbols,
-        signal2D=signal2D,
-        monthgainlossweight=monthgainlossweight
-    )
 
     ########################################################################
     ### compute traded value of stock for each month
