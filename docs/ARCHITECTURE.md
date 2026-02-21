@@ -1,6 +1,6 @@
 # PyTAAA Architecture
 
-**Last Updated:** February 9, 2026
+**Last Updated:** February 14, 2026
 
 ---
 
@@ -29,7 +29,17 @@ PyTAAA/
 ├── pyproject.toml              # Project metadata and dependencies
 ├── requirements.txt            # Pip requirements
 ├── functions/                  # Core library modules
-│   ├── TAfunctions.py          # Technical analysis functions - 4100+ lines
+│   ├── TAfunctions.py          # Technical analysis (backward compat re-exports)
+│   ├── ta/                     # Technical analysis modules (Phase 5)
+│   │   ├── __init__.py         # Package initialization
+│   │   ├── utils.py            # Basic utilities (strip_accents, normcorrcoef, nanrms)
+│   │   ├── data_cleaning.py    # Data cleaning (interpolate, cleanspikes, despike_2D)
+│   │   ├── moving_averages.py  # Moving averages (SMA, HMA, MoveMax, MoveMin)
+│   │   ├── channels.py         # Price channels (dpgchannel, percentileChannel)
+│   │   ├── signal_generation.py # Signal generation (computeSignal2D)
+│   │   ├── rolling_metrics.py  # Performance metrics (Sharpe, Martin ratios)
+│   │   ├── trend_analysis.py   # Trend analysis (placeholder for future)
+│   │   └── ranking.py          # Ranking algorithms (placeholder for future)
 │   ├── PortfolioPerformanceCalcs.py  # Portfolio ranking pipeline
 │   ├── MonteCarloBacktest.py   # Monte Carlo simulation engine
 │   ├── dailyBacktest.py        # Daily backtesting logic
@@ -136,6 +146,67 @@ graph TB
     Q --> R
     Q --> S
 ```
+
+### Technical Analysis Module Structure
+
+The technical analysis functions are organized into focused submodules within `functions/ta/`:
+
+**Module Organization:**
+
+- **`functions/ta/utils.py`** (98 lines) — Basic utilities
+  - `strip_accents()`: Unicode text normalization
+  - `normcorrcoef()`: Normalized correlation coefficient  
+  - `nanrms()`: Root mean square with NaN handling
+
+- **`functions/ta/data_cleaning.py`** (335 lines) — Data cleaning functions
+  - `interpolate()`: Linear interpolation of missing values
+  - `cleantobeginning()`: Forward-fill leading NaNs
+  - `cleantoend()`: Backward-fill trailing NaNs
+  - `clean_signal()`: Comprehensive 3-step cleaning pipeline
+  - `cleanspikes()`: Outlier spike removal (1D)
+  - `despike_2D()`: Outlier spike removal (2D)
+
+- **`functions/ta/moving_averages.py`** (323 lines) — Moving average implementations
+  - `SMA()`, `SMA_2D()`: Simple moving averages
+  - `SMS()`: Simple moving sum
+  - `hma()`, `hma_pd()`: Hull moving averages
+  - `SMA_filtered_2D()`: Filtered moving average
+  - `MoveMax()`, `MoveMax_2D()`, `MoveMin()`: Rolling extrema
+
+- **`functions/ta/channels.py`** (215 lines) — Price channel calculations
+  - `percentileChannel()`, `percentileChannel_2D()`: Percentile-based channels
+  - `dpgchannel()`, `dpgchannel_2D()`: Min/max price channels
+
+- **`functions/ta/signal_generation.py`** (196 lines) — Trading signal generation
+  - `computeSignal2D()`: Core signal generation supporting 4 methods (SMAs, HMAs, minmaxChannels, percentileChannels)
+
+- **`functions/ta/rolling_metrics.py`** (167 lines) — Performance metrics
+  - `move_sharpe_2D()`: Rolling Sharpe ratio
+  - `move_martin_2D()`: Rolling Martin ratio (Ulcer Index-based)
+  - `move_informationRatio()`: Rolling information ratio vs benchmark
+
+- **`functions/ta/trend_analysis.py`** — Reserved for trend analysis functions (future)
+
+- **`functions/ta/ranking.py`** — Reserved for ranking algorithms (future)
+
+**Import Patterns:**
+
+The system supports two import styles:
+
+```python
+# Direct module imports (recommended)
+from functions.ta.moving_averages import SMA
+from functions.ta.signal_generation import computeSignal2D
+
+# Legacy imports via TAfunctions.py (for backward compatibility)
+from functions.TAfunctions import SMA, computeSignal2D
+```
+
+Both styles work identically. The modular structure provides:
+- **Discoverability:** Related functions grouped logically by category
+- **Testability:** Each module can be tested independently
+- **Maintainability:** Smaller, focused files are easier to understand and modify
+- **Import clarity:** Module name indicates function purpose (`functions.ta.channels` contains channel functions)
 
 ---
 

@@ -55,6 +55,8 @@
         "incperiod": 3,
         "numdaysinfit": 50,
         "numdaysinfit2": 15,
-        "offset": 7
+        "offset": 7,
+        "window_size": 50,
+        "enable_rolling_filter": false
     }
 }

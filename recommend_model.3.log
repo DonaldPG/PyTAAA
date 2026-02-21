@@ -1,109 +1,0 @@
-Starting model recommendation generation
-Starting model recommendation generation
-Starting model recommendation generation...
-Target date: 2025-09-02
-First weekday of month: 2025-09-01
-Using lookback periods: [20, 86, 177]
-
-Initializing model recommendation system...
-Using backtested portfolio values
-Loading historical portfolio data...
-
-Processing naz100_pine data from /Users/donaldpg/pyTAAA_data/naz100_pine/data_store/pyTAAAweb_backtestPortfolioValue.params
-Using backtested portfolio values
-Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
-Loaded 8731 data points for naz100_pine
-
-Processing naz100_hma data from /Users/donaldpg/pyTAAA_data/naz100_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
-Using backtested portfolio values
-Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
-Loaded 8731 data points for naz100_hma
-
-Processing naz100_pi data from /Users/donaldpg/pyTAAA_data/naz100_pi/data_store/pyTAAAweb_backtestPortfolioValue.params
-Using backtested portfolio values
-Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
-Loaded 8730 data points for naz100_pi
-
-Processing sp500_hma data from /Users/donaldpg/pyTAAA_data/sp500_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
-Using backtested portfolio values
-Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...
-Loaded 6465 data points for sp500_hma
-
-Total unique dates across all models: 8740
-Date range: 1991-01-02 to 2025-09-02
-
-Aligning data across models...
-Aligned naz100_pine data starting at $10000.00
-Aligned naz100_hma data starting at $10000.00
-Aligned naz100_pi data starting at $10000.00
-Aligned sp500_hma data starting at $10000.00
-
-Data loading complete!
-
-============================================================
-MODEL RECOMMENDATION RESULTS
-============================================================
-
-Recommendation Parameters:
-  Lookback periods: [20, 86, 177] days
-  Target date: 2025-09-02 (Tuesday)
-  First weekday of month: 2025-09-01 (Monday)
-
-----------------------------------------
-Recommendation for 2025-09-02:
-----------------------------------------
-  Best model: naz100_hma
-  Model rankings (Normalized Score):
-    1. naz100_hma    3.092
-    2. sp500_hma     1.817
-    3. cash          0.000
-    4. naz100_pi    -2.400
-    5. naz100_pine  -3.008
-
-----------------------------------------
-Recommendation for 2025-09-01:
-----------------------------------------
-  Using closest available date: 2025-09-02 (1 days difference)
-  Best model: naz100_hma
-  Model rankings (Normalized Score):
-    1. naz100_hma    3.092
-    2. sp500_hma     1.817
-    3. cash          0.000
-    4. naz100_pi    -2.400
-    5. naz100_pine  -3.008
-
-============================================================
-SUMMARY
-============================================================
-Generated recommendations for manual portfolio updates
-Based on model-switching trading system methodology
-
-======================================================================
-PARAMETERS SUMMARY
-======================================================================
-
-Lookback Periods:
-  Values: [20, 86, 177] days
-  Count: 3 periods
-
-Normalization Parameters:
-  Metric             Central Value  Std Deviation 
-  ------------------ -------------- --------------
-  Annual Return              42.5%          4.5%
-  Sharpe Ratio               1.450         0.135
-  Sortino Ratio              1.350         0.140
-  Max Drawdown              -58.0%          5.0%
-  Avg Drawdown              -12.0%          1.3%
-
-Final Portfolio Results:
-  Initial Value        : $   10,000.00
-  Final Value          : $130,805,725.41
-  Annualized Return    :       31.4%
-  Time Period          :        34.7 years
-======================================================================
-
-Generating recommendation plot...
-Saving plot to: recommendation_plot.png
-Model recommendation generation completed successfully
-Model recommendation generation completed successfully
-Model recommendation generation completed successfully

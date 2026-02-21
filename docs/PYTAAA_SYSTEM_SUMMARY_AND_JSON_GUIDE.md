@@ -11,9 +11,10 @@ The PyTAAA (Python Tactical Asset Allocation Algorithm) project has evolved into
 ### Core Components Accomplished
 
 1. **Multi-Model Trading System**
-   - NAZ100 Pine (3 Moving Averages method)
+   - NAZ100 Pine (percentile channels method)
    - NAZ100 HMA (Hull Moving Average method) 
-   - NAZ100 PI (Price Interpolation method)
+   - NAZ100 PI (3 Simple Moving Average method)
+   - SP500 Pine (percentile channels method)
    - SP500 HMA (Hull Moving Average method)
    - Abacus Combined Portfolio (dynamic universe switching)
 
@@ -78,10 +79,36 @@ The system uses a standardized JSON configuration approach that replaces the old
         "MA3": 11,
         "sma2factor": 1.536,
         "rankThresholdPct": 0.1330,
-        "trade_cost": 7.95
+        "trade_cost": 7.95,
+        "window_size": 50,
+        "enable_rolling_filter": true
     }
 }
 ```
+
+### Data Quality Controls
+
+#### Rolling Window Data Quality Filter
+
+**Purpose**: Ensures signal reliability by filtering stocks with insufficient historical data quality within a rolling window.
+
+**Configuration Parameters**:
+- `window_size`: Size of rolling window in trading days (default: 50)
+- `enable_rolling_filter`: Enable/disable the filter (default: false for performance)
+
+**Logic**: For each stock and date, examines the adjusted close prices in the preceding `window_size` days. If less than 50% of the data points are valid (non-NaN) and non-constant, the signal for that stock/date is set to 0.0, ensuring the portfolio defaults to 100% CASH for unreliable data.
+
+**Integration**: Applied after technical indicator signal generation but before monthly rebalancing in backtesting scenarios only.
+
+#### SP500 Pre-2022 CASH Allocation
+
+**Purpose**: Forces 100% CASH allocation for SP500 data before 2022-01-01 to address early-period data quality issues.
+
+**Logic**: For SP500 universe (`stockList == 'SP500'`), any date before 2022-01-01 automatically sets all stock signals to 0.0, ensuring complete CASH allocation. This overrides the rolling window filter when applicable.
+
+**Rationale**: Early SP500 data may have quality issues that make stock signals unreliable. Forcing CASH allocation during this period reduces portfolio volatility while maintaining the ability to participate in later, higher-quality data periods.
+
+**Integration**: Applied after technical indicators in both live trading and backtesting, takes precedence over rolling window filtering.
 
 ### 2. Individual Model Configuration Files
 

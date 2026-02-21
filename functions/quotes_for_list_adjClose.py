@@ -15,27 +15,12 @@ from functions.readSymbols import read_symbols_list_web
 #from functions.quotes_adjClose_alphavantage import get_last_quote
 
 
-# import pandas as pd
-# class webpage_companies_extractor:
-#     Url = None
-
-#     def __init__(self, url):
-#         self.__url = url
-
-#     def get_companies_list(self, current_portfolio=None):
-#         dfs = pd.read_html(self.__url, header=0)
-#         first_table = dfs[2]
-#         company_names = first_table
-#         symbols = list(company_names['Ticker'].values)
-#         companyNames = list(company_names['Company'].values)
-#         return symbols, companyNames
+# Note: Large sections of commented historical code remain below for Phase 2 cleanup.
+# This includes multiple versions of get_SP500List() and get_Naz100List().
 
 
 # '''
 # def get_SP500List(symbols_file, verbose=True):
-#     ###
-#     ### Query wikipedia.com for updated list of stocks in S&P 500 index.
-#     ### Return list with stock tickers.
 #     ###
 #     #import urllib2
 #     import urllib.request, urllib.error, urllib.parse
@@ -1156,19 +1141,14 @@ def get_SectorAndIndustry_google( symbol ):
 
 
 def get_SectorAndIndustry_google( symbol ):
-    ' use finviz from package finvizfinance to get sector and industry '
-    import pandas as pd
-    from finvizfinance.quote import finvizfinance
-
-    try:
-        stock = finvizfinance(symbol)
-        stock_fundament = stock.ticker_fundament()
-        industry = stock_fundament["Industry"]
-        sector = stock_fundament["Sector"]
-    except:
-        industry = "unknown"
-        sector = "unknown"
-    return sector, industry
+    """Get sector and industry with caching for rate limit avoidance.
+    
+    Uses cached values if available and fresh (<5 days old).
+    Falls back to web scraping (yfinance first, then finviz) if needed.
+    Thread-safe for concurrent pytaaa_main.py instances.
+    """
+    from functions.stock_fundamentals_cache import get_sector_industry_cached
+    return get_sector_industry_cached(symbol)
 
 
 def LastQuotesForSymbolList( symbolList ):
