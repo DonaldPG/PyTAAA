@@ -11,6 +11,7 @@ import os
 import datetime
 import numpy as np
 import pandas as pd
+from typing import Any, Tuple
 from matplotlib import pylab as plt
 
 
@@ -50,7 +51,7 @@ from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
 # print(" ...working directory = "+os.getcwd())
 
 
-def interpolate(self, method='linear'):
+def interpolate(self: np.ndarray, method: str = 'linear') -> np.ndarray:
     """
     Interpolate missing values (after the first valid value)
     Parameters
@@ -87,7 +88,7 @@ def interpolate(self, method='linear'):
 
 
 #----------------------------------------------
-def cleantobeginning(self):
+def cleantobeginning(self: np.ndarray) -> np.ndarray:
     """
     Copy missing values (to all dates prior the first valid value)
 
@@ -105,7 +106,7 @@ def cleantobeginning(self):
 
 #----------------------------------------------
 
-def cleantoend(self):
+def cleantoend(self: np.ndarray) -> np.ndarray:
     """
     Copy missing values (to all dates after the last valid value)
 
@@ -117,7 +118,7 @@ def cleantoend(self):
     return reverse[::-1]
 
 
-def cleanspikes(x,periods=20,stddevThreshold=5.0):
+def cleanspikes(x: np.ndarray, periods: int = 20, stddevThreshold: float = 5.0) -> np.ndarray:
     # remove outliers from gradient of x (in 2 directions)
     x_clean = np.array(x).copy()
     test = np.zeros(x.shape[0],'float')
@@ -145,7 +146,7 @@ def cleanspikes(x,periods=20,stddevThreshold=5.0):
 
 
 #----------------------------------------------
-def nans_at_beginning(self):
+def nans_at_beginning(self: np.ndarray) -> np.ndarray:
     """
     replace repeated values at beginning with NaN's
     (for all dates prior the first valid value)
@@ -166,7 +167,7 @@ def nans_at_beginning(self):
 
 #----------------------------------------------
 
-def clean_signal(array1D, symbol_name, verbose=False):
+def clean_signal(array1D: np.ndarray, symbol_name: str, verbose: bool = False) -> np.ndarray:
     ### clean input signals (again)
     quotes_before_cleaning = array1D.copy()
     adjClose = interpolate( array1D )
@@ -179,7 +180,7 @@ def clean_signal(array1D, symbol_name, verbose=False):
     return adjClose
 
 
-def get_hdf_name(symbols_file):
+def get_hdf_name(symbols_file: str) -> Tuple[str, str]:
     (directory_name, file_name) = os.path.split(symbols_file)
     (shortname, extension) = os.path.splitext( file_name )
 
@@ -220,7 +221,7 @@ def get_hdf_name(symbols_file):
     return hdf5filename, listname
 
 
-def remove_extra_dates_at_beginning(df, ref_dates):
+def remove_extra_dates_at_beginning(df: Any, ref_dates: Any) -> Any:
     # remove dates in df that precede dates in 'ref_dates'
     # assumes that index for df is dates in timedate format
     # assumes that ref_dates is in timedate format
@@ -243,7 +244,7 @@ def remove_extra_dates_at_beginning(df, ref_dates):
     return df_subset
 
 
-def get_stored_quotes(json_fn, stockList):
+def get_stored_quotes(json_fn: str, stockList: str) -> Tuple[np.ndarray, np.ndarray, list, np.ndarray]:
     import os
 
     # try:
@@ -357,7 +358,7 @@ def get_stored_quotes(json_fn, stockList):
     return adjClose, Close, symbols, datearray
 
 
-def get_quote_corrections(symbols_text, start_date='1900-01-01'):
+def get_quote_corrections(symbols_text: str, start_date: str = '1900-01-01') -> Tuple[list, Any, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     print("\n\nBegin download of adjusted Close value")
     adj_data = yf.download(  # or pdr.get_data_yahoo(...
         # tickers list or string as well
@@ -472,7 +473,7 @@ def get_quote_corrections(symbols_text, start_date='1900-01-01'):
            adj_close_factor, adj_volume_factor
 
 
-def fix_quotes(json_fn, _data_path, stockList='Naz100'):
+def fix_quotes(json_fn: str, _data_path: str, stockList: str = 'Naz100') -> None:
     # --------------------------------------------------
     # Import list of symbols to process.
     # --------------------------------------------------
