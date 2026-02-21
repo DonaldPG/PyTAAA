@@ -21,7 +21,7 @@ import os
 import numpy as np
 from numpy import isnan
 import datetime
-from typing import Union
+from typing import Any, Optional, Tuple, Union
 from numpy.typing import NDArray
 #from yahooFinance import getQuote
 from functions.quotes_adjClose import get_pe
@@ -119,7 +119,7 @@ from functions.ta.rolling_metrics import (
 #############################################################################
 
 #----------------------------------------------
-def selfsimilarity(hi,lo):
+def selfsimilarity(hi: np.ndarray, lo: np.ndarray) -> np.ndarray:
 
     from scipy.stats import percentileofscore
     HminusL = hi-lo
@@ -148,7 +148,14 @@ def selfsimilarity(hi,lo):
     return movepctrank
 
 #----------------------------------------------
-def jumpTheChannelTest(x,minperiod=4,maxperiod=12,incperiod=3,numdaysinfit=28, offset=3):
+def jumpTheChannelTest(
+        x: np.ndarray,
+        minperiod: int = 4,
+        maxperiod: int = 12,
+        incperiod: int = 3,
+        numdaysinfit: int = 28,
+        offset: int = 3
+) -> Tuple[float, float, float, float]:
     ###
     ### compute linear trend in upper and lower channels and compare
     ### actual stock price to forecast range
@@ -198,7 +205,14 @@ def jumpTheChannelTest(x,minperiod=4,maxperiod=12,incperiod=3,numdaysinfit=28, o
     return pctChannel, gainloss_cumu, gainloss_std, numStdDevs
 
 #----------------------------------------------
-def recentChannelFit(x,minperiod=4,maxperiod=12,incperiod=3,numdaysinfit=28, offset=3):
+def recentChannelFit(
+        x: np.ndarray,
+        minperiod: int = 4,
+        maxperiod: int = 12,
+        incperiod: int = 3,
+        numdaysinfit: int = 28,
+        offset: int = 3
+) -> Tuple[np.ndarray, np.ndarray]:
     ###
     ### compute cumulative gain over fitting period and number of
     ### ratio of current quote to fitted trend. Rescale based on std dev
@@ -263,7 +277,15 @@ def recentChannelFit(x,minperiod=4,maxperiod=12,incperiod=3,numdaysinfit=28, off
     return regression1, regression2
 
 #----------------------------------------------
-def recentTrendAndStdDevs(x,datearray,minperiod=4,maxperiod=12,incperiod=3,numdaysinfit=28, offset=3):
+def recentTrendAndStdDevs(
+        x: np.ndarray,
+        datearray: np.ndarray,
+        minperiod: int = 4,
+        maxperiod: int = 12,
+        incperiod: int = 3,
+        numdaysinfit: int = 28,
+        offset: int = 3
+) -> Tuple[float, float, float]:
 
     ###
     ### compute linear trend in upper and lower channels and compare
@@ -321,7 +343,11 @@ def recentTrendAndStdDevs(x,datearray,minperiod=4,maxperiod=12,incperiod=3,numda
     return gainloss_cumu, numStdDevs, pctChannel
 
 
-def recentSharpeWithAndWithoutGap(x,numdaysinfit=504,offset_factor=.4):
+def recentSharpeWithAndWithoutGap(
+        x: np.ndarray,
+        numdaysinfit: int = 504,
+        offset_factor: float = .4
+) -> float:
 
     from math import sqrt
     from scipy.stats import gmean
@@ -401,7 +427,15 @@ def recentSharpeWithAndWithoutGap(x,numdaysinfit=504,offset_factor=.4):
 
 #----------------------------------------------
 
-def recentTrendAndMidTrendChannelFitWithAndWithoutGap(x,minperiod=4,maxperiod=12,incperiod=3,numdaysinfit=28,numdaysinfit2=20, offset=3):
+def recentTrendAndMidTrendChannelFitWithAndWithoutGap(
+        x: np.ndarray,
+        minperiod: int = 4,
+        maxperiod: int = 12,
+        incperiod: int = 3,
+        numdaysinfit: int = 28,
+        numdaysinfit2: int = 20,
+        offset: int = 3
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     ###
     ### - Cmpute linear trend in upper and lower channels and compare
     ###   actual stock price to forecast range
@@ -475,7 +509,16 @@ def recentTrendAndMidTrendChannelFitWithAndWithoutGap(x,minperiod=4,maxperiod=12
 
 #----------------------------------------------
 
-def recentTrendAndMidTrendWithGap(x,datearray,minperiod=4,maxperiod=12,incperiod=3,numdaysinfit=28,numdaysinfit2=20, offset=3):
+def recentTrendAndMidTrendWithGap(
+        x: np.ndarray,
+        datearray: np.ndarray,
+        minperiod: int = 4,
+        maxperiod: int = 12,
+        incperiod: int = 3,
+        numdaysinfit: int = 28,
+        numdaysinfit2: int = 20,
+        offset: int = 3
+) -> Tuple[float, float, float, float]:
     ###
     ### - Cmpute linear trend in upper and lower channels and compare
     ###   actual stock price to forecast range
@@ -564,15 +607,15 @@ def recentTrendAndMidTrendWithGap(x,datearray,minperiod=4,maxperiod=12,incperiod
 #----------------------------------------------
 
 def recentTrendComboGain(
-        x,
-        datearray,
-        minperiod=4,
-        maxperiod=12,
-        incperiod=3,
-        numdaysinfit=28,
-        numdaysinfit2=20,
-        offset=3
-    ):
+        x: np.ndarray,
+        datearray: np.ndarray,
+        minperiod: int = 4,
+        maxperiod: int = 12,
+        incperiod: int = 3,
+        numdaysinfit: int = 28,
+        numdaysinfit2: int = 20,
+        offset: int = 3
+) -> float:
     ###
     ### - Cmpute linear trend in upper and lower channels and compare
     ###   actual stock price to forecast range
@@ -641,30 +684,30 @@ def recentTrendComboGain(
     return comboGain
 
 def sharpeWeightedRank_2D(
-    json_fn,
-    datearray,
-    symbols,
-    adjClose,
-    signal2D,
-    signal2D_daily,
-    LongPeriod,
-    numberStocksTraded,
-    riskDownside_min,
-    riskDownside_max,
-    rankThresholdPct,
-    stddevThreshold=5.0,
-    makeQCPlots=False,
+    json_fn: str,
+    datearray: np.ndarray,
+    symbols: list,
+    adjClose: np.ndarray,
+    signal2D: np.ndarray,
+    signal2D_daily: np.ndarray,
+    LongPeriod: int,
+    numberStocksTraded: int,
+    riskDownside_min: float,
+    riskDownside_max: float,
+    rankThresholdPct: float,
+    stddevThreshold: float = 5.0,
+    makeQCPlots: bool = False,
     # Parameters for backtest (refactored version).
-    max_weight_factor=3.0,
-    min_weight_factor=0.3,
-    absolute_max_weight=0.9,
-    apply_constraints=True,
+    max_weight_factor: float = 3.0,
+    min_weight_factor: float = 0.3,
+    absolute_max_weight: float = 0.9,
+    apply_constraints: bool = True,
     # Parameters for production (PortfolioPerformanceCalcs).
-    is_backtest=True,
-    verbose=False,
-    stockList="SP500",  # Add stockList parameter for early period logic
-    **kwargs  # Accept any additional keyword arguments for compatibility.
-):
+    is_backtest: bool = True,
+    verbose: bool = False,
+    stockList: str = "SP500",  # Add stockList parameter for early period logic
+    **kwargs: Any  # Accept any additional keyword arguments for compatibility.
+) -> np.ndarray:
     """
     Compute Sharpe-ratio-weighted portfolio allocation for all dates.
 
@@ -1074,7 +1117,11 @@ def sharpeWeightedRank_2D(
     return
 
 
-def multiSharpe( datearray, adjClose, periods ):
+def multiSharpe(
+        datearray: np.ndarray,
+        adjClose: np.ndarray,
+        periods: list
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
 
     from allstats import allstats
 
@@ -2265,10 +2312,20 @@ def sharpeWeightedRank_2D_old(
 
 
 def MAA_WeightedRank_2D(
-        json_fn, datearray, symbols, adjClose ,signal2D ,signal2D_daily,
-        LongPeriod,numberStocksTraded,
-        wR, wC, wV, wS, stddevThreshold=4.
-):
+        json_fn: str,
+        datearray: np.ndarray,
+        symbols: list,
+        adjClose: np.ndarray,
+        signal2D: np.ndarray,
+        signal2D_daily: np.ndarray,
+        LongPeriod: int,
+        numberStocksTraded: int,
+        wR: float,
+        wC: float,
+        wV: float,
+        wS: float,
+        stddevThreshold: float = 4.
+) -> Tuple[np.ndarray, np.ndarray]:
 
     # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
     # rankthreshold --     # select this many funds with best recent performance
@@ -2479,7 +2536,16 @@ def MAA_WeightedRank_2D(
 
 
 #----------------------------------------------
-def UnWeightedRank_2D(datearray,adjClose,signal2D,LongPeriod,rankthreshold,riskDownside_min,riskDownside_max,rankThresholdPct):
+def UnWeightedRank_2D(
+        datearray: np.ndarray,
+        adjClose: np.ndarray,
+        signal2D: np.ndarray,
+        LongPeriod: int,
+        rankthreshold: int,
+        riskDownside_min: float,
+        riskDownside_max: float,
+        rankThresholdPct: float
+) -> np.ndarray:
 
     # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
     # rankthreshold --     # select this many funds with best recent performance
@@ -2637,7 +2703,7 @@ def UnWeightedRank_2D(datearray,adjClose,signal2D,LongPeriod,rankthreshold,riskD
     return monthgainlossweight
 
 
-def hurst(X):
+def hurst(X: np.ndarray) -> float:
     """ Compute the Hurst exponent of X. If the output H=0.5,the behavior
     of the time-series is similar to random walk. If H<0.5, the time-series
     cover less "distance" than a random walk, vice verse.
@@ -2700,7 +2766,11 @@ def hurst(X):
     return H[0]
 
 
-def textmessageOutsideTrendChannel(symbols, adjClose, json_fn):
+def textmessageOutsideTrendChannel(
+        symbols: list,
+        adjClose: np.ndarray,
+        json_fn: str
+) -> None:
     """
     Send text messages for stocks that are outside their trend channels.
     
