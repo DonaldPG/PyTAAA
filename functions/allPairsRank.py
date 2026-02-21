@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import datetime
+from typing import List
 
 from functions.TAfunctions import *
 
@@ -9,7 +10,12 @@ symbol_file = os.path.join( os.getcwd(), 'symbols', 'Naz100_Symbols.txt' )
 adjClose, symbols, datearray, _, _ = loadQuotes_fromHDF( symbol_file )
 '''
 
-def allPairsRanking( adjClose, symbols, datearray, span=150 ):
+def allPairsRanking(
+        adjClose: np.ndarray,
+        symbols: list,
+        datearray: np.ndarray,
+        span: int = 150,
+) -> np.ndarray:
 
     period = span
 
@@ -46,7 +52,18 @@ def allPairsRanking( adjClose, symbols, datearray, span=150 ):
 
 
 
-def allPairs_sharpeWeightedRank_2D(datearray,symbols,adjClose,signal2D,LongPeriod,rankthreshold,riskDownside_min,riskDownside_max,rankThresholdPct,stockList='Naz100'):
+def allPairs_sharpeWeightedRank_2D(
+        datearray: np.ndarray,
+        symbols: list,
+        adjClose: np.ndarray,
+        signal2D: np.ndarray,
+        LongPeriod: int,
+        rankthreshold: int,
+        riskDownside_min: float,
+        riskDownside_max: float,
+        rankThresholdPct: float,
+        stockList: str = 'Naz100',
+) -> np.ndarray:
 
     # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
     # rankthreshold --     # select this many funds with best recent performance

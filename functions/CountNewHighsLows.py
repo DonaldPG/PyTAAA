@@ -1,7 +1,8 @@
 import os
 import numpy as np
 import datetime
-from math import log10,sqrt
+from math import log10, sqrt
+from typing import List, Tuple, Union
 from scipy.stats import gmean
 
 try:
@@ -17,15 +18,16 @@ from functions.allstats import *
 #----------------------------------------------
 
 def newHighsAndLows(
-        json_fn, num_days_highlow=252,
-        num_days_cumu=21,
-        HighLowRatio=2.,
-        HighPctile=1.,
-        HGamma=1.,
-        LGamma=1.,
-        makeQCPlots=True,
-        outputStats=False
-):
+        json_fn: str,
+        num_days_highlow: Union[int, tuple] = 252,
+        num_days_cumu: Union[int, tuple] = 21,
+        HighLowRatio: Union[float, tuple] = 2.,
+        HighPctile: Union[float, tuple] = 1.,
+        HGamma: Union[float, tuple] = 1.,
+        LGamma: Union[float, tuple] = 1.,
+        makeQCPlots: bool = True,
+        outputStats: bool = False,
+) -> Tuple[np.ndarray, np.ndarray, float]:
 
     ####################################################################
     ###
@@ -423,7 +425,7 @@ def newHighsAndLows(
 
     return sumNewHighs, sumNewLows, np.mean(TradedValue,axis=0)[-1]
 
-def HighLowIterate(iterations=100):
+def HighLowIterate(iterations: int = 100) -> Tuple[list, list, np.ndarray]:
     import random
     finalValue = np.zeros((iterations),'float')
     times = []
