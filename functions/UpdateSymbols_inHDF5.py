@@ -6,6 +6,7 @@ import pandas as pd
 #import nose
 import os
 import numpy as np
+from typing import Any, Optional, Tuple
 
 #from scipy.stats import gmean
 
@@ -24,11 +25,11 @@ from functions.readSymbols import read_symbols_list_web
 from functions.GetParams import get_json_params, get_symbols_file
 
 
-def listvals_tostring(mylist):
+def listvals_tostring(mylist: list) -> list:
     return [str(s) for s in mylist]
 
 
-def df_index_columns_tostring(df):
+def df_index_columns_tostring(df: Any) -> Any:
     index = listvals_tostring(df.index)
     columns = listvals_tostring(df.columns)
     values = df.values
@@ -36,7 +37,9 @@ def df_index_columns_tostring(df):
     return new_df
 
 
-def loadQuotes_fromHDF(symbols_file, json_fn):
+def loadQuotes_fromHDF(
+        symbols_file: str, json_fn: str
+) -> Tuple[np.ndarray, list, list, Any, str]:
 
     (directory_name, file_name) = os.path.split(symbols_file)
     (shortname, extension) = os.path.splitext( file_name )
@@ -227,7 +230,10 @@ def loadQuotes_fromHDF(symbols_file, json_fn):
 # """
 
 
-def cleanup_quotes(symbols_file, json_fn, newquotesfirstdate, newquoteslastdate):
+def cleanup_quotes(
+        symbols_file: str, json_fn: str,
+        newquotesfirstdate: Any, newquoteslastdate: Any
+) -> None:
     # compare quotes currently on hdf with updated quotes from internet.
     print(" ...   inside compareHDF_and_newquotes   ...")
     print(" ... newquotesfirstdate = ", newquotesfirstdate)
@@ -306,8 +312,9 @@ def cleanup_quotes(symbols_file, json_fn, newquotesfirstdate, newquoteslastdate)
 
 
 def compareHDF_and_newquotes(
-        symbols_file, json_fn, newquotesfirstdate, newquoteslastdate
-):
+        symbols_file: str, json_fn: str,
+        newquotesfirstdate: Any, newquoteslastdate: Any
+) -> None:
     # compare quotes currently on hdf with updated quotes from internet.
     print(" ...   inside compareHDF_and_newquotes   ...")
     print(" ... newquotesfirstdate = ", newquotesfirstdate)
@@ -483,7 +490,9 @@ def compareHDF_and_newquotes(
 #     return datearray[lastindex]
 # '''
 
-def getLastDateFromHDF5(symbol_directory, symbols_file, json_fn) :
+def getLastDateFromHDF5(
+        symbol_directory: str, symbols_file: str, json_fn: str
+) -> Any:
     filename = os.path.join(symbol_directory, symbols_file)
     _, _, datearray, _, _ = loadQuotes_fromHDF(filename, json_fn)
 
@@ -676,7 +685,9 @@ def getLastDateFromHDF5(symbol_directory, symbols_file, json_fn) :
 #     return
 
 
-def UpdateHDF_yf(symbol_directory, symbols_file, json_fn):
+def UpdateHDF_yf(
+        symbol_directory: str, symbols_file: str, json_fn: str
+) -> None:
 
     ##
     ##  Update symbols in 'symbols_file' with quotes more recent than last update.
@@ -696,7 +707,11 @@ def UpdateHDF_yf(symbol_directory, symbols_file, json_fn):
 
     print("  ... inside UpdateHDF_yf ... finished loadQuotes_fromHDF")
 
-    def _return_quotes_array(filename, json_fn, start_date="2018-01-01", end_date=None):
+    def _return_quotes_array(
+            filename: str, json_fn: str,
+            start_date: str = "2018-01-01",
+            end_date: Optional[str] = None
+    ) -> Tuple[np.ndarray, list, list]:
         ###
         ### get quotes from yahoo_fix. return quotes, symbols, dates
         ### as numpy arrays
@@ -1228,7 +1243,9 @@ def UpdateHDF_yf(symbol_directory, symbols_file, json_fn):
 # """
 
 
-def createHDF(hdf5_directory, symbol_file, listname, json_fn):
+def createHDF(
+        hdf5_directory: str, symbol_file: str, listname: str, json_fn: str
+) -> None:
 
     import os
     #import numpy as np
