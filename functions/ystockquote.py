@@ -25,7 +25,7 @@ except ImportError:
     from urllib import urlencode
 
 
-def _request(symbol, stat):
+def _request(symbol: str, stat: str) -> str:
     url = 'http://finance.yahoo.com/d/quotes.csv?s=%s&f=%s' % (symbol, stat)
     req = Request(url)
     resp = urlopen(req)
@@ -33,7 +33,7 @@ def _request(symbol, stat):
     return content
 
 
-def get_all(symbol):
+def get_all(symbol: str) -> dict:
     """
     Get all available quote data for the given ticker symbol.
 
@@ -138,203 +138,203 @@ def get_all(symbol):
     )
 
 
-def get_dividend_yield(symbol):
+def get_dividend_yield(symbol: str) -> str:
     return _request(symbol, 'y')
 
 
-def get_dividend_per_share(symbol):
+def get_dividend_per_share(symbol: str) -> str:
     return _request(symbol, 'd')
 
 
-def get_ask_realtime(symbol):
+def get_ask_realtime(symbol: str) -> str:
     return _request(symbol, 'b2')
 
 
-def get_dividend_pay_date(symbol):
+def get_dividend_pay_date(symbol: str) -> str:
     return _request(symbol, 'r1')
 
 
-def get_bid_realtime(symbol):
+def get_bid_realtime(symbol: str) -> str:
     return _request(symbol, 'b3')
 
 
-def get_ex_dividend_date(symbol):
+def get_ex_dividend_date(symbol: str) -> str:
     return _request(symbol, 'q')
 
 
-def get_previous_close(symbol):
+def get_previous_close(symbol: str) -> str:
     return _request(symbol, 'p')
 
 
-def get_today_open(symbol):
+def get_today_open(symbol: str) -> str:
     return _request(symbol, 'o')
 
 
-def get_change(symbol):
+def get_change(symbol: str) -> str:
     return _request(symbol, 'c1')
 
 
-def get_last_trade_date(symbol):
+def get_last_trade_date(symbol: str) -> str:
     return _request(symbol, 'd1')
 
 
-def get_change_percent_change(symbol):
+def get_change_percent_change(symbol: str) -> str:
     return _request(symbol, 'c')
 
 
-def get_trade_date(symbol):
+def get_trade_date(symbol: str) -> str:
     return _request(symbol, 'd2')
 
 
-def get_change_realtime(symbol):
+def get_change_realtime(symbol: str) -> str:
     return _request(symbol, 'c6')
 
 
-def get_last_trade_time(symbol):
+def get_last_trade_time(symbol: str) -> str:
     return _request(symbol, 't1')
 
 
-def get_change_percent_realtime(symbol):
+def get_change_percent_realtime(symbol: str) -> str:
     return _request(symbol, 'k2')
 
 
-def get_change_percent(symbol):
+def get_change_percent(symbol: str) -> str:
     return _request(symbol, 'p2')
 
 
-def get_after_hours_change(symbol):
+def get_after_hours_change(symbol: str) -> str:
     return _request(symbol, 'c8')
 
 
-def get_change_200_sma(symbol):
+def get_change_200_sma(symbol: str) -> str:
     return _request(symbol, 'm5')
 
 
-def get_commission(symbol):
+def get_commission(symbol: str) -> str:
     return _request(symbol, 'c3')
 
 
-def get_percent_change_200_sma(symbol):
+def get_percent_change_200_sma(symbol: str) -> str:
     return _request(symbol, 'm6')
 
 
-def get_todays_low(symbol):
+def get_todays_low(symbol: str) -> str:
     return _request(symbol, 'g')
 
 
-def get_change_50_sma(symbol):
+def get_change_50_sma(symbol: str) -> str:
     return _request(symbol, 'm7')
 
 
-def get_todays_high(symbol):
+def get_todays_high(symbol: str) -> str:
     return _request(symbol, 'h')
 
 
-def get_percent_change_50_sma(symbol):
+def get_percent_change_50_sma(symbol: str) -> str:
     return _request(symbol, 'm8')
 
 
-def get_last_trade_realtime_time(symbol):
+def get_last_trade_realtime_time(symbol: str) -> str:
     return _request(symbol, 'k1')
 
 
-def get_50_sma(symbol):
+def get_50_sma(symbol: str) -> str:
     return _request(symbol, 'm3')
 
 
-def get_last_trade_time_plus(symbol):
+def get_last_trade_time_plus(symbol: str) -> str:
     return _request(symbol, 'l')
 
 
-def get_200_sma(symbol):
+def get_200_sma(symbol: str) -> str:
     return _request(symbol, 'm4')
 
 
-def get_last_trade_price(symbol):
+def get_last_trade_price(symbol: str) -> str:
     return _request(symbol, 'l1')
 
 
-def get_1_year_target(symbol):
+def get_1_year_target(symbol: str) -> str:
     return _request(symbol, 't8')
 
 
-def get_todays_value_change(symbol):
+def get_todays_value_change(symbol: str) -> str:
     return _request(symbol, 'w1')
 
 
-def get_holdings_gain_percent(symbol):
+def get_holdings_gain_percent(symbol: str) -> str:
     return _request(symbol, 'g1')
 
 
-def get_todays_value_change_realtime(symbol):
+def get_todays_value_change_realtime(symbol: str) -> str:
     return _request(symbol, 'w4')
 
 
-def get_annualized_gain(symbol):
+def get_annualized_gain(symbol: str) -> str:
     return _request(symbol, 'g3')
 
 
-def get_price_paid(symbol):
+def get_price_paid(symbol: str) -> str:
     return _request(symbol, 'p1')
 
 
-def get_holdings_gain(symbol):
+def get_holdings_gain(symbol: str) -> str:
     return _request(symbol, 'g4')
 
 
-def get_todays_range(symbol):
+def get_todays_range(symbol: str) -> str:
     return _request(symbol, 'm')
 
 
-def get_holdings_gain_percent_realtime(symbol):
+def get_holdings_gain_percent_realtime(symbol: str) -> str:
     return _request(symbol, 'g5')
 
 
-def get_todays_range_realtime(symbol):
+def get_todays_range_realtime(symbol: str) -> str:
     return _request(symbol, 'm2')
 
 
-def get_holdings_gain_realtime(symbol):
+def get_holdings_gain_realtime(symbol: str) -> str:
     return _request(symbol, 'g6')
 
 
-def get_52_week_high(symbol):
+def get_52_week_high(symbol: str) -> str:
     return _request(symbol, 'k')
 
 
-def get_more_info(symbol):
+def get_more_info(symbol: str) -> str:
     return _request(symbol, 'v')
 
 
-def get_52_week_low(symbol):
+def get_52_week_low(symbol: str) -> str:
     return _request(symbol, 'j')
 
 
-def get_market_cap(symbol):
+def get_market_cap(symbol: str) -> str:
     return _request(symbol, 'j1')
 
 
-def get_change_from_52_week_low(symbol):
+def get_change_from_52_week_low(symbol: str) -> str:
     return _request(symbol, 'j5')
 
 
-def get_market_cap_realtime(symbol):
+def get_market_cap_realtime(symbol: str) -> str:
     return _request(symbol, 'j3')
 
 
-def get_change_from_52_week_high(symbol):
+def get_change_from_52_week_high(symbol: str) -> str:
     return _request(symbol, 'k4')
 
 
-def get_float_shares(symbol):
+def get_float_shares(symbol: str) -> str:
     return _request(symbol, 'f6')
 
 
-def get_percent_change_from_52_week_low(symbol):
+def get_percent_change_from_52_week_low(symbol: str) -> str:
     return _request(symbol, 'j6')
 
 
-def get_company_name(symbol):
+def get_company_name(symbol: str) -> str:
     try:
         return _request(symbol, 'n')
     except:
@@ -343,139 +343,139 @@ def get_company_name(symbol):
         except:
             return " "
 
-def get_percent_change_from_52_week_high(symbol):
+def get_percent_change_from_52_week_high(symbol: str) -> str:
     return _request(symbol, 'k5')
 
 
-def get_notes(symbol):
+def get_notes(symbol: str) -> str:
     return _request(symbol, 'n4')
 
 
-def get_52_week_range(symbol):
+def get_52_week_range(symbol: str) -> str:
     return _request(symbol, 'w')
 
 
-def get_shares_owned(symbol):
+def get_shares_owned(symbol: str) -> str:
     return _request(symbol, 's1')
 
 
-def get_stock_exchange(symbol):
+def get_stock_exchange(symbol: str) -> str:
     return _request(symbol, 'x')
 
 
-def get_shares_outstanding(symbol):
+def get_shares_outstanding(symbol: str) -> str:
     return _request(symbol, 'j2')
 
 
-def get_volume(symbol):
+def get_volume(symbol: str) -> str:
     return _request(symbol, 'v')
 
 
-def get_ask_size(symbol):
+def get_ask_size(symbol: str) -> str:
     return _request(symbol, 'a5')
 
 
-def get_bid_size(symbol):
+def get_bid_size(symbol: str) -> str:
     return _request(symbol, 'b6')
 
 
-def get_last_trade_size(symbol):
+def get_last_trade_size(symbol: str) -> str:
     return _request(symbol, 'k3')
 
 
-def get_ticker_trend(symbol):
+def get_ticker_trend(symbol: str) -> str:
     return _request(symbol, 't7')
 
 
-def get_average_daily_volume(symbol):
+def get_average_daily_volume(symbol: str) -> str:
     return _request(symbol, 'a2')
 
 
-def get_trade_links(symbol):
+def get_trade_links(symbol: str) -> str:
     return _request(symbol, 't6')
 
 
-def get_order_book_realtime(symbol):
+def get_order_book_realtime(symbol: str) -> str:
     return _request(symbol, 'i5')
 
 
-def get_high_limit(symbol):
+def get_high_limit(symbol: str) -> str:
     return _request(symbol, 'l2')
 
 
-def get_eps(symbol):
+def get_eps(symbol: str) -> str:
     return _request(symbol, 'e')
 
 
-def get_low_limit(symbol):
+def get_low_limit(symbol: str) -> str:
     return _request(symbol, 'l3')
 
 
-def get_eps_estimate_current_year(symbol):
+def get_eps_estimate_current_year(symbol: str) -> str:
     return _request(symbol, 'e7')
 
 
-def get_holdings_value(symbol):
+def get_holdings_value(symbol: str) -> str:
     return _request(symbol, 'v1')
 
 
-def get_eps_estimate_next_year(symbol):
+def get_eps_estimate_next_year(symbol: str) -> str:
     return _request(symbol, 'e8')
 
 
-def get_holdings_value_realtime(symbol):
+def get_holdings_value_realtime(symbol: str) -> str:
     return _request(symbol, 'v7')
 
 
-def get_eps_estimate_next_quarter(symbol):
+def get_eps_estimate_next_quarter(symbol: str) -> str:
     return _request(symbol, 'e9')
 
 
-def get_revenue(symbol):
+def get_revenue(symbol: str) -> str:
     return _request(symbol, 's6')
 
 
-def get_book_value(symbol):
+def get_book_value(symbol: str) -> str:
     return _request(symbol, 'b4')
 
 
-def get_ebitda(symbol):
+def get_ebitda(symbol: str) -> str:
     return _request(symbol, 'j4')
 
 
-def get_price_sales(symbol):
+def get_price_sales(symbol: str) -> str:
     return _request(symbol, 'p5')
 
 
-def get_price_book(symbol):
+def get_price_book(symbol: str) -> str:
     return _request(symbol, 'p6')
 
 
-def get_pe(symbol):
+def get_pe(symbol: str) -> str:
     return _request(symbol, 'r')
 
 
-def get_pe_realtime(symbol):
+def get_pe_realtime(symbol: str) -> str:
     return _request(symbol, 'r2')
 
 
-def get_peg(symbol):
+def get_peg(symbol: str) -> str:
     return _request(symbol, 'r5')
 
 
-def get_price_eps_estimate_current_year(symbol):
+def get_price_eps_estimate_current_year(symbol: str) -> str:
     return _request(symbol, 'r6')
 
 
-def get_price_eps_estimate_next_year(symbol):
+def get_price_eps_estimate_next_year(symbol: str) -> str:
     return _request(symbol, 'r7')
 
 
-def get_short_ratio(symbol):
+def get_short_ratio(symbol: str) -> str:
     return _request(symbol, 's7')
 
 
-def get_historical_prices(symbol, start_date, end_date):
+def get_historical_prices(symbol: str, start_date: str, end_date: str) -> dict:
     """
     Get historical prices for the given ticker symbol.
     Date format is 'YYYY-MM-DD'

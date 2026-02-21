@@ -30,10 +30,11 @@ from pandas import DataFrame, Index, HDFStore, WidePanel
 import numpy as np
 import os
 from extra import ProgressBar
+from typing import Any, Union, Tuple
 
 
 
-def parseStr(s):
+def parseStr(s: Any) -> Union[int, float, str]:
     ''' convert string to a float or string '''
     f = s.strip()
     if f[0] == '"':
@@ -55,14 +56,14 @@ def parseStr(s):
 
 class HistData(object):
     ''' a class for working with yahoo finance data '''
-    def __init__(self, autoAdjust=True):
+    def __init__(self, autoAdjust: bool = True) -> None:
        
         self.startDate = (2008,1,1)
         self.autoAdjust=autoAdjust
         self.wp = WidePanel()
         
         
-    def load(self,dataFile):
+    def load(self, dataFile: str) -> None:
         """load data from HDF"""
         if os.path.exists(dataFile):
             store = HDFStore(dataFile)
@@ -74,7 +75,7 @@ class HistData(object):
             raise IOError('Data file does not exist')
             
         
-    def save(self,dataFile):
+    def save(self, dataFile: str) -> None:
         """ save data to HDF"""
         print 'Saving data to', dataFile
         store = HDFStore(dataFile)
@@ -85,7 +86,7 @@ class HistData(object):
                     
             
             
-    def downloadData(self,symbols='all'):
+    def downloadData(self, symbols: str = 'all') -> None:
         ''' get data from yahoo  '''
         
         if symbols == 'all':
@@ -110,21 +111,21 @@ class HistData(object):
                 print e 
             p.animate(idx+1)
     
-    def getDataFrame(self,field='close'):
+    def getDataFrame(self, field: str = 'close') -> Any:
         ''' return a slice on wide panel for a given field '''
         return self.wp.minor_xs(field)
          
     
     @property
-    def symbols(self):
+    def symbols(self) -> list:
         return self.wp.items.tolist()        
            
   
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self.wp)
 
 
-def getQuote(symbols):
+def getQuote(symbols: Union[str, list]) -> dict:
     ''' get current yahoo quote, return a DataFrame  '''
     # for codes see: http://www.gummy-stuff.org/Yahoo-data.htm
     if not isinstance(symbols,list):
@@ -156,7 +157,7 @@ def getQuote(symbols):
     
     return DataFrame(data,index=idx)
 
-def _historicDataUrll(symbol, sDate=(1990,1,1),eDate=date.today().timetuple()[0:3]):
+def _historicDataUrll(symbol: str, sDate: Tuple = (1990, 1, 1), eDate: Tuple = date.today().timetuple()[0:3]) -> str:
     """ 
     generate url
 
@@ -170,7 +171,7 @@ def _historicDataUrll(symbol, sDate=(1990,1,1),eDate=date.today().timetuple()[0:
     
     return urlStr
 
-def getHistoricData(symbols, **options):
+def getHistoricData(symbols: Union[str, list], **options: Any) -> Any:
     ''' 
     get data from Yahoo finance and return pandas dataframe
     Will get OHLCV data frame if sinle symbol is provided. 
@@ -199,7 +200,7 @@ def getHistoricData(symbols, **options):
         
         return WidePanel(data)
 
-def getSymbolData(symbol, sDate=(1990,1,1),eDate=date.today().timetuple()[0:3], adjust=False, verbose=True):
+def getSymbolData(symbol: str, sDate: Tuple = (1990, 1, 1), eDate: Tuple = date.today().timetuple()[0:3], adjust: bool = False, verbose: bool = True) -> Any:
     """ 
     get data from Yahoo finance and return pandas dataframe
 
@@ -245,7 +246,7 @@ def getSymbolData(symbol, sDate=(1990,1,1),eDate=date.today().timetuple()[0:3], 
     else:
         return df
 
-def _adjust(df, removeOrig=False):
+def _adjust(df: Any, removeOrig: bool = False) -> Any:
     ''' 
   _adjustust hist data based on adj_close field 
     '''
@@ -262,7 +263,7 @@ def _adjust(df, removeOrig=False):
     
     return df
     
-def getScreenerSymbols(fileName):
+def getScreenerSymbols(fileName: str) -> list:
     ''' read symbols from a .csv saved by yahoo stock screener '''
     
     with open(fileName,'r') as fid:
