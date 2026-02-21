@@ -237,7 +237,7 @@ def newHighsAndLows(
         else:
             plt.xticks(xlocs[::2], xlabels[::2])
         
-        plt.plot(datearray,BuyHoldValue,'k-')
+        plt.plot(datearray,BuyHoldValue,'r-', label='Buy & Hold')
         ymin = np.min(BuyHoldValue) * .75
         ymax = np.max(BuyHoldValue) * 1.5
         plt.ylim((ymin,ymax))
@@ -260,7 +260,8 @@ def newHighsAndLows(
                     "\nplotted at "+today.strftime("%A, %d. %B %Y %I:%M%p")
         plt.text( text_x,text_y, plot_text, fontsize=8 )
 
-        plt.plot(datearray,np.mean(TradedValue,axis=0),'b-')
+        plt.plot(datearray,np.mean(TradedValue,axis=0),'b-', label='B&H, new Hi/Lo signal')
+        plt.legend(loc='center right', fontsize=9)
 
         text_y1 = ymin*10**(.90*plotrange)
         plot_text1 = "num_days_highlow = ", num_days_highlow

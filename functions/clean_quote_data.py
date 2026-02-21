@@ -305,7 +305,7 @@ def get_stored_quotes(json_fn, stockList):
                                       )
     '''
 
-    from functions.GetParams import GetParams, get_json_params
+    from functions.GetParams import get_json_params
 
     from functions.UpdateSymbols_inHDF5 import (
         UpdateHDF_yf, loadQuotes_fromHDF

@@ -2,6 +2,7 @@ import datetime
 import numpy as np
 import os
 import time
+import urllib.error
 import platform
 from functions.SendEmail import SendEmail
 from functions.WriteWebPage_pi import writeWebPage
@@ -25,7 +26,13 @@ print(sys.path)
 
 try:
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
-except:
+except OSError:
+    # Expected: file not found, permission denied, etc.
+    os.chdir("/Users/donaldpg/PyProjects/PyTAAA.master")
+except Exception as e:
+    # Safety fallback for unexpected exceptions
+    import logging
+    logging.getLogger(__name__).warning(f"Unexpected exception in os.chdir: {type(e).__name__}: {e}")
     os.chdir("/Users/donaldpg/PyProjects/PyTAAA.master")
 
 
@@ -44,7 +51,15 @@ def run_pytaaa(json_fn):
     quote_server = params['quote_server']
     try:
         ip = GetIP()
-    except:
+    except (urllib.error.URLError, OSError, TimeoutError) as e:
+        # Expected: network unavailable, timeout, etc.
+        import logging
+        logging.getLogger(__name__).debug(f"Could not get external IP: {e}")
+        ip = '0.0.0.0'
+    except Exception as e:
+        # Safety fallback for unexpected exceptions
+        import logging
+        logging.getLogger(__name__).warning(f"Unexpected exception in GetIP: {type(e).__name__}: {e}")
         ip = '0.0.0.0'
     print("Current ip address is ", ip)
     print(
@@ -68,6 +83,34 @@ def run_pytaaa(json_fn):
     print("current ranks: ", holdings['ranks'])
     print("cumulativecashin: ", holdings['cumulativecashin'][0])
     print("")
+    
+    # Proactively update fundamentals cache for current holdings
+    # This avoids rate limiting by batching updates and using cached data
+    # Only update symbols that are currently in the active universe
+    try:
+        from functions.stock_fundamentals_cache import get_cache
+        from functions.data_loaders import load_quotes_for_analysis
+        
+        # Load current universe symbols to validate holdings
+        try:
+            _, universe_symbols, _ = load_quotes_for_analysis(symbols_file, json_fn, verbose=False)
+            valid_symbols = set(universe_symbols)
+        except Exception as e:
+            print(f"Warning: Could not load universe symbols, skipping validation: {e}")
+            valid_symbols = None
+        
+        cache = get_cache()
+        active_symbols = [s for s in holdings['stocks'] if s != 'CASH']
+        
+        # Only update symbols that are both in holdings AND in current universe
+        if valid_symbols is not None:
+            cache.update_for_current_symbols(active_symbols, force_refresh=False, valid_symbols=universe_symbols)
+            print(f"Updated fundamentals cache for holdings validated against universe")
+        else:
+            cache.update_for_current_symbols(active_symbols, force_refresh=False)
+            print(f"Updated fundamentals cache for {len(active_symbols)} holdings (no universe validation)")
+    except Exception as e:
+        print(f"Warning: Failed to update fundamentals cache: {e}")
 
     # Update prices in HDF5 file for symbols in list
     # - check web for current stocks in Naz100, update files if changes needed
@@ -97,11 +140,17 @@ def run_pytaaa(json_fn):
         daily_update_done in locals()
         if hourOfDay <= 15:
             daily_update_done = False
-    except:
+    except NameError:
+        # Expected: variable doesn't exist on first run
+        daily_update_done = False
+    except Exception as e:
+        # Safety fallback for unexpected exceptions
+        import logging
+        logging.getLogger(__name__).warning(f"Unexpected exception checking daily_update_done: {type(e).__name__}: {e}")
         daily_update_done = False
     print("hourOfDay, daily_update_done =", hourOfDay, daily_update_done)
     if quote_server != computerName:
-        copy_updated_quotes()
+        copy_updated_quotes(json_fn)
     if not daily_update_done:
         # Check if quote server has _NO suffix to disable updates
         if quote_server == computerName and not quote_server.endswith('_NO'):
@@ -120,7 +169,14 @@ def run_pytaaa(json_fn):
     # Re-compute stock ranks and weightings
     try:
         last_symbols_text in locals()
-    except:
+    except NameError:
+        # Expected: variable doesn't exist on first run
+        CalcsUpdateCount = 0
+        not_Calculated = True
+    except Exception as e:
+        # Safety fallback for unexpected exceptions
+        import logging
+        logging.getLogger(__name__).warning(f"Unexpected exception checking last_symbols_text: {type(e).__name__}: {e}")
         CalcsUpdateCount = 0
         not_Calculated = True
     if (daily_update_done and CalcsUpdateCount == 0) or not_Calculated:
@@ -163,7 +219,15 @@ def run_pytaaa(json_fn):
         holdings_cluster_labels = getClusterForSymbolsList(
             holdings_symbols, json_fn
         )
-    except:
+    except (FileNotFoundError, KeyError, OSError) as e:
+        # Expected: cluster data missing or symbol not found
+        import logging
+        logging.getLogger(__name__).debug(f"Cluster data unavailable: {e}")
+        holdings_cluster_labels = np.zeros((len(holdings_symbols)), 'int')
+    except Exception as e:
+        # Safety fallback for unexpected exceptions
+        import logging
+        logging.getLogger(__name__).warning(f"Unexpected exception in getClusterForSymbolsList: {type(e).__name__}: {e}")
         holdings_cluster_labels = np.zeros((len(holdings_symbols)), 'int')
 
     # calculate holdings value

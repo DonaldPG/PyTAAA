@@ -12,9 +12,83 @@ from math import sqrt
 ## local imports
 from functions.quotes_for_list_adjClose import *
 from functions.TAfunctions import *
-from functions.GetParams import get_performance_store
+from functions.GetParams import get_json_params, get_performance_store
 from functions.CountNewHighsLows import newHighsAndLows
 # from functions.UpdateSymbols_inHDF5 import UpdateHDF5
+
+
+def print_even_year_selections(
+    datearray: list,
+    symbols: list,
+    monthgainlossweight: np.ndarray
+) -> None:
+    """
+    Print stocks selected at the beginning of every even-numbered year,
+    and monthly selections for years 2000-2003.
+
+    Displays one line per date showing the date, selected stock list,
+    and each stock's fraction of total value. Fractions sum to 1.0.
+
+    Args:
+        datearray: Array of dates corresponding to each column.
+        symbols: List of stock symbols.
+        monthgainlossweight: 2D array of portfolio weights (stocks x dates).
+        iter_num: Current iteration number for header display.
+    """
+    # Print for every random trial (removed iter_num != 0 check)
+    print("")
+    print("=" * 80)
+    print(f"STOCK SELECTIONS AT BEGINNING OF SELECTED YEARS ")
+    print("=" * 80)
+
+    # Track years already printed to avoid duplicates
+    year_inc = 1  # Print every year (change to 2 for every even year)
+    printed_years = set()
+
+    for ii in range(1, len(datearray)):
+        current_date = datearray[ii]
+        prev_date = datearray[ii - 1]
+
+        # Check if this is the first trading day of an even-numbered year
+        if (current_date.year != prev_date.year and
+                current_date.year % year_inc == 0):
+
+            # Skip if already printed this year
+            if current_date.year in printed_years:
+                continue
+            printed_years.add(current_date.year)
+
+            # Get weights for this date
+            weights = monthgainlossweight[:, ii]
+
+            # Find stocks with non-zero weights
+            selected_indices = np.where(weights > 0)[0]
+
+            if len(selected_indices) == 0:
+                print(f"{current_date}: No stocks selected")
+                continue
+
+            # Build list of (symbol, weight) tuples
+            selected_stocks = []
+            for idx in selected_indices:
+                selected_stocks.append((symbols[idx], weights[idx]))
+
+            # Sort by weight descending
+            selected_stocks.sort(key=lambda x: x[1], reverse=True)
+
+            # Calculate sum of weights for verification
+            weight_sum = sum(w for _, w in selected_stocks)
+
+            # Format stock list with weights
+            stock_list = ", ".join(
+                [f"{sym}:{wt:.4f}" for sym, wt in selected_stocks]
+            )
+
+            # Print the line
+            print(f"\n{current_date}: [{stock_list}] Sum={weight_sum:.4f}")
+
+    print("=" * 80)
+
 
 def computeDailyBacktest(
         json_fn,
@@ -62,6 +136,13 @@ def computeDailyBacktest(
     params['uptrendSignalMethod'] = uptrendSignalMethod
     params['lowPct'] = lowPct
     params['hiPct'] = hiPct
+    _params = get_json_params(json_fn)
+    params['stockList'] = _params['stockList']
+
+    print("\n\n\n ... inside dailyBacktest.py/computeDailyBacktest ...")
+    print("\n   . params = " + str(params))
+    print("\n   . _params = " + str(_params))
+    print("\n   . params.get('stockList') = " + str(params.get('stockList')))
 
     print("\n\n ... inside dailyBacktest.py")
     print("   . params = " + str(params))
@@ -118,23 +199,40 @@ def computeDailyBacktest(
     else:
         signal2D = computeSignal2D( adjClose, gainloss, params )
 
+    signal2D_1 = signal2D.copy()
+
+    # Apply rolling window data quality filter if enabled (read from
+    # the JSON params object `_params` so CLI/json overrides work)
+    if _params.get('enable_rolling_filter', False):  # Default disabled for performance
+        from functions.rolling_window_filter import apply_rolling_window_filter
+        signal2D = apply_rolling_window_filter(
+            adjClose, signal2D, _params.get('window_size', 50),
+            symbols=symbols, datearray=datearray
+        )
+
     # copy to daily signal
     signal2D_daily = signal2D.copy()
-
-    # hold signal constant for each month
-    for jj in np.arange(1,adjClose.shape[1]):
-        #if not ((datearray[jj].month != datearray[jj-1].month) and (datearray[jj].month ==1 or datearray[jj].month == 5 or datearray[jj].month == 9)):
-        if not ((datearray[jj].month != datearray[jj-1].month) and (datearray[jj].month - 1)%monthsToHold == 0 ):
-            signal2D[:,jj] = signal2D[:,jj-1]
-        else:
-            if iter==0:
-                # print("date, signal2D changed",datearray[jj])
-                pass
+    # hold signal constant for each month based on filtered daily signals
+    # Use `signal2D_daily` (which contains the output of the rolling filter)
+    # to decide selections at rebalance dates, then forward-fill those
+    # monthly selections so zeros produced by the filter are preserved.
+    n_days = adjClose.shape[1]
+    # Initialize with the first day's filtered signals
+    last_month_signals = signal2D_daily[:, 0].copy()
+    for jj in range(1, n_days):
+        is_rebalance = (
+            (datearray[jj].month != datearray[jj-1].month) and
+            ((datearray[jj].month - 1) % monthsToHold == 0)
+        )
+        if is_rebalance:
+            # At rebalance, use the filtered daily signals for that date
+            last_month_signals = signal2D_daily[:, jj].copy()
+        # Set the month's signal to the last rebalance selection
+        signal2D[:, jj] = last_month_signals
 
     numberStocks = np.sum(signal2D,axis = 0)
 
     print(" signal2D check: ",signal2D[isnan(signal2D)].shape)
-
 
     ########################################################################
     ### compute weights for each stock based on:
@@ -143,11 +241,65 @@ def computeDailyBacktest(
     ### 2. sharpe ratio computed from daily gains over "LongPeriod"
     ########################################################################
 
+    # Index-consistency assertions: ensure symbol ordering and
+    # filtered daily signals are used at rebalance dates.
+    try:
+        assert signal2D.shape[0] == len(symbols), (
+            f"Signal rows ({signal2D.shape[0]}) != symbols ({len(symbols)})"
+        )
+        assert signal2D_daily.shape[0] == len(symbols), (
+            f"Daily-signal rows ({signal2D_daily.shape[0]}) != symbols ({len(symbols)})"
+        )
+        assert not np.isnan(signal2D).any(), "NaN present in signal2D"
+        assert not np.isnan(signal2D_daily).any(), "NaN present in signal2D_daily"
+
+        # Recompute rebalance indices and ensure that at each rebalance
+        # the monthly signal was taken from the filtered daily signal
+        rebalance_indices = []
+        for jj in range(1, adjClose.shape[1]):
+            is_rebalance = (
+                (datearray[jj].month != datearray[jj-1].month) and
+                ((datearray[jj].month - 1) % monthsToHold == 0)
+            )
+            if is_rebalance:
+                rebalance_indices.append(jj)
+
+        mismatches = []
+        for jj in rebalance_indices:
+            # Expect that the monthly-held signal at the rebalance
+            # equals the filtered daily signal for that same date.
+            if not np.array_equal(signal2D[:, jj], signal2D_daily[:, jj]):
+                mismatches.append((jj,
+                                   int(np.sum(signal2D_daily[:, jj] > 0)),
+                                   int(np.sum(signal2D[:, jj] > 0))))
+
+        if mismatches:
+            print("\nINDEX CONSISTENCY ASSERTION FAIL: mismatches at rebalance dates")
+            print("(date_idx, daily_nonzero_count, month_nonzero_count)")
+            for m in mismatches[:20]:
+                print(m)
+            raise AssertionError(
+                "Index-consistency check failed: monthly signals differ from "
+                "filtered daily signals at rebalance dates."
+            )
+    except AssertionError:
+        # Re-raise after printing to make failure visible in logs
+        raise
+
     monthgainlossweight = sharpeWeightedRank_2D(
         json_fn, datearray, symbols, adjClose, signal2D ,signal2D_daily,
         LongPeriod, numberStocksTraded, riskDownside_min, riskDownside_max,
-        rankThresholdPct, stddevThreshold=stddevThreshold
+        rankThresholdPct, stddevThreshold=stddevThreshold,
+        stockList=params.get('stockList', 'SP500')
     )
+
+    print_even_year_selections(
+        datearray=datearray,
+        symbols=symbols,
+        monthgainlossweight=monthgainlossweight
+    )
+
+    print("\n ... completed signal2D and monthgainlossweight calculations. Now computing portfolio values ... \n")
 
     ########################################################################
     ### compute traded value of stock for each month
@@ -390,7 +542,6 @@ def computeDailyBacktest(
             textmessage = textmessage + str(datearray[idate])+"  "+str(BuyHoldPortfolioValue[idate])+"  "+str(np.average(monthvalue[:,idate]))+"\n"
         with open( filepath, "w" ) as f:
             f.write(textmessage)
-
 
     ########################################################################
     ### compute some portfolio performance statistics and print summary

@@ -1633,6 +1633,11 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
 
     params = get_json_params(json_fn)
 
+    print("\n\n\n ... inside dailyBacktest_pctLong.py/dailyBacktest_pctLong ...")
+    print("\n   . params = " + str(params))
+    print("\n   . params.get('stockList') = " + str(params.get('stockList')))
+    print("\n   . params['stockList'] = " + str(params['stockList']))
+
     if params['stockList'] == 'Naz100':
         sumNewHighs, sumNewLows, mean_TradedValue = newHighsAndLows(
             json_fn, num_days_highlow=(73,293),
@@ -1800,7 +1805,7 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
     sma2factor_montecarlo = np.zeros(randomtrials,dtype=float)
     rankThresholdPct_montecarlo = np.zeros(randomtrials,dtype=float)
 
-    params = get_json_params(json_fn)
+    # params = get_json_params(json_fn)
 
     trade_cost = params['trade_cost']
 
@@ -2056,6 +2061,22 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
         else:
             signal2D = computeSignal2D( adjClose, gainloss, params )
 
+        # SP500 pre-2002 condition: Force 100% CASH allocation (overrides rolling window filter)
+        if params.get('stockList') == 'SP500':
+            print("\n   . DEBUG: Applying SP500 pre-2002 condition: Forcing 100% CASH allocation for all stocks before 2002-01-01")
+            cutoff_date = datetime.date(2002, 1, 1)
+            for date_idx in range(len(datearray)):
+                if datearray[date_idx] < cutoff_date:
+                    # Zero all stock signals for 100% CASH allocation
+                    signal2D[:, date_idx] = 0.0
+        # else:
+        # Apply rolling window data quality filter if enabled (only for non-SP500)
+        # if params.get('enable_rolling_filter', False):  # Default disabled for performance
+        from functions.rolling_window_filter import apply_rolling_window_filter
+        signal2D = apply_rolling_window_filter(
+            adjClose, signal2D, params.get('window_size', 50),
+            symbols=symbols, datearray=datearray
+        )
 
         # copy to daily signal
         signal2D_daily = signal2D.copy()
@@ -2090,7 +2111,8 @@ def dailyBacktest_pctLong(json_fn, verbose=False):
             rankThresholdPct,
             stddevThreshold=stddevThreshold,
             is_backtest=True,
-            makeQCPlots=False
+            makeQCPlots=False,
+            stockList=params.get('stockList', 'SP500')
         )
 
         print("here I am........")

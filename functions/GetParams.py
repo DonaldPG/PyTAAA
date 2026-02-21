@@ -1,3 +1,25 @@
+"""Configuration parameter extraction from JSON and config files.
+
+This module provides functions to read and extract various configuration
+parameters from JSON configuration files used throughout the PyTAAA system.
+It handles paths, FTP settings, valuation parameters, and status tracking.
+
+Key Functions:
+    get_json_params: Load main valuation parameters from JSON config
+    get_symbols_file: Get path to stock symbols list file
+    get_performance_store: Get path to performance history storage
+    get_webpage_store: Get path to webpage output directory
+    get_web_output_dir: Get web output directory path
+    get_holdings: Extract portfolio holdings from params file
+    get_status: Read cumulative status tracking data
+    put_status: Write cumulative status tracking data
+
+Legacy Functions (deprecated, use JSON-based equivalents):
+    GetParams: Legacy config file reader
+    GetHoldings: Legacy holdings reader
+    GetStatus: Legacy status reader
+"""
+
 import os
 import numpy as np
 import configparser
@@ -5,14 +27,42 @@ import json
 import re
 from typing import Tuple, Dict, Optional
 
-def from_config_file(config_filename):
+
+def from_config_file(config_filename: str):
+    """Load configuration from an INI-style config file.
+    
+    Args:
+        config_filename: Path to configuration file
+        
+    Returns:
+        ConfigParser object with parsed configuration
+        
+    Note:
+        This is a legacy function. New code should use get_json_params().
+    """
     with open(config_filename, "r") as fid:
         config = configparser.ConfigParser(strict=False)
         params = config.read_file(fid)
     return params
 
 
-def get_symbols_file(json_fn):
+def get_symbols_file(json_fn: str) -> str:
+    """Get path to file containing list of stock symbols to process.
+    
+    Reads the JSON configuration to determine which symbol list to use
+    (Naz100 or SP500) and constructs the full path to the symbols file.
+    
+    Args:
+        json_fn: Path to JSON configuration file
+        
+    Returns:
+        str: Full path to symbols file (e.g., "symbols/Naz100_Symbols.txt")
+        
+    Example:
+        >>> symbols_file = get_symbols_file("config/pytaaa_naz100_pine.json")
+        >>> print(symbols_file)
+        '/path/to/symbols/Naz100_Symbols.txt'
+    """
     ######################
     ### get filename where list of symbols is stored
     ######################
@@ -38,7 +88,27 @@ def get_symbols_file(json_fn):
     return symbols_file
 
 
-def get_performance_store(json_fn):
+def get_performance_store(json_fn: str) -> str:
+    """Get path to directory where performance history files are stored.
+    
+    Performance history files (*.params files) contain backtest results,
+    portfolio allocations, and trading history for each model configuration.
+    
+    Args:
+        json_fn: Path to JSON configuration file
+        
+    Returns:
+        str: Path to performance_store directory from config
+        
+    Raises:
+        FileNotFoundError: If json_fn doesn't exist
+        KeyError: If Valuation section or performance_store key missing
+        
+    Example:
+        >>> store = get_performance_store("config/pytaaa_sp500_pine.json")
+        >>> print(store)
+        '/Users/user/pyTAAA_data_static/sp500_pine/data_store'
+    """
     ######################
     ### get folder where performance history files (*.params) are stored
     ######################
@@ -52,7 +122,27 @@ def get_performance_store(json_fn):
     return p_store
 
 
-def get_webpage_store(json_fn):
+def get_webpage_store(json_fn: str) -> str:
+    """Get path to directory where updated webpage files are created.
+    
+    The webpage directory contains HTML files, plots, and other assets
+    for displaying portfolio recommendations and performance metrics.
+    
+    Args:
+        json_fn: Path to JSON configuration file
+        
+    Returns:
+        str: Path to webpage directory from config
+        
+    Raises:
+        FileNotFoundError: If json_fn doesn't exist
+        KeyError: If Valuation section or webpage key missing
+        
+    Example:
+        >>> webpage = get_webpage_store("config/pytaaa_naz100_hma.json")
+        >>> print(webpage)
+        '/Users/user/pyTAAA_data_static/naz100_hma/webpage'
+    """
     ######################
     ### get folder where updated webpage is created
     ######################
@@ -358,6 +448,15 @@ def get_json_params(json_fn, verbose=False):
     params['stockList'] = config.get("Valuation")["stockList"]
     params['symbols_file'] = config.get("Valuation")["symbols_file"]
 
+    # Rolling window data-quality filter settings.
+    # These keys exist in the JSON Valuation section but were never read,
+    # causing dailyBacktest.py to skip the filter unconditionally
+    # (it defaulted enable_rolling_filter to False).
+    params['enable_rolling_filter'] = bool(
+        valuation_section.get('enable_rolling_filter', False)
+    )
+    params['window_size'] = int(valuation_section.get('window_size', 50))
+
     return params
 
 
@@ -549,250 +648,6 @@ def put_status(cumu_status, json_fn):
     return
 
 
-def GetParams():
-    ######################
-    ### Input parameters
-    ######################
-
-    # set default values
-    defaults = { "Runtime": ["2 days"], "Pausetime": ["1 hours"] }
-    params = {}
-
-    # read the parameters form the configuration file
-    config_filename = "PyTAAA.params"
-
-    #params = from_config_file(config_filename)
-    config = configparser.ConfigParser(strict=False, defaults=defaults)
-    configfile = open(config_filename, "r")
-    config.read_file(configfile)
-
-    toaddrs = config.get("Email", "To").split()
-    fromaddr = config.get("Email", "From").split()
-    toSMS = config.get("Text_from_email", "phoneEmail").split()
-    send_texts = config.get("Text_from_email", "send_texts").split()
-    pw = config.get("Email", "PW")
-    runtime = config.get("Setup", "Runtime").split()
-    pausetime = config.get("Setup", "Pausetime").split()
-
-    quote_server = config.get("stock_server", "quote_download_server")
-
-    if len(runtime) == 1:
-        runtime.join('days')
-    if len(pausetime) == 1:
-        pausetime.join('hours')
-
-    if runtime[1] == 'seconds':
-        factor = 1
-    elif runtime[1] == 'minutes':
-        factor = 60
-    elif runtime[1] == 'hours':
-        factor = 60*60
-    elif runtime[1] == 'days':
-        factor = 60*60*24
-    elif runtime[1] == 'months':
-        factor = 60*60*24*30.4
-    elif runtime[1] == 'years':
-        factor = 6060*60*24*365.25
-    else:
-        # assume days
-        factor = 60*60*24
-
-    max_uptime = int(runtime[0]) * factor
-
-    if pausetime[1] == 'seconds':
-        factor = 1
-    elif pausetime[1] == 'minutes':
-        factor = 60
-    elif pausetime[1] == 'hours':
-        factor = 60*60
-    elif pausetime[1] == 'days':
-        factor = 60*60*24
-    elif pausetime[1] == 'months':
-        factor = 60*60*24*30.4
-    elif pausetime[1] == 'years':
-        factor = 6060*60*24*365.25
-    else:
-        # assume hour
-        factor = 60*60
-
-    seconds_between_runs = int(pausetime[0]) * factor
-
-    # put params in a dictionary
-    params['fromaddr'] = str(fromaddr[0])
-    params['toaddrs'] = str(toaddrs[0])
-    params['toSMS'] = toSMS[0]
-    if send_texts[0].lower() == 'true':
-        params['send_texts'] = True
-    elif send_texts[0].lower() == 'false':
-        params['send_texts'] = False
-    params['PW'] = str(pw)
-    params['runtime'] = max_uptime
-    params['pausetime'] = seconds_between_runs
-    params['quote_server'] = quote_server
-    params['numberStocksTraded'] = int( config.get("Valuation", "numberStocksTraded") )
-    params['trade_cost'] = float( config.get("Valuation", "trade_cost") )
-    params['monthsToHold'] = int( config.get("Valuation", "monthsToHold") )
-    params['LongPeriod'] = int( config.get("Valuation", "LongPeriod") )
-    params['stddevThreshold'] = float( config.get("Valuation", "stddevThreshold") )
-    params['MA1'] = int( config.get("Valuation", "MA1") )
-    params['MA2'] = int( config.get("Valuation", "MA2") )
-    params['MA3'] = int( config.get("Valuation", "MA3") )
-    params['MA2offset'] = params['MA3'] - params['MA2']
-    params['MA2factor'] = float( config.get("Valuation", "sma2factor") )
-    params['rankThresholdPct'] = float( config.get("Valuation", "rankThresholdPct") )
-    params['riskDownside_min'] = float( config.get("Valuation", "riskDownside_min") )
-    params['riskDownside_max'] = float( config.get("Valuation", "riskDownside_max") )
-    params['narrowDays'] = [ float(config.get("Valuation", "narrowDays_min")), float(config.get("Valuation", "narrowDays_max")) ]
-    params['mediumDays'] = [ float(config.get("Valuation", "mediumDays_min")), float(config.get("Valuation", "mediumDays_max")) ]
-    params['wideDays'] = [ float(config.get("Valuation", "wideDays_min")), float(config.get("Valuation", "wideDays_max")) ]
-    params['uptrendSignalMethod'] = config.get("Valuation", "uptrendSignalMethod")
-    params['lowPct'] = config.get("Valuation", "lowPct")
-    params['hiPct'] = config.get("Valuation", "hiPct")
-
-    params['minperiod'] = int( config.get("Valuation", "minperiod") )
-    params['maxperiod'] = int( config.get("Valuation", "maxperiod") )
-    params['incperiod'] = int( config.get("Valuation", "incperiod") )
-    params['numdaysinfit'] = int( config.get("Valuation", "numdaysinfit") )
-    params['numdaysinfit2'] = int( config.get("Valuation", "numdaysinfit2") )
-    params['offset'] = int( config.get("Valuation", "offset") )
-
-    params['stockList'] = config.get("Valuation", "stockList")
-
-    return params
-
-
-def GetFTPParams():
-    ######################
-    ### Input FTP parameters
-    ######################
-
-    # set default values
-    ftpparams = {}
-
-    # read the parameters form the configuration file
-    config_filename = "PyTAAA.params"
-
-    config = configparser.ConfigParser(strict=False)
-    configfile = open(config_filename, "r")
-    config.read_file(configfile)
-
-    ftpHostname = config.get("FTP", "hostname")
-    ftpUsername = config.get("FTP", "username")
-    ftpPassword = config.get("FTP", "password")
-    ftpRemotePath = config.get("FTP", "remotepath")
-    ftpRemoteIP   = config.get("FTP", "remoteIP")
-
-    # put params in a dictionary
-    ftpparams['ftpHostname'] = str( ftpHostname )
-    ftpparams['ftpUsername'] = str( ftpUsername )
-    ftpparams['ftpPassword'] = str( ftpPassword )
-    ftpparams['remotepath'] = str( ftpRemotePath )
-    ftpparams['remoteIP'] = str( ftpRemoteIP )
-
-    return ftpparams
-
-
-def GetHoldings():
-    ######################
-    ### Input current holdings and cash
-    ######################
-
-    # set default values
-    holdings = {}
-
-    # read the parameters form the configuration file
-    config_filename = "PyTAAA_holdings.params"
-
-    config = configparser.ConfigParser(strict=False)
-    configfile = open(config_filename, "r")
-    config.read_filefp(configfile)
-
-    # put params in a dictionary
-    holdings['stocks'] = config.get("Holdings", "stocks").split()
-    holdings['shares'] = config.get("Holdings", "shares").split()
-    holdings['buyprice'] = config.get("Holdings", "buyprice").split()
-    holdings['cumulativecashin'] = config.get("Holdings", "cumulativecashin").split()
-
-    # get rankings for latest dates for all stocks in index
-    # read the parameters form the configuration file
-    print(" ...inside GetHoldings...  pwd = ", os.getcwd())
-    config_filename = "PyTAAA_ranks.params"
-    configfile = open(config_filename, "r")
-    config.read_file(configfile)
-    symbols = config.get("Ranks", "symbols").split()
-    ranks = config.get("Ranks", "ranks").split()
-    # put ranks params in dictionary
-    holdings_ranks = []
-    print("\n\n********************************************************")
-    print(" ...inside GetParams/GetHoldings...")
-    for i, holding in enumerate(holdings['stocks']):
-        for j,symbol in enumerate(symbols):
-            # print("... j, symbol, rank = ", j, symbol, ranks[j])
-            if symbol == holding:
-                print("                                       MATCH ... i, symbol, rank = ", i, holding, symbols[j], ranks[j])
-                holdings_ranks.append( ranks[j] )
-                break
-    holdings['ranks'] = holdings_ranks
-    print("\n\n********************************************************")
-
-    return holdings
-
-
-def GetStatus():
-    ######################
-    ### Input current cumulative value
-    ######################
-
-    # read the parameters form the configuration file
-    status_filename = "PyTAAA_status.params"
-
-    config = configparser.ConfigParser(strict=False)
-    configfile = open(status_filename, "r")
-    config.read_file(configfile)
-
-    # put params in a dictionary
-    status = config.get("Status", "cumu_value").split()[-3]
-
-    return status
-
-
-def PutStatus( cumu_status ):
-    ######################
-    ### Input current cumulative value
-    ######################
-
-    import datetime
-
-    # read the parameters form the configuration file
-    status_filename = "PyTAAA_status.params"
-
-    # check last value written to file for comparison with current cumu_status. Update if different.
-    with open(status_filename, 'r') as f:
-        lines = f.read()
-    old_cumu_status = lines.split("\n")[-2]
-    #old_cumu_status = old_cumu_status.split(" ")[-1]
-    old_cumu_status = old_cumu_status.split(" ")[-3]
-
-    old_cumu_signal = lines.split("\n")[-2]
-    old_cumu_signal = old_cumu_signal.split(" ")[-2]
-
-    # check current signal based on system protfolio value trend
-    _, traded_values, _, last_signal = computeLongHoldSignal()
-
-    print("cumu_status = ", str(cumu_status))
-    print("old_cumu_status = ", old_cumu_status)
-    print("last_signal[-1] = ", last_signal[-1])
-    print("old_cumu_signal = ", old_cumu_signal)
-    print(str(cumu_status)== old_cumu_status, str(last_signal[-1])== old_cumu_signal)
-    if str(cumu_status) != str(old_cumu_status) or str(last_signal[-1]) != str(old_cumu_signal):
-        with open(status_filename, 'a') as f:
-            f.write( "cumu_value: "+\
-                     str(datetime.datetime.now())+" "+\
-                     str(cumu_status)+" "+\
-                     str(last_signal[-1])+" "+\
-                     str(traded_values[-1])+"\n" )
-
-    return
 
 def computeLongHoldSignal():
     ######################
@@ -934,25 +789,34 @@ def GetEdition( ):
     return edition
 
 
-def GetSymbolsFile( ):
-    ######################
-    ### get filename where list of symbols is stored
-    ######################
-    ##
-    ##  Import list of symbols to process.
-    ##
-    params = GetParams()
-    stockList = params['stockList']
-
-    # read list of symbols from disk.
-    symbol_directory = os.path.join( os.getcwd(), "symbols" )
-    if stockList == 'Naz100':
-        symbol_file = "Naz100_Symbols.txt"
-    elif stockList == 'SP500':
-        symbol_file = "SP500_Symbols.txt"
-    symbols_file = os.path.join( symbol_directory, symbol_file )
-
-    return symbols_file
+def GetSymbolsFile(json_fn=None):
+    """
+    Get filename where list of symbols is stored (legacy interface).
+    
+    This function provides backward compatibility. New code should use
+    get_symbols_file(json_fn) instead.
+    
+    Args:
+        json_fn: Path to JSON configuration file. If None, tries to find
+                a configuration file in common locations.
+                
+    Returns:
+        str: Path to symbols file
+    """
+    if json_fn is None:
+        # Try to find JSON config in common locations
+        possible_configs = [
+            'pytaaa_generic.json',
+            os.path.join(os.path.expanduser('~'), 'pyTAAA_data', 'pytaaa_generic.json')
+        ]
+        for config in possible_configs:
+            if os.path.exists(config):
+                json_fn = config
+                break
+        if json_fn is None:
+            raise FileNotFoundError("No JSON config file found. Please specify json_fn parameter.")
+    
+    return get_symbols_file(json_fn)
 
 def parse_pytaaa_status(file_path: str) -> Tuple[list, list]:
     """
