@@ -1,4 +1,4 @@
-def SendEmail( username, emailpassword, toperson, fromperson, subjecttext, regulartext, boldtext, headlinetext ) :
+def SendEmail(username: str, emailpassword: str, toperson: str, fromperson: str, subjecttext: str, regulartext: str, boldtext: str, headlinetext: str) -> None:
     import smtplib
     import datetime
     # to, from, subject
@@ -34,7 +34,7 @@ Subject: """+message_subject+"""
         print("Error: unable to send email")
         print("")
 
-def SendTextMessage( username, emailpassword, phoneEmail, fromperson, message ) :
+def SendTextMessage(username: str, emailpassword: str, phoneEmail: str, fromperson: str, message: str) -> None:
     import smtplib
     import datetime
     # to, from, subject
