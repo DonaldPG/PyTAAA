@@ -3,6 +3,7 @@ import datetime
 
 from scipy import random
 from scipy.stats import rankdata
+from typing import Any, Tuple
 
 import nose
 import bottleneck as bn
@@ -13,7 +14,7 @@ from functions.quotes_adjCloseVol import *
 from functions.TAfunctions import *
 from functions.readSymbols import *
 
-def get_Naz100List( verbose=True ):
+def get_Naz100List(verbose: bool = True) -> Tuple[list, list, list]:
     ###
     ### Query nasdaq.com for updated list of stocks in Nasdaq 100 index.
     ### Return list with stock tickers.
@@ -166,7 +167,7 @@ def get_Naz100List( verbose=True ):
     return symbolList, removedTickers, addedTickers
 
 
-def get_Naz100PlusETFsList( verbose=True ):
+def get_Naz100PlusETFsList(verbose: bool = True) -> Tuple[list, list, list]:
     ###
     ### Query nasdaq.com for updated list of stocks in Nasdaq 100 index.
     ### Return list with stock tickers.
@@ -255,7 +256,9 @@ def get_Naz100PlusETFsList( verbose=True ):
     return symbolList, removedTickers, addedTickers
 
 
-def arrayFromQuotesForList(symbolsFile, beginDate, endDate):
+def arrayFromQuotesForList(
+        symbolsFile: str, beginDate: Any, endDate: Any
+) -> Tuple[np.ndarray, list, np.ndarray]:
     '''
     read in quotes and process to 'clean' ndarray plus date array
     - prices in array with dimensions [num stocks : num days ]
@@ -286,7 +289,9 @@ def arrayFromQuotesForList(symbolsFile, beginDate, endDate):
 
     return x[:,0,:], quote.getlabel(0), datearray
 
-def arrayFromQuotesForListWithVol(symbolsFile, beginDate, endDate):
+def arrayFromQuotesForListWithVol(
+        symbolsFile: str, beginDate: Any, endDate: Any
+) -> Tuple[np.ndarray, np.ndarray, list, np.ndarray]:
     '''
     read in quotes and process to 'clean' ndarray plus date array
     - prices in array with dimensions [num stocks : num days ]
@@ -319,7 +324,7 @@ def arrayFromQuotesForListWithVol(symbolsFile, beginDate, endDate):
 
 
 
-def get_quote_google( symbol ):
+def get_quote_google(symbol: str) -> float:
     import urllib
     import re
     base_url = 'http://finance.google.com/finance?q=NASDAQ%3A'
@@ -332,7 +337,7 @@ def get_quote_google( symbol ):
     return quote
 
 
-def LastQuotesForSymbolList( symbolList ):
+def LastQuotesForSymbolList(symbolList: list) -> list:
     """
     read in latest (15-minute delayed) quote for each symbol in list.
     Use google for each symbol's quote.
@@ -357,7 +362,7 @@ def LastQuotesForSymbolList( symbolList ):
     return quotelist
 
 
-def LastQuotesForList( symbols_list ):
+def LastQuotesForList(symbols_list: list) -> list:
 
     from time import sleep
     from functions.StockRetriever import *

@@ -5,6 +5,7 @@ import datetime
 import pandas as pd
 from numpy import random
 from scipy.stats import rankdata
+from typing import Any, Tuple
 
 from functions.quotes_adjClose import downloadQuotes
 from functions.TAfunctions import (interpolate,
@@ -734,7 +735,7 @@ from functions.readSymbols import read_symbols_list_web
 
 
 
-def get_Naz100PlusETFsList( verbose=True ):
+def get_Naz100PlusETFsList(verbose: bool = True) -> Tuple[list, list, list]:
     ###
     ### Query nasdaq.com for updated list of stocks in Nasdaq 100 index.
     ### Return list with stock tickers.
@@ -823,7 +824,7 @@ def get_Naz100PlusETFsList( verbose=True ):
     return symbolList.sort(), removedTickers, addedTickers
 
 
-def get_ETFList( verbose=True ):
+def get_ETFList(verbose: bool = True) -> Tuple[list, list, list]:
     ###
     ### Return list with stock tickers.
     ###
@@ -846,7 +847,9 @@ def get_ETFList( verbose=True ):
     return old_symbolList.sort(), [], []
 
 
-def arrayFromQuotesForList(symbolsFile, json_fn, beginDate, endDate):
+def arrayFromQuotesForList(
+        symbolsFile: str, json_fn: str, beginDate: Any, endDate: Any
+) -> Tuple[np.ndarray, list, np.ndarray]:
     '''
     read in quotes and process to 'clean' ndarray plus date array
     - prices in array with dimensions [num stocks : num days ]
@@ -892,7 +895,9 @@ def arrayFromQuotesForList(symbolsFile, json_fn, beginDate, endDate):
 
     return x, symbolList, datearray
 
-def arrayFromQuotesForListWithVol(symbolsFile, json_fn, beginDate, endDate):
+def arrayFromQuotesForListWithVol(
+        symbolsFile: str, json_fn: str, beginDate: Any, endDate: Any
+) -> Tuple[np.ndarray, list, np.ndarray]:
     '''
     read in quotes and process to 'clean' ndarray plus date array
     - prices in array with dimensions [num stocks : num days ]
@@ -950,7 +955,7 @@ def get_quote_google( symbol ):
 '''
 
 
-def get_quote_google( symbol ):
+def get_quote_google(symbol: str) -> float:
     " use alpha_vantage instead of google "
     from quotes_adjClose_alphavantage import get_last_quote
     if symbol == 'CASH':
@@ -960,7 +965,7 @@ def get_quote_google( symbol ):
     return last_quote
 
 
-def get_quote_alphavantage( symbol ):
+def get_quote_alphavantage(symbol: str) -> float:
     " use alpha_vantage instead of google "
     try:
         from functions.quotes_adjClose_alphavantage import get_last_quote
@@ -975,7 +980,7 @@ def get_quote_alphavantage( symbol ):
     return _quote
 
 
-def get_pe_google( symbol ):
+def get_pe_google(symbol: str) -> float:
     import urllib.request, urllib.parse, urllib.error
     import re
     base_url = 'http://finance.google.com/finance?q=NASDAQ%3A'
@@ -1093,7 +1098,7 @@ def get_pe_finviz(symbol: str, verbose: bool = False) -> float:
         return np.nan
 
 
-def get_SectorAndIndustry_google( symbol ):
+def get_SectorAndIndustry_google(symbol: str) -> Tuple[str, str]:
     import urllib.request, urllib.parse, urllib.error
     import re
     base_url = 'http://finance.google.com/finance?q=NASDAQ%3A'
@@ -1111,7 +1116,7 @@ def get_SectorAndIndustry_google( symbol ):
     return sector, industry
 
 
-def get_SectorAndIndustry_google( symbol ):
+def get_SectorAndIndustry_google(symbol: str) -> Tuple[str, str]:
     ' use finviz to get sector and industry '
     import requests
     import bs4 as bs
@@ -1140,7 +1145,7 @@ def get_SectorAndIndustry_google( symbol ):
     return sector, industry
 
 
-def get_SectorAndIndustry_google( symbol ):
+def get_SectorAndIndustry_google(symbol: str) -> Tuple[str, str]:
     """Get sector and industry with caching for rate limit avoidance.
     
     Uses cached values if available and fresh (<5 days old).
@@ -1151,7 +1156,7 @@ def get_SectorAndIndustry_google( symbol ):
     return get_sector_industry_cached(symbol)
 
 
-def LastQuotesForSymbolList( symbolList ):
+def LastQuotesForSymbolList(symbolList: list) -> list:
     """
     read in latest (15-minute delayed) quote for each symbol in list.
     Use alpha_vantage for each symbol's quote.
@@ -1187,7 +1192,9 @@ def LastQuotesForSymbolList( symbolList ):
     return quotelist
 
 
-def LastQuotesForSymbolList_hdf(symbolList, symbols_file, json_fn):
+def LastQuotesForSymbolList_hdf(
+        symbolList: list, symbols_file: str, json_fn: str
+) -> list:
     """
     read in latest (15-minute delayed) quote for each symbol in list.
     Use quotes on hdf for each symbol's quote.
@@ -1210,7 +1217,7 @@ def LastQuotesForSymbolList_hdf(symbolList, symbols_file, json_fn):
     return quotelist
 
 
-def LastQuotesForList( symbols_list ):
+def LastQuotesForList(symbols_list: list) -> list:
 
     from time import sleep
     #from functions.StockRetriever import *

@@ -10,6 +10,7 @@ plt.rcParams['figure.figsize'] = (16*.75, 9*.75)
 plt.rcParams['figure.dpi'] = 150
 plt.rcParams['savefig.dpi'] = 150
 from math import sqrt
+import numpy as np
 from functions.GetParams import (
     get_json_params, get_symbols_file, get_webpage_store, get_performance_store
 )
@@ -22,22 +23,22 @@ from functions.CountNewHighsLows import newHighsAndLows
 
 
 def plotRecentPerfomance3(
-        indexRealtimeStart, _datearray, symbols,
-        _value, _monthvalue,
-        _AllStocksHistogram,
-        _MonteCarloPortfolioValues,
-        _FinalTradedPortfolioValue,
-        _TradedPortfolioValue,
-        _BuyHoldPortfolioValue,
-        _numberStocksUpTrending,
-        last_symbols_text,
-        _activeCount,
-        _numberStocks,
-        _numberStocksUpTrendingNearHigh,
-        _numberStocksUpTrendingBeatBuyHold,
-        png_fn,
-        json_fn
-):
+        indexRealtimeStart: int, _datearray: np.ndarray, symbols: list,
+        _value: np.ndarray, _monthvalue: np.ndarray,
+        _AllStocksHistogram: np.ndarray,
+        _MonteCarloPortfolioValues: np.ndarray,
+        _FinalTradedPortfolioValue: np.ndarray,
+        _TradedPortfolioValue: np.ndarray,
+        _BuyHoldPortfolioValue: np.ndarray,
+        _numberStocksUpTrending: np.ndarray,
+        last_symbols_text: str,
+        _activeCount: np.ndarray,
+        _numberStocks: np.ndarray,
+        _numberStocksUpTrendingNearHigh: np.ndarray,
+        _numberStocksUpTrendingBeatBuyHold: np.ndarray,
+        png_fn: str,
+        json_fn: str
+) -> None:
 
     # make local copies of arrays after indexRealtimeStart (2013,1,1)
     # adjust all starting values to 10,000 on (2013,1,1)
@@ -594,21 +595,21 @@ def plotRecentPerfomance3(
 
 
 def plotRecentPerfomance2(
-        indexRealtimeStart, _datearray, symbols,
-        _value, _monthvalue,
-        _AllStocksHistogram,
-        _MonteCarloPortfolioValues,
-        _FinalTradedPortfolioValue,
-        _TradedPortfolioValue,
-        _BuyHoldPortfolioValue,
-        _numberStocksUpTrending,
-        last_symbols_text,
-        _activeCount,
-        _numberStocks,
-        _numberStocksUpTrendingNearHigh,
-        _numberStocksUpTrendingBeatBuyHold,
-        json_fn
-):
+        indexRealtimeStart: int, _datearray: np.ndarray, symbols: list,
+        _value: np.ndarray, _monthvalue: np.ndarray,
+        _AllStocksHistogram: np.ndarray,
+        _MonteCarloPortfolioValues: np.ndarray,
+        _FinalTradedPortfolioValue: np.ndarray,
+        _TradedPortfolioValue: np.ndarray,
+        _BuyHoldPortfolioValue: np.ndarray,
+        _numberStocksUpTrending: np.ndarray,
+        last_symbols_text: str,
+        _activeCount: np.ndarray,
+        _numberStocks: np.ndarray,
+        _numberStocksUpTrendingNearHigh: np.ndarray,
+        _numberStocksUpTrendingBeatBuyHold: np.ndarray,
+        json_fn: str
+) -> None:
 
     # make local copies of arrays after indexRealtimeStart (2013,1,1)
     # adjust all starting values to 10,000 on (2013,1,1)
@@ -1098,18 +1099,19 @@ def plotRecentPerfomance2(
 #                           numberStocksUpTrendingBeatBuyHold ):
 # '''
 def plotRecentPerfomance(
-        datearray, symbols, value, monthvalue,
-        AllStocksHistogram,
-        MonteCarloPortfolioValues,
-        FinalTradedPortfolioValue,
-        numberStocksUpTrending,
-        last_symbols_text,
-        activeCount,
-        numberStocks,
-        numberStocksUpTrendingNearHigh,
-        numberStocksUpTrendingBeatBuyHold,
-        json_fn
-):
+        datearray: np.ndarray, symbols: list,
+        value: np.ndarray, monthvalue: np.ndarray,
+        AllStocksHistogram: np.ndarray,
+        MonteCarloPortfolioValues: np.ndarray,
+        FinalTradedPortfolioValue: np.ndarray,
+        numberStocksUpTrending: np.ndarray,
+        last_symbols_text: str,
+        activeCount: np.ndarray,
+        numberStocks: np.ndarray,
+        numberStocksUpTrendingNearHigh: np.ndarray,
+        numberStocksUpTrendingBeatBuyHold: np.ndarray,
+        json_fn: str
+) -> None:
 
     import time, threading
 
@@ -1568,7 +1570,7 @@ def plotRecentPerfomance(
     return
 
 
-def dailyBacktest_pctLong(json_fn, verbose=False):
+def dailyBacktest_pctLong(json_fn: str, verbose: bool = False) -> None:
 
     # import time, threading
 
