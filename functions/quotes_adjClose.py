@@ -4,7 +4,10 @@ Created on May 12, 202
 @author: donaldpg
 '''
 
-def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
+from typing import Optional, Tuple
+import pandas as pd
+
+def downloadQuotes(tickers: list, date1: Optional[str] = None, date2: Optional[str] = None, adjust: bool = True, Verbose: bool = False) -> pd.DataFrame:
     """
     Given a ticker sequence, return historical Yahoo! quotes as a pandas DataFrame.
 
@@ -240,7 +243,7 @@ def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
     return quotes_df
 
 
-def get_pe(ticker):
+def get_pe(ticker: str) -> float:
 
     from urllib.request import urlopen
     from bs4 import BeautifulSoup
@@ -263,7 +266,7 @@ def get_pe(ticker):
     return pe
 
 
-def get_pe(ticker):
+def get_pe(ticker: str) -> float:
     """Get PE ratio with caching for rate limit avoidance.
     
     Uses cached values if available and fresh (<5 days old).
@@ -274,7 +277,7 @@ def get_pe(ticker):
     return get_pe_cached(ticker)
 
 
-def get_quote_and_pe(ticker):
+def get_quote_and_pe(ticker: str) -> Tuple[float, float]:
 
     from urllib.request import urlopen
     from bs4 import BeautifulSoup

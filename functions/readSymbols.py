@@ -5,16 +5,17 @@ Created on May 12, 202
 '''
 import os
 import datetime
+from typing import Optional, Tuple
 import pandas as pd
 import pandas_market_calendars as mcal
 
 class webpage_companies_extractor:
     Url = None
 
-    def __init__(self, url):
+    def __init__(self, url: str) -> None:
         self.__url = url
 
-    def get_companies_list(self, current_portfolio=None):
+    def get_companies_list(self, current_portfolio: Optional[list] = None) -> Tuple[list, list]:
         dfs = pd.read_html(self.__url, header=0)
         first_table = dfs[2]
         company_names = first_table
@@ -23,7 +24,7 @@ class webpage_companies_extractor:
         return symbols, companyNames
 
 
-def strip_accents(text):
+def strip_accents(text: str) -> str:
     import unicodedata
     try:
         text = unicode(text, 'utf-8')
@@ -109,7 +110,7 @@ def strip_accents(text):
 # '''
 
 
-def readSymbolList(filename, json_fn, verbose=False):
+def readSymbolList(filename: str, json_fn: str, verbose: bool = False) -> list:
     # Get the Data
     from functions.GetParams import get_symbols_file
     existing_symbols_file = get_symbols_file(json_fn)
@@ -180,7 +181,7 @@ def readSymbolList(filename, json_fn, verbose=False):
     return symbols
 
 
-def read_symbols_list_local(json_fn, verbose=False):
+def read_symbols_list_local(json_fn: str, verbose: bool = False) -> list:
 
     # Get a list of stock tickers stored locally
     from functions.GetParams import get_symbols_file
@@ -218,7 +219,7 @@ def read_symbols_list_local(json_fn, verbose=False):
     return symbols
 
 
-def read_company_names_local(json_fn, verbose=False):
+def read_company_names_local(json_fn: str, verbose: bool = False) -> Tuple[list, list]:
 
     # Get a list of stock tickers stored locally
     from functions.GetParams import get_symbols_file
@@ -268,7 +269,7 @@ def read_company_names_local(json_fn, verbose=False):
     return symbols, company_names
 
 
-def read_symbols_list_web(json_fn, verbose=True):
+def read_symbols_list_web(json_fn: str, verbose: bool = True) -> Tuple[list, list]:
 
     import os
     # determine if SP500 or Naz100
@@ -761,7 +762,7 @@ def read_symbols_list_web(json_fn, verbose=True):
 
 
 
-def get_symbols_changes(json_fn, verbose=False):
+def get_symbols_changes(json_fn: str, verbose: bool = False) -> Tuple[list, list, list]:
 
     from functions.GetParams import get_symbols_file
 
@@ -897,7 +898,7 @@ def get_symbols_changes(json_fn, verbose=False):
     return w_symbolList, removedTickers, addedTickers
 
 
-def is_last_trade_day_in_month():
+def is_last_trade_day_in_month() -> bool:
     from datetime import datetime, timedelta
 
     # Get the NYSE calendar

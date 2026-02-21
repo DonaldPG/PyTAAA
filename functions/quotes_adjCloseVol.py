@@ -4,7 +4,10 @@ Created on May 12, 202
 @author: donaldpg
 '''
 
-def downloadQuotes(tickers, date1=None, date2=None, adjust=True, Verbose=False):
+from typing import Any, Optional
+
+
+def downloadQuotes(tickers: list, date1: Optional[str] = None, date2: Optional[str] = None, adjust: bool = True, Verbose: bool = False) -> Any:
     """
     Given a ticker sequence, return historical Yahoo! quotes as a 3d larry.
 

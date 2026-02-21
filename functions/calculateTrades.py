@@ -2,6 +2,7 @@ import os
 import numpy as np
 import datetime
 import pandas as pd
+from typing import Tuple
 #from functions.quotes_for_list_adjCloseVol import *
 from functions.quotes_for_list_adjClose import LastQuotesForSymbolList_hdf
 from functions.CheckMarketOpen import *
@@ -18,9 +19,9 @@ np.set_printoptions(suppress=True, precision=2)
 ###
 
 def calculateTrades(
-        holdings, last_symbols_text,
-        last_symbols_weight, last_symbols_price, json_fn
-):
+        holdings: dict, last_symbols_text: list,
+        last_symbols_weight: np.ndarray, last_symbols_price: np.ndarray, json_fn: str
+) -> str:
     """
     Function calculates updates to holdings based on input lists.
     1. Finds stocks from existing holding that will continue to be held.
@@ -369,7 +370,7 @@ def calculateTrades(
     return trade_message
 
 
-def trade_today(json_fn, symbols_today, weight_today, price_today, verbose=False):
+def trade_today(json_fn: str, symbols_today: list, weight_today: np.ndarray, price_today: np.ndarray, verbose: bool = False) -> None:
 
     from functions.GetParams import (
         get_holdings, get_symbols_file, get_performance_store
