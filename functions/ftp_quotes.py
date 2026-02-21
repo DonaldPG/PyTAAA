@@ -4,9 +4,10 @@ Created on Tue Jun 26 19:06:54 2018
 
 @author: dp
 """
+from typing import Optional
 
 
-def ftp_copy_quotes_hdf(computerName, local_path, json_fn=None):
+def ftp_copy_quotes_hdf(computerName: str, local_path: str, json_fn: Optional[str] = None) -> None:
 
     # based on a demo in ptyhon package paramiko.
     #
@@ -92,7 +93,7 @@ def ftp_copy_quotes_hdf(computerName, local_path, json_fn=None):
 
 
 #if __name__ == "__main__":
-def copy_updated_quotes(json_fn=None):
+def copy_updated_quotes(json_fn: Optional[str] = None) -> None:
 
     import os
     import platform

@@ -1,12 +1,13 @@
 import numpy as np
 import math
+from typing import List, Union
 
 class allstats():
 
-    def __init__(self,x):
+    def __init__(self, x: np.ndarray) -> None:
         self.data = x
 
-    def sharpe(self, periods_per_year=252):
+    def sharpe(self, periods_per_year: int = 252) -> float:
         x = self.data
         from scipy.stats import gmean
         # The mad of nothing is null
@@ -21,7 +22,7 @@ class allstats():
         sharpe =  ( gmean(dailygainloss)**periods_per_year -1. ) / ( np.std(dailygainloss)*np.sqrt(periods_per_year) )
         return sharpe
 
-    def monthly_sharpe(self):
+    def monthly_sharpe(self) -> float:
         x = self.data
         from scipy.stats import gmean
         # The mad of nothing is null
@@ -36,7 +37,7 @@ class allstats():
         sharpe =  ( gmean(dailygainloss)**12 -1. ) / ( np.std(dailygainloss)*np.sqrt(12) )
         return sharpe
 
-    def sortino(self, risk_free_rate = 0., target_rate=0.):
+    def sortino(self, risk_free_rate: float = 0., target_rate: float = 0.) -> float:
         # adapted from www.turingfinance.com/computational-investing-with-python-week-one/
         def lpm(returns, threshold, order):
             # This method returns a lower partial moment of the returns
@@ -72,7 +73,7 @@ class allstats():
         sortino = sortino_ratio(er, dailypercentgainloss, risk_free_rate, target_rate=0.)
         return sortino
 
-    def mad(self):
+    def mad(self) -> float:
         # [Median Absolute Deviation](http://en.wikipedia.org/wiki/Median_absolute_deviation)
         #
         # The Median Absolute Deviation (MAD) is a robust measure of statistical
@@ -92,7 +93,7 @@ class allstats():
         #Find the median value of that list
         return np.median(median_absolute_deviations)
 
-    def std(self):
+    def std(self) -> float:
         x = self.data
         # The mad of nothing is null
         if len(x) == 0:
@@ -100,7 +101,7 @@ class allstats():
         #Find the std dev value of that list
         return np.std(x)
 
-    def z_score(self):
+    def z_score(self) -> np.ndarray:
         # [Z-Score, or Standard Score](http://en.wikipedia.org/wiki/Standard_score)
         #
         # The z_score is the number of standard deviations an observation
@@ -121,7 +122,7 @@ class allstats():
         #return np.hstack( ((0), ((x - mean)/stddev)) )
         return (x - mean)/stddev
 
-    def med_score(self):
+    def med_score(self) -> np.ndarray:
         # [Z-Score, or Standard Score](http://en.wikipedia.org/wiki/Standard_score)
         #
         # The z_score is the number of standard deviations an observation
@@ -147,7 +148,7 @@ class allstats():
         #return np.hstack( ((0), ((x - median_value)/mad)) )
         return (x - median_value)/mad
 
-    def remove_medoutliers(self,num_stds=1.):
+    def remove_medoutliers(self, num_stds: float = 1.) -> np.ndarray:
         x = self.data
         # The z_score of nothing is null
         if len(x) == 0:
@@ -157,7 +158,7 @@ class allstats():
         x_no_outliers = x[score < num_stds*score.std()]
         return x_no_outliers
 
-    def count_medoutliers(self,num_stds=1.):
+    def count_medoutliers(self, num_stds: float = 1.) -> int:
         x = self.data
         # The z_score of nothing is null
         if len(x) == 0:
@@ -167,7 +168,7 @@ class allstats():
         outlier_count = x[score > num_stds*score.std()].shape[0]
         return outlier_count
 
-    def return_medoutliers(self,num_stds=1.):
+    def return_medoutliers(self, num_stds: float = 1.) -> np.ndarray:
         x = self.data
         # The z_score of nothing is null
         if len(x) == 0:
@@ -177,7 +178,7 @@ class allstats():
         x_outliers = x[score > num_stds*score.std()]
         return x_outliers
 
-    def return_indices_medoutliers(self,num_stds=1.):
+    def return_indices_medoutliers(self, num_stds: float = 1.) -> tuple:
         x = self.data
         # The z_score of nothing is null
         if len(x) == 0:
@@ -187,7 +188,7 @@ class allstats():
         x_outliers_indices = np.where(score > num_stds*score.std())
         return x_outliers_indices
 
-    def mean(self):
+    def mean(self) -> float:
         x = self.data
         # The mean of nothing is null
         if len(x) == 0:
@@ -195,7 +196,7 @@ class allstats():
         #Find the mean value of that list
         return np.mean(x)
 
-    def median(self):
+    def median(self) -> float:
         x = self.data
         # The median of nothing is null
         if len(x) == 0:

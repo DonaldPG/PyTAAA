@@ -5,13 +5,14 @@ import bottleneck as bn
 import la
 import h5py
 import datetime
+from typing import List
 from scipy.stats import gmean
 from math import sqrt
 from numpy import std
 from numpy import isnan
 from functions.readSymbols import *
 
-def PortfolioStatsOnDate( directory_name, file_name, params, StatDate ):
+def PortfolioStatsOnDate(directory_name: str, file_name: str, params: dict, StatDate) -> list:
 
     ######################
     ### Input parameters
