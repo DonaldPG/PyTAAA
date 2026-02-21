@@ -28,7 +28,7 @@ import re
 from typing import Tuple, Dict, Optional
 
 
-def from_config_file(config_filename: str):
+def from_config_file(config_filename: str) -> configparser.ConfigParser:
     """Load configuration from an INI-style config file.
     
     Args:
@@ -223,7 +223,7 @@ def get_central_std_values(json_fn: str) -> Dict[str, Dict[str, float]]:
     }
 
 
-def get_json_ftp_params(json_fn, verbose=False):
+def get_json_ftp_params(json_fn: str, verbose: bool = False) -> Dict[str, str]:
     ######################
     ### Input FTP parameters from json file with multiple sections
     ######################
@@ -257,7 +257,7 @@ def get_json_ftp_params(json_fn, verbose=False):
     return ftpparams
 
 
-def get_holdings(json_fn):
+def get_holdings(json_fn: str) -> Dict:
     ######################
     ### Input current holdings and cash
     ######################
@@ -306,7 +306,7 @@ def get_holdings(json_fn):
     return holdings
 
 
-def get_json_params(json_fn, verbose=False):
+def get_json_params(json_fn: str, verbose: bool = False) -> Dict:
 
     ######################
     ### Input parameters from json file with multiple sections
@@ -460,7 +460,7 @@ def get_json_params(json_fn, verbose=False):
     return params
 
 
-def get_json_status(json_fn):
+def get_json_status(json_fn: str) -> str:
     ######################
     ### Input current cumulative value
     ######################
@@ -480,7 +480,7 @@ def get_json_status(json_fn):
     return status
 
 
-def compute_long_hold_signal(json_fn):
+def compute_long_hold_signal(json_fn: str) -> Tuple[list, np.ndarray, list, np.ndarray]:
     ######################
     ### compute signal based on MA of system portfolio value
     ######################
@@ -489,7 +489,7 @@ def compute_long_hold_signal(json_fn):
     import datetime
     from functions.TAfunctions import dpgchannel, SMA
 
-    def uniqueify2lists(seq, seq2):
+    def uniqueify2lists(seq: list, seq2: list) -> Tuple[list, list]:
        # order preserving
        # uniqueness and order determined by seq
        seen = {}
@@ -586,7 +586,7 @@ def compute_long_hold_signal(json_fn):
     return sortedDailyDate, traded_values, sortedDailyValue, (signal/11000.).astype('int')
 
 
-def get_status(json_fn):
+def get_status(json_fn: str) -> str:
     ######################
     ### Input current cumulative value
     ######################
@@ -606,7 +606,7 @@ def get_status(json_fn):
     return status
 
 
-def put_status(cumu_status, json_fn):
+def put_status(cumu_status: dict, json_fn: str) -> None:
     ######################
     ### Input current cumulative value
     ######################
@@ -649,7 +649,7 @@ def put_status(cumu_status, json_fn):
 
 
 
-def computeLongHoldSignal():
+def computeLongHoldSignal() -> Tuple[list, np.ndarray, list, np.ndarray]:
     ######################
     ### compute signal based on MA of system portfolio value
     ######################
@@ -658,7 +658,7 @@ def computeLongHoldSignal():
     import datetime
     from functions.TAfunctions import dpgchannel, SMA
 
-    def uniqueify2lists(seq, seq2):
+    def uniqueify2lists(seq: list, seq2: list) -> Tuple[list, list]:
        # order preserving
        # uniqueness and order determined by seq
        seen = {}
