@@ -20,7 +20,7 @@ from functions.TAfunctions import dpgchannel, SMA
 from functions.GetParams import get_webpage_store
 
 
-def makeValuePlot(json_fn):
+def makeValuePlot(json_fn: str) -> None:
 
     ##########################################
     # read valuations status file and make plot
@@ -202,7 +202,7 @@ def makeValuePlot(json_fn):
     return figure_htmlText
 
 
-def makeUptrendingPlot(json_fn):
+def makeUptrendingPlot(json_fn: str) -> None:
 
     from functions.TAfunctions import SMA, MoveMax, dpgchannel
 
@@ -311,7 +311,7 @@ def makeUptrendingPlot(json_fn):
     return figure3_htmlText
 
 
-def makeNewHighsAndLowsPlot(json_fn):
+def makeNewHighsAndLowsPlot(json_fn: str) -> None:
 
     #from functions.TAfunctions import SMA, MoveMax, dpgchannel
     from functions.GetParams import get_json_params
@@ -357,7 +357,7 @@ def makeNewHighsAndLowsPlot(json_fn):
     return figure_htmlText
 
 
-def makeTrendDispersionPlot(json_fn):
+def makeTrendDispersionPlot(json_fn: str) -> None:
 
     from functions.TAfunctions import SMA, MoveMax
     #import functions.allstats
@@ -548,7 +548,7 @@ def makeTrendDispersionPlot(json_fn):
     return figure5_htmlText
 
 
-def makeDailyMonteCarloBacktest(json_fn):
+def makeDailyMonteCarloBacktest(json_fn: str) -> None:
 
     import datetime
     from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
@@ -643,7 +643,7 @@ def makeDailyMonteCarloBacktest(json_fn):
 
 
 
-def makeStockCluster(json_fn):
+def makeStockCluster(json_fn: str) -> None:
 
     import datetime
     from functions.stock_cluster import dailyStockClusters
@@ -674,7 +674,7 @@ def makeStockCluster(json_fn):
     return figure7_htmlText
 
 
-def makeMinimumSpanningTree(json_fn):
+def makeMinimumSpanningTree(json_fn: str) -> None:
 
     from functions.make_stock_xcorr_network_plots import make_networkx_spanning_tree_plot
 
@@ -701,7 +701,7 @@ def makeMinimumSpanningTree(json_fn):
 
 
 
-def makeDailyChannelOffsetSignal(json_fn):
+def makeDailyChannelOffsetSignal(json_fn: str) -> None:
     from functions.TAfunctions import recentTrendAndStdDevs
     #import functions.allstats
     from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF

@@ -8,6 +8,7 @@ import datetime
 #import nose
 from scipy.stats import gmean
 from math import sqrt
+from typing import List
 
 ## local imports
 from functions.quotes_for_list_adjClose import *
@@ -91,30 +92,30 @@ def print_even_year_selections(
 
 
 def computeDailyBacktest(
-        json_fn,
-        datearray,
-        symbols,
-        adjClose,
-        numberStocksTraded=7,
-        trade_cost=7.95,
-        monthsToHold=4,
-        LongPeriod=104,
-        MA1=207,
-        MA2=26,
-        MA2offset=3,
-        sma2factor=.911,
-        rankThresholdPct=.02,
-        riskDownside_min=.272,
-        riskDownside_max=4.386,
-        narrowDays=[6.,40.2],
-        mediumDays=[25.2,38.3],
-        wideDays=[75.2,512.3],
-        stddevThreshold=4.0,
-        lowPct=17,
-        hiPct=84,
-        uptrendSignalMethod='uptrendSignalMethod',
-        verbose=False
-):
+        json_fn: str,
+        datearray: np.ndarray,
+        symbols: List[str],
+        adjClose: np.ndarray,
+        numberStocksTraded: int = 7,
+        trade_cost: float = 7.95,
+        monthsToHold: int = 4,
+        LongPeriod: int = 104,
+        MA1: int = 207,
+        MA2: int = 26,
+        MA2offset: int = 3,
+        sma2factor: float = .911,
+        rankThresholdPct: float = .02,
+        riskDownside_min: float = .272,
+        riskDownside_max: float = 4.386,
+        narrowDays: List[float] = [6., 40.2],
+        mediumDays: List[float] = [25.2, 38.3],
+        wideDays: List[float] = [75.2, 512.3],
+        stddevThreshold: float = 4.0,
+        lowPct: int = 17,
+        hiPct: int = 84,
+        uptrendSignalMethod: str = 'uptrendSignalMethod',
+        verbose: bool = False
+) -> None:
 
     # put params in a dictionary
     params = {}
