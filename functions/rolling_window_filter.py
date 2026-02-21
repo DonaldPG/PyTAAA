@@ -7,9 +7,11 @@ within a rolling window of adjusted close prices.
 import numpy as np
 
 
-def apply_rolling_window_filter(adjClose: np.ndarray, signal2D: np.ndarray, window_size: int, 
-                               symbols: list = None, datearray: np.ndarray = None,
-                               verbose: bool = False) -> np.ndarray:
+def apply_rolling_window_filter(
+        adjClose: np.ndarray, signal2D: np.ndarray, window_size: int, 
+        symbols: list = None, datearray: np.ndarray = None,
+        verbose: bool = False
+    ) -> np.ndarray:
     """Apply rolling window data quality filter to signal matrix.
     
     For each stock and date, checks the rolling window of adjusted close prices
