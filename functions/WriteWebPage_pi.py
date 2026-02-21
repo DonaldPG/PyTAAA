@@ -1,8 +1,9 @@
 import shutil
+from typing import List
 from functions.GetParams import get_json_ftp_params, get_webpage_store
 
 
-def ftpMoveDirectory(json_fn):
+def ftpMoveDirectory(json_fn: str) -> None:
 
     # based on a demo in ptyhon package paramiko.
     #
@@ -94,7 +95,7 @@ def ftpMoveDirectory(json_fn):
         sys.exit(1)
 
 
-def piMoveDirectory(json_fn):
+def piMoveDirectory(json_fn: str) -> None:
 
     import shutil
     import os
@@ -165,10 +166,15 @@ def piMoveDirectory(json_fn):
 
 
 def writeWebPage(
-        regulartext, boldtext, headlinetext, lastdate,
-        last_symbols_text, last_symbols_weight, last_symbols_price,
-        json_fn
-):
+        regulartext: str,
+        boldtext: str,
+        headlinetext: str,
+        lastdate: str,
+        last_symbols_text: list,
+        last_symbols_weight: list,
+        last_symbols_price: list,
+        json_fn: str,
+) -> None:
     #import smtplib
     import datetime
     import os

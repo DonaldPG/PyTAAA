@@ -24,9 +24,10 @@ def getClusterForSymbolsList( holdings_symbols ):
 
     return holdings_cluster_label
 """
+from typing import List
 
 
-def getClusterForSymbolsList(holdings_symbols, json_fn):
+def getClusterForSymbolsList(holdings_symbols: list, json_fn: str) -> list:
 
     import datetime
     import os
@@ -239,7 +240,7 @@ def getClusterForSymbolsList(holdings_symbols, json_fn):
     return holdings_cluster_label
 
 
-def dailyStockClusters(json_fn):
+def dailyStockClusters(json_fn: str) -> str:
     import datetime
     import os
     import numpy as np
