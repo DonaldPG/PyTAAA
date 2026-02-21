@@ -1466,11 +1466,11 @@ elif basename == "sp500_symbols.txt" :
     plotmax = 1.e8     # maximum value for plot (figure 3)
     holdMonths = [1,2,3,4,6,12]
 elif basename == "cmg_symbols.txt" :
-    runnum = 'run2508c'
+    runnum = 'run2508d'
     plotmax = 1.e7     # maximum value for plot (figure 3)
     holdMonths = [3,4,6,12]
 else :
-    runnum = 'run2508c'
+    runnum = 'run2508d'
     plotmax = 1.e9     # maximum value for plot (figure 3)
     holdMonths = [1,2,3,4,6,12]
 
@@ -1628,6 +1628,7 @@ column_text = "run,trial, \
               Avg Drawdown 1 Yr, \
               beatBuyHoldTest,\
               beatBuyHoldTest2,\
+              param varied, \
               \n"
 for i in range(50):
     column_text = column_text.replace(", ", ",")
