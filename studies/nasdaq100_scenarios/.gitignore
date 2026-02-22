@@ -1,0 +1,24 @@
+# Ignore study outputs (regenerate from config)
+results/**
+!results/.gitkeep
+plots/**
+!plots/.gitkeep
+
+# Ignore temporary development files
+scratch_*.py
+debug_*.py
+debug_*.ipynb
+*_temp.py
+*_old.py
+*_backup.py
+*.log
+*.pyc
+__pycache__/
+
+# Ignore local test configs
+params/local_*.json
+params/test_*.json
+params/*_temp.json
+
+# Keep structure markers
+!.gitkeep
