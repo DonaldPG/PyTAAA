@@ -16,40 +16,43 @@ Generate signal2D directly from oracle knowledge of centered-window price extrem
 
 ## Implementation Phases
 
-### Phase 1: Project Scaffolding and Configuration
+### Phase 1: Project Scaffolding and Configuration ✅
 
 **Goal:** Create isolated study infrastructure with clear contracts
 
 #### Tasks
-- [ ] Create directory structure under `studies/`
-  - [ ] `studies/nasdaq100_scenarios/`
-  - [ ] `studies/nasdaq100_scenarios/params/`
-  - [ ] `studies/nasdaq100_scenarios/results/`
-  - [ ] `studies/nasdaq100_scenarios/plots/`
-  - [ ] `studies/nasdaq100_scenarios/notes/`
-- [ ] Create JSON schema file: `studies/nasdaq100_scenarios/params/default_scenario.json`
-  - [ ] `start_date`, `stop_date` (string YYYY-MM-DD)
-  - [ ] `days_delay` (list: [0, 5, 10, 20, 40])
-  - [ ] `extrema_windows` (list of centered window half-widths: [25, 50, 100, 150])
-  - [ ] `top_n_list` (list: [5, 6, 7, 8])
-  - [ ] `enable_transaction_costs` (bool)
-  - [ ] `output_plots` (bool)
-  - [ ] `output_metrics` (bool)
-- [ ] Create `studies/nasdaq100_scenarios/README.md`
-  - [ ] Purpose and scope
-  - [ ] Dependencies on production code
-  - [ ] Expected outputs
-  - [ ] Interpretation guidelines
+- [x] Create directory structure under `studies/`
+  - [x] `studies/nasdaq100_scenarios/`
+  - [x] `studies/nasdaq100_scenarios/params/`
+  - [x] `studies/nasdaq100_scenarios/results/`
+  - [x] `studies/nasdaq100_scenarios/plots/`
+  - [x] `studies/nasdaq100_scenarios/notes/`
+- [x] Create JSON schema file: `studies/nasdaq100_scenarios/params/default_scenario.json`
+  - [x] `start_date`, `stop_date` (string YYYY-MM-DD)
+  - [x] `days_delay` (list: [0, 5, 10, 20, 40])
+  - [x] `extrema_windows` (list of centered window half-widths: [25, 50, 100, 150])
+  - [x] `top_n_list` (list: [5, 6, 7, 8])
+  - [x] `enable_transaction_costs` (bool)
+  - [x] `output_plots` (bool)
+  - [x] `output_metrics` (bool)
+- [x] Create `studies/nasdaq100_scenarios/README.md`
+  - [x] Purpose and scope
+  - [x] Dependencies on production code
+  - [x] Expected outputs
+  - [x] Interpretation guidelines
 
 #### Code Review Checklist
-- [ ] JSON schema is well-documented with inline comments
-- [ ] Directory structure separates config, code, and outputs
-- [ ] README clearly distinguishes research from production code
-- [ ] No AI slop: remove placeholder text, ensure clarity
+- [x] JSON schema is well-documented with inline comments
+- [x] Directory structure separates config, code, and outputs
+- [x] README clearly distinguishes research from production code
+- [x] No AI slop: remove placeholder text, ensure clarity
 
 #### Tests
-- [ ] Verify JSON schema loads without errors
-- [ ] Verify all directories are created and .gitignore excludes results/plots
+- [x] Verify JSON schema loads without errors
+- [x] Verify all directories are created and .gitignore excludes results/plots
+
+**Status:** Completed 2026-02-21  
+**Commit:** `97cedfd` feat(studies): Phase 1 - project scaffolding for oracle delay studies
 
 ---
 
