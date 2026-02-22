@@ -66,11 +66,20 @@ def load_nasdaq100_window(
         "Requested date range: %s to %s",
         requested_start, requested_stop
     )
+
+    padding_days = _compute_padding_days(config)
+    if padding_days > 0:
+        logger.info(
+            "Padding analysis window by %d trading days on each side",
+            padding_days
+        )
     
     # Load from HDF5 using production loader
     # Note: loadQuotes_fromHDF expects symbols file path and json path
-    # For NASDAQ100, use standard path convention
-    symbols_file = "symbols/Naz100_Symbols.txt"
+    symbols_file = data_config.get(
+        "symbols_file",
+        "symbols/Naz100_Symbols.txt"
+    )
     
     logger.info("Loading NASDAQ100 data from HDF5")
     adjClose_raw, symbols_raw, datearray_raw, _, _ = loadQuotes_fromHDF(
@@ -118,9 +127,15 @@ def load_nasdaq100_window(
         adjClose[cash_idx, :] = 1.0
     
     # Clip to requested date range
-    adjClose_clipped, symbols_clipped, datearray_clipped = _clip_to_date_range(
-        adjClose, symbols, datearray_clean,
-        requested_start, requested_stop
+    adjClose_clipped, symbols_clipped, datearray_clipped = (
+        _clip_to_date_range(
+            adjClose,
+            symbols,
+            datearray_clean,
+            requested_start,
+            requested_stop,
+            padding_days
+        )
     )
     
     # Infer tradable mask
@@ -136,12 +151,24 @@ def load_nasdaq100_window(
     return adjClose_clipped, symbols_clipped, datearray_clipped, tradable_mask
 
 
+def _compute_padding_days(config: dict) -> int:
+    oracle_params = config.get("oracle_parameters", {})
+    delay_params = config.get("delay_parameters", {})
+    windows = oracle_params.get("extrema_windows", [])
+    delays = delay_params.get("days_delay", [])
+
+    max_window = max(windows) if windows else 0
+    max_delay = max(delays) if delays else 0
+    return int((2 * max_window) + max_delay)
+
+
 def _clip_to_date_range(
     adjClose: NDArray[np.floating],
     symbols: List[str],
     datearray: List[date],
     start_date: date,
-    stop_date: date
+    stop_date: date,
+    padding_days: int = 0
 ) -> Tuple[NDArray[np.floating], List[str], List[date]]:
     """Clip data to requested date range.
 
@@ -198,15 +225,18 @@ def _clip_to_date_range(
     if start_idx is None or stop_idx is None:
         raise ValueError("Failed to find date indices in range")
     
+    padded_start_idx = max(0, start_idx - padding_days)
+    padded_stop_idx = min(len(datearray) - 1, stop_idx + padding_days)
+
     # Slice data
-    clipped_adjClose = adjClose[:, start_idx:stop_idx+1]
-    clipped_datearray = datearray[start_idx:stop_idx+1]
+    clipped_adjClose = adjClose[:, padded_start_idx:padded_stop_idx + 1]
+    clipped_datearray = datearray[padded_start_idx:padded_stop_idx + 1]
     
     logger.info(
-        "Date clipping: [%s, %s] → [%s, %s] (%d days)",
+        "Date clipping: [%s, %s] → [%s, %s] (%d days, pad=%d)",
         start_date, stop_date,
         clipped_datearray[0], clipped_datearray[-1],
-        len(clipped_datearray)
+        len(clipped_datearray), padding_days
     )
     
     return clipped_adjClose, symbols, clipped_datearray

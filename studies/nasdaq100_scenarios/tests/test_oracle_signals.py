@@ -1,9 +1,11 @@
 """Unit tests for oracle_signals module."""
 
-import pytest
-import numpy as np
-from datetime import date, timedelta
 import time
+from datetime import date, timedelta
+from typing import Dict, List, Tuple
+
+import numpy as np
+import pytest
 
 from studies.nasdaq100_scenarios.oracle_signals import (
     detect_centered_extrema,
@@ -125,6 +127,72 @@ class TestDetectCenteredExtrema:
         assert len(extrema_dict['SIN']) > 0
         assert len(extrema_dict['COS']) > 0
 
+    def test_matches_reference_implementation(self):
+        """Vectorized extrema detection should match reference loop."""
+        num_dates = 30
+        k = 2
+        datearray = [date(2020, 1, 1) + timedelta(days=i) for i in range(num_dates)]
+
+        stock1 = np.array(
+            [0, 1, 2, 1, 0, 1, 2, 1, 0, 1,
+             2, 1, 0, 1, 2, 1, 0, 1, 2, 1,
+             0, 1, 2, 1, 0, 1, 2, 1, 0, 1],
+            dtype=float
+        )
+        stock2 = stock1 + 0.5
+        stock2[12:14] = np.nan
+
+        adjClose = np.vstack([stock1, stock2])
+        symbols = ["A", "B"]
+
+        expected = _reference_detect_centered_extrema(
+            adjClose, k, datearray, symbols
+        )
+        actual = detect_centered_extrema(adjClose, k, datearray, symbols)
+
+        assert actual == expected
+
+
+def _reference_detect_centered_extrema(
+    adjClose: np.ndarray,
+    window_half_width: int,
+    datearray: list,
+    symbols: list
+) -> Dict[str, List[Tuple[date, float, str, int]]]:
+    num_stocks, num_dates = adjClose.shape
+    k = window_half_width
+    extrema_dict: Dict[str, List[Tuple[date, float, str, int]]] = {}
+
+    for stock_idx, symbol in enumerate(symbols):
+        prices = adjClose[stock_idx, :]
+        extrema_list = []
+
+        for i in range(k, num_dates - k):
+            window = prices[i - k:i + k + 1]
+            if np.isnan(window).any():
+                continue
+
+            current_price = prices[i]
+            window_min = np.min(window)
+            window_max = np.max(window)
+
+            if current_price == window_min:
+                extrema_list.append((datearray[i], current_price, "low", k))
+            elif current_price == window_max:
+                extrema_list.append((datearray[i], current_price, "high", k))
+
+        deduplicated = []
+        prev_type = None
+        for extremum in extrema_list:
+            extrema_date, price, extrema_type, window = extremum
+            if extrema_type != prev_type:
+                deduplicated.append(extremum)
+                prev_type = extrema_type
+
+        extrema_dict[symbol] = deduplicated
+
+    return extrema_dict
+
 
 class TestGenerateOracleSignal2D:
     """Tests for binary signal generation from extrema."""
@@ -233,6 +301,70 @@ class TestGenerateOracleSignal2D:
         # Stock B: [40, 60) active
         assert np.all(signal2D[1, 40:60] == 1.0)
         assert np.all(signal2D[1, 10:30] == 0.0)
+
+    def test_matches_reference_segments(self):
+        """Vectorized signal should match low→high segment logic."""
+        datearray = [date(2020, 1, 1) + timedelta(days=i) for i in range(50)]
+        symbols = ["A", "B"]
+
+        extrema_dict = {
+            "A": [
+                (datearray[10], 95.0, "low", 5),
+                (datearray[20], 105.0, "high", 5),
+                (datearray[30], 90.0, "low", 5),
+                (datearray[40], 110.0, "high", 5),
+            ],
+            "B": [
+                (datearray[5], 90.0, "low", 5),
+                (datearray[15], 100.0, "high", 5),
+            ],
+        }
+
+        expected = _reference_generate_oracle_signal2D(
+            extrema_dict, symbols, datearray, (2, 50)
+        )
+        actual = generate_oracle_signal2D(
+            extrema_dict, symbols, datearray, (2, 50)
+        )
+
+        np.testing.assert_array_equal(actual, expected)
+
+
+def _reference_generate_oracle_signal2D(
+    extrema_dict: Dict[str, List[Tuple[date, float, str, int]]],
+    symbols: List[str],
+    datearray: List[date],
+    adjClose_shape: Tuple[int, int]
+) -> np.ndarray:
+    num_stocks, num_dates = adjClose_shape
+    signal2D = np.zeros(adjClose_shape, dtype=np.float32)
+    date_to_idx = {d: i for i, d in enumerate(datearray)}
+
+    for stock_idx, symbol in enumerate(symbols):
+        extrema_list = extrema_dict.get(symbol, [])
+        if not extrema_list:
+            continue
+
+        i = 0
+        while i < len(extrema_list):
+            extrema_date, _, extrema_type, _ = extrema_list[i]
+            if extrema_type == "low":
+                low_idx = date_to_idx[extrema_date]
+                high_idx = None
+                for j in range(i + 1, len(extrema_list)):
+                    next_date, _, next_type, _ = extrema_list[j]
+                    if next_type == "high":
+                        high_idx = date_to_idx[next_date]
+                        break
+                if high_idx is not None:
+                    signal2D[stock_idx, low_idx:high_idx] = 1.0
+                    i = j + 1
+                else:
+                    i += 1
+            else:
+                i += 1
+
+    return signal2D
 
 
 class TestApplyDelay:

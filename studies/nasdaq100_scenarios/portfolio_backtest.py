@@ -20,13 +20,18 @@ def simulate_monthly_portfolio(
     symbols: List[str],
     initial_value: float = 10000.0,
     transaction_cost: float = 0.0,
-    apply_costs: bool = False
+    apply_costs: bool = False,
+    ranking_method: Optional[str] = None,
+    window_half_width: int = 10,
+    delay_days: int = 0,
+    interpolated_series: Optional[np.ndarray] = None
 ) -> Dict:
     """Simulate monthly-rebalanced portfolio driven by oracle signals.
     
     Strategy:
     - On first day of each month (rebalance date):
       - Select top N stocks where signal2D == 1.0 (oracle says "buy")
+      - Rank stocks according to ranking_method
       - If fewer than N stocks have signal, fill with CASH
       - Equal-weight selected stocks: w = 1/N
     - Between rebalances: hold positions, value changes with daily returns
@@ -41,6 +46,12 @@ def simulate_monthly_portfolio(
         initial_value: Starting portfolio value ($)
         transaction_cost: Cost per position change ($)
         apply_costs: Whether to deduct transaction costs
+        ranking_method: Stock selection method:
+            - None or 'equal': Select first N stocks with signal (no ranking)
+            - 'oracle': Rank by forward monthly return (oracle knowledge)
+            - 'slope': Rank by extrema-based slope at rebalance date
+        window_half_width: Window size for extrema detection (slope ranking only)
+        delay_days: Days to look back for slope computation (slope ranking only)
         
     Returns:
         Dictionary containing:
@@ -76,9 +87,19 @@ def simulate_monthly_portfolio(
         gainloss[np.isnan(gainloss[:, j]), j] = 1.0  # No change if NaN
         gainloss[np.isinf(gainloss[:, j]), j] = 1.0  # No change if inf
     
-    logger.info(f"Simulating monthly portfolio: top_n={top_n}, costs={apply_costs}")
+    logger.info(f"Simulating monthly portfolio: top_n={top_n}, costs={apply_costs}, ranking={ranking_method or 'none'}")
     logger.info(f"Date range: {datearray[0]} to {datearray[-1]} ({num_dates} days)")
     
+    # Import pandas for datetime handling
+    import pandas as pd
+    
+    if ranking_method == "slope" and interpolated_series is None:
+        interpolated_series = compute_extrema_interpolated_series(
+            adjClose,
+            datearray,
+            window_half_width,
+        )
+
     # Main simulation loop
     for j in range(num_dates):
         # Check if this is a rebalance date (first day of new month)
@@ -86,29 +107,43 @@ def simulate_monthly_portfolio(
         if j == 0:
             # Always rebalance on first day
             is_rebalance = True
-        elif datearray[j].month != datearray[j-1].month:
-            # First day of new month
-            is_rebalance = True
+        else:
+            # Convert to pandas Timestamp for consistent .month access
+            curr_date = pd.Timestamp(datearray[j])
+            prev_date = pd.Timestamp(datearray[j-1])
+            if curr_date.month != prev_date.month:
+                # First day of new month
+                is_rebalance = True
         
         if is_rebalance:
             # Select top N stocks where signal == 1.0
             signal_today = signal2D[:, j]
-            active_stocks = (signal_today > 0.5)  # Binary threshold
             
-            # Find stock indices with active signals
-            candidate_indices = np.where(active_stocks)[0]
-            
-            # Select up to top_n stocks from candidates
-            # (In oracle study, all active stocks should be equally attractive,
-            #  so just take first N. In real PyTAAA, would rank by score.)
-            num_selected = min(len(candidate_indices), top_n)
-            
-            if num_selected > 0:
-                selected_indices = candidate_indices[:num_selected]
+            # Determine which stocks to select based on ranking method
+            if ranking_method == 'oracle':
+                # Rank by forward monthly return (oracle knowledge)
+                forward_returns = compute_forward_monthly_return(adjClose, datearray, j)
+                selected_indices = rank_by_forward_return(forward_returns, signal_today, top_n)
+            elif ranking_method == 'slope':
+                # Rank by extrema-based slope
+                selected_indices = rank_by_extrema_slope(
+                    adjClose, datearray, signal_today, j, top_n,
+                    window_half_width, delay_days,
+                    interpolated_series=interpolated_series
+                )
+            else:
+                # No ranking - select first N candidates with positive signal
+                active_stocks = (signal_today > 0.5)  # Binary threshold
+                candidate_indices = np.where(active_stocks)[0]
                 
+                # Select up to top_n stocks from candidates
+                num_selected = min(len(candidate_indices), top_n)
+                selected_indices = candidate_indices[:num_selected] if num_selected > 0 else np.array([], dtype=int)
+            
+            if len(selected_indices) > 0:
                 # Equal-weight selected stocks
                 new_weights = np.zeros(num_stocks)
-                new_weights[selected_indices] = 1.0 / num_selected
+                new_weights[selected_indices] = 1.0 / len(selected_indices)
             else:
                 # No stocks with positive signal - hold all cash
                 new_weights = np.zeros(num_stocks)
@@ -169,7 +204,8 @@ def simulate_buy_and_hold(
     datearray: List[date],
     symbols: List[str],
     initial_value: float = 10000.0,
-    exclude_cash: bool = True
+    exclude_cash: bool = True,
+    tradable_mask: Optional[np.ndarray] = None
 ) -> Dict:
     """Simulate buy-and-hold baseline strategy.
     
@@ -182,6 +218,7 @@ def simulate_buy_and_hold(
         symbols: List of stock symbols
         initial_value: Starting portfolio value ($)
         exclude_cash: If True, exclude 'CASH' symbol from holdings
+        tradable_mask: Optional boolean mask (stocks × dates) for inclusion
         
     Returns:
         Dictionary containing:
@@ -193,20 +230,17 @@ def simulate_buy_and_hold(
     num_stocks, num_dates = adjClose.shape
     
     # Determine which stocks to include
+    eligible_mask = np.ones(num_stocks, dtype=bool)
+    if tradable_mask is not None:
+        eligible_mask = tradable_mask.all(axis=1)
+
     if exclude_cash:
-        cash_idx = None
         for i, sym in enumerate(symbols):
             if sym.upper() == 'CASH':
-                cash_idx = i
+                eligible_mask[i] = False
                 break
-        
-        if cash_idx is not None:
-            # Exclude CASH from holdings
-            stock_indices = [i for i in range(num_stocks) if i != cash_idx]
-        else:
-            stock_indices = list(range(num_stocks))
-    else:
-        stock_indices = list(range(num_stocks))
+
+    stock_indices = np.where(eligible_mask)[0].tolist()
     
     num_holdings = len(stock_indices)
     
@@ -256,7 +290,10 @@ def run_scenario_sweep(
     datearray: List[date],
     scenario_signals: Dict[Tuple[int, int], np.ndarray],
     top_n_list: List[int],
-    params: Dict
+    params: Dict,
+    ranking_method: Optional[str] = None,
+    window_half_width: int = 10,
+    delay_days: int = 0
 ) -> Dict[Tuple[int, int, int], Dict]:
     """Run backtest for all scenario combinations.
     
@@ -271,6 +308,9 @@ def run_scenario_sweep(
                          keys: (window, delay) -> signal2D
         top_n_list: List of portfolio concentration values to test
         params: Parameter dict with 'initial_value', 'transaction_cost', etc.
+        ranking_method: Stock selection method for portfolio simulation
+        window_half_width: Window size for extrema detection (slope ranking)
+        delay_days: Days to look back for slope computation (slope ranking)
         
     Returns:
         Dictionary mapping (window, delay, top_n) -> backtest result dict
@@ -305,7 +345,10 @@ def run_scenario_sweep(
                 symbols=symbols,
                 initial_value=initial_value,
                 transaction_cost=transaction_cost,
-                apply_costs=apply_costs
+                apply_costs=apply_costs,
+                ranking_method=ranking_method,
+                window_half_width=window_half_width,
+                delay_days=delay_days
             )
             
             # Store result with key
@@ -371,3 +414,298 @@ def compute_performance_metrics(results: Dict[Tuple, Dict]) -> Dict[Tuple, Dict]
         }
     
     return metrics
+
+
+def compute_forward_monthly_return(
+    adjClose: np.ndarray,
+    datearray: List[date],
+    rebalance_idx: int
+) -> np.ndarray:
+    """Compute forward return from rebalance date to month end.
+    
+    This is "oracle knowledge" - knowing which stocks will perform best
+    over the next month. Used for testing whether ranking matters.
+    
+    Args:
+        adjClose: Price array (stocks × dates)
+        datearray: List of trading dates (can be date, datetime64, or Timestamp)
+        rebalance_idx: Index of rebalance date
+        
+    Returns:
+        Array of forward returns for each stock (length = num_stocks)
+        Returns NaN for stocks with invalid prices
+        
+    Notes:
+        - Forward return = (price_at_month_end / price_at_rebalance) - 1
+        - Month end is last trading day of the same month
+        - This is unknowable at rebalance time (oracle/lookahead)
+    """
+    num_stocks, num_dates = adjClose.shape
+    
+    # Convert to pandas Timestamp for consistent .month/.year access
+    import pandas as pd
+    rebalance_date = pd.Timestamp(datearray[rebalance_idx])
+    rebalance_month = rebalance_date.month
+    rebalance_year = rebalance_date.year
+    
+    # Find last trading day of this month
+    month_end_idx = rebalance_idx
+    for j in range(rebalance_idx + 1, num_dates):
+        j_date = pd.Timestamp(datearray[j])
+        if j_date.month != rebalance_month or j_date.year != rebalance_year:
+            # Found first day of next month
+            month_end_idx = j - 1
+            break
+        month_end_idx = j  # Update to last date in month
+    
+    # Compute forward returns
+    forward_returns = np.full(num_stocks, np.nan)
+    
+    prices_start = adjClose[:, rebalance_idx]
+    prices_end = adjClose[:, month_end_idx]
+    
+    # Calculate returns where both prices are valid
+    valid_mask = (~np.isnan(prices_start)) & (~np.isnan(prices_end)) & (prices_start > 0)
+    forward_returns[valid_mask] = (prices_end[valid_mask] / prices_start[valid_mask]) - 1.0
+    
+    return forward_returns
+
+
+def rank_by_forward_return(
+    forward_returns: np.ndarray,
+    signal2D_today: np.ndarray,
+    top_n: int
+) -> np.ndarray:
+    """Rank stocks by forward return, filtered by signal.
+    
+    Selects top N stocks from those with positive signals, ranked by
+    their forward return (oracle knowledge).
+    
+    Args:
+        forward_returns: Array of forward returns for each stock
+        signal2D_today: Signal values for today (1.0 = buy, 0.0 = cash)
+        top_n: Number of stocks to select
+        
+    Returns:
+        Array of selected stock indices (length <= top_n)
+        
+    Notes:
+        - Only considers stocks where signal2D_today > 0.5
+        - Ranks by forward return descending (best performers first)
+        - Returns fewer than top_n if insufficient candidates
+    """
+    # Filter to stocks with positive signals
+    active_mask = signal2D_today > 0.5
+    
+    # Also exclude stocks with NaN forward returns
+    valid_mask = active_mask & (~np.isnan(forward_returns))
+    
+    # Get indices of valid candidates
+    candidate_indices = np.where(valid_mask)[0]
+    
+    if len(candidate_indices) == 0:
+        return np.array([], dtype=int)
+    
+    # Get forward returns for candidates
+    candidate_returns = forward_returns[candidate_indices]
+    
+    # Sort candidates by forward return (descending)
+    sorted_order = np.argsort(candidate_returns)[::-1]  # Descending order
+    
+    # Select top N
+    num_selected = min(len(sorted_order), top_n)
+    selected_sorted_indices = sorted_order[:num_selected]
+    
+    # Map back to original stock indices
+    selected_indices = candidate_indices[selected_sorted_indices]
+    
+    return selected_indices
+
+
+def compute_extrema_interpolated_series(
+    adjClose: np.ndarray,
+    datearray: List[date],
+    window_half_width: int
+) -> np.ndarray:
+    """Build interpolated time series from detected extrema.
+    
+    For each stock:
+    1. Detect local highs and lows using centered windows
+    2. Create simplified series with only extrema values
+    3. Linearly interpolate between extrema for all other dates
+    
+    Args:
+        adjClose: Price array (stocks × dates)
+        datearray: List of trading dates
+        window_half_width: Half-width for extrema detection
+        
+    Returns:
+        Interpolated price array (stocks × dates) same shape as adjClose
+        
+    Notes:
+        - Uses centered window extrema detection
+        - Extrema points retain their actual prices
+        - Non-extrema points are linearly interpolated
+        - Edge regions (first/last k days) use original prices
+    """
+    from studies.nasdaq100_scenarios.oracle_signals import (
+        compute_centered_extrema_masks,
+    )
+    
+    num_stocks, num_dates = adjClose.shape
+    low_mask, high_mask = compute_centered_extrema_masks(
+        adjClose,
+        window_half_width,
+    )
+
+    extrema_mask = low_mask | high_mask
+    extrema_prices = np.where(extrema_mask, adjClose, np.nan)
+
+    interpolated = np.array(adjClose, copy=True)
+    all_indices = np.arange(num_dates)
+
+    for stock_idx in range(num_stocks):
+        finite_indices = np.flatnonzero(np.isfinite(extrema_prices[stock_idx]))
+        if finite_indices.size == 0:
+            continue
+        if finite_indices.size == 1:
+            continue
+
+        finite_prices = extrema_prices[stock_idx, finite_indices]
+        stock_interp = np.interp(all_indices, finite_indices, finite_prices)
+
+        left_edge = int(finite_indices[0])
+        right_edge = int(finite_indices[-1])
+
+        stock_interp[:left_edge] = adjClose[stock_idx, :left_edge]
+        stock_interp[right_edge + 1:] = adjClose[stock_idx, right_edge + 1:]
+
+        interpolated[stock_idx] = stock_interp
+    
+    return interpolated
+
+
+def compute_extrema_slopes(
+    interpolated_series: np.ndarray,
+    datearray: List[date],
+    rebalance_idx: int,
+    delay_days: int = 0
+) -> np.ndarray:
+    """Compute instantaneous slopes at rebalance date from interpolated extrema series.
+    
+    Args:
+        interpolated_series: Interpolated price array from compute_extrema_interpolated_series
+        datearray: List of trading dates
+        rebalance_idx: Index of rebalance date
+        delay_days: Number of days to look back (0 = use current day)
+        
+    Returns:
+        Array of slopes for each stock (length = num_stocks)
+        Slope computed as (price[i] - price[i-1]) / 1 day
+        Returns NaN for invalid computations
+        
+    Notes:
+        - Slope is instantaneous: computed using adjacent days
+        - If delay_days > 0, uses slope from earlier date
+        - Returns NaN if lookback date is out of bounds
+    """
+    num_stocks, num_dates = interpolated_series.shape
+    
+    # Adjust for delay
+    effective_idx = rebalance_idx - delay_days
+    
+    # Check bounds
+    if effective_idx < 1 or effective_idx >= num_dates:
+        # Out of bounds - return NaNs
+        return np.full(num_stocks, np.nan)
+    
+    # Compute slope as (price[t] - price[t-1]) / 1
+    price_today = interpolated_series[:, effective_idx]
+    price_yesterday = interpolated_series[:, effective_idx - 1]
+    slopes = price_today - price_yesterday
+
+    invalid = np.isnan(price_today) | np.isnan(price_yesterday)
+    slopes = slopes.astype(float, copy=False)
+    slopes[invalid] = np.nan
+    
+    return slopes
+
+
+def rank_by_extrema_slope(
+    adjClose: np.ndarray,
+    datearray: List[date],
+    signal2D_today: np.ndarray,
+    rebalance_idx: int,
+    top_n: int,
+    window_half_width: int,
+    delay_days: int = 0,
+    interpolated_series: Optional[np.ndarray] = None
+) -> np.ndarray:
+    """Rank stocks by extrema-based slope and select top N.
+    
+    Strategy:
+    1. Build interpolated time series from detected extrema
+    2. Compute instantaneous slope at rebalance date (with optional delay)
+    3. Rank stocks by slope (highest positive slopes first)
+    4. Select top N stocks with positive signals
+    
+    Args:
+        adjClose: Price array (stocks × dates)
+        datearray: List of trading dates
+        signal2D_today: Signal values for today (1.0 = buy, 0.0 = cash)
+        rebalance_idx: Index of rebalance date
+        top_n: Number of stocks to select
+        window_half_width: Half-width for extrema detection
+        delay_days: Days to look back for slope computation (0 = no delay)
+        
+    Returns:
+        Array of selected stock indices (length <= top_n)
+        
+    Notes:
+        - Only considers stocks where signal2D_today > 0.5
+        - Ranks by slope descending (steepest upward slopes first)
+        - Returns fewer than top_n if insufficient candidates
+        - Negative slopes still eligible if they're the best available
+    """
+    # Build interpolated series from extrema
+    if interpolated_series is None:
+        interpolated_series = compute_extrema_interpolated_series(
+            adjClose,
+            datearray,
+            window_half_width,
+        )
+    
+    # Compute slopes at rebalance date (with delay)
+    slopes = compute_extrema_slopes(
+        interpolated_series,
+        datearray,
+        rebalance_idx,
+        delay_days,
+    )
+    
+    # Filter to stocks with positive signals
+    active_mask = signal2D_today > 0.5
+    
+    # Also exclude stocks with NaN slopes
+    valid_mask = active_mask & (~np.isnan(slopes))
+    
+    # Get indices of valid candidates
+    candidate_indices = np.where(valid_mask)[0]
+    
+    if len(candidate_indices) == 0:
+        return np.array([], dtype=int)
+    
+    # Get slopes for candidates
+    candidate_slopes = slopes[candidate_indices]
+    
+    # Sort candidates by slope (descending - highest slopes first)
+    sorted_order = np.argsort(candidate_slopes)[::-1]
+    
+    # Select top N
+    num_selected = min(len(sorted_order), top_n)
+    selected_sorted_indices = sorted_order[:num_selected]
+    
+    # Map back to original stock indices
+    selected_indices = candidate_indices[selected_sorted_indices]
+    
+    return selected_indices

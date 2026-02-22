@@ -11,9 +11,10 @@
 
   "data_selection": {
     "_comment": "Date range for study (YYYY-MM-DD format). Will be clipped to available HDF5 data.",
-    "start_date": "2020-01-02",
-    "stop_date": "2025-12-31",
+    "start_date": "1998-01-02",
+    "stop_date": "2024-12-31",
     "symbols_source": "nasdaq100_hdf5",
+    "symbols_file": "/Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt",
     "_comment_tradability": "Inferred from data quality (NaNs, infill detection) by date"
   },
 
@@ -50,7 +51,7 @@
 
   "ranking_method": {
     "_comment": "Top-N stock ranking approach",
-    "method": "forward_monthly_return",
+    "method": "slope",
     "_comment_explanation": "Rank by realized monthly return (unknowable metric)",
     "apply_delay_to_ranking": true,
     "_comment_delay": "If true, ranking availability shifted by days_delay"

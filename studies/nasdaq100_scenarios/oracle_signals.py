@@ -6,11 +6,88 @@ centered windows, generate trading signals with optional delays.
 """
 
 import logging
-import numpy as np
 from datetime import date
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional, Tuple
+
+import numpy as np
+from scipy.ndimage import maximum_filter, minimum_filter, uniform_filter
 
 logger = logging.getLogger(__name__)
+
+
+def _compute_extrema_masks(
+    adjClose: np.ndarray,
+    window_half_width: int
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute local low/high masks for centered windows."""
+    _, num_dates = adjClose.shape
+    k = window_half_width
+
+    window_size = (1, (2 * k) + 1)
+    valid_mask = np.isfinite(adjClose)
+    valid_fraction = uniform_filter(
+        valid_mask.astype(float),
+        size=window_size,
+        mode="constant",
+        cval=0.0
+    )
+    valid_window = valid_fraction >= (1.0 - 1e-6)
+
+    adj_for_min = np.where(valid_mask, adjClose, np.inf)
+    adj_for_max = np.where(valid_mask, adjClose, -np.inf)
+
+    window_min = minimum_filter(adj_for_min, size=window_size, mode="nearest")
+    window_max = maximum_filter(adj_for_max, size=window_size, mode="nearest")
+
+    low_mask = (adjClose == window_min) & valid_window
+    high_mask = (adjClose == window_max) & valid_window
+    high_mask &= ~low_mask
+
+    within_edges = np.zeros(num_dates, dtype=bool)
+    within_edges[k:num_dates - k] = True
+    low_mask[:, ~within_edges] = False
+    high_mask[:, ~within_edges] = False
+
+    return low_mask, high_mask
+
+
+def compute_centered_extrema_masks(
+    adjClose: np.ndarray,
+    window_half_width: int
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Public wrapper for centered-window low/high mask detection."""
+    return _compute_extrema_masks(adjClose, window_half_width)
+
+
+def _generate_slope_signal2D_from_masks(
+    adjClose: np.ndarray,
+    low_mask: np.ndarray,
+    high_mask: np.ndarray
+) -> np.ndarray:
+    """Build signal from interpolated extrema and slope sign."""
+    num_stocks, num_dates = adjClose.shape
+    signal2D = np.zeros((num_stocks, num_dates), dtype=np.float32)
+
+    extrema_mask = low_mask | high_mask
+    extrema_prices = np.where(extrema_mask, adjClose, np.nan)
+    all_indices = np.arange(num_dates)
+
+    for stock_idx in range(num_stocks):
+        finite_idx = np.flatnonzero(np.isfinite(extrema_prices[stock_idx]))
+        if finite_idx.size < 2:
+            continue
+
+        finite_prices = extrema_prices[stock_idx, finite_idx]
+        interpolated = np.interp(all_indices, finite_idx, finite_prices)
+        slope = np.gradient(interpolated)
+        signal2D[stock_idx] = np.where(slope >= 0.0, 1.0, 0.0)
+
+        start_idx = int(finite_idx[0])
+        stop_idx = int(finite_idx[-1])
+        signal2D[stock_idx, :start_idx] = 0.0
+        signal2D[stock_idx, stop_idx + 1:] = 0.0
+
+    return signal2D
 
 
 def detect_centered_extrema(
@@ -52,42 +129,39 @@ def detect_centered_extrema(
     logger.info(f"Detecting extrema with window half-width={k} (total window={2*k+1} days)")
     logger.info(f"Valid date range: [{k}, {num_dates-k-1}] ({num_dates - 2*k} usable dates)")
     
+    low_mask, high_mask = _compute_extrema_masks(adjClose, k)
+
+    high_rows, high_cols = np.where(high_mask)
+    low_rows, low_cols = np.where(low_mask)
+
+    extrema_by_stock: Dict[int, List[Tuple[int, float, str, int]]] = {
+        idx: [] for idx in range(num_stocks)
+    }
+
+    for row, col in zip(high_rows, high_cols, strict=False):
+        time_idx = col
+        extrema_by_stock[row].append(
+            (time_idx, float(adjClose[row, time_idx]), "high", k)
+        )
+
+    for row, col in zip(low_rows, low_cols, strict=False):
+        time_idx = col
+        extrema_by_stock[row].append(
+            (time_idx, float(adjClose[row, time_idx]), "low", k)
+        )
+
     for stock_idx, symbol in enumerate(symbols):
-        prices = adjClose[stock_idx, :]
-        extrema_list = []
-        
-        # Scan valid date range (excluding edges)
-        for i in range(k, num_dates - k):
-            # Extract centered window
-            window = prices[i-k:i+k+1]
-            
-            # Skip if window contains NaN
-            if np.isnan(window).any():
-                continue
-            
-            current_price = prices[i]
-            window_min = np.min(window)
-            window_max = np.max(window)
-            
-            # Check if current date is a local extremum
-            is_low = (current_price == window_min)
-            is_high = (current_price == window_max)
-            
-            # Record extremum (prefer 'low' if both - should be rare)
-            if is_low:
-                extrema_list.append((datearray[i], current_price, 'low', k))
-            elif is_high:
-                extrema_list.append((datearray[i], current_price, 'high', k))
-        
-        # Deduplicate consecutive extrema of same type (keep first occurrence)
+        extrema_list = sorted(extrema_by_stock[stock_idx], key=lambda x: x[0])
+
         deduplicated = []
         prev_type = None
-        for extremum in extrema_list:
-            extrema_date, price, extrema_type, window = extremum
+        for time_idx, price, extrema_type, window in extrema_list:
             if extrema_type != prev_type:
-                deduplicated.append(extremum)
+                deduplicated.append(
+                    (datearray[time_idx], price, extrema_type, window)
+                )
                 prev_type = extrema_type
-        
+
         extrema_dict[symbol] = deduplicated
     
     # Log summary statistics
@@ -130,59 +204,60 @@ def generate_oracle_signal2D(
     """
     num_stocks, num_dates = adjClose_shape
     signal2D = np.zeros(adjClose_shape, dtype=np.float32)
-    
-    # Create date-to-index mapping for fast lookup
+
     date_to_idx = {d: i for i, d in enumerate(datearray)}
-    
-    logger.info(f"Generating oracle signals for {num_stocks} symbols × {num_dates} dates")
-    
+
+    logger.info(
+        "Generating oracle signals for %d symbols × %d dates",
+        num_stocks,
+        num_dates
+    )
+
     total_segments = 0
-    
+
     for stock_idx, symbol in enumerate(symbols):
         extrema_list = extrema_dict.get(symbol, [])
-        
+
         if not extrema_list:
-            # No extrema detected for this symbol - signal stays 0.0
             continue
-        
-        # Process extrema in chronological order to create low→high segments
+
         i = 0
         while i < len(extrema_list):
-            extrema_date, price, extrema_type, window = extrema_list[i]
-            
-            if extrema_type == 'low':
-                # Look for next high to define segment
+            extrema_date, _, extrema_type, _ = extrema_list[i]
+            if extrema_type == "low":
                 low_idx = date_to_idx[extrema_date]
                 high_idx = None
-                
+
                 for j in range(i + 1, len(extrema_list)):
-                    next_date, next_price, next_type, _ = extrema_list[j]
-                    if next_type == 'high':
+                    next_date, _, next_type, _ = extrema_list[j]
+                    if next_type == "high":
                         high_idx = date_to_idx[next_date]
                         break
-                
+
                 if high_idx is not None:
-                    # Set signal to 1.0 for segment [low_idx, high_idx)
-                    # Note: signal turns ON at low, turns OFF at high
                     signal2D[stock_idx, low_idx:high_idx] = 1.0
                     total_segments += 1
-                    i = j + 1  # Skip to next extremum after the high
+                    i = j + 1
                 else:
-                    # No matching high found - skip this low
                     i += 1
             else:
-                # High without preceding low - skip
                 i += 1
-    
-    # Calculate coverage statistics
+
     signal_active = (signal2D == 1.0).sum()
     total_cells = signal2D.size
     coverage_pct = 100.0 * signal_active / total_cells if total_cells > 0 else 0.0
-    
-    logger.info(f"Generated {total_segments} low→high segments")
-    logger.info(f"Signal coverage: {signal_active}/{total_cells} cells ({coverage_pct:.1f}%)")
-    
+
+    logger.info("Generated %d low→high segments", total_segments)
+    logger.info(
+        "Signal coverage: %d/%d cells (%.1f%%)",
+        signal_active,
+        total_cells,
+        coverage_pct
+    )
+
     return signal2D
+
+
 
 
 def apply_delay(
@@ -211,7 +286,7 @@ def apply_delay(
         - This represents information lag in real trading
     """
     if days_delay == 0:
-        logger.info("No delay applied (days_delay=0)")
+        logger.debug("No delay applied (days_delay=0)")
         return signal2D.copy()
     
     num_stocks, num_dates = signal2D.shape
@@ -222,7 +297,11 @@ def apply_delay(
     if days_delay < num_dates:
         signal_delayed[:, days_delay:] = signal2D[:, :-days_delay]
     
-    logger.info(f"Applied {days_delay}-day delay: first {days_delay} dates have zero signal")
+    logger.debug(
+        "Applied %d-day delay: first %d dates have zero signal",
+        days_delay,
+        days_delay
+    )
     
     return signal_delayed
 
@@ -257,23 +336,40 @@ def generate_scenario_signals(
     """
     scenarios = {}
     
-    logger.info(f"Generating {len(extrema_windows) * len(delays)} signal scenarios")
-    logger.info(f"Extrema windows: {extrema_windows}")
-    logger.info(f"Delays: {delays}")
+    logger.info(
+        "Generating %d signal scenarios (%d windows × %d delays)",
+        len(extrema_windows) * len(delays),
+        len(extrema_windows),
+        len(delays)
+    )
+    logger.info("Extrema windows: %s", extrema_windows)
+    logger.info("Delays: %s", delays)
     
     for window in extrema_windows:
-        # Detect extrema for this window size
-        extrema_dict = detect_centered_extrema(adjClose, window, datearray, symbols)
-        
-        # Generate base signal (no delay)
-        signal_base = generate_oracle_signal2D(
-            extrema_dict, symbols, datearray, adjClose.shape
+        logger.info("Window %d: computing centered extrema masks", window)
+        low_mask, high_mask = _compute_extrema_masks(adjClose, window)
+
+        extrema_points = int(low_mask.sum() + high_mask.sum())
+        logger.info(
+            "Window %d: building slope signal from %d extrema points",
+            window,
+            extrema_points
+        )
+        signal_base = _generate_slope_signal2D_from_masks(
+            adjClose,
+            low_mask,
+            high_mask
         )
         
         # Apply each delay to create scenarios
         for delay in delays:
             signal_delayed = apply_delay(signal_base, delay, datearray)
             scenarios[(window, delay)] = signal_delayed
-            logger.info(f"Scenario (window={window}, delay={delay}): shape={signal_delayed.shape}")
+            logger.debug(
+                "Scenario (window=%d, delay=%d): shape=%s",
+                window,
+                delay,
+                signal_delayed.shape
+            )
     
     return scenarios
