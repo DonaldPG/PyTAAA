@@ -61,3 +61,6 @@ cache/
 # Refactor baseline directory
 .refactor_baseline/
 .refactor_baseline/
+.env
+.env.local
+.env*.local
