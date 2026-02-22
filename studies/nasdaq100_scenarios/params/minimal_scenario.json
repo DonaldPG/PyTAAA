@@ -1,0 +1,47 @@
+{
+  "_comment_purpose": "Minimal config for integration testing",
+  "study_metadata": {
+    "name": "nasdaq100_oracle_delay_minimal",
+    "description": "Minimal scenario grid for integration tests",
+    "created_date": "2026-02-21",
+    "version": "1.0"
+  },
+  "data_selection": {
+    "start_date": "2020-01-02",
+    "stop_date": "2025-12-31",
+    "symbols_source": "nasdaq100_hdf5",
+    "symbols_file": "symbols/Naz100_Symbols.txt"
+  },
+  "oracle_parameters": {
+    "extrema_windows": [25, 50, 100, 200]
+  },
+  "delay_parameters": {
+    "days_delay": [0, 5, 10, 20, 30, 40]
+  },
+  "portfolio_parameters": {
+    "top_n_list": [5,6,7,8],
+    "rebalance_cadence": "monthly",
+    "initial_portfolio_value": 10000.0,
+    "enable_transaction_costs": false,
+    "transaction_cost_per_trade": 0.0
+  },
+  "signal_generation": {
+    "signal_type": "binary_low_to_high",
+    "require_centered_windows": true
+  },
+  "ranking_method": {
+    "method": "forward_monthly_return",
+    "apply_delay_to_ranking": false
+  },
+  "output_control": {
+    "output_plots": true,
+    "output_metrics": true,
+    "output_holdings_log": false,
+    "output_summary_json": true
+  },
+  "execution_control": {
+    "parallel_scenarios": false,
+    "log_level": "INFO",
+    "progress_reporting": true
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "_comment_purpose": "Configuration for NASDAQ100 oracle lows-highs delay studies",
+  "_comment_usage": "Specify date range, parameter sweeps, and output toggles",
+  
+  "study_metadata": {
+    "name": "nasdaq100_oracle_delay_baseline",
+    "description": "Baseline study with standard parameter grid",
+    "created_date": "2026-02-21",
+    "version": "1.0"
+  },
+
+  "data_selection": {
+    "_comment": "Date range for study (YYYY-MM-DD format). Will be clipped to available HDF5 data.",
+    "start_date": "1998-01-02",
+    "stop_date": "2024-12-31",
+    "symbols_source": "nasdaq100_hdf5",
+    "symbols_file": "symbols/Naz100_Symbols.txt",
+    "_comment_tradability": "Inferred from data quality (NaNs, infill detection) by date"
+  },
+
+  "oracle_parameters": {
+    "_comment_extrema_windows": "Centered window half-widths (days) for low/high detection",
+    "extrema_windows": [25, 50, 100, 150],
+    "_comment_explanation": "Window of 25 means [date-25, date+25] total 51-day centered window"
+  },
+
+  "delay_parameters": {
+    "_comment_days_delay": "Information delay (days). 0 = perfect oracle, >0 = delayed signal",
+    "days_delay": [0, 5, 10, 20, 40],
+    "_comment_explanation": "Delay of 5 means signal at date j uses information from j-5"
+  },
+
+  "portfolio_parameters": {
+    "_comment_top_n": "Number of top-ranked stocks to hold",
+    "top_n_list": [5, 6, 7, 8],
+    "rebalance_cadence": "monthly",
+    "_comment_rebalance": "Monthly aligns with PyTAAA for comparability",
+    "initial_portfolio_value": 10000.0,
+    "enable_transaction_costs": false,
+    "transaction_cost_per_trade": 0.0,
+    "_comment_costs": "Set to false for baseline; enable for sensitivity analysis"
+  },
+
+  "signal_generation": {
+    "_comment_signal_type": "Oracle signal generation method",
+    "signal_type": "binary_low_to_high",
+    "_comment_explanation": "1.0 during low→high segment, 0.0 otherwise",
+    "require_centered_windows": true,
+    "_comment_edges": "Drop edge dates where centered window incomplete"
+  },
+
+  "ranking_method": {
+    "_comment": "Top-N stock ranking approach",
+    "method": "slope",
+    "_comment_explanation": "Rank by realized monthly return (unknowable metric)",
+    "apply_delay_to_ranking": true,
+    "_comment_delay": "If true, ranking availability shifted by days_delay"
+  },
+
+  "output_control": {
+    "output_plots": true,
+    "output_metrics": true,
+    "output_holdings_log": true,
+    "output_summary_json": true,
+    "save_extrema_metadata": false,
+    "_comment_metadata": "Set true to save low/high detection tables for debugging"
+  },
+
+  "execution_control": {
+    "parallel_scenarios": false,
+    "_comment_parallel": "Future enhancement for multi-core execution",
+    "log_level": "INFO",
+    "progress_reporting": true
+  }
+}
