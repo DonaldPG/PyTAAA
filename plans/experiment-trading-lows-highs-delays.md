@@ -151,35 +151,38 @@ Generate signal2D directly from oracle knowledge of centered-window price extrem
 
 ---
 
-### Phase 5: Monthly Portfolio Simulator
+### Phase 5: Monthly Portfolio Simulator ✅
 
 **Goal:** Backtest with PyTAAA-style monthly rebalance
 
+**Commit:** `104691f` feat(studies): Phase 5 - monthly portfolio simulator
+
 #### Tasks
-- [ ] Create `studies/nasdaq100_scenarios/portfolio_backtest.py`
-- [ ] Implement `simulate_monthly_portfolio(adjClose, signal2D, top_n, datearray, symbols, params)` function
-  - [ ] Reuse month boundary logic from `functions/dailyBacktest.py` (`datearray[j].month != datearray[j-1].month`)
-  - [ ] At rebalance date: select top N stocks where signal2D > 0
-  - [ ] Equal-weight holdings: w = 1/N for selected stocks, 0 otherwise
-  - [ ] Compute daily portfolio value: `value[j+1] = value[j] * sum(w[i] * gainloss[i,j])`
-  - [ ] Optional transaction costs: deduct on rebalance
-  - [ ] Return `portfolio_history` (1D array), `rebalance_dates`, `holdings_log`
-- [ ] Implement `simulate_buy_and_hold(adjClose, datearray)` function
-  - [ ] Equal-weight all stocks at start, hold until end
-  - [ ] Return baseline `portfolio_history`
-- [ ] Add logging for rebalance count, final value, turnover
+- [x] Create `studies/nasdaq100_scenarios/portfolio_backtest.py`
+- [x] Implement `simulate_monthly_portfolio(adjClose, signal2D, top_n, datearray, symbols, params)` function
+  - [x] Reuse month boundary logic from `functions/dailyBacktest.py` (`datearray[j].month != datearray[j-1].month`)
+  - [x] At rebalance date: select top N stocks where signal2D > 0
+  - [x] Equal-weight holdings: w = 1/N for selected stocks, 0 otherwise
+  - [x] Compute daily portfolio value: `value[j+1] = value[j] * sum(w[i] * gainloss[i,j])`
+  - [x] Optional transaction costs: deduct on rebalance
+  - [x] Return `portfolio_history` (1D array), `rebalance_dates`, `holdings_log`
+- [x] Implement `simulate_buy_and_hold(adjClose, datearray)` function
+  - [x] Equal-weight all stocks at start, hold until end
+  - [x] Return baseline `portfolio_history`
+- [x] Add logging for rebalance count, final value, turnover
+- [x] Bonus: `run_scenario_sweep()` and `compute_performance_metrics()` functions
 
 #### Code Review Checklist
-- [ ] Month boundary logic matches PyTAAA conventions exactly
-- [ ] Equal-weighting is numerically stable (handles zero-signal cases)
-- [ ] Transaction costs are applied consistently
-- [ ] No AI slop: remove debug print statements, commented code
+- [x] Month boundary logic matches PyTAAA conventions exactly
+- [x] Equal-weighting is numerically stable (handles zero-signal cases)
+- [x] Transaction costs are applied consistently
+- [x] No AI slop: remove debug print statements, commented code
 
 #### Tests
-- [ ] Unit test: single rebalance at month boundary updates weights
-- [ ] Unit test: buy-and-hold portfolio has constant weights
-- [ ] Unit test: portfolio value >= 0 for all dates
-- [ ] Integration test: simulate 2-year backtest completes in <15 seconds
+- [x] Unit test: single rebalance at month boundary updates weights
+- [x] Unit test: buy-and-hold portfolio has constant weights
+- [x] Unit test: portfolio value >= 0 for all dates (handled cash = 0 weights case)
+- [x] Integration test: simulate 2-year backtest completes in <15 seconds (0.12s actual)
 
 ---
 
