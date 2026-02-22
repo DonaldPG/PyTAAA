@@ -56,35 +56,37 @@ Generate signal2D directly from oracle knowledge of centered-window price extrem
 
 ---
 
-### Phase 2: Data Loading and Date Clipping
+### Phase 2: Data Loading and Date Clipping ✅
 
 **Goal:** Reuse HDF5 loaders with study-specific date windowing
 
+**Commit:** `dbfdd34` feat(studies): Phase 2 - data loading with date clipping and tradability inference
+
 #### Tasks
-- [ ] Create `studies/nasdaq100_scenarios/data_loader.py`
-- [ ] Implement `load_nasdaq100_window(params_json_path)` function
-  - [ ] Call `loadQuotes_fromHDF` from `functions/UpdateSymbols_inHDF5.py`
-  - [ ] Apply `load_quotes_for_analysis` preprocessing pattern from `functions/data_loaders.py`
-  - [ ] Clip `datearray` to nearest available dates for user `start_date`/`stop_date`
-  - [ ] Log warnings when requested dates are clamped
-  - [ ] Return `adjClose` (stocks × dates), `symbols`, `datearray`, `tradable_mask` (stocks × dates)
-- [ ] Implement `infer_tradable_mask(adjClose, datearray)` function
-  - [ ] Use NaN presence and infilled-data heuristics
-  - [ ] Return boolean mask: True where stock is tradable on that date
-- [ ] Add logging for date range, symbol count, and tradable coverage
+- [x] Create `studies/nasdaq100_scenarios/data_loader.py`
+- [x] Implement `load_nasdaq100_window(params_json_path)` function
+  - [x] Call `loadQuotes_fromHDF` from `functions/UpdateSymbols_inHDF5.py`
+  - [x] Apply `load_quotes_for_analysis` preprocessing pattern from `functions/data_loaders.py`
+  - [x] Clip `datearray` to nearest available dates for user `start_date`/`stop_date`
+  - [x] Log warnings when requested dates are clamped
+  - [x] Return `adjClose` (stocks × dates), `symbols`, `datearray`, `tradable_mask` (stocks × dates)
+- [x] Implement `infer_tradable_mask(adjClose, datearray)` function
+  - [x] Use NaN presence and infilled-data heuristics
+  - [x] Return boolean mask: True where stock is tradable on that date
+- [x] Add logging for date range, symbol count, and tradable coverage
 
 #### Code Review Checklist
-- [ ] Function signatures use type hints
-- [ ] Date clipping logic handles edge cases (start > HDF range, stop < HDF range)
-- [ ] Logging is informative but concise
-- [ ] No duplicate logic from production loaders—reuse via imports
-- [ ] No AI slop: remove verbose comments, ensure DRY principles
+- [x] Function signatures use type hints
+- [x] Date clipping logic handles edge cases (start > HDF range, stop < HDF range)
+- [x] Logging is informative but concise
+- [x] No duplicate logic from production loaders—reuse via imports
+- [x] No AI slop: remove verbose comments, ensure DRY principles
 
 #### Tests
-- [ ] Unit test: load with in-range dates returns expected shape
-- [ ] Unit test: load with out-of-range dates clamps correctly and logs warnings
-- [ ] Unit test: tradable mask excludes symbols with trailing NaNs
-- [ ] Integration test: full load completes in <5 seconds for 2-year window
+- [x] Unit test: load with in-range dates returns expected shape
+- [x] Unit test: load with out-of-range dates clamps correctly and logs warnings
+- [x] Unit test: tradable mask excludes symbols with trailing NaNs
+- [x] Integration test: full load completes in <5 seconds for 2-year window (skipped until HDF5 available)
 
 ---
 
