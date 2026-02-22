@@ -689,7 +689,7 @@ def makeMinimumSpanningTree(json_fn: str) -> None:
     ### stock's recent (22 day) performance
     ###
 
-    make_networkx_spanning_tree_plot(figure7apath)
+    make_networkx_spanning_tree_plot(figure7apath, json_fn)
 
     figure7apath = 'minimum_spanning_tree.png'  # re-set to name without full path
     figure7a_htmlText = "\n<br><h3>Daily stock minimum-spanning tree analyis. Based on 22 day performance correlations.</h3>\n"
