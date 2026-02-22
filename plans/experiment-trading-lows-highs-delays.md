@@ -90,34 +90,37 @@ Generate signal2D directly from oracle knowledge of centered-window price extrem
 
 ---
 
-### Phase 3: Oracle Extrema Detection
+### Phase 3: Oracle Extrema Detection ✅
 
 **Goal:** Identify centered-window lows and highs for each stock
 
+**Commit:** `2be8270` feat(studies): Phase 3 - oracle extrema detection and signal generation
+
 #### Tasks
-- [ ] Create `studies/nasdaq100_scenarios/oracle_signals.py`
-- [ ] Implement `detect_centered_extrema(adjClose, window_half_width, datearray)` function
-  - [ ] For each stock and date, compute min/max over `[date-k, date+k]` window
-  - [ ] Store low/high metadata: date, price, window used
-  - [ ] Drop edge dates where centered window is incomplete
-  - [ ] Return dict: `{symbol: [(low_date, low_price, window), (high_date, high_price, window), ...]}`
-- [ ] Implement `generate_oracle_signal2D(extrema_dict, adjClose_shape, datearray)` function
-  - [ ] Binary signal: 1.0 when in low→high segment, 0.0 otherwise
-  - [ ] Segment defined: from low date to next high date
-  - [ ] Return `signal2D` (stocks × dates) matching adjClose shape
-- [ ] Add logging for extrema statistics (count per symbol, date coverage)
+- [x] Create `studies/nasdaq100_scenarios/oracle_signals.py`
+- [x] Implement `detect_centered_extrema(adjClose, window_half_width, datearray)` function
+  - [x] For each stock and date, compute min/max over `[date-k, date+k]` window
+  - [x] Store low/high metadata: date, price, window used
+  - [x] Drop edge dates where centered window is incomplete
+  - [x] Return dict: `{symbol: [(low_date, low_price, window), (high_date, high_price, window), ...]}`
+- [x] Implement `generate_oracle_signal2D(extrema_dict, adjClose_shape, datearray)` function
+  - [x] Binary signal: 1.0 when in low→high segment, 0.0 otherwise
+  - [x] Segment defined: from low date to next high date
+  - [x] Return `signal2D` (stocks × dates) matching adjClose shape
+- [x] Add logging for extrema statistics (count per symbol, date coverage)
+- [x] Bonus: Implemented `apply_delay()` and `generate_scenario_signals()` convenience functions
 
 #### Code Review Checklist
-- [ ] Edge handling: first/last window_half_width days are correctly excluded
-- [ ] Signal segments do not overlap (each high terminates previous low→high)
-- [ ] Code is vectorized where possible (avoid nested loops on large arrays)
-- [ ] No AI slop: remove unnecessary intermediate variables, redundant comments
+- [x] Edge handling: first/last window_half_width days are correctly excluded
+- [x] Signal segments do not overlap (each high terminates previous low→high)
+- [x] Code is vectorized where possible (avoid nested loops on large arrays)
+- [x] No AI slop: remove unnecessary intermediate variables, redundant comments
 
 #### Tests
-- [ ] Unit test: detect extrema on synthetic sine wave returns correct peaks/troughs
-- [ ] Unit test: binary signal has expected transitions (0→1 at low, 1→0 at high)
-- [ ] Unit test: edge dates are NaN or 0.0 in signal2D
-- [ ] Integration test: extrema detection on 100 symbols × 500 days completes in <10 seconds
+- [x] Unit test: detect extrema on synthetic sine wave returns correct peaks/troughs
+- [x] Unit test: binary signal has expected transitions (0→1 at low, 1→0 at high)
+- [x] Unit test: edge dates are 0.0 in signal2D
+- [x] Integration test: extrema detection on 100 symbols × 500 days completes in <10 seconds (0.36s actual)
 
 ---
 
