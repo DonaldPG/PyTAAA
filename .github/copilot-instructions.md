@@ -1,5 +1,132 @@
 # GitHub Copilot Custom Instructions for Python Project
 
+## Project Summary
+
+PyTAAA (Python Tactical Asset Allocation Advisor) is a Python 3.11+
+trading system that recommends monthly portfolio allocations between
+stock universes (Nasdaq 100, S&P 500) and cash using technical
+analysis signals. It features:
+
+- **Model Switching (Abacus)**: Dynamically selects between trading
+  models (cash, naz100_pine, naz100_hma, naz100_pi, sp500_hma) based
+  on normalized performance metrics (Sharpe, Sortino, drawdown).
+- **Monte Carlo Optimization**: Thousands of backtesting iterations
+  to find optimal lookback periods and normalization parameters.
+- **Daily Portfolio Tracking**: Automated HTML dashboard generation.
+- **Data Layer**: Stock quotes stored in HDF5 files; all configuration
+  in JSON files (e.g., `pytaaa_model_switching_params.json`).
+
+## Project Layout
+
+```
+PyTAAA/
+├── pytaaa_main.py              # Modern CLI entry point (recommended)
+├── PyTAAA.py                   # Legacy scheduler-based entry point
+├── run_pytaaa.py               # Core execution pipeline
+├── daily_abacus_update.py      # Daily portfolio tracking & web output
+├── recommend_model.py          # Model recommendation engine
+├── run_monte_carlo.py          # Monte Carlo parameter optimizer
+├── run_normalized_score_history.py  # Score history analysis
+├── update_json_from_csv.py     # Transfer Monte Carlo params to JSON
+├── modify_saved_state.py       # Inspect/modify Monte Carlo state
+├── scheduler.py                # Custom task scheduler (legacy)
+├── pytaaa_generic.json         # Template JSON configuration
+├── pytaaa_model_switching_params.json  # Abacus model config
+├── pyproject.toml              # Project metadata and dependencies
+├── functions/                  # Core library modules
+│   ├── ta/                     # Technical analysis sub-package
+│   │   ├── moving_averages.py  # SMA, HMA, MoveMax, MoveMin
+│   │   ├── signal_generation.py  # computeSignal2D
+│   │   ├── rolling_metrics.py  # Sharpe, Martin ratios
+│   │   └── ...
+│   ├── TAfunctions.py          # Backward-compat re-exports from ta/
+│   ├── abacus_recommend.py     # Recommendation engine classes
+│   ├── abacus_backtest.py      # Backtest data management
+│   ├── MonteCarloBacktest.py   # Monte Carlo simulation engine
+│   ├── PortfolioPerformanceCalcs.py  # Portfolio ranking pipeline
+│   ├── PortfolioMetrics.py     # Performance metric calculations
+│   ├── MakeValuePlot.py        # Chart generation (Matplotlib)
+│   ├── GetParams.py            # JSON configuration loading
+│   ├── UpdateSymbols_inHDF5.py # HDF5 quote management
+│   ├── WriteWebPage_pi.py      # HTML generation and deployment
+│   ├── logger_config.py        # Centralized logging configuration
+│   └── ...
+├── tests/                      # pytest test suite
+├── docs/                       # Architecture and operations guides
+│   ├── ARCHITECTURE.md         # Detailed architectural overview
+│   └── copilot_sessions/       # Per-session summary documents
+└── scripts/                    # Shell helper scripts
+```
+
+## Build, Test, and Run
+
+**Always use `uv` to manage dependencies and run Python.**
+
+```bash
+# Install dependencies (first time or after pyproject.toml changes)
+uv sync
+
+# Run all tests
+PYTHONPATH=$(pwd) uv run pytest
+
+# Run a specific test file
+PYTHONPATH=$(pwd) uv run pytest tests/test_abacus_recommend.py
+
+# Run daily portfolio update
+uv run python daily_abacus_update.py --json <path_to_config.json>
+
+# Generate model recommendation
+uv run python recommend_model.py --json pytaaa_model_switching_params.json
+
+# Run Monte Carlo optimization
+uv run python run_monte_carlo.py \
+    --json pytaaa_model_switching_params.json --iterations 100
+```
+
+**Always set `PYTHONPATH=$(pwd)` when running tests** so that the
+`functions/` package is importable. There are no separate compile or
+build steps — this is a pure-Python project.
+
+There are currently no CI/CD GitHub Actions workflows configured.
+
+## Key Patterns and Conventions
+
+### Matplotlib in Headless Environments
+Always force the `Agg` backend before importing `pyplot` when running
+in a headless (no display) environment:
+
+```python
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+```
+
+This pattern is used in `daily_abacus_update.py`,
+`functions/MakeValuePlot.py`, and `docs/generate_method_charts.py`.
+
+### Configuration via JSON
+All runtime configuration is stored in JSON files. Use
+`functions/GetParams.py` to load parameters. Prefer
+`pytaaa_model_switching_params.json` as the main config for
+Abacus/model-switching workflows.
+
+### HDF5 Quote Storage
+Historical stock quotes are stored in HDF5 files (via pandas
+`HDFStore`). `functions/UpdateSymbols_inHDF5.py` manages downloads
+and updates. Never hard-code quote file paths; always read them from
+the JSON configuration.
+
+### Logging
+All modules use `functions/logger_config.py` via:
+```python
+from functions.logger_config import get_logger
+logger = get_logger(__name__, log_file="module_name.log")
+```
+
+### Session Documentation
+After significant Copilot sessions, create a summary in
+`docs/copilot_sessions/` using the format
+`YYYY-MM-DD_brief-description.md`.
 
 ## Dependency Management
 - This Python project uses **uv** to manage dependencies.
