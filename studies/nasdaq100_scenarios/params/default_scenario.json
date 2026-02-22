@@ -14,7 +14,7 @@
     "start_date": "1998-01-02",
     "stop_date": "2024-12-31",
     "symbols_source": "nasdaq100_hdf5",
-    "symbols_file": "/Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt",
+    "symbols_file": "symbols/Naz100_Symbols.txt",
     "_comment_tradability": "Inferred from data quality (NaNs, infill detection) by date"
   },
 

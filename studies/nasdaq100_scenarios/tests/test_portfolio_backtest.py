@@ -385,12 +385,6 @@ def test_full_pipeline_integration():
     assert all(key in metrics[('test', 0, 2)] 
               for key in ['sharpe_ratio', 'volatility', 'max_drawdown'])
     
-    print(f"\nIntegration test passed:")
-    print(f"  Final value: ${result['final_value']:,.2f}")
-    print(f"  Total return: {result['total_return']:.2%}")
-    print(f"  Sharpe ratio: {metrics[('test', 0, 2)]['sharpe_ratio']:.2f}")
-
-
 #############################################################################
 # Phase 6: Oracle Ranking Tests
 #############################################################################

@@ -93,7 +93,7 @@ uv run python studies/nasdaq100_scenarios/run_full_study.py \
 uv run pytest studies/nasdaq100_scenarios/tests/
 
 # Run integration test with minimal parameters
-uv run python studies/nasdaq100_scenarios/test_integration.sh
+bash studies/nasdaq100_scenarios/test_integration.sh
 ```
 
 ## Interpretation Guidelines

@@ -263,7 +263,7 @@ def generate_oracle_signal2D(
 def apply_delay(
     signal2D: np.ndarray,
     days_delay: int,
-    datearray: List[date]
+    _datearray: List[date]
 ) -> np.ndarray:
     """Apply time delay to oracle signals.
     

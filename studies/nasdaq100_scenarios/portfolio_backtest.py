@@ -9,6 +9,8 @@ import numpy as np
 from datetime import date
 from typing import Dict, List, Tuple, Optional
 
+DateLike = date | np.datetime64
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,7 +18,7 @@ def simulate_monthly_portfolio(
     adjClose: np.ndarray,
     signal2D: np.ndarray,
     top_n: int,
-    datearray: List[date],
+    datearray: List[DateLike],
     symbols: List[str],
     initial_value: float = 10000.0,
     transaction_cost: float = 0.0,
@@ -32,8 +34,8 @@ def simulate_monthly_portfolio(
     - On first day of each month (rebalance date):
       - Select top N stocks where signal2D == 1.0 (oracle says "buy")
       - Rank stocks according to ranking_method
-      - If fewer than N stocks have signal, fill with CASH
-      - Equal-weight selected stocks: w = 1/N
+            - If fewer than N stocks have signal, keep remaining weight in cash
+            - Equal-weight selected stocks: w = 1/num_selected
     - Between rebalances: hold positions, value changes with daily returns
     - Optional: deduct transaction costs on rebalance
     
@@ -115,6 +117,8 @@ def simulate_monthly_portfolio(
                 # First day of new month
                 is_rebalance = True
         
+        rebalance_cost_ratio = 1.0
+
         if is_rebalance:
             # Select top N stocks where signal == 1.0
             signal_today = signal2D[:, j]
@@ -155,9 +159,10 @@ def simulate_monthly_portfolio(
                 
                 if num_changed > 0 and apply_costs:
                     total_cost = num_changed * transaction_cost
-                    # Reduce portfolio value by transaction costs
-                    cost_ratio = max(0, 1.0 - total_cost / portfolio_value[j-1])
-                    portfolio_value[j-1] *= cost_ratio
+                    rebalance_cost_ratio = max(
+                        0.0,
+                        1.0 - total_cost / portfolio_value[j-1],
+                    )
             
             # Update weights
             current_weights = new_weights
@@ -180,7 +185,9 @@ def simulate_monthly_portfolio(
             if np.sum(current_weights) < 1e-6:
                 daily_return = 1.0
             
-            portfolio_value[j] = portfolio_value[j-1] * daily_return
+            portfolio_value[j] = (
+                portfolio_value[j-1] * rebalance_cost_ratio * daily_return
+            )
     
     # Calculate summary statistics
     final_value = portfolio_value[-1]
@@ -201,7 +208,7 @@ def simulate_monthly_portfolio(
 
 def simulate_buy_and_hold(
     adjClose: np.ndarray,
-    datearray: List[date],
+    datearray: List[DateLike],
     symbols: List[str],
     initial_value: float = 10000.0,
     exclude_cash: bool = True,
@@ -287,7 +294,7 @@ def simulate_buy_and_hold(
 def run_scenario_sweep(
     adjClose: np.ndarray,
     symbols: List[str],
-    datearray: List[date],
+    datearray: List[DateLike],
     scenario_signals: Dict[Tuple[int, int], np.ndarray],
     top_n_list: List[int],
     params: Dict,
@@ -418,7 +425,7 @@ def compute_performance_metrics(results: Dict[Tuple, Dict]) -> Dict[Tuple, Dict]
 
 def compute_forward_monthly_return(
     adjClose: np.ndarray,
-    datearray: List[date],
+    datearray: List[DateLike],
     rebalance_idx: int
 ) -> np.ndarray:
     """Compute forward return from rebalance date to month end.
@@ -524,7 +531,7 @@ def rank_by_forward_return(
 
 def compute_extrema_interpolated_series(
     adjClose: np.ndarray,
-    datearray: List[date],
+    datearray: List[DateLike],
     window_half_width: int
 ) -> np.ndarray:
     """Build interpolated time series from detected extrema.
@@ -587,7 +594,7 @@ def compute_extrema_interpolated_series(
 
 def compute_extrema_slopes(
     interpolated_series: np.ndarray,
-    datearray: List[date],
+    datearray: List[DateLike],
     rebalance_idx: int,
     delay_days: int = 0
 ) -> np.ndarray:
@@ -633,7 +640,7 @@ def compute_extrema_slopes(
 
 def rank_by_extrema_slope(
     adjClose: np.ndarray,
-    datearray: List[date],
+    datearray: List[DateLike],
     signal2D_today: np.ndarray,
     rebalance_idx: int,
     top_n: int,

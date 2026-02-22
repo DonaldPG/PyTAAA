@@ -54,8 +54,8 @@ uv run python studies/nasdaq100_scenarios/run_full_study.py \
 - Summary JSON: studies/nasdaq100_scenarios/results/
 
 ### Example Plots
-- studies/nasdaq100_scenarios/plots/portfolio_histories.png
-- studies/nasdaq100_scenarios/plots/parameter_sensitivity_total_return.png
+- studies/nasdaq100_scenarios/plots/portfolio_histories_<study_name>_w<window>_n<top_n>.png
+- studies/nasdaq100_scenarios/plots/parameter_sensitivity_total_return_<study_name>.png
 
 ### Tests
 ```bash

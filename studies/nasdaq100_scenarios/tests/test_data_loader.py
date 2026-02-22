@@ -228,12 +228,5 @@ def test_load_nasdaq100_window_integration():
     # Verify load speed (should be fast for 2-year window)
     assert elapsed < 5.0, f"Load took {elapsed:.2f}s (expected <5s)"
     
-    print(f"\nIntegration test passed:")
-    print(f"  Loaded {len(symbols)} symbols × {len(datearray)} dates in {elapsed:.2f}s")
-    print(f"  Date range: {datearray[0]} to {datearray[-1]}")
-    print(f"  Tradable days: {tradable_mask.any(axis=0).sum()}/{len(datearray)}")
-
-
-
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

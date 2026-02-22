@@ -6,7 +6,9 @@ and tradability inference.
 
 import json
 import logging
+import os
 from datetime import datetime, date
+from pathlib import Path
 from typing import Tuple, List
 import numpy as np
 from numpy.typing import NDArray
@@ -15,6 +17,77 @@ from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
 from functions.TAfunctions import interpolate, cleantobeginning, cleantoend
 
 logger = logging.getLogger(__name__)
+
+
+def _derive_hdf5_path(symbols_file: Path) -> Path:
+    """Derive expected HDF5 filename from a symbols text file path."""
+    return symbols_file.parent / f"{symbols_file.stem}_.hdf5"
+
+
+def _resolve_symbols_file_path(
+    configured_symbols_file: str,
+    params_json_path: str
+) -> str:
+    """Resolve symbols file path from config, env overrides, or known data roots.
+
+    Preference order:
+    1) Environment overrides (`PYTAAA_SYMBOLS_FILE`, `SYMBOLS_FILE`)
+    2) Configured path as absolute or workspace-relative
+    3) Config-relative fallback
+    4) Known local data roots with existing NASDAQ100 HDF5
+    """
+    config_path = Path(params_json_path).resolve()
+    config_dir = config_path.parent
+    cwd = Path.cwd().resolve()
+
+    env_candidates = [
+        Path(v).expanduser()
+        for v in (
+            os.environ.get("PYTAAA_SYMBOLS_FILE"),
+            os.environ.get("SYMBOLS_FILE"),
+        )
+        if v
+    ]
+
+    base_candidate = Path(configured_symbols_file).expanduser()
+    path_candidates: List[Path] = []
+    path_candidates.extend(env_candidates)
+    if base_candidate.is_absolute():
+        path_candidates.append(base_candidate)
+    else:
+        path_candidates.append(cwd / base_candidate)
+        path_candidates.append(config_dir / base_candidate)
+
+    for candidate in path_candidates:
+        candidate = candidate.resolve()
+        if candidate.exists() or _derive_hdf5_path(candidate).exists():
+            return str(candidate)
+
+    known_roots = [
+        Path.home() / "pyTAAA_data",
+        Path.home() / "pyTAAA_data_static",
+        Path.home() / "PyProjects" / "PyTAAA",
+    ]
+    hdf_names = ["Naz100_Symbols_.hdf5", "Naz100_symbols_.hdf5"]
+    hdf_candidates: List[Path] = []
+    for root in known_roots:
+        hdf_candidates.extend([
+            root / "Naz100" / "symbols" / hdf_names[0],
+            root / "Naz100" / "symbols" / hdf_names[1],
+            root / "symbols" / hdf_names[0],
+            root / "symbols" / hdf_names[1],
+        ])
+
+    for hdf_path in hdf_candidates:
+        if hdf_path.exists():
+            symbols_stem = hdf_path.stem.rstrip("_")
+            return str(hdf_path.parent / f"{symbols_stem}.txt")
+
+    raise FileNotFoundError(
+        "Could not resolve a valid NASDAQ100 symbols/HDF5 path. "
+        "Set PYTAAA_SYMBOLS_FILE (or SYMBOLS_FILE) to your symbols file path, "
+        "or ensure Naz100_Symbols_.hdf5 exists under a known data root."
+    )
 
 
 def load_nasdaq100_window(
@@ -50,7 +123,7 @@ def load_nasdaq100_window(
     """
     logger.info("Loading configuration from %s", params_json_path)
     
-    with open(params_json_path, 'r') as f:
+    with open(params_json_path, "r", encoding="utf-8") as f:
         config = json.load(f)
     
     # Extract configuration
@@ -76,10 +149,15 @@ def load_nasdaq100_window(
     
     # Load from HDF5 using production loader
     # Note: loadQuotes_fromHDF expects symbols file path and json path
-    symbols_file = data_config.get(
+    symbols_file_config = data_config.get(
         "symbols_file",
         "symbols/Naz100_Symbols.txt"
     )
+    symbols_file = _resolve_symbols_file_path(
+        symbols_file_config,
+        params_json_path,
+    )
+    logger.info("Resolved symbols file path: %s", symbols_file)
     
     logger.info("Loading NASDAQ100 data from HDF5")
     adjClose_raw, symbols_raw, datearray_raw, _, _ = loadQuotes_fromHDF(
