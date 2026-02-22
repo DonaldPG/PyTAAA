@@ -470,7 +470,7 @@ def compute_portfolio_metrics(
         print(" ... Applying rolling window data quality filter to detect interpolated data...")
         signal2D = apply_rolling_window_filter(
             adjClose_despike, signal2D, params.get('window_size', 50),
-            symbols=symbols, datearray=datearray, verbose=True
+            symbols=symbols, datearray=datearray, verbose=False
         )
         print(" ... Rolling window filter complete")
     else:

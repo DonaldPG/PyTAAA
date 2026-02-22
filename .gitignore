@@ -45,6 +45,7 @@ pngs/
 *.bak
 *bak*
 purgatory/
+.git_bak*
 
 # Refactoring support files (temporary)
 refactor_tools/

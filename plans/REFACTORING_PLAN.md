@@ -35,16 +35,16 @@ cd /Users/donaldpg/PyProjects/worktree2/PyTAAA
 mkdir -p .refactor_baseline/{before,after}
 
 # Run baseline tests - these commands must produce identical outputs after each phase
-uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data/naz100_pine/pytaaa_naz100_pine.json 2>&1 | tee .refactor_baseline/before/pytaaa_naz100_pine.log
-uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data/naz100_hma/pytaaa_naz100_hma.json 2>&1 | tee .refactor_baseline/before/pytaaa_naz100_hma.log
-uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data/naz100_pi/pytaaa_naz100_pi.json 2>&1 | tee .refactor_baseline/before/pytaaa_naz100_pi.log
-uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data/sp500_hma/pytaaa_sp500_hma.json 2>&1 | tee .refactor_baseline/before/pytaaa_sp500_hma.log
-uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data/sp500_pine/pytaaa_sp500_pine.json 2>&1 | tee .refactor_baseline/before/pytaaa_sp500_pine.log
-uv run python recommend_model.py --json /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pytaaa_naz100_sp500_abacus.json 2>&1 | tee .refactor_baseline/before/pytaaa_abacus_recommendation.log
-uv run python daily_abacus_update.py --json /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pytaaa_naz100_sp500_abacus.json --verbose 2>&1 | tee .refactor_baseline/before/pytaaa_abacus_daily.log
+uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data_static/naz100_pine/pytaaa_naz100_pine.json 2>&1 | tee .refactor_baseline/before/pytaaa_naz100_pine.log
+uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data_static/naz100_hma/pytaaa_naz100_hma.json 2>&1 | tee .refactor_baseline/before/pytaaa_naz100_hma.log
+uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data_static/naz100_pi/pytaaa_naz100_pi.json 2>&1 | tee .refactor_baseline/before/pytaaa_naz100_pi.log
+uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data_static/sp500_hma/pytaaa_sp500_hma.json 2>&1 | tee .refactor_baseline/before/pytaaa_sp500_hma.log
+uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data_static/sp500_pine/pytaaa_sp500_pine.json 2>&1 | tee .refactor_baseline/before/pytaaa_sp500_pine.log
+uv run python recommend_model.py --json /Users/donaldpg/pyTAAA_data_static/naz100_sp500_abacus/pytaaa_naz100_sp500_abacus.json 2>&1 | tee .refactor_baseline/before/pytaaa_abacus_recommendation.log
+uv run python daily_abacus_update.py --json /Users/donaldpg/pyTAAA_data_static/naz100_sp500_abacus/pytaaa_naz100_sp500_abacus.json --verbose 2>&1 | tee .refactor_baseline/before/pytaaa_abacus_daily.log
 
 # Capture .params file checksums for comparison
-find /Users/donaldpg/pyTAAA_data -name "*.params" -exec md5sum {} \; > .refactor_baseline/before/params_checksums.txt
+find /Users/donaldpg/pyTAAA_data_static -name "*.params" -exec md5sum {} \; > .refactor_baseline/before/params_checksums.txt
 
 # 3. Verify tests pass before starting
 uv run pytest tests/ -v 2>&1 | tee .refactor_baseline/before/pytest_baseline.log
@@ -1152,25 +1152,25 @@ Each phase must:
 
 ```bash
 # Command 1: naz100_pine
-uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data/naz100_pine/pytaaa_naz100_pine.json 2>&1 | tee .refactor_baseline/after/pytaaa_naz100_pine.log
+uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data_static/naz100_pine/pytaaa_naz100_pine.json 2>&1 | tee .refactor_baseline/after/pytaaa_naz100_pine.log
 
 # Command 2: naz100_hma
-uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data/naz100_hma/pytaaa_naz100_hma.json 2>&1 | tee .refactor_baseline/after/pytaaa_naz100_hma.log
+uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data_static/naz100_hma/pytaaa_naz100_hma.json 2>&1 | tee .refactor_baseline/after/pytaaa_naz100_hma.log
 
 # Command 3: naz100_pi
-uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data/naz100_pi/pytaaa_naz100_pi.json 2>&1 | tee .refactor_baseline/after/pytaaa_naz100_pi.log
+uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data_static/naz100_pi/pytaaa_naz100_pi.json 2>&1 | tee .refactor_baseline/after/pytaaa_naz100_pi.log
 
 # Command 4: sp500_hma
-uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data/sp500_hma/pytaaa_sp500_hma.json 2>&1 | tee .refactor_baseline/after/pytaaa_sp500_hma.log
+uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data_static/sp500_hma/pytaaa_sp500_hma.json 2>&1 | tee .refactor_baseline/after/pytaaa_sp500_hma.log
 
 # Command 5: sp500_pine
-uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data/sp500_pine/pytaaa_sp500_pine.json 2>&1 | tee .refactor_baseline/after/pytaaa_sp500_pine.log
+uv run python pytaaa_main.py --json /Users/donaldpg/pyTAAA_data_static/sp500_pine/pytaaa_sp500_pine.json 2>&1 | tee .refactor_baseline/after/pytaaa_sp500_pine.log
 
 # Command 6: recommend_model
-uv run python recommend_model.py --json /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pytaaa_naz100_sp500_abacus.json 2>&1 | tee .refactor_baseline/after/pytaaa_abacus_recommendation.log
+uv run python recommend_model.py --json /Users/donaldpg/pyTAAA_data_static/naz100_sp500_abacus/pytaaa_naz100_sp500_abacus.json 2>&1 | tee .refactor_baseline/after/pytaaa_abacus_recommendation.log
 
 # Command 7: daily_abacus_update
-uv run python daily_abacus_update.py --json /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pytaaa_naz100_sp500_abacus.json --verbose 2>&1 | tee .refactor_baseline/after/pytaaa_abacus_daily.log
+uv run python daily_abacus_update.py --json /Users/donaldpg/pyTAAA_data_static/naz100_sp500_abacus/pytaaa_naz100_sp500_abacus.json --verbose 2>&1 | tee .refactor_baseline/after/pytaaa_abacus_daily.log
 
 # Compare outputs
 diff -r .refactor_baseline/before .refactor_baseline/after

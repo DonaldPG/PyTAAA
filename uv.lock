@@ -1791,6 +1791,15 @@ wheels = [
 ]
 
 [[package]]
+name = "networkx"
+version = "3.6.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6a/51/63fe664f3908c97be9d2e4f1158eb633317598cfa6e1fc14af5383f17512/networkx-3.6.1.tar.gz", hash = "sha256:26b7c357accc0c8cde558ad486283728b65b6a95d85ee1cd66bafab4c8168509", size = 2517025 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9e/c9/b2622292ea83fbb4ec318f5b9ab867d0a28ab43c5717bb85b0a5f6b3b0a4/networkx-3.6.1-py3-none-any.whl", hash = "sha256:d47fbf302e7d9cbbb9e2555a0d267983d2aa476bac30e90dfbe5669bd57f3762", size = 2068504 },
+]
+
+[[package]]
 name = "numba"
 version = "0.61.2"
 source = { registry = "https://pypi.org/simple" }
@@ -2552,6 +2561,7 @@ dependencies = [
     { name = "h11" },
     { name = "holidays" },
     { name = "matplotlib" },
+    { name = "networkx" },
     { name = "numba" },
     { name = "openpyxl" },
     { name = "pandas" },
@@ -2578,6 +2588,7 @@ requires-dist = [
     { name = "h11", specifier = ">=0.16.0" },
     { name = "holidays", specifier = ">=0.66" },
     { name = "matplotlib", specifier = ">=3.10.0" },
+    { name = "networkx", specifier = ">=3.6.1" },
     { name = "numba", specifier = ">=0.59.0" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pandas", specifier = ">=2.2.3" },

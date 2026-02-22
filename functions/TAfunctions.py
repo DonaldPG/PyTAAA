@@ -879,12 +879,22 @@ def sharpeWeightedRank_2D(
                 if cash_idx is not None:
                     monthgainlossweight[:, j] = 0.0  # Zero all weights first
                     monthgainlossweight[cash_idx, j] = 1.0  # 100% in cash
-                    print(f" ... Date {datearray[j]}: Early period (2000-2002), all signals zero, assigning 100% to CASH")
+                    if verbose:
+                        print(
+                            f" ... Date {datearray[j]}: "
+                            "Early period (2000-2002), "
+                            "all signals zero, assigning 100% to CASH"
+                        )
                 else:
                     # Fallback: equal weights to all stocks if no CASH symbol
                     equal_weight = 1.0 / n_stocks
                     monthgainlossweight[:, j] = equal_weight
-                    print(f" ... Date {datearray[j]}: Early period but no CASH symbol, assigning equal weights to all {n_stocks} stocks")
+                    if verbose:
+                        print(
+                            f" ... Date {datearray[j]}: "
+                            "Early period but no CASH symbol, "
+                            f"assigning equal weights to all {n_stocks} stocks"
+                        )
             else:
                 # Non-early period with all signals zero: the rolling window filter
                 # has excluded all stocks (e.g. infilled prices). Assign 100% to
@@ -928,12 +938,22 @@ def sharpeWeightedRank_2D(
                 if cash_idx is not None:
                     monthgainlossweight[:, j] = 0.0  # Zero all weights first
                     monthgainlossweight[cash_idx, j] = 1.0  # 100% in cash
-                    print(f" ... Date {datearray[j]}: Early period (2000-2002), no eligible stocks, assigning 100% to CASH")
+                    if verbose:
+                        print(
+                            f" ... Date {datearray[j]}: "
+                            "Early period (2000-2002), "
+                            "no eligible stocks, assigning 100% to CASH"
+                        )
                 else:
                     # Fallback: equal weights to all stocks if no CASH symbol
                     equal_weight = 1.0 / n_stocks
                     monthgainlossweight[:, j] = equal_weight
-                    print(f" ... Date {datearray[j]}: Early period but no CASH symbol, assigning equal weights to all {n_stocks} stocks")
+                    if verbose:
+                        print(
+                            f" ... Date {datearray[j]}: "
+                            "Early period but no CASH symbol, "
+                            f"assigning equal weights to all {n_stocks} stocks"
+                        )
             else:
                 # Non-early period with no eligible stocks (signals present but
                 # Sharpe filtering excluded all candidates). Assign 100% to CASH
@@ -942,10 +962,19 @@ def sharpeWeightedRank_2D(
                 if cash_idx is not None:
                     monthgainlossweight[:, j] = 0.0
                     monthgainlossweight[cash_idx, j] = 1.0
-                    print(f" ... Date {datearray[j]}: No eligible stocks (non-early period), assigning 100% to CASH")
+                    if verbose:
+                        print(
+                            f" ... Date {datearray[j]}: "
+                            "No eligible stocks (non-early period), "
+                            "assigning 100% to CASH")
                 else:
                     # monthgainlossweight[:, j] already 0.0 from initialization.
-                    print(f" ... Date {datearray[j]}: No eligible stocks (non-early period), no CASH symbol, leaving weights at 0.0")
+                    if verbose:
+                        print(
+                            f" ... Date {datearray[j]}: "
+                            "No eligible stocks (non-early period), "
+                            "no CASH symbol, leaving weights at 0.0"
+                        )
             continue
 
         # If we're in the early period, force 100% CASH even if there are eligible stocks
@@ -957,7 +986,12 @@ def sharpeWeightedRank_2D(
                 monthgainlossweight[cash_idx, j] = 1.0  # 100% in cash
                 continue
             else:
-                print(f" ... Date {datearray[j]}: Early period but no CASH symbol, proceeding with normal selection")
+                if verbose:
+                    print(
+                        f" ... Date {datearray[j]}: "
+                        "Early period but no CASH symbol, "
+                        "proceeding with normal selection"
+                    )
 
         # Get indices of eligible stocks
         eligible_indices = np.where(eligible_stocks)[0]
@@ -1529,13 +1563,23 @@ def sharpeWeightedRank_2D_old(
                     cash_index = symbols.index('CASH')
                     monthgainlossweight[:, ii] = 0.0  # Zero all weights first
                     monthgainlossweight[cash_index, ii] = 1.0  # 100% in cash
-                    print(f" ... Date {datearray[ii]}: Early period (2000-2002), all signals zero, assigning 100% to CASH")
+                    if verbose:
+                        print(
+                            f" ... Date {datearray[ii]}: Early period (2000-2002), "
+                            "all signals zero, assigning 100% to CASH"
+                        )
                     continue  # Skip the normal weight assignment logic
                 except ValueError:
                     # Fallback: equal weights to all stocks if no CASH symbol
                     equal_weight = 1.0 / monthgainloss.shape[0]
                     monthgainlossweight[:, ii] = equal_weight
-                    print(f" ... Date {datearray[ii]}: Early period but no CASH symbol, assigning equal weights to all {monthgainloss.shape[0]} stocks")
+                    if verbose:
+                        print(
+                            f" ... Date {datearray[ii]}: "
+                            "Early period but no CASH symbol, "
+                            "assigning equal weights to all "
+                            f"{monthgainloss.shape[0]} stocks"
+                        )
                     continue
 
     elsecount = 0

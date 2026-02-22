@@ -693,8 +693,8 @@ def makeMinimumSpanningTree(json_fn: str) -> None:
 
     figure7apath = 'minimum_spanning_tree.png'  # re-set to name without full path
     figure7a_htmlText = "\n<br><h3>Daily stock minimum-spanning tree analyis. Based on 22 day performance correlations.</h3>\n"
-    figure7a_htmlText = figure7a_htmlText + "\nCorrelations for graph network based on daily variation in Nasdaq 100 quotes.\n"
-    figure7a_htmlText = figure7a_htmlText + "\nUse to visually observ if patterns are related to (desirable attributes from) portfolio diversity\n"
+    figure7a_htmlText = figure7a_htmlText + "\nCorrelations for graph network based on daily variation quotes for the stock universe.\n"
+    figure7a_htmlText = figure7a_htmlText + "\nUse to visually observe if patterns are related to (desirable attributes from) portfolio diversity\n"
     figure7a_htmlText = figure7a_htmlText + '''<br><img src="'''+figure7apath+'''" alt="PyTAAA by DonaldPG" width="850" height="500"><br>\n'''
 
     return figure7a_htmlText

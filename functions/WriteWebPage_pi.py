@@ -1,6 +1,7 @@
 import shutil
 from typing import List
 from functions.GetParams import get_json_ftp_params, get_webpage_store
+from functions.MakeValuePlot import makeMinimumSpanningTree
 
 
 def ftpMoveDirectory(json_fn: str) -> None:
@@ -383,6 +384,14 @@ def writeWebPage(
     """
 
     ##########################################
+    # make plot showing minimum spanning tree from graph analysis of stock performance
+    ##########################################
+
+    figure7a_htmlText = makeMinimumSpanningTree(json_fn)
+    print("... writeWebPage: minimum spanning tree plot created ")
+
+
+    ##########################################
     # add current rankings table to message
     ##########################################
 
@@ -467,7 +476,7 @@ def writeWebPage(
             f.write(figure5a_htmlText)
             f.write(figure5b_htmlText)
             f.write(figure6_htmlText)
-            # f.write(figure7_htmlText)
+            f.write(figure7a_htmlText)
             f.write(rankingMessage)
             f.write(indexExchangesMessage)
             f.write(figure2_htmlText)
