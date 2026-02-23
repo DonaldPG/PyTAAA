@@ -113,7 +113,20 @@ def make_networkx_spanning_tree_plot(
     #########################################
     # Draw the network graph.
     #########################################
-    fig, ax = plt.subplots(figsize=(14, 8))
+
+    # set figure size
+    symbols_lower = symbols_file.lower()
+    print(f"   . DEBUG: symbols_file='{symbols_file}', symbols_lower='{symbols_lower}'")
+    print(f"   . DEBUG: 'naz100' in symbols_lower: {'naz100' in symbols_lower}")
+    print(f"   . DEBUG: 'sp500' in symbols_lower: {'sp500' in symbols_lower}")
+    if "naz100" in symbols_lower:
+        fscalar = 1.0
+    elif "sp500" in symbols_lower:
+        fscalar = 1.65
+    else:
+        fscalar = 1.0
+    fig_size = (14*fscalar, 8*fscalar)
+    fig, ax = plt.subplots(figsize=fig_size)
     ax.set_facecolor("#F8F8F8")
 
     # Identify nodes for currently held stocks.
