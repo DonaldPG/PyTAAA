@@ -43,7 +43,10 @@ def percentileChannel(x: NDArray[np.floating], minperiod: int, maxperiod: int,
         - For early data points with insufficient history, uses available data
         - Useful for identifying support and resistance levels
     """
-    periods = np.arange(minperiod, maxperiod, incperiod)
+    # Cast to int: lookback periods must be whole trading days; float
+    # increments passed by callers (e.g. (max-min)/7.) would otherwise
+    # produce float slice indices and raise TypeError.
+    periods = np.arange(minperiod, maxperiod, incperiod).astype(int)
     minchannel = np.zeros(len(x), dtype=float)
     maxchannel = np.zeros(len(x), dtype=float)
     for i in range(len(x)):
@@ -95,7 +98,8 @@ def percentileChannel_2D(x: NDArray[np.floating], minperiod: int, maxperiod: int
         - More efficient than calling percentileChannel in a loop
     """
     print(" ... inside percentileChannel_2D ...  x min,mean,max = ", x.min(), x.mean(), x.max())
-    periods = np.arange(minperiod, maxperiod, incperiod)
+    # Cast to int: lookback periods must be whole trading days.
+    periods = np.arange(minperiod, maxperiod, incperiod).astype(int)
     minchannel = np.zeros((x.shape[0], x.shape[1]), dtype=float)
     maxchannel = np.zeros((x.shape[0], x.shape[1]), dtype=float)
     for i in range(x.shape[1]):
@@ -148,7 +152,8 @@ def dpgchannel(x: NDArray[np.floating], minperiod: int, maxperiod: int,
         - For early data points with insufficient history, uses available data
         - Named 'dpg' for Donald P. Galanis (original developer)
     """
-    periods = np.arange(minperiod, maxperiod, incperiod)
+    # Cast to int: lookback periods must be whole trading days.
+    periods = np.arange(minperiod, maxperiod, incperiod).astype(int)
     minchannel = np.zeros(len(x), dtype=float)
     maxchannel = np.zeros(len(x), dtype=float)
     for i in range(len(x)):
@@ -197,7 +202,8 @@ def dpgchannel_2D(x: NDArray[np.floating], minperiod: int, maxperiod: int,
         - For early data points with insufficient history, uses available data
         - Named 'dpg' for Donald P. Galanis (original developer)
     """
-    periods = np.arange(minperiod, maxperiod, incperiod)
+    # Cast to int: lookback periods must be whole trading days.
+    periods = np.arange(minperiod, maxperiod, incperiod).astype(int)
     minchannel = np.zeros((x.shape[0], x.shape[1]), dtype=float)
     maxchannel = np.zeros((x.shape[0], x.shape[1]), dtype=float)
     for i in range(x.shape[1]):
