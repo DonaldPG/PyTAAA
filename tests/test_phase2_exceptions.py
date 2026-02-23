@@ -181,12 +181,7 @@ class TestClusterDataExceptions:
 
 class TestSafetyFallbackPattern:
     """Verify safety fallback (except Exception) exists in all locations."""
-    
-    def test_safety_fallback_present_in_pytaaa(self):
-        """Verify PyTAAA.py has safety fallback handlers."""
-        # PyTAAA.py replaced with deprecation wrapper in Phase 3
-        pytest.skip("PyTAAA.py replaced with deprecation wrapper in Phase 3")
-    
+
     def test_safety_fallback_present_in_run_pytaaa(self):
         """Verify run_pytaaa.py has safety fallback handlers."""
         run_pytaaa_path = Path(__file__).parent.parent / "run_pytaaa.py"
@@ -202,12 +197,7 @@ class TestSafetyFallbackPattern:
 
 class TestLoggingPresence:
     """Verify appropriate logging is present."""
-    
-    def test_warning_logging_for_unexpected(self):
-        """Verify warning-level logging for unexpected exceptions."""
-        # PyTAAA.py is now a deprecation wrapper (Phase 3), skip this test
-        pytest.skip("PyTAAA.py replaced with deprecation wrapper in Phase 3")
-    
+
     def test_debug_logging_for_expected(self):
         """Verify debug-level logging for expected exceptions."""
         run_pytaaa_path = Path(__file__).parent.parent / "run_pytaaa.py"
