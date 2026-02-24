@@ -173,7 +173,7 @@ def _generate_full_history_plots(
         plt.title(f"{symbols[i]}\n{ysq.get_company_name(symbols[i])}")
         plt.yscale('log')
 
-        print(f" ...inside PortfolioPerformancealcs... plotfilepath = {plotfilepath}")
+        print(f" ...inside PortfolioPerformanceCalcs... plotfilepath = {plotfilepath}")
         plt.savefig(plotfilepath, format='png')
 
 
@@ -353,12 +353,12 @@ def _generate_recent_plots(
             plt.tick_params(axis='both', which='major', labelsize=8)
             plt.tick_params(axis='both', which='minor', labelsize=6)
 
-            print(f" ...inside PortfolioPerformancealcs... plotfilepath = {plotfilepath}")
+            print(f" ...inside PortfolioPerformanceCalcs... plotfilepath = {plotfilepath}")
             plt.savefig(plotfilepath, format='png')
 
         except Exception as e:
             print(
-                f" ERROR in PortfoloioPerformanceCalcs -- no plot generated "
+                f" ERROR in PortfolioPerformanceCalcs -- no plot generated "
                 f"for symbol {symbols[i]}"
             )
             print(f" Exception: {e}")
