@@ -1,9 +1,15 @@
 """
-Price perturbation strategies for look-ahead bias testing.
+Price perturbation strategy callables for look-ahead bias testing.
 
-Each callable takes a pd.Series of prices and returns a modified Series.
-Pre-cutoff values (dates <= cutoff_date) are never modified; only
-post-cutoff values are altered.
+Each function is a factory that returns a transform callable.  The
+callable takes a pd.Series of prices and returns a modified Series.
+
+IMPORTANT: These functions operate on whatever Series is passed to them.
+They do NOT enforce pre-cutoff protection themselves.  The caller is
+responsible for passing only post-cutoff price rows.  The study's current
+in-memory approach (_patch_adjclose in run_lookahead_study.py) handles
+slicing and does not use these callables — they exist for use with the
+legacy hdf5_utils.patch_hdf5_prices() interface.
 """
 
 import pandas as pd

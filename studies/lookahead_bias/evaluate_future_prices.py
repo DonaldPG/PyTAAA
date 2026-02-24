@@ -1,8 +1,17 @@
 """
-Phase 2: Evaluation of look-ahead bias experiment results.
+LEGACY — Phase 2 evaluation script, SUPERSEDED.
 
-Reads the results CSV and reports pass/fail based on whether the
-stock selection changed when future prices were modified.
+This script reads a CSV written by experiment_future_prices.py.  That
+script was never completed (it depends on the HDF5-file-patching approach
+that was replaced by in-memory numpy patching in run_lookahead_study.py).
+
+The CSV this script expects (experiment_output/lookahead_bias_results.csv)
+has never been created, so this script will always exit with an error.
+
+For actual look-ahead bias evaluation, run:
+    PYTHONPATH=$(pwd) uv run python studies/lookahead_bias/run_lookahead_study.py
+or:
+    PYTHONPATH=$(pwd) uv run pytest tests/test_lookahead_bias.py -v
 """
 
 import sys

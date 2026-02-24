@@ -1,9 +1,17 @@
 """
-Stock selection runner for look-ahead bias testing.
+Stock selection runner — Phase 1 scaffold (NOT YET FUNCTIONAL).
 
-This module provides a thin wrapper around the PyTAAA backtest pipeline
-to extract ranked stock selections for a given date, using a possibly
-patched HDF5 file.
+This module was written as infrastructure scaffolding during Phase 1
+planning.  It is NOT used by the current look-ahead bias study or
+pytest suite.
+
+The actual study uses run_lookahead_study.run_selection_pipeline(),
+which calls computeSignal2D + sharpeWeightedRank_2D directly on
+in-memory numpy arrays.
+
+get_ranked_stocks_for_date() below is a PLACEHOLDER.  It returns
+symbols[:7] with equal weights, not actual ranked stock selections.
+Any code calling this function will not get meaningful results.
 """
 
 import os
@@ -26,23 +34,28 @@ def get_ranked_stocks_for_date(
     as_of_date: str
 ):
     """
-    Run stock selection pipeline and return ranked stocks for a given date.
+    PLACEHOLDER — does not return real ranked stocks.
 
-    Calls dailyBacktest_pctLong (or equivalent) pointing to the specified
-    HDF5 file, then extracts the ranked stock list for the specified date.
+    This function was written as Phase 1 scaffolding.  It has never been
+    connected to the production pipeline.  It returns the first 7 symbols
+    from the HDF5 file with equal weights, regardless of actual rankings.
+
+    The working implementation is run_lookahead_study.run_selection_pipeline(),
+    which runs computeSignal2D + sharpeWeightedRank_2D on in-memory arrays
+    and is what the study script and pytest suite actually use.
 
     Args:
-        hdf5_path: Path to HDF5 file containing price data
+        hdf5_path: Path to HDF5 file (loaded but rank result is not used)
         json_params_path: Path to JSON config file
-        as_of_date: Date string "YYYY-MM-DD" for which to extract rankings
+        as_of_date: Date string "YYYY-MM-DD" (validated but not used for
+                    actual ranking)
 
     Returns:
-        Tuple of (ranked_symbols, ranked_weights) for the specified date
-        where ranked_symbols is a list of stock tickers and ranked_weights
-        are the portfolio weights assigned by the backtest.
+        Tuple of (symbols[:7], [1/7, ...]) — a hardcoded placeholder,
+        NOT the real ranked selections.
 
     Raises:
-        ValueError: If as_of_date is not found in the backtest results
+        ValueError: If as_of_date is not found in datearray
     """
     
     # Load parameters
@@ -76,10 +89,10 @@ def get_ranked_stocks_for_date(
     
     date_idx = matching_indices[0]
     
-    # For now, return a placeholder that represents the structure
-    # In full integration, this would extract actual ranked results from backtest
-    ranked_symbols = symbols[:7]  # Assume top-7 are the traded stocks
-    ranked_weights = [1.0 / 7.0] * 7  # Equal weight placeholder
+    # PLACEHOLDER: returns first 7 symbols with equal weights.
+    # This is NOT connected to the production ranking pipeline.
+    ranked_symbols = symbols[:7]
+    ranked_weights = [1.0 / 7.0] * 7
     
     print(f"[selection_runner] Top-{len(ranked_symbols)} stocks for {as_of_date}: "
           f"{ranked_symbols}")

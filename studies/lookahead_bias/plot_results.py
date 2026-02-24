@@ -1,11 +1,14 @@
 """
-Phase 2: Portfolio value plotting for look-ahead bias experiment.
+LEGACY — Phase 2 plotting scaffold, SUPERSEDED and INCOMPLETE.
 
-Generates plots matching the upper subplot style of PyTAAA_monteCarloBacktestFull.png:
-- Log y-scale, two bold curves (traded in black, buy-and-hold in red)
-- Normalized to $10,000 at start
-- Annotation table with performance metrics
-- Annual x-axis tick marks
+This module was written to visualise portfolio comparison plots for the
+HDF5-file-patching experiment (experiment_future_prices.py), which was
+never completed.  The plotting functions below use synthetic random data
+from create_synthetic_portfolio_data() as a placeholder — they do NOT
+load or display real backtest results.
+
+This file is retained for reference only.  It is not called by any
+working code in the current study.
 """
 
 import sys

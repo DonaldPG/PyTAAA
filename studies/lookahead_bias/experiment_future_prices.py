@@ -1,14 +1,17 @@
 """
-Phase 2: Look-ahead bias experiment using modified future prices.
+LEGACY — Phase 2 scaffolding, SUPERSEDED and INCOMPLETE.
 
-This module orchestrates the full experiment:
-1. Select 3 test dates
-2. For each date, determine top-15 stocks using real HDF5
-3. Assign perturbations: ranks 1-8 get price reductions after test date,
-   ranks 9-15 get price increases
-4. Create patched HDF5 copies
-5. Run stock selection on both real and patched data for all 3 models
-6. Record results to CSV for evaluation
+This module was written during initial Phase 2 planning when the approach
+was to copy HDF5 files, patch prices on disk, and compare selections.
+That approach was replaced by in-memory numpy patching in
+run_lookahead_study.py, which is the working implementation.
+
+This file is INCOMPLETE (apply_perturbations_to_copy() is unfinished)
+and has NEVER been run successfully end-to-end.  It depends on
+selection_runner.get_ranked_stocks_for_date(), which is also a
+placeholder (see selection_runner.py).
+
+Do NOT run this file.  Use run_lookahead_study.py instead.
 """
 
 import os
