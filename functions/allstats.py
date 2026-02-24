@@ -1,13 +1,73 @@
+"""Statistical analysis utilities for financial time series.
+
+This module provides the ``allstats`` class, which wraps a NumPy array
+and exposes a collection of descriptive and risk-adjusted statistics
+commonly used in quantitative finance and portfolio analysis.
+
+Example:
+    from functions.allstats import allstats
+    import numpy as np
+
+    prices = np.cumprod(np.random.normal(1.001, 0.01, 252))
+    stats = allstats(prices)
+    print("Sharpe:", stats.sharpe())
+    print("MAD:", stats.mad())
+"""
+
 import numpy as np
 import math
 from typing import List, Union
 
+
 class allstats():
+    """Container for statistical computations on a 1D numerical array.
+
+    Wraps a NumPy array and provides methods for common descriptive
+    statistics, robust dispersion measures, and risk-adjusted return
+    metrics used in portfolio analysis.
+
+    Attributes:
+        data: The underlying 1D NumPy array supplied at construction.
+
+    Example:
+        >>> import numpy as np
+        >>> from functions.allstats import allstats
+        >>> prices = np.array([100., 102., 101., 105., 103.])
+        >>> s = allstats(prices)
+        >>> s.mean()
+        102.2
+    """
 
     def __init__(self, x: np.ndarray) -> None:
+        """Initialise allstats with a 1D array.
+
+        Args:
+            x: 1D NumPy array of numerical values (e.g., prices or
+                returns) on which statistics will be computed.
+        """
         self.data = x
 
     def sharpe(self, periods_per_year: int = 252) -> float:
+        """Calculate the annualised Sharpe ratio from a daily price series.
+
+        Computes the geometric mean daily return minus 1, annualises it,
+        and divides by the annualised daily return volatility.  Input is
+        treated as a price series; daily returns are derived internally.
+
+        Args:
+            periods_per_year: Number of trading periods in a year used
+                to annualise the ratio. Defaults to 252 (trading days).
+
+        Returns:
+            Annualised Sharpe ratio as a float, or an empty list if the
+            data array is empty.
+
+        Notes:
+            - Near-zero prices are clamped to 1e-15 to avoid division
+              by zero.
+            - NaN and infinite return values are replaced with 1.0 (no
+              gain/loss) before the ratio is computed.
+        """
         x = self.data
         from scipy.stats import gmean
         # The mad of nothing is null
@@ -23,6 +83,21 @@ class allstats():
         return sharpe
 
     def monthly_sharpe(self) -> float:
+        """Calculate the monthly Sharpe ratio from a monthly price series.
+
+        Identical in structure to :meth:`sharpe` but uses 12 periods per
+        year, making it suitable for monthly price or return data.
+
+        Returns:
+            Monthly-annualised Sharpe ratio as a float, or an empty list
+            if the data array is empty.
+
+        Notes:
+            - Near-zero prices are clamped to 1e-15 to avoid division
+              by zero.
+            - NaN and infinite return values are replaced with 1.0 before
+              the ratio is computed.
+        """
         x = self.data
         from scipy.stats import gmean
         # The mad of nothing is null
@@ -38,9 +113,44 @@ class allstats():
         return sharpe
 
     def sortino(self, risk_free_rate: float = 0., target_rate: float = 0.) -> float:
+        """Calculate the Sortino ratio from a daily price series.
+
+        The Sortino ratio measures risk-adjusted return using only
+        downside volatility (lower partial moment of order 2) rather
+        than total volatility, penalising losses more than gains.
+
+        Adapted from turingfinance.com/computational-investing-with-python-week-one/
+
+        Args:
+            risk_free_rate: Annual risk-free rate used as the benchmark
+                in the numerator. Defaults to 0.
+            target_rate: Minimum acceptable return threshold used to
+                compute the lower partial moment. Defaults to 0.
+
+        Returns:
+            Sortino ratio as a float, or an empty list if the data
+            array is empty.
+
+        Notes:
+            - Input is treated as a price series; percent returns are
+              derived internally.
+            - If all returns are positive, the smallest gain is
+              sign-reversed so that the lower partial moment is non-zero,
+              preventing a division-by-zero.
+            - NaN and infinite returns are zeroed before calculation.
+        """
         # adapted from www.turingfinance.com/computational-investing-with-python-week-one/
         def lpm(returns, threshold, order):
-            # This method returns a lower partial moment of the returns
+            """Compute the lower partial moment of a return series.
+
+            Args:
+                returns: 1D array of return values.
+                threshold: Minimum acceptable return threshold.
+                order: Moment order (2 for semi-variance).
+
+            Returns:
+                Lower partial moment of the specified order.
+            """
             # Create an array he same length as returns containing the minimum return threshold
             threshold_array = np.empty(len(returns))
             threshold_array.fill(threshold)
@@ -51,6 +161,18 @@ class allstats():
             # Return the sum of the different to the power of order
             return np.sum(diff ** order) / len(returns)
         def sortino_ratio(er, returns, rf, target_rate=0):
+            """Compute the Sortino ratio from expected return and LPM.
+
+            Args:
+                er: Expected (mean) return of the asset.
+                returns: 1D array of return values used for LPM.
+                rf: Risk-free rate.
+                target_rate: Minimum acceptable return for LPM.
+                    Defaults to 0.
+
+            Returns:
+                Sortino ratio as a float.
+            """
             return (er - rf) / math.sqrt(lpm(returns, target_rate, 2))
         x = self.data
         # The mad of nothing is null
@@ -74,12 +196,20 @@ class allstats():
         return sortino
 
     def mad(self) -> float:
-        # [Median Absolute Deviation](http://en.wikipedia.org/wiki/Median_absolute_deviation)
-        #
-        # The Median Absolute Deviation (MAD) is a robust measure of statistical
-        # dispersion. It is more resilient to outliers than the standard deviation.
+        """Calculate the Median Absolute Deviation (MAD) of the data.
+
+        MAD is a robust measure of statistical dispersion that is more
+        resilient to outliers than standard deviation.  It is defined as
+        the median of the absolute deviations from the data's median.
+
+        See Also:
+            http://en.wikipedia.org/wiki/Median_absolute_deviation
+
+        Returns:
+            Median Absolute Deviation as a float, or an empty list if
+            the data array is empty.
+        """
         x = self.data
-        # The mad of nothing is null
         if len(x) == 0:
             return []
 
@@ -94,47 +224,55 @@ class allstats():
         return np.median(median_absolute_deviations)
 
     def std(self) -> float:
+        """Calculate the standard deviation of the data.
+
+        Returns:
+            Population standard deviation (ddof=0) as a float, or an
+            empty list if the data array is empty.
+        """
         x = self.data
-        # The mad of nothing is null
         if len(x) == 0:
             return []
-        #Find the std dev value of that list
         return np.std(x)
 
     def z_score(self) -> np.ndarray:
-        # [Z-Score, or Standard Score](http://en.wikipedia.org/wiki/Standard_score)
-        #
-        # The z_score is the number of standard deviations an observation
-        # or datum is above or below the mean. Thus, a positive standard score
-        # represents a datum above the mean, while a negative standard score
-        # represents a datum below the mean. It is a dimensionless quantity
-        # obtained by subtracting the population mean from an individual raw
-        # score and then dividing the difference by the population standard
-        # deviation.
-        #
+        """Compute the Z-score (standard score) for each data point.
+
+        The Z-score expresses how many population standard deviations
+        each observation lies above or below the population mean.  A
+        positive value indicates above-mean; a negative value indicates
+        below-mean.
+
+        See Also:
+            http://en.wikipedia.org/wiki/Standard_score
+
+        Returns:
+            NumPy array of Z-scores with the same shape as the input
+            data, or an empty list if the data array is empty.
+        """
         x = self.data
         mean = np.mean(x)
         stddev = np.std(x)
-        # The z_score of nothing is null
         if len(x) == 0:
             return []
-        #Find the z_score of that list
         #return np.hstack( ((0), ((x - mean)/stddev)) )
         return (x - mean)/stddev
 
     def med_score(self) -> np.ndarray:
-        # [Z-Score, or Standard Score](http://en.wikipedia.org/wiki/Standard_score)
-        #
-        # The z_score is the number of standard deviations an observation
-        # or datum is above or below the mean. Thus, a positive standard score
-        # represents a datum above the mean, while a negative standard score
-        # represents a datum below the mean. It is a dimensionless quantity
-        # obtained by subtracting the population mean from an individual raw
-        # score and then dividing the difference by the population standard
-        # deviation.
-        #
+        """Compute a robust median-based standardised score for each data point.
+
+        Analogous to the Z-score but uses the median and Median Absolute
+        Deviation (MAD) instead of mean and standard deviation, making
+        it resistant to outliers.
+
+        See Also:
+            http://en.wikipedia.org/wiki/Standard_score
+
+        Returns:
+            NumPy array of median-based scores with the same shape as
+            the input data, or an empty list if the data array is empty.
+        """
         x = self.data
-        # The z_score of nothing is null
         if len(x) == 0:
             return []
         median_value = np.median(x)
@@ -142,15 +280,26 @@ class allstats():
         # Make a list of absolute deviations from the median
         for i in range( len(x) ):
             median_absolute_deviations.append(np.abs(x[i] - median_value))
-        #Find the median value of that list
         mad = np.median(median_absolute_deviations)
-        #Find the z_score of that list
         #return np.hstack( ((0), ((x - median_value)/mad)) )
         return (x - median_value)/mad
 
     def remove_medoutliers(self, num_stds: float = 1.) -> np.ndarray:
+        """Return a copy of the data with median-based outliers removed.
+
+        Uses :meth:`med_score` to identify outliers and filters them out.
+        Points whose absolute median score exceeds ``num_stds`` times the
+        standard deviation of those scores are considered outliers.
+
+        Args:
+            num_stds: Multiplier applied to the score's standard deviation
+                to set the outlier threshold. Defaults to 1.0.
+
+        Returns:
+            1D NumPy array containing only the non-outlier elements, or
+            an empty list if the input array is empty.
+        """
         x = self.data
-        # The z_score of nothing is null
         if len(x) == 0:
             return []
         score = allstats(x).med_score()
@@ -159,8 +308,17 @@ class allstats():
         return x_no_outliers
 
     def count_medoutliers(self, num_stds: float = 1.) -> int:
+        """Count the number of median-based outliers in the data.
+
+        Args:
+            num_stds: Multiplier applied to the score's standard deviation
+                to set the outlier threshold. Defaults to 1.0.
+
+        Returns:
+            Integer count of outlier elements, or an empty list if the
+            input array is empty.
+        """
         x = self.data
-        # The z_score of nothing is null
         if len(x) == 0:
             return []
         score = allstats(x).med_score()
@@ -169,8 +327,17 @@ class allstats():
         return outlier_count
 
     def return_medoutliers(self, num_stds: float = 1.) -> np.ndarray:
+        """Return only the median-based outlier elements from the data.
+
+        Args:
+            num_stds: Multiplier applied to the score's standard deviation
+                to set the outlier threshold. Defaults to 1.0.
+
+        Returns:
+            1D NumPy array of outlier elements, or an empty list if the
+            input array is empty.
+        """
         x = self.data
-        # The z_score of nothing is null
         if len(x) == 0:
             return []
         score = allstats(x).med_score()
@@ -179,8 +346,18 @@ class allstats():
         return x_outliers
 
     def return_indices_medoutliers(self, num_stds: float = 1.) -> tuple:
+        """Return the array indices of median-based outliers.
+
+        Args:
+            num_stds: Multiplier applied to the score's standard deviation
+                to set the outlier threshold. Defaults to 1.0.
+
+        Returns:
+            Tuple of arrays (as returned by ``np.where``) containing the
+            indices of outlier elements, or an empty list if the input
+            array is empty.
+        """
         x = self.data
-        # The z_score of nothing is null
         if len(x) == 0:
             return []
         score = allstats(x).med_score()
@@ -189,19 +366,27 @@ class allstats():
         return x_outliers_indices
 
     def mean(self) -> float:
+        """Calculate the arithmetic mean of the data.
+
+        Returns:
+            Mean value as a float, or an empty list if the data array
+            is empty.
+        """
         x = self.data
-        # The mean of nothing is null
         if len(x) == 0:
             return []
-        #Find the mean value of that list
         return np.mean(x)
 
     def median(self) -> float:
+        """Calculate the median of the data.
+
+        Returns:
+            Median value as a float, or an empty list if the data array
+            is empty.
+        """
         x = self.data
-        # The median of nothing is null
         if len(x) == 0:
             return []
-        #Find the median value of that list
         return np.median(x)
 
 

@@ -1,3 +1,29 @@
+"""Web page generation and file deployment utilities for PyTAAA.
+
+This module handles the creation of the PyTAAA HTML dashboard and the
+deployment of web assets to remote servers.  It supports two transfer
+methods: SFTP via ``paramiko`` for remote Linux servers and local file
+copy for Raspberry Pi deployments.
+
+Key Functions:
+    writeWebPage: Assemble and write the main HTML dashboard.
+    piMoveDirectory: Copy web assets to a local or network path.
+    ftpMoveDirectory: Transfer web assets to a remote host via SFTP.
+
+Example:
+    from functions.WriteWebPage_pi import writeWebPage
+    writeWebPage(
+        regulartext="Allocation: 80% AAPL, 20% CASH",
+        boldtext="Updated 2025-01-01",
+        headlinetext="Market is open",
+        lastdate="2025-01-01",
+        last_symbols_text=["AAPL", "CASH"],
+        last_symbols_weight=[0.8, 0.2],
+        last_symbols_price=[150.0, 1.0],
+        json_fn="pytaaa_model_switching_params.json",
+    )
+"""
+
 import shutil
 from typing import List
 from functions.GetParams import get_json_ftp_params, get_webpage_store
@@ -5,8 +31,35 @@ from functions.MakeValuePlot import makeMinimumSpanningTree
 
 
 def ftpMoveDirectory(json_fn: str) -> None:
+    """Transfer web output files to a remote host via SFTP.
 
-    # based on a demo in ptyhon package paramiko.
+    Reads SFTP connection details from the JSON configuration file and
+    uses the ``paramiko`` library to upload all files in the local
+    ``./pyTAAA_web`` directory (plus holdings and status parameter
+    files) to the configured remote path.
+
+    During market hours (08:00–15:00 local time) PNG files that are not
+    named ``PyTAAA*`` and all ``.db`` files are excluded from the
+    transfer to reduce bandwidth.
+
+    Args:
+        json_fn: Path to the JSON configuration file containing FTP
+            credentials and remote path under keys ``ftpHostname``,
+            ``remoteIP``, ``ftpUsername``, ``ftpPassword``, and
+            ``remotepath``.
+
+    Returns:
+        None
+
+    Raises:
+        SystemExit: If the hostname is empty after prompting or if an
+            unrecoverable SFTP error occurs.
+
+    Notes:
+        This function is only invoked on Windows hosts or Linux
+        ``pine64`` machines.  On ARM Linux (Raspberry Pi) use
+        :func:`piMoveDirectory` instead.
+    """
     #
     #import base64
     import datetime
@@ -97,8 +150,29 @@ def ftpMoveDirectory(json_fn: str) -> None:
 
 
 def piMoveDirectory(json_fn: str) -> None:
+    """Copy web output files to a locally accessible deployment path.
 
-    import shutil
+    Reads the remote (target) path from the JSON configuration file and
+    uses ``shutil.copyfile`` to copy all files in ``./pyTAAA_web`` plus
+    holdings and status parameter files to that path.  During market
+    hours (08:00–15:00 local time) PNG files not named
+    ``PyTAAA_value`` are excluded to avoid overwriting live charts.
+
+    All errors are caught and printed rather than raised so that a
+    deployment failure does not abort the main pipeline.
+
+    Args:
+        json_fn: Path to the JSON configuration file containing the
+            deployment target under the key ``remotepath``.
+
+    Returns:
+        None
+
+    Notes:
+        This function is intended for Raspberry Pi deployments where
+        the web server root is a locally mounted path.  For remote SFTP
+        transfers use :func:`ftpMoveDirectory` instead.
+    """
     import os
     #import sys
     import datetime
@@ -176,7 +250,55 @@ def writeWebPage(
         last_symbols_price: list,
         json_fn: str,
 ) -> None:
-    #import smtplib
+    """Assemble and write the main PyTAAA HTML dashboard page.
+
+    Generates the ``pyTAAAweb.html`` file in the configured web output
+    directory.  The page includes:
+
+    - Current portfolio valuation text and headline
+    - Portfolio value plot (from :func:`~functions.MakeValuePlot.makeValuePlot`)
+    - Abacus model-switching recommendation plot (when available)
+    - Up-trending stocks plot
+    - Trend dispersion, new-highs/lows, channel-offset, and Monte Carlo
+      backtest plots
+    - Minimum spanning tree graph
+    - Current stock rankings table
+    - Recent index composition changes table
+    - Original backtest reference plots
+
+    After writing the HTML file the function copies the static banner
+    and backtest images to the web directory, then deploys the entire
+    web directory to the configured remote server using either
+    :func:`piMoveDirectory` or :func:`ftpMoveDirectory` depending on
+    the host platform.
+
+    Args:
+        regulartext: Plain-text description of the current portfolio
+            allocation, displayed in the ``<p>`` body tag.
+        boldtext: Short summary shown in bold below the headline.
+        headlinetext: ``<h1>`` heading text (e.g., market status).
+        lastdate: Date string of the most recent data point, used for
+            display purposes.
+        last_symbols_text: List of ticker symbols in the current
+            portfolio.
+        last_symbols_weight: List of portfolio weights corresponding to
+            ``last_symbols_text``.
+        last_symbols_price: List of current prices corresponding to
+            ``last_symbols_text``.
+        json_fn: Path to the JSON configuration file used to locate
+            output directories, symbols file, and transfer credentials.
+
+    Returns:
+        None
+
+    Notes:
+        - The function suppresses most exceptions internally and prints
+          diagnostic messages instead of raising, so a single failed
+          plot or file copy does not abort the page build.
+        - File deployment is platform-dependent: ARM Linux triggers
+          ``piMoveDirectory``; Windows hosts use ``ftpMoveDirectory``;
+          other platforms log a warning and skip deployment.
+    """
     import datetime
     import os
     #import numpy as np
