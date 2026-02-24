@@ -57,6 +57,8 @@
         "numdaysinfit2": 15,
         "offset": 7,
         "window_size": 50,
-        "enable_rolling_filter": false
+        "enable_rolling_filter": false,
+        "async_plot_generation": false,
+        "plot_generation_workers": 2
     }
 }
