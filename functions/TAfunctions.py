@@ -120,8 +120,28 @@ from functions.ta.rolling_metrics import (
 
 #----------------------------------------------
 def selfsimilarity(hi: np.ndarray, lo: np.ndarray) -> np.ndarray:
+    """Compute a self-similarity metric for a price bar series.
 
-    from scipy.stats import percentileofscore
+    Calculates a rolling measure of how self-similar recent price bar
+    ranges are relative to the 10-day high–low spread.  The result is
+    expressed as a moving percentile rank over the same rolling window,
+    making it dimensionless and comparable across instruments.
+
+    Args:
+        hi: 1D array of intraday high prices.
+        lo: 1D array of intraday low prices corresponding to ``hi``.
+
+    Returns:
+        1D NumPy array of percentile-rank values in [0, 100] representing
+        self-similarity at each date.
+
+    Notes:
+        - Internally computes a 10-day sum of (hi - lo), normalises by
+          the 10-day high–low spread, smooths with a 60-day SMA, and
+          finally converts to a rolling percentile rank.
+        - Values near 100 indicate that recent bar ranges are large
+          relative to historical ranges (high self-similarity in trend).
+    """
     HminusL = hi-lo
 
     periods = 10
@@ -156,13 +176,37 @@ def jumpTheChannelTest(
         numdaysinfit: int = 28,
         offset: int = 3
 ) -> Tuple[float, float, float, float]:
-    ###
-    ### compute linear trend in upper and lower channels and compare
-    ### actual stock price to forecast range
-    ### return pctChannel for each stock
-    ### calling function will use pctChannel as signal.
-    ### - e.g. negative pctChannel is signal that down-trend begins
-    ### - e.g. more than 100% pctChanel is sgnal of new up-trend beginning
+    """Test whether the most recent price has jumped outside its trend channel.
+
+    Computes a linear trend through the upper and lower price channels
+    over a recent fitting window (with a forward offset) and measures
+    where the current price falls within that channel.  Also computes
+    the cumulative gain/loss and volatility over the fitting period.
+
+    Args:
+        x: 1D array of price data for a single instrument.
+        minperiod: Minimum period (in days) for channel calculation.
+            Defaults to 4.
+        maxperiod: Maximum period (in days) for channel calculation.
+            Defaults to 12.
+        incperiod: Step size between min and max periods. Defaults to 3.
+        numdaysinfit: Number of historical days used to fit the linear
+            trend through the channels. Defaults to 28.
+        offset: Number of days by which the fitting window is offset
+            back from the current date.  Acts as a small gap to avoid
+            look-ahead. Defaults to 3.
+
+    Returns:
+        A 4-tuple of:
+            - pctChannel (float): Position of the current price within
+              the channel as a fraction; >1 means above, <0 means below.
+            - gainloss_cumu (float): Cumulative multiplicative gain/loss
+              over the fitting period minus 1.
+            - gainloss_std (float): Standard deviation of daily
+              gain/loss values over the fitting period.
+            - numStdDevs (float): Current price expressed as the number
+              of standard deviations above or below the channel midpoint.
+    """
 
     # calculate dpgchannel for all stocks in x
     # - x[stock_number,date]
@@ -213,12 +257,31 @@ def recentChannelFit(
         numdaysinfit: int = 28,
         offset: int = 3
 ) -> Tuple[np.ndarray, np.ndarray]:
-    ###
-    ### compute cumulative gain over fitting period and number of
-    ### ratio of current quote to fitted trend. Rescale based on std dev
-    ### of residuals during fitting period.
-    ### - e.g. negative pctChannel is signal that down-trend begins
-    ### - e.g. more than 100% pctChanel is sgnal of new up-trend beginning
+    """Fit linear trends to the recent upper and lower price channels.
+
+    Computes the upper and lower price channels via :func:`dpgchannel`
+    and then fits first-order polynomials through the channel values
+    over a recent fitting window.  Supports both gapped (``offset > 0``)
+    and non-gapped (``offset == 0``) fits.
+
+    Args:
+        x: 1D array of price data for a single instrument.
+        minperiod: Minimum period (in days) for channel calculation.
+            Defaults to 4.
+        maxperiod: Maximum period (in days) for channel calculation.
+            Defaults to 12.
+        incperiod: Step size between min and max periods. Defaults to 3.
+        numdaysinfit: Number of historical days used for the linear
+            regression. Defaults to 28.
+        offset: Number of days by which the fitting window is offset
+            back from the current date.  Use 0 for a no-gap fit.
+            Defaults to 3.
+
+    Returns:
+        A 2-tuple of 1D NumPy arrays ``(lower_fit, upper_fit)``, each
+        containing the polynomial coefficients ``[slope, intercept]``
+        for the lower and upper channel trend lines respectively.
+    """
 
     # calculate dpgchannel for all stocks in x
     # - x[stock_number,date]
@@ -286,14 +349,35 @@ def recentTrendAndStdDevs(
         numdaysinfit: int = 28,
         offset: int = 3
 ) -> Tuple[float, float, float]:
+    """Compute gain, channel-relative position, and dispersion for recent prices.
 
-    ###
-    ### compute linear trend in upper and lower channels and compare
-    ### actual stock price to forecast range
-    ### return pctChannel for each stock
-    ### calling function will use pctChannel as signal.
-    ### - e.g. numStdDevs < -1. is signal that down-trend begins
-    ### - e.g. whereas  > 1.0 is signal of new up-trend beginning
+    Fits a linear trend through the upper and lower price channels over
+    a recent gapped window and summarises where the current price sits
+    relative to that trend.
+
+    Args:
+        x: 1D array of price data for a single instrument.
+        datearray: 1D array of dates corresponding to ``x``.
+        minperiod: Minimum period (in days) for channel calculation.
+            Defaults to 4.
+        maxperiod: Maximum period (in days) for channel calculation.
+            Defaults to 12.
+        incperiod: Step size between min and max periods. Defaults to 3.
+        numdaysinfit: Number of historical days used for the linear
+            regression. Defaults to 28.
+        offset: Number of days by which the fitting window is offset
+            back from the current date. Defaults to 3.
+
+    Returns:
+        A 3-tuple of:
+            - gainloss_cumu (float): Cumulative gain/loss of the trend
+              midpoint over the fitting period minus 1.
+            - numStdDevs (float): Current price expressed as the number
+              of half-channel widths above (positive) or below (negative)
+              the trend midpoint.
+            - pctChannel (float): Current price position relative to
+              the upper channel boundary.
+    """
 
     # calculate dpgchannel for all stocks in x
     # - x[stock_number,date]
@@ -348,13 +432,32 @@ def recentSharpeWithAndWithoutGap(
         numdaysinfit: int = 504,
         offset_factor: float = .4
 ) -> float:
+    """Compute a multi-period Sharpe ratio with and without recent-data gaps.
 
-    from math import sqrt
-    from scipy.stats import gmean
+    Iteratively halves the lookback window starting from ``numdaysinfit``
+    days, computing the Sharpe ratio for both a gapped sub-period (the
+    first 60 % of days) and a non-gapped sub-period (the most recent
+    portion), then combines all period Sharpe ratios into a single scalar
+    using a weighted angular combination.
 
-    ###
-    ### - Cmpute sharpe ratio for recent prices with gap of 'offset' recent days
-    ### - Compute 2nd sharpe ratio for recent prices recent days
+    Args:
+        x: 1D array of price data for a single instrument.
+        numdaysinfit: Starting lookback period in days. Defaults to 504.
+        offset_factor: Fraction of the lookback period used as the gap
+            (i.e., the number of recent days to skip). Defaults to 0.4.
+
+    Returns:
+        A scalar Sharpe-ratio combination that blends multiple lookback
+        periods, giving slightly more weight to shorter (more recent)
+        windows via an angular combination at 33 degrees.
+
+    Notes:
+        - The iteration terminates when the halved window drops below
+          20 days.
+        - NaN Sharpe values in intermediate periods are replaced with
+          0.0; the final period NaN is replaced with -999 as a sentinel.
+        - Print statements are used to trace each iteration.
+    """
 
     # calculate dpgchannel for all stocks in x
     # - x[stock_number,date]
@@ -436,15 +539,39 @@ def recentTrendAndMidTrendChannelFitWithAndWithoutGap(
         numdaysinfit2: int = 20,
         offset: int = 3
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    ###
-    ### - Cmpute linear trend in upper and lower channels and compare
-    ###   actual stock price to forecast range
-    ### - Compute 2nd linear trend in upper and lower channels only for
-    ###   small number of recent prices without gap
-    ### - return pctChannel for each stock
-    ### - calling function will use pctChannel as signal.
-    ###   * e.g. numStdDevs < -1. is signal that down-trend begins
-    ###   * e.g. whereas  > 1.0 is signal of new up-trend beginning
+    """Fit channel trends over two windows — one gapped and one recent.
+
+    Computes two sets of linear trend lines for the price channel:
+    a longer gapped window (to identify the prevailing trend) and a
+    shorter no-gap window (to capture the most recent momentum).  The
+    two midpoint trend lines can be compared to detect short-term
+    deviations from the longer-term trend.
+
+    Args:
+        x: 1D array of price data for a single instrument.
+        minperiod: Minimum period (in days) for channel calculation.
+            Defaults to 4.
+        maxperiod: Maximum period (in days) for channel calculation.
+            Defaults to 12.
+        incperiod: Step size between min and max periods. Defaults to 3.
+        numdaysinfit: Number of days for the gapped (longer) fitting
+            window. Defaults to 28.
+        numdaysinfit2: Number of days for the no-gap (shorter) fitting
+            window. Defaults to 20.
+        offset: Number of recent days excluded from the gapped fit to
+            avoid look-ahead. Defaults to 3.
+
+    Returns:
+        A 4-tuple of 1D NumPy arrays:
+            - lowerTrend: Lower channel values evaluated over the gapped
+              fitting window.
+            - upperTrend: Upper channel values evaluated over the gapped
+              fitting window.
+            - NoGapLowerTrend: Lower channel values evaluated over the
+              no-gap (recent) window.
+            - NoGapUpperTrend: Upper channel values evaluated over the
+              no-gap (recent) window.
+    """
 
     # calculate dpgchannel for all stocks in x
     # - x[stock_number,date]
@@ -519,15 +646,45 @@ def recentTrendAndMidTrendWithGap(
         numdaysinfit2: int = 20,
         offset: int = 3
 ) -> Tuple[float, float, float, float]:
-    ###
-    ### - Cmpute linear trend in upper and lower channels and compare
-    ###   actual stock price to forecast range
-    ### - Compute 2nd linear trend in upper and lower channels only for
-    ###   small number of recent prices without gap
-    ### - return pctChannel for each stock
-    ### - calling function will use pctChannel as signal.
-    ###   * e.g. numStdDevs < -1. is signal that down-trend begins
-    ###   * e.g. whereas  > 1.0 is signal of new up-trend beginning
+    """Compute trend metrics using two channel fits and generate a diagnostic plot.
+
+    Fits price-channel linear trends over a gapped window and a shorter
+    no-gap window, summarises the trend metrics, and renders a matplotlib
+    plot showing both channel fits.  This function is primarily used for
+    diagnostic and visualisation purposes.
+
+    Args:
+        x: 1D array of price data for a single instrument.
+        datearray: 1D array of dates corresponding to ``x``.
+        minperiod: Minimum period (in days) for channel calculation.
+            Defaults to 4.
+        maxperiod: Maximum period (in days) for channel calculation.
+            Defaults to 12.
+        incperiod: Step size between min and max periods. Defaults to 3.
+        numdaysinfit: Number of days for the gapped (longer) window.
+            Defaults to 28.
+        numdaysinfit2: Number of days for the no-gap (shorter) window.
+            Defaults to 20.
+        offset: Days excluded from the end of the gapped window.
+            Defaults to 3.
+
+    Returns:
+        A 4-tuple of:
+            - gainloss_cumu (float): Cumulative gain/loss of the gapped
+              midpoint trend over the fitting period minus 1.
+            - gainloss_cumu2 (float): Gain/loss of the no-gap midpoint
+              relative to the start of the gapped midpoint.
+            - numStdDevs (float): Current price in half-channel-width
+              units above or below the gapped midpoint.
+            - relative_GainLossRatio (float): Ratio of the no-gap
+              channel midpoint to the gapped channel midpoint at the
+              current date.
+
+    Notes:
+        Uses the ``Agg`` Matplotlib backend to allow rendering in
+        headless environments.  The plot is displayed with
+        ``plt.show()`` which may be a no-op in non-interactive sessions.
+    """
 
     # calculate dpgchannel for all stocks in x
     # - x[stock_number,date]
@@ -616,15 +773,34 @@ def recentTrendComboGain(
         numdaysinfit2: int = 20,
         offset: int = 3
 ) -> float:
-    ###
-    ### - Cmpute linear trend in upper and lower channels and compare
-    ###   actual stock price to forecast range
-    ### - Compute 2nd linear trend in upper and lower channels only for
-    ###   small number of recent prices without gap
-    ### - return pctChannel for each stock
-    ### - calling function will use pctChannel as signal.
-    ###   * e.g. numStdDevs < -1. is signal that down-trend begins
-    ###   * e.g. whereas  > 1.0 is signal of new up-trend beginning
+    """Compute a combined annualised gain signal from two channel trend fits.
+
+    Calculates annualised geometric mean gains for both a gapped and a
+    no-gap price-channel midpoint trend, then combines them into a single
+    "combo gain" that rewards recent acceleration relative to the
+    prevailing trend.
+
+    Args:
+        x: 1D array of price data for a single instrument.
+        datearray: 1D array of dates corresponding to ``x``.
+        minperiod: Minimum period (in days) for channel calculation.
+            Defaults to 4.
+        maxperiod: Maximum period (in days) for channel calculation.
+            Defaults to 12.
+        incperiod: Step size between min and max periods. Defaults to 3.
+        numdaysinfit: Number of days for the gapped (longer) window.
+            Defaults to 28.
+        numdaysinfit2: Number of days for the no-gap (shorter) window.
+            Defaults to 20.
+        offset: Days excluded from the end of the gapped window.
+            Defaults to 3.
+
+    Returns:
+        A scalar ``comboGain`` value computed as the average of the two
+        annualised gains, scaled by the ratio of the short-window gain
+        to the long-window gain.  Higher values indicate stronger recent
+        upward acceleration.
+    """
 
     from scipy.stats import gmean
 
@@ -1156,8 +1332,36 @@ def multiSharpe(
         adjClose: np.ndarray,
         periods: list
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Compute average Sharpe ratios across multiple lookback periods.
 
-    from allstats import allstats
+    For each lookback period in ``periods``, calculates the rolling
+    Sharpe ratio for every stock in ``adjClose`` at every date after the
+    longest period.  The per-stock Sharpe values are averaged across
+    stocks and across periods to produce a ``medianSharpe`` and a
+    ``signal`` time series.
+
+    Args:
+        datearray: 1D array of dates corresponding to ``adjClose`` columns.
+        adjClose: 2D array of adjusted close prices with shape
+            ``(n_stocks, n_dates)``.
+        periods: List of integer lookback periods (in days) over which
+            Sharpe ratios are computed.
+
+    Returns:
+        A 3-tuple of:
+            - dates (np.ndarray): Date array starting after the longest
+              period.
+            - medianSharpe (np.ndarray): Clipped median of the adjusted
+              Sharpe values over time, in [−0.1, 1.1].
+            - signal (np.ndarray): Blended signal combining median and
+              mean Sharpe contributions, clipped to [−0.05, 1.05].
+
+    Notes:
+        - Raw Sharpe values are shifted by +0.3 and scaled by 1/1.25
+          before aggregation, effectively normalising them to a roughly
+          [0, 1] range.
+        - Progress is printed to stdout every 1 000 dates.
+    """
 
     maxPeriod = np.max( periods )
 
@@ -2370,9 +2574,57 @@ def MAA_WeightedRank_2D(
         wS: float,
         stddevThreshold: float = 4.
 ) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute MAA (Minimum Acceptable Absolute) portfolio weights for all dates.
 
-    # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
-    # rankthreshold --     # select this many funds with best recent performance
+    Ranks stocks using a composite score based on period return,
+    inverse correlation to the equal-weighted index (EWI), and
+    volatility, weighted by the exponents ``wR``, ``wC``, ``wV``, and
+    ``wS``.  The top ``numberStocksTraded`` stocks are selected at each
+    date and their weights are normalised to sum to 1.  A separate
+    crash-protection (CP) weight series based on the fraction of
+    down-trending stocks is also computed.
+
+    Args:
+        json_fn: Path to the JSON configuration file.
+        datearray: 1D array of dates corresponding to ``adjClose`` columns.
+        symbols: List of stock ticker symbols corresponding to rows of
+            ``adjClose``.
+        adjClose: 2D array of adjusted close prices ``(n_stocks, n_dates)``.
+        signal2D: 2D binary uptrend signal array ``(n_stocks, n_dates)``
+            (1 = uptrending).
+        signal2D_daily: 2D daily uptrend signal array ``(n_stocks, n_dates)``
+            used for reporting.
+        LongPeriod: Lookback period in days for return and correlation
+            calculations.
+        numberStocksTraded: Maximum number of stocks to hold at any date.
+        wR: Exponent applied to the period return in the weight score.
+        wC: Exponent applied to ``(1 - correlation_to_EWI)`` in the
+            weight score.
+        wV: Exponent applied to the inverse volatility in the weight
+            score.
+        wS: Outer exponent applied to the combined score.
+        stddevThreshold: Number of standard deviations used to detect
+            price spikes before calculation. Defaults to 4.0.
+
+    Returns:
+        A 2-tuple of 2D NumPy arrays ``(weights, CPweights)``, both of
+        shape ``(n_stocks, n_dates)``, where each column sums to 1.0.
+        ``weights`` reflects the MAA composite score ranking;
+        ``CPweights`` incorporates crash-protection cash allocation.
+
+    Notes:
+        - Requires ``bottleneck`` for fast ranking; falls back to
+          ``scipy.stats.mstats`` if unavailable.
+        - The CASH symbol weight is overridden by the crash-protection
+          fraction at each date.
+        - Weights are held constant within each calendar month.
+        - Requires ``nose`` (imported internally); this dependency may
+          be absent in modern environments.
+
+    # TODO(human-review): The ``import nose`` statement inside the function
+    # body appears to be a legacy test-runner dependency that should be removed
+    # as ``nose`` is no longer maintained.
+    """
 
     import numpy as np
     import nose
@@ -2590,9 +2842,46 @@ def UnWeightedRank_2D(
         riskDownside_max: float,
         rankThresholdPct: float
 ) -> np.ndarray:
+    """Compute equal-weighted portfolio allocations via rank-change scoring.
 
-    # adjClose      --     # 2D array with adjusted closing prices (axes are stock number, date)
-    # rankthreshold --     # select this many funds with best recent performance
+    Ranks stocks by their period gain/loss, computes a delta-rank
+    score that rewards improving momentum, and assigns equal weight to
+    the top ``rankthreshold`` stocks at each date.  Weights are held
+    constant within each calendar month to reduce transaction costs.
+
+    Unlike :func:`sharpeWeightedRank_2D_old`, this function uses
+    equal weights for selected stocks rather than risk-adjusted weights.
+
+    Args:
+        datearray: 1D array of dates corresponding to ``adjClose`` columns.
+        adjClose: 2D array of adjusted close prices ``(n_stocks, n_dates)``.
+        signal2D: 2D binary uptrend signal array ``(n_stocks, n_dates)``
+            (1 = uptrending); non-uptrending stocks receive a neutral
+            daily gain of 1.0.
+        LongPeriod: Lookback period in days for period gain/loss
+            calculation.
+        rankthreshold: Number of top-ranked stocks to include in the
+            portfolio at each date.
+        riskDownside_min: Unused; kept for API compatibility.
+        riskDownside_max: Unused; kept for API compatibility.
+        rankThresholdPct: Fraction used to exclude stocks with extreme
+            gain/loss ranks from selection.
+
+    Returns:
+        2D NumPy array of portfolio weights with shape
+        ``(n_stocks, n_dates)``.  Each column sums to approximately
+        1.0 (minor floating-point deviations may occur).
+
+    Notes:
+        - Requires ``bottleneck`` for fast ranking; falls back to
+          ``scipy.stats.mstats`` if unavailable.
+        - When fewer than ``rankthreshold + 2`` stocks are active a
+          greedy fallback iteratively assigns the highest delta-rank
+          stocks until the threshold is filled.
+        - Look-ahead bias is present in rank computation (global
+          ranking across all dates) — see :func:`sharpeWeightedRank_2D`
+          for a point-in-time alternative.
+    """
 
     import numpy as np
     # import nose
@@ -2748,43 +3037,28 @@ def UnWeightedRank_2D(
 
 
 def hurst(X: np.ndarray) -> float:
-    """ Compute the Hurst exponent of X. If the output H=0.5,the behavior
-    of the time-series is similar to random walk. If H<0.5, the time-series
-    cover less "distance" than a random walk, vice verse.
+    """Compute the Hurst exponent of a time series.
 
-    Parameters
-    ----------
-    X
-        list
-        a time series
+    The Hurst exponent characterises the long-range dependency of a
+    series.  H ≈ 0.5 indicates random-walk behaviour; H < 0.5 indicates
+    mean-reversion; H > 0.5 indicates trending (persistent) behaviour.
 
-    Returns
-    -------
-    H
-        float
-        Hurst exponent
+    Args:
+        X: 1D array representing the time series.
 
-    Examples
-    --------
-    >>> import pyeeg
-    >>> from numpy.random import randn
-    >>> a = randn(4096)
-    >>> pyeeg.hurst(a)
-    >>> 0.5057444
+    Returns:
+        Hurst exponent H as a float.
 
-    ######################## Function contributed by Xin Liu #################
-    https://code.google.com/p/pyeeg/source/browse/pyeeg.py
-    Copyleft 2010 Forrest Sheng Bao http://fsbao.net
-    PyEEG, a Python module to extract EEG features, v 0.02_r2
-    Project homepage: http://pyeeg.org
+    Example:
+        >>> import numpy as np
+        >>> from functions.TAfunctions import hurst
+        >>> a = np.random.randn(4096)
+        >>> hurst(a)  # doctest: +SKIP
+        0.506...
 
-    **Naming convention**
-
-    Constants: UPPER_CASE_WITH_UNDERSCORES, e.g., SAMPLING_RATE, LENGTH_SIGNAL.
-    Function names: lower_case_with_underscores, e.g., spectrum_entropy.
-    Variables (global and local): CapitalizedWords or CapWords, e.g., Power.
-    If a variable name consists of one letter, I may use lower case, e.g., x, y.
-
+    Notes:
+        Ported from the PyEEG library (Forrest Sheng Bao, 2010).
+        See https://code.google.com/p/pyeeg/ for the original source.
     """
 
     from numpy import zeros, log, array, cumsum, std
@@ -2815,24 +3089,34 @@ def textmessageOutsideTrendChannel(
         adjClose: np.ndarray,
         json_fn: str
 ) -> None:
-    """
-    Send text messages for stocks that are outside their trend channels.
-    
-    This function checks for stocks that have moved significantly outside
-    their trend channels and sends text alerts if the market is open.
-    
-    Parameters
-    ----------
-    symbols : list
-        List of stock symbols
-    adjClose : np.ndarray
-        Adjusted close prices [n_stocks, n_days]
-    json_fn : str
-        Path to JSON configuration file
-        
-    Returns
-    -------
-    None
+    """Send email alerts for stocks with extreme single-day price moves.
+
+    Checks for stocks in ``symbols`` that have moved more than 5 % in a
+    single day (up or down) and sends an email alert when the market is
+    open.  At most 5 stocks are reported per call to avoid alert spam.
+
+    Args:
+        symbols: List of ticker symbols corresponding to rows of
+            ``adjClose``.
+        adjClose: 2D array of adjusted close prices ``(n_stocks, n_dates)``
+            with at least 2 date columns.
+        json_fn: Path to the JSON configuration file containing email
+            credentials (``fromaddr``, ``PW``, ``toSMS``/``toaddrs``).
+
+    Returns:
+        None
+
+    Notes:
+        - The function only sends alerts when the market is open
+          (as determined by :func:`~functions.CheckMarketOpen.get_MarketOpenOrClosed`).
+        - All exceptions are caught and logged rather than re-raised so
+          that alert failures do not abort the main pipeline.
+
+    # TODO(human-review): The original intent was to detect stocks that
+    # have moved outside their price-channel bands (not just a fixed 5 %
+    # threshold).  The current implementation is a simplified placeholder
+    # and may need to be updated to use recentTrendAndStdDevs for proper
+    # channel-based detection.
     """
     # Import required modules
     from functions.GetParams import get_json_params
