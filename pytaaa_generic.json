@@ -60,6 +60,7 @@
         "enable_rolling_filter": false,
         "async_plot_generation": false,
         "plot_generation_workers": 2,
+        "async_montecarlo_backtest": true,
         "recent_plot_start_date": "2022-01-01"
     }
 }

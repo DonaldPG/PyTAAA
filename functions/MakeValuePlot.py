@@ -1,4 +1,6 @@
 import os
+import subprocess
+import sys
 import numpy as np
 import datetime
 #import platform
@@ -17,7 +19,7 @@ from functions.GetParams import (
     get_json_params, get_symbols_file, GetEdition, get_performance_store
 )
 from functions.TAfunctions import dpgchannel, SMA
-from functions.GetParams import get_webpage_store
+from functions.GetParams import get_webpage_store, get_web_output_dir
 
 
 def makeValuePlot(json_fn: str) -> None:
@@ -548,18 +550,163 @@ def makeTrendDispersionPlot(json_fn: str) -> None:
     return figure5_htmlText
 
 
-def makeDailyMonteCarloBacktest(json_fn: str) -> None:
+def _kill_existing_montecarlo_processes(json_fn: str) -> None:
+    """Kill any existing background Monte Carlo processes for the same config.
+    
+    Searches for running processes matching the background_montecarlo_runner
+    pattern with the same JSON file argument and terminates them.
+    
+    Args:
+        json_fn: Path to the JSON configuration file to match.
+    
+    Returns:
+        None
+    """
+    try:
+        # Get list of all processes
+        ps_output = subprocess.check_output(
+            ["ps", "aux"],
+            text=True,
+            stderr=subprocess.DEVNULL
+        )
+        
+        # Normalize the json_fn path for comparison
+        json_fn_normalized = os.path.abspath(json_fn)
+        
+        # Find matching processes
+        killed_count = 0
+        for line in ps_output.splitlines():
+            # Look for background_montecarlo_runner processes
+            if "background_montecarlo_runner" in line and "--json-file" in line:
+                # Extract PID (second column in ps aux output)
+                parts = line.split()
+                if len(parts) < 2:
+                    continue
+                pid_str = parts[1]
+                
+                # Check if this process is using the same JSON file
+                if json_fn in line or json_fn_normalized in line:
+                    try:
+                        pid = int(pid_str)
+                        # Don't kill our own process
+                        if pid != os.getpid():
+                            os.kill(pid, 15)  # SIGTERM
+                            killed_count += 1
+                            print(f" [async] Killed existing Monte Carlo process (PID {pid})")
+                    except (ValueError, ProcessLookupError, PermissionError) as e:
+                        # Process may have already exited or permission denied
+                        pass
+        
+        if killed_count == 0:
+            print(" [async] No existing Monte Carlo processes found for this config")
+    
+    except Exception as e:
+        # Don't fail the spawn if process detection fails
+        print(f" [async] Warning: Could not check for existing processes: {e}")
 
-    import datetime
+
+def _spawn_background_montecarlo(json_fn: str, web_dir: str) -> None:
+    """Spawn a detached background process for Monte Carlo backtest generation.
+
+    Launches ``functions/background_montecarlo_runner.py`` as a fully
+    detached subprocess (new session, stdout/stderr redirected to a log
+    file).  Returns immediately; the caller does not wait for the backtest
+    to complete.
+    
+    Before spawning, checks for and terminates any existing background
+    Monte Carlo processes for the same configuration to prevent duplicate
+    computations.
+
+    Args:
+        json_fn: Path to the JSON configuration file.
+        web_dir: Directory where the log file will be written.
+
+    Returns:
+        None
+
+    Side Effects:
+        - Kills any existing background Monte Carlo processes for this config.
+        - Spawns a detached background process.
+        - Writes subprocess stdout/stderr to ``montecarlo_backtest.log``
+          in *web_dir* (file is recreated, not appended).
+    """
+    # Kill any existing Monte Carlo processes for this config
+    _kill_existing_montecarlo_processes(json_fn)
+    
+    project_root = os.path.dirname(os.path.dirname(__file__))
+
+    env = os.environ.copy()
+    if "PYTHONPATH" in env:
+        env["PYTHONPATH"] = (
+            f"{project_root}{os.pathsep}{env['PYTHONPATH']}"
+        )
+    else:
+        env["PYTHONPATH"] = project_root
+
+    cmd = [
+        sys.executable,
+        "-m",
+        "functions.background_montecarlo_runner",
+        "--json-file",
+        json_fn,
+    ]
+
+    # Ensure the web directory exists
+    os.makedirs(web_dir, exist_ok=True)
+    
+    log_file = os.path.join(web_dir, "montecarlo_backtest.log")
+    with open(log_file, "w") as log_fh:
+        log_fh.write(
+            f"[{datetime.datetime.now().isoformat()}] "
+            f"Spawning background Monte Carlo backtest\n"
+        )
+
+    with open(log_file, "a") as log_fh:
+        subprocess.Popen(
+            cmd,
+            stdout=log_fh,
+            stderr=log_fh,
+            stdin=subprocess.DEVNULL,
+            start_new_session=True,
+            env=env,
+        )
+
+    print(" [async] Background Monte Carlo backtest started.")
+    print(f"   Log: {log_file}\n\n\n")
+
+
+def makeDailyMonteCarloBacktest(
+    json_fn: str, async_mode: bool = False
+) -> str:
+    """Generate the daily Monte Carlo backtest plots and return HTML markup.
+
+    Performs a freshness check: if the backtest PNG is less than 20 hours
+    old the heavy computation is skipped entirely.  When *async_mode* is
+    ``True`` and the plot needs refreshing, a detached background process
+    is spawned instead of running the backtest inline; the main program
+    returns immediately.
+
+    Args:
+        json_fn: Path to the JSON configuration file.
+        async_mode: When ``True``, run the Monte Carlo backtest in a
+            detached background process and return immediately.
+            When ``False`` (default), run synchronously.
+
+    Returns:
+        HTML fragment string containing ``<img>`` tags for the two Monte
+        Carlo backtest plots.
+    """
+
     from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
     from functions.dailyBacktest_pctLong import dailyBacktest_pctLong
 
     ##########################################
     # make plot with daily monte carlo backtest
     ##########################################
-    # json_folder = os.path.split(json_fn)[0]
     webpage_dir = get_webpage_store(json_fn)
-    figure6path = os.path.join(webpage_dir, 'PyTAAA_monteCarloBacktest.png' )
+    figure6path = os.path.join(
+        webpage_dir, "PyTAAA_monteCarloBacktest.png"
+    )
 
     ###
     ### make a combined plot
@@ -606,20 +753,35 @@ def makeDailyMonteCarloBacktest(json_fn: str) -> None:
     # last_modified_date = datetime.date.fromtimestamp(mtime)
     last_modified_date = datetime.datetime.fromtimestamp(mtime)
 
-    print("Backtest check:   last_modified_date (day) = ", last_modified_date.day, " datearray[-1].day = ", datearray[-1].day)
+    print(
+        "\n\n\nBacktest check:   last_modified_date (day) = ",
+        last_modified_date.day,
+        " datearray[-1].day = ",
+        datearray[-1].day,
+    )
 
     #if last_modified_date.day <= datearray[-1].day:
     # if (last_modified_date - datearray[-1]).total_seconds() < 0:
     # if modified_hours < 20.0:
     #     dailyBacktest_pctLong(json_fn)
-    modified_time = (datetime.datetime.now() - last_modified_date)
-    modified_hours = modified_time.days * 24 + modified_time.seconds / 3600
+    modified_time = datetime.datetime.now() - last_modified_date
+    modified_hours = (
+        modified_time.days * 24 + modified_time.seconds / 3600
+    )
 
     if modified_hours > 20.0:
-        dailyBacktest_pctLong(json_fn)
+        if async_mode:
+            # Fire-and-forget: spawn detached background process.
+            _spawn_background_montecarlo(json_fn, webpage_dir)
+        else:
+            dailyBacktest_pctLong(json_fn)
+
     if "abacus" in json_fn.lower():
-        # Update abacus backtest portfolio values (column 3) with model-switching results
-        from functions.abacus_backtest import write_abacus_backtest_portfolio_values
+        # Update abacus backtest portfolio values (column 3) with
+        # model-switching results.
+        from functions.abacus_backtest import (  # noqa: PLC0415
+            write_abacus_backtest_portfolio_values,
+        )
         write_abacus_backtest_portfolio_values(json_fn)
 
     # for abacus, re-populate the saved abacus backtest portfolio values

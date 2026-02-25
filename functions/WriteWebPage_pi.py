@@ -491,7 +491,11 @@ def writeWebPage(
     # make plot showing monte carlo backtest using variable percent Long trades
     ##########################################
 
-    figure6_htmlText = makeDailyMonteCarloBacktest(json_fn)
+    # Read async flag from config; defaults to True (opt-out behavior).
+    async_montecarlo = params.get("async_montecarlo_backtest", True)
+    figure6_htmlText = makeDailyMonteCarloBacktest(
+        json_fn, async_mode=async_montecarlo
+    )
     print("... writeWebPage: monte carlo backtest plot created ")
 
     """
