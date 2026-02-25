@@ -57,10 +57,10 @@
         "numdaysinfit2": 15,
         "offset": 7,
         "window_size": 50,
-        "enable_rolling_filter": false
+        "enable_rolling_filter": false,
+        "async_montecarlo_backtest": true
     },
     "model_selection": {
-        "n_lookbacks": 3,
         "performance_metrics": {
             "sharpe_ratio_weight": 1.0,
             "sortino_ratio_weight": 2.0,
