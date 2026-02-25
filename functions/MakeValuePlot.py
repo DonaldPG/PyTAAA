@@ -550,6 +550,61 @@ def makeTrendDispersionPlot(json_fn: str) -> None:
     return figure5_htmlText
 
 
+def _kill_existing_montecarlo_processes(json_fn: str) -> None:
+    """Kill any existing background Monte Carlo processes for the same config.
+    
+    Searches for running processes matching the background_montecarlo_runner
+    pattern with the same JSON file argument and terminates them.
+    
+    Args:
+        json_fn: Path to the JSON configuration file to match.
+    
+    Returns:
+        None
+    """
+    try:
+        # Get list of all processes
+        ps_output = subprocess.check_output(
+            ["ps", "aux"],
+            text=True,
+            stderr=subprocess.DEVNULL
+        )
+        
+        # Normalize the json_fn path for comparison
+        json_fn_normalized = os.path.abspath(json_fn)
+        
+        # Find matching processes
+        killed_count = 0
+        for line in ps_output.splitlines():
+            # Look for background_montecarlo_runner processes
+            if "background_montecarlo_runner" in line and "--json-file" in line:
+                # Extract PID (second column in ps aux output)
+                parts = line.split()
+                if len(parts) < 2:
+                    continue
+                pid_str = parts[1]
+                
+                # Check if this process is using the same JSON file
+                if json_fn in line or json_fn_normalized in line:
+                    try:
+                        pid = int(pid_str)
+                        # Don't kill our own process
+                        if pid != os.getpid():
+                            os.kill(pid, 15)  # SIGTERM
+                            killed_count += 1
+                            print(f" [async] Killed existing Monte Carlo process (PID {pid})")
+                    except (ValueError, ProcessLookupError, PermissionError) as e:
+                        # Process may have already exited or permission denied
+                        pass
+        
+        if killed_count == 0:
+            print(" [async] No existing Monte Carlo processes found for this config")
+    
+    except Exception as e:
+        # Don't fail the spawn if process detection fails
+        print(f" [async] Warning: Could not check for existing processes: {e}")
+
+
 def _spawn_background_montecarlo(json_fn: str, web_dir: str) -> None:
     """Spawn a detached background process for Monte Carlo backtest generation.
 
@@ -557,6 +612,10 @@ def _spawn_background_montecarlo(json_fn: str, web_dir: str) -> None:
     detached subprocess (new session, stdout/stderr redirected to a log
     file).  Returns immediately; the caller does not wait for the backtest
     to complete.
+    
+    Before spawning, checks for and terminates any existing background
+    Monte Carlo processes for the same configuration to prevent duplicate
+    computations.
 
     Args:
         json_fn: Path to the JSON configuration file.
@@ -566,10 +625,14 @@ def _spawn_background_montecarlo(json_fn: str, web_dir: str) -> None:
         None
 
     Side Effects:
+        - Kills any existing background Monte Carlo processes for this config.
         - Spawns a detached background process.
         - Writes subprocess stdout/stderr to ``montecarlo_backtest.log``
-          in *web_dir*.
+          in *web_dir* (file is recreated, not appended).
     """
+    # Kill any existing Monte Carlo processes for this config
+    _kill_existing_montecarlo_processes(json_fn)
+    
     project_root = os.path.dirname(os.path.dirname(__file__))
 
     env = os.environ.copy()
@@ -609,7 +672,7 @@ def _spawn_background_montecarlo(json_fn: str, web_dir: str) -> None:
         )
 
     print(" [async] Background Monte Carlo backtest started.")
-    print(f"   Log: {log_file}")
+    print(f"   Log: {log_file}\n\n\n")
 
 
 def makeDailyMonteCarloBacktest(
@@ -691,7 +754,7 @@ def makeDailyMonteCarloBacktest(
     last_modified_date = datetime.datetime.fromtimestamp(mtime)
 
     print(
-        "Backtest check:   last_modified_date (day) = ",
+        "\n\n\nBacktest check:   last_modified_date (day) = ",
         last_modified_date.day,
         " datearray[-1].day = ",
         datearray[-1].day,
