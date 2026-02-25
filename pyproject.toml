@@ -27,6 +27,10 @@ dependencies = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "agent_runnable: Tests that can be run by GitHub agent with mock/test data",
+    "local_only: Tests that require production environment (HDF5, configs)",
+]
 
 [dependency-groups]
 dev = [

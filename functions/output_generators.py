@@ -6,13 +6,21 @@ and are separated from pure computation logic for testability.
 
 Phase 4b1: Extracted from PortfolioPerformanceCalcs.py
 Phase 4b3: Added compute_portfolio_metrics (pure computation)
+Async phase: Added async_mode support via fire-and-forget subprocess.
 """
 
+import logging
 import numpy as np
 from numpy import isnan
 import datetime
 import os
+import pickle
+import subprocess
+import sys
+import tempfile
 from typing import Dict, List, Any, Optional
+
+logger = logging.getLogger(__name__)
 
 import matplotlib
 
@@ -21,7 +29,7 @@ matplotlib.use('Agg')
 from matplotlib import pylab as plt
 
 # Set DPI for inline plots and saved figures
-plt.rcParams['figure.figsize'] = (9, 7)
+plt.rcParams['figure.figsize'] = (14, 8)
 plt.rcParams['figure.dpi'] = 150
 plt.rcParams['savefig.dpi'] = 150
 
@@ -76,6 +84,398 @@ def write_portfolio_status_files(
         print("")
 
 
+def _generate_full_history_plots(
+    adjClose: np.ndarray,
+    symbols: List[str],
+    datearray: np.ndarray,
+    signal2D: np.ndarray,
+    params: Dict[str, Any],
+    output_dir: str,
+    lowChannel: Optional[np.ndarray] = None,
+    hiChannel: Optional[np.ndarray] = None,
+) -> None:
+    """Generate full-history PNG plots for all symbols (synchronous).
+
+    Writes one ``0_<symbol>.png`` file per symbol into *output_dir*.
+    Files less than 20 hours old are skipped.
+
+    Args:
+        adjClose: Adjusted close prices (n_symbols x n_days).
+        symbols: List of stock ticker symbols.
+        datearray: Array of datetime objects for each trading day.
+        signal2D: Monthly uptrend signals (n_symbols x n_days).
+        params: Parameter dictionary (requires ``LongPeriod``,
+            ``stddevThreshold``, ``uptrendSignalMethod``).
+        output_dir: Directory where PNG files are written.
+        lowChannel: Optional low percentile channel (n_symbols x n_days).
+        hiChannel: Optional high percentile channel (n_symbols x n_days).
+
+    Returns:
+        None
+    """
+    today = datetime.datetime.now()
+    LongPeriod = params['LongPeriod']
+    stddevThreshold = float(params['stddevThreshold'])
+    uptrendSignalMethod = params['uptrendSignalMethod']
+
+    for i in range(len(symbols)):
+        plotfilepath = os.path.join(output_dir, f"0_{symbols[i]}.png")
+
+        # Skip if less than 20 hours old
+        if os.path.isfile(plotfilepath):
+            mtime = datetime.datetime.fromtimestamp(
+                os.path.getmtime(plotfilepath)
+            )
+            modified_time = datetime.datetime.now() - mtime
+            modified_hours = (
+                modified_time.days * 24 + modified_time.seconds / 3600
+            )
+            if modified_hours < 20.0:
+                continue
+
+        # Despike quotes for this symbol
+        quotes = adjClose[i, :].copy().reshape(1, -1)
+        quotes_despike = despike_2D(
+            quotes, LongPeriod, stddevThreshold=stddevThreshold
+        )
+
+        plt.clf()
+        plt.grid(True)
+        plt.plot(datearray, adjClose[i, :])
+        plt.plot(datearray, signal2D[i, :] * adjClose[i, -1], lw=.2)
+
+        despiked_quotes = quotes_despike[0, :]
+        if despiked_quotes[np.isnan(despiked_quotes)].shape[0] == 0:
+            plt.plot(datearray, quotes_despike[0, :])
+
+        if uptrendSignalMethod == 'percentileChannels' and lowChannel is not None:
+            plt.plot(datearray, lowChannel[i, :], 'm-')
+            plt.plot(datearray, hiChannel[i, :], 'm-')
+
+        plot_text = str(adjClose[i, -7:])
+        plt.text(datearray[50], 0, plot_text)
+
+        x_range = datearray[-1] - datearray[0]
+        text_x = datearray[0] + datetime.timedelta(x_range.days / 20.)
+        adjClose_noNaNs = adjClose[i, :][~np.isnan(adjClose[i, :])]
+        text_y = (
+            (np.max(adjClose_noNaNs) - np.min(adjClose_noNaNs)) * .085
+            + np.min(adjClose_noNaNs)
+        )
+
+        plt.text(
+            text_x, text_y,
+            f"most recent value from {datearray[-1]}\n"
+            f"plotted at {today.strftime('%A, %d. %B %Y %I:%M%p')}\n"
+            f"value = {adjClose[i, -1]}",
+            fontsize=8
+        )
+        plt.title(f"{symbols[i]}\n{ysq.get_company_name(symbols[i])}")
+        plt.yscale('log')
+
+        print(f" ...inside PortfolioPerformanceCalcs... plotfilepath = {plotfilepath}")
+        plt.savefig(plotfilepath, format='png')
+
+
+def _generate_recent_plots(
+    adjClose: np.ndarray,
+    symbols: List[str],
+    datearray: np.ndarray,
+    signal2D: np.ndarray,
+    signal2D_daily: np.ndarray,
+    params: Dict[str, Any],
+    output_dir: str,
+    firstdate_index: int,
+    lowChannel: Optional[np.ndarray] = None,
+    hiChannel: Optional[np.ndarray] = None,
+) -> None:
+    """Generate recent-history PNG plots for all symbols (synchronous).
+
+    Writes one ``0_recent_<symbol>.png`` file per symbol into *output_dir*.
+    Files less than 20 hours old are skipped.
+
+    Args:
+        adjClose: Adjusted close prices (n_symbols x n_days).
+        symbols: List of stock ticker symbols.
+        datearray: Array of datetime objects for each trading day.
+        signal2D: Monthly uptrend signals (n_symbols x n_days).
+        signal2D_daily: Daily uptrend signals (n_symbols x n_days).
+        params: Parameter dictionary.
+        output_dir: Directory where PNG files are written.
+        firstdate_index: Index of the first date for 2013+ recent plots.
+        lowChannel: Optional low percentile channel (n_symbols x n_days).
+        hiChannel: Optional high percentile channel (n_symbols x n_days).
+
+    Returns:
+        None
+    """
+    today = datetime.datetime.now()
+    LongPeriod = params['LongPeriod']
+    stddevThreshold = float(params['stddevThreshold'])
+    uptrendSignalMethod = params['uptrendSignalMethod']
+
+    for i in range(len(symbols)):
+        plotfilepath = os.path.join(output_dir, f"0_recent_{symbols[i]}.png")
+
+        # Skip if less than 20 hours old
+        if os.path.isfile(plotfilepath):
+            mtime = datetime.datetime.fromtimestamp(
+                os.path.getmtime(plotfilepath)
+            )
+            modified_time = datetime.datetime.now() - mtime
+            modified_hours = (
+                modified_time.days * 24 + modified_time.seconds / 3600
+            )
+            if modified_hours < 20.0:
+                continue
+
+        quotes = adjClose[i, :].copy().reshape(1, -1)
+        quotes_despike = despike_2D(
+            quotes, LongPeriod, stddevThreshold=stddevThreshold
+        )
+        quotes_despike *= (
+            quotes[0, firstdate_index]
+            / quotes_despike[0, firstdate_index]
+        )
+
+        lowerTrend, upperTrend, NoGapLowerTrend, NoGapUpperTrend = \
+            recentTrendAndMidTrendChannelFitWithAndWithoutGap(
+                adjClose[i, :],
+                minperiod=params['minperiod'],
+                maxperiod=params['maxperiod'],
+                incperiod=params['incperiod'],
+                numdaysinfit=params['numdaysinfit'],
+                numdaysinfit2=params['numdaysinfit2'],
+                offset=params['offset']
+            )
+
+        try:
+            plt.figure(10)
+            plt.clf()
+            plt.grid(True)
+
+            plt.plot(
+                datearray[firstdate_index:],
+                signal2D[i, firstdate_index:] * adjClose[i, -1],
+                lw=.25, alpha=.6
+            )
+            plt.plot(
+                datearray[firstdate_index:],
+                signal2D_daily[i, firstdate_index:] * adjClose[i, -1],
+                lw=.25, alpha=.6
+            )
+            plt.plot(
+                datearray[firstdate_index:],
+                quotes_despike[0, firstdate_index:],
+                lw=.15
+            )
+
+            adjClose_noNaNs = adjClose[i, :][~np.isnan(adjClose[i, :])]
+            ymax = np.around(np.max(adjClose_noNaNs[firstdate_index:]) * 1.1)
+
+            if uptrendSignalMethod == 'percentileChannels' and lowChannel is not None:
+                ymin = np.around(
+                    np.min(lowChannel[i, firstdate_index:]) * 0.85
+                )
+            else:
+                ymin = np.around(
+                    np.min(adjClose[i, firstdate_index:]) * 0.90
+                )
+
+            plt.ylim((ymin, ymax))
+            xmin = datearray[firstdate_index]
+            xmax = datearray[-1] + datetime.timedelta(10)
+            plt.xlim((xmin, xmax))
+
+            if uptrendSignalMethod == 'percentileChannels' and lowChannel is not None:
+                plt.plot(
+                    datearray[firstdate_index:],
+                    lowChannel[i, firstdate_index:], 'm-'
+                )
+                plt.plot(
+                    datearray[firstdate_index:],
+                    hiChannel[i, firstdate_index:], 'm-'
+                )
+
+            relativedates = list(
+                range(
+                    -params['numdaysinfit'] - params['offset'],
+                    -params['offset'] + 1
+                )
+            )
+            plt.plot(np.array(datearray)[relativedates], upperTrend, 'y-', lw=.5)
+            plt.plot(np.array(datearray)[relativedates], lowerTrend, 'y-', lw=.5)
+            plt.plot(
+                [datearray[-1]],
+                [(upperTrend[-1] + lowerTrend[-1]) / 2.],
+                'y.', ms=10, alpha=.6
+            )
+
+            plt.plot(
+                np.array(datearray)[-params['numdaysinfit2']:],
+                NoGapUpperTrend, ls='-', c=(0, 0, 1), lw=1.
+            )
+            plt.plot(
+                np.array(datearray)[-params['numdaysinfit2']:],
+                NoGapLowerTrend, ls='-', c=(0, 0, 1), lw=1.
+            )
+            plt.plot(
+                [datearray[-1]],
+                [(NoGapUpperTrend[-1] + NoGapLowerTrend[-1]) / 2.],
+                '.', c=(0, 0, 1), ms=10, alpha=.6
+            )
+
+            plt.plot(
+                datearray[firstdate_index:],
+                adjClose[i, firstdate_index:], 'k-', lw=.5
+            )
+
+            plot_text = str(adjClose[i, -7:])
+            plt.text(
+                datearray[firstdate_index + 10], ymin, plot_text, fontsize=10
+            )
+
+            x_range = datearray[-1] - datearray[firstdate_index]
+            text_x = datearray[firstdate_index] + datetime.timedelta(
+                x_range.days / 20.
+            )
+            text_y = (ymax - ymin) * .085 + ymin
+
+            plt.text(
+                text_x, text_y,
+                f"most recent value from {datearray[-1]}\n"
+                f"plotted at {today.strftime('%A, %d. %B %Y %I:%M%p')}\n"
+                f"value = {adjClose[i, -1]}",
+                fontsize=8
+            )
+            plt.title(f"{symbols[i]}\n{ysq.get_company_name(symbols[i])}")
+
+            plt.tick_params(axis='both', which='major', labelsize=8)
+            plt.tick_params(axis='both', which='minor', labelsize=6)
+
+            print(f" ...inside PortfolioPerformanceCalcs... plotfilepath = {plotfilepath}")
+            plt.savefig(plotfilepath, format='png')
+
+        except Exception as e:
+            print(
+                f" ERROR in PortfolioPerformanceCalcs -- no plot generated "
+                f"for symbol {symbols[i]}"
+            )
+            print(f" Exception: {e}")
+
+
+def _spawn_background_plot_generation(
+    adjClose: np.ndarray,
+    symbols: List[str],
+    datearray: np.ndarray,
+    signal2D: np.ndarray,
+    signal2D_daily: np.ndarray,
+    params: Dict[str, Any],
+    output_dir: str,
+    max_workers: int = 2,
+    lowChannel: Optional[np.ndarray] = None,
+    hiChannel: Optional[np.ndarray] = None,
+) -> None:
+    """Serialize plot data and spawn a detached background process.
+
+    Writes plot data to a temporary pickle file then launches
+    ``functions/background_plot_generator.py`` as a fully detached
+    subprocess (new session, stdout/stderr redirected to a log file).
+    Returns immediately; the caller does not wait for plot generation.
+
+    Args:
+        adjClose: Adjusted close prices (n_symbols x n_days).
+        symbols: List of stock ticker symbols.
+        datearray: Array of datetime objects for each trading day.
+        signal2D: Monthly uptrend signals (n_symbols x n_days).
+        signal2D_daily: Daily uptrend signals (n_symbols x n_days).
+        params: Parameter dictionary.
+        output_dir: Directory where PNG files will be written.
+        max_workers: Number of parallel worker processes.
+        lowChannel: Optional low percentile channel.
+        hiChannel: Optional high percentile channel.
+
+    Returns:
+        None
+
+    Side Effects:
+        - Creates a temporary pickle file (deleted by the subprocess).
+        - Spawns a detached background process.
+        - Writes subprocess stdout/stderr to ``plot_generation.log``
+          in *output_dir*.
+    """
+    # Serialize data to a temporary pickle file
+    data = {
+        'adjClose': adjClose,
+        'symbols': symbols,
+        'datearray': datearray,
+        'signal2D': signal2D,
+        'signal2D_daily': signal2D_daily,
+        'params': params,
+        'output_dir': output_dir,
+    }
+    if lowChannel is not None:
+        data['lowChannel'] = lowChannel
+    if hiChannel is not None:
+        data['hiChannel'] = hiChannel
+
+    fd, data_file = tempfile.mkstemp(suffix='.pkl', prefix='pytaaa_plots_')
+    try:
+        with os.fdopen(fd, 'wb') as fh:
+            pickle.dump(data, fh)
+    except Exception:
+        try:
+            os.remove(data_file)
+        except OSError:
+            pass
+        raise
+
+    # Determine path to the background_plot_generator module
+    generator_module = os.path.join(
+        os.path.dirname(__file__), 'background_plot_generator.py'
+    )
+    log_file = os.path.join(output_dir, 'plot_generation.log')
+
+    # Get project root directory (parent of 'functions' folder)
+    project_root = os.path.dirname(os.path.dirname(__file__))
+    
+    # Set up environment with PYTHONPATH
+    env = os.environ.copy()
+    if 'PYTHONPATH' in env:
+        env['PYTHONPATH'] = f"{project_root}{os.pathsep}{env['PYTHONPATH']}"
+    else:
+        env['PYTHONPATH'] = project_root
+
+    cmd = [
+        sys.executable,
+        generator_module,
+        '--data-file', data_file,
+        '--max-workers', str(max_workers),
+    ]
+
+    with open(log_file, 'w') as log_fh:
+        log_fh.write(
+            f"[{datetime.datetime.now().isoformat()}] "
+            f"Spawning background plot generation\n"
+        )
+
+    # Launch a fully detached process (new session, no stdin)
+    with open(log_file, 'a') as log_fh:
+        subprocess.Popen(
+            cmd,
+            stdout=log_fh,
+            stderr=log_fh,
+            stdin=subprocess.DEVNULL,
+            start_new_session=True,
+            env=env,
+        )
+
+    print(
+        f" [async] Background plot generation started "
+        f"(max_workers={max_workers}). Log: {log_file}"
+    )
+
+
 def generate_portfolio_plots(
     adjClose: np.ndarray,
     symbols: List[str],
@@ -85,7 +485,9 @@ def generate_portfolio_plots(
     params: Dict[str, Any],
     output_dir: str,
     lowChannel: Optional[np.ndarray] = None,
-    hiChannel: Optional[np.ndarray] = None
+    hiChannel: Optional[np.ndarray] = None,
+    async_mode: bool = False,
+    max_workers: int = 2,
 ) -> None:
     """Generate all portfolio plots for web display.
     
@@ -95,6 +497,11 @@ def generate_portfolio_plots(
     
     Plot generation is conditional on time of day to avoid excessive CPU usage
     during market hours. Plots are skipped if less than 20 hours old.
+
+    When *async_mode* is ``True``, plot data is serialized to a temporary
+    file and a detached background process is spawned via
+    :func:`_spawn_background_plot_generation`.  The main program returns
+    immediately without waiting for plots to finish.
     
     Args:
         adjClose: Adjusted close prices (n_symbols x n_days)
@@ -112,12 +519,17 @@ def generate_portfolio_plots(
         output_dir: Directory to write PNG files
         lowChannel: Optional low percentile channel (if percentileChannels method)
         hiChannel: Optional high percentile channel (if percentileChannels method)
+        async_mode: If ``True``, spawn a detached background process and
+            return immediately.  If ``False`` (default), generate plots
+            synchronously.
+        max_workers: Number of parallel worker processes used in async mode.
     
     Returns:
         None (writes PNG files to output_dir)
     
     Side Effects:
-        - Writes ~200 PNG files (2 per symbol) to output_dir
+        - Writes ~200 PNG files (2 per symbol) to output_dir (sync mode)
+        - Spawns detached background process (async mode)
         - Prints progress messages to stdout
     """
     today = datetime.datetime.now()
@@ -126,204 +538,49 @@ def generate_portfolio_plots(
     # Only generate plots outside market hours to reduce load
     if not (hourOfDay >= 1 or 11 < hourOfDay < 13):
         return
+
+    ##########################################################################
+    # Async mode: fire-and-forget background process
+    ##########################################################################
+    if async_mode:
+        _spawn_background_plot_generation(
+            adjClose, symbols, datearray, signal2D, signal2D_daily,
+            params, output_dir,
+            max_workers=max_workers,
+            lowChannel=lowChannel,
+            hiChannel=hiChannel,
+        )
+        return
+
+    ##########################################################################
+    # Synchronous mode (default): generate plots inline
+    ##########################################################################
+
+    # Determine first date index for recent plots using recent_plot_start_date parameter
+    recent_plot_start_date = params.get('recent_plot_start_date')
+    if recent_plot_start_date is None:
+        # Fallback to default if parameter not in params dict
+        current_year = datetime.datetime.now().year
+        recent_plot_start_date = datetime.datetime(current_year - 4, 1, 1)
     
-    # Extract parameters
-    LongPeriod = params['LongPeriod']
-    stddevThreshold = float(params['stddevThreshold'])
-    uptrendSignalMethod = params['uptrendSignalMethod']
-    
-    # Determine first date index for recent plots (2013+)
     firstdate_index = 0
     for ii in range(len(datearray)):
-        if datearray[ii].year > datearray[ii-1].year and datearray[ii].year == 2013:
+        if datearray[ii] >= recent_plot_start_date:
             firstdate_index = ii
             break
-    
-    ##########################################################################
-    # 1. Generate full history plots for all symbols
-    ##########################################################################
-    for i in range(len(symbols)):
-        plotfilepath = os.path.join(output_dir, f"0_{symbols[i]}.png")
-        
-        # Check recency of plot file and skip if less than 20 hours old
-        if os.path.isfile(plotfilepath):
-            mtime = datetime.datetime.fromtimestamp(os.path.getmtime(plotfilepath))
-            modified_time = (datetime.datetime.now() - mtime)
-            modified_hours = modified_time.days * 24 + modified_time.seconds / 3600
-            if modified_hours < 20.0:
-                continue
-        
-        # Get 'despiked' quotes for this symbol
-        quotes = adjClose[i, :].copy()
-        quotes = quotes.reshape(1, len(quotes))
-        quotes_despike = despike_2D(quotes, LongPeriod, stddevThreshold=stddevThreshold)
-        
-        # Create plot
-        plt.clf()
-        plt.grid(True)
-        plt.plot(datearray, adjClose[i, :])
-        plt.plot(datearray, signal2D[i, :] * adjClose[i, -1], lw=.2)
-        
-        despiked_quotes = quotes_despike[0, :]
-        number_nans = despiked_quotes[np.isnan(despiked_quotes)].shape[0]
-        if number_nans == 0:
-            plt.plot(datearray, quotes_despike[0, :])
-        
-        if uptrendSignalMethod == 'percentileChannels' and lowChannel is not None:
-            plt.plot(datearray, lowChannel[i, :], 'm-')
-            plt.plot(datearray, hiChannel[i, :], 'm-')
-        
-        plot_text = str(adjClose[i, -7:])
-        plt.text(datearray[50], 0, plot_text)
-        
-        # Add text with most recent date at bottom of plot
-        x_range = datearray[-1] - datearray[0]
-        text_x = datearray[0] + datetime.timedelta(x_range.days / 20.)
-        adjClose_noNaNs = adjClose[i, :].copy()
-        adjClose_noNaNs = adjClose_noNaNs[~np.isnan(adjClose_noNaNs)]
-        text_y = (np.max(adjClose_noNaNs) - np.min(adjClose_noNaNs)) * .085 + np.min(adjClose_noNaNs)
-        
-        plt.text(
-            text_x, text_y,
-            f"most recent value from {datearray[-1]}\n"
-            f"plotted at {today.strftime('%A, %d. %B %Y %I:%M%p')}\n"
-            f"value = {adjClose[i, -1]}",
-            fontsize=8
-        )
-        plt.title(f"{symbols[i]}\n{ysq.get_company_name(symbols[i])}")
-        plt.yscale('log')
-        
-        print(f" ...inside PortfolioPerformancealcs... plotfilepath = {plotfilepath}")
-        plt.savefig(plotfilepath, format='png')
-    
-    ##########################################################################
-    # 2. Generate recent (2-year) plots with trend channels
-    ##########################################################################
-    for i in range(len(symbols)):
-        plotfilepath = os.path.join(output_dir, f"0_recent_{symbols[i]}.png")
-        
-        # Check recency of plot file and skip if less than 20 hours old
-        if os.path.isfile(plotfilepath):
-            mtime = datetime.datetime.fromtimestamp(os.path.getmtime(plotfilepath))
-            modified_time = (datetime.datetime.now() - mtime)
-            modified_hours = modified_time.days * 24 + modified_time.seconds / 3600
-            if modified_hours < 20.0:
-                continue
-        
-        # Fit short-term recent trend channel for plotting
-        quotes = adjClose[i, :].copy()
-        quotes = quotes.reshape(1, len(quotes))
-        quotes_despike = despike_2D(quotes, LongPeriod, stddevThreshold=stddevThreshold)
-        # Re-scale to have same value at beginning of plot
-        quotes_despike *= quotes[0, firstdate_index] / quotes_despike[0, firstdate_index]
-        
-        lowerTrend, upperTrend, NoGapLowerTrend, NoGapUpperTrend = \
-            recentTrendAndMidTrendChannelFitWithAndWithoutGap(
-                adjClose[i, :],
-                minperiod=params['minperiod'],
-                maxperiod=params['maxperiod'],
-                incperiod=params['incperiod'],
-                numdaysinfit=params['numdaysinfit'],
-                numdaysinfit2=params['numdaysinfit2'],
-                offset=params['offset']
-            )
-        
-        try:
-            # Plot recent (about 2 years) performance for each symbol
-            plt.figure(10)
-            plt.clf()
-            plt.grid(True)
-            
-            plt.plot(
-                datearray[firstdate_index:],
-                signal2D[i, firstdate_index:] * adjClose[i, -1],
-                lw=.25, alpha=.6
-            )
-            plt.plot(
-                datearray[firstdate_index:],
-                signal2D_daily[i, firstdate_index:] * adjClose[i, -1],
-                lw=.25, alpha=.6
-            )
-            plt.plot(
-                datearray[firstdate_index:],
-                quotes_despike[0, firstdate_index:],
-                lw=.15
-            )
-            
-            adjClose_noNaNs = adjClose[i, :].copy()
-            adjClose_noNaNs = adjClose_noNaNs[~np.isnan(adjClose_noNaNs)]
-            ymax = np.around(np.max(adjClose_noNaNs[firstdate_index:]) * 1.1)
-            
-            if uptrendSignalMethod == 'percentileChannels' and lowChannel is not None:
-                ymin = np.around(np.min(lowChannel[i, firstdate_index:]) * 0.85)
-            else:
-                ymin = np.around(np.min(adjClose[i, firstdate_index:]) * 0.90)
-            
-            plt.ylim((ymin, ymax))
-            xmin = datearray[firstdate_index]
-            xmax = datearray[-1] + datetime.timedelta(10)
-            plt.xlim((xmin, xmax))
-            
-            if uptrendSignalMethod == 'percentileChannels' and lowChannel is not None:
-                plt.plot(datearray[firstdate_index:], lowChannel[i, firstdate_index:], 'm-')
-                plt.plot(datearray[firstdate_index:], hiChannel[i, firstdate_index:], 'm-')
-            
-            # Plot trend channels
-            relativedates = list(range(-params['numdaysinfit'] - params['offset'],
-                                      -params['offset'] + 1))
-            plt.plot(np.array(datearray)[relativedates], upperTrend, 'y-', lw=.5)
-            plt.plot(np.array(datearray)[relativedates], lowerTrend, 'y-', lw=.5)
-            plt.plot(
-                [datearray[-1]],
-                [(upperTrend[-1] + lowerTrend[-1]) / 2.],
-                'y.', ms=10, alpha=.6
-            )
-            
-            plt.plot(
-                np.array(datearray)[-params['numdaysinfit2']:],
-                NoGapUpperTrend,
-                ls='-', c=(0, 0, 1), lw=1.
-            )
-            plt.plot(
-                np.array(datearray)[-params['numdaysinfit2']:],
-                NoGapLowerTrend,
-                ls='-', c=(0, 0, 1), lw=1.
-            )
-            plt.plot(
-                [datearray[-1]],
-                [(NoGapUpperTrend[-1] + NoGapLowerTrend[-1]) / 2.],
-                '.', c=(0, 0, 1), ms=10, alpha=.6
-            )
-            
-            plt.plot(datearray[firstdate_index:], adjClose[i, firstdate_index:], 'k-', lw=.5)
-            
-            plot_text = str(adjClose[i, -7:])
-            plt.text(datearray[firstdate_index + 10], ymin, plot_text, fontsize=10)
-            
-            # Add text with most recent date
-            x_range = datearray[-1] - datearray[firstdate_index]
-            text_x = datearray[firstdate_index] + datetime.timedelta(x_range.days / 20.)
-            text_y = (ymax - ymin) * .085 + ymin
-            
-            plt.text(
-                text_x, text_y,
-                f"most recent value from {datearray[-1]}\n"
-                f"plotted at {today.strftime('%A, %d. %B %Y %I:%M%p')}\n"
-                f"value = {adjClose[i, -1]}",
-                fontsize=8
-            )
-            plt.title(f"{symbols[i]}\n{ysq.get_company_name(symbols[i])}")
-            
-            # Change fontsize of tick labels
-            plt.tick_params(axis='both', which='major', labelsize=8)
-            plt.tick_params(axis='both', which='minor', labelsize=6)
-            
-            print(f" ...inside PortfolioPerformancealcs... plotfilepath = {plotfilepath}")
-            plt.savefig(plotfilepath, format='png')
-            
-        except Exception as e:
-            print(f" ERROR in PortfoloioPerformanceCalcs -- no plot generated for symbol {symbols[i]}")
-            print(f" Exception: {e}")
+
+    # 1. Full history plots
+    _generate_full_history_plots(
+        adjClose, symbols, datearray, signal2D, params, output_dir,
+        lowChannel=lowChannel, hiChannel=hiChannel,
+    )
+
+    # 2. Recent (2-year) plots with trend channels
+    _generate_recent_plots(
+        adjClose, symbols, datearray, signal2D, signal2D_daily,
+        params, output_dir, firstdate_index,
+        lowChannel=lowChannel, hiChannel=hiChannel,
+    )
 
 
 def compute_portfolio_metrics(

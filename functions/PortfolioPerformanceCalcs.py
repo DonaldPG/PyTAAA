@@ -105,15 +105,19 @@ def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
     )
     
     # 3.3: Generate portfolio plots
+    async_mode = bool(params.get('async_plot_generation', False))
+    max_workers = int(params.get('plot_generation_workers', 2))
     if params['uptrendSignalMethod'] == 'percentileChannels':
         generate_portfolio_plots(
             adjClose, symbols, datearray, signal2D, signal2D_daily,
-            params, web_dir, lowChannel=lowChannel, hiChannel=hiChannel
+            params, web_dir, lowChannel=lowChannel, hiChannel=hiChannel,
+            async_mode=async_mode, max_workers=max_workers,
         )
     else:
         generate_portfolio_plots(
             adjClose, symbols, datearray, signal2D, signal2D_daily,
-            params, web_dir
+            params, web_dir,
+            async_mode=async_mode, max_workers=max_workers,
         )
     
     # 3.4: Print summary reports
