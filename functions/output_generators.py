@@ -29,7 +29,7 @@ matplotlib.use('Agg')
 from matplotlib import pylab as plt
 
 # Set DPI for inline plots and saved figures
-plt.rcParams['figure.figsize'] = (9, 7)
+plt.rcParams['figure.figsize'] = (14, 8)
 plt.rcParams['figure.dpi'] = 150
 plt.rcParams['savefig.dpi'] = 150
 
@@ -436,6 +436,16 @@ def _spawn_background_plot_generation(
     )
     log_file = os.path.join(output_dir, 'plot_generation.log')
 
+    # Get project root directory (parent of 'functions' folder)
+    project_root = os.path.dirname(os.path.dirname(__file__))
+    
+    # Set up environment with PYTHONPATH
+    env = os.environ.copy()
+    if 'PYTHONPATH' in env:
+        env['PYTHONPATH'] = f"{project_root}{os.pathsep}{env['PYTHONPATH']}"
+    else:
+        env['PYTHONPATH'] = project_root
+
     cmd = [
         sys.executable,
         generator_module,
@@ -443,9 +453,9 @@ def _spawn_background_plot_generation(
         '--max-workers', str(max_workers),
     ]
 
-    with open(log_file, 'a') as log_fh:
+    with open(log_file, 'w') as log_fh:
         log_fh.write(
-            f"\n[{datetime.datetime.now().isoformat()}] "
+            f"[{datetime.datetime.now().isoformat()}] "
             f"Spawning background plot generation\n"
         )
 
@@ -457,6 +467,7 @@ def _spawn_background_plot_generation(
             stderr=log_fh,
             stdin=subprocess.DEVNULL,
             start_new_session=True,
+            env=env,
         )
 
     print(
@@ -545,10 +556,16 @@ def generate_portfolio_plots(
     # Synchronous mode (default): generate plots inline
     ##########################################################################
 
-    # Determine first date index for recent plots (2013+)
+    # Determine first date index for recent plots using recent_plot_start_date parameter
+    recent_plot_start_date = params.get('recent_plot_start_date')
+    if recent_plot_start_date is None:
+        # Fallback to default if parameter not in params dict
+        current_year = datetime.datetime.now().year
+        recent_plot_start_date = datetime.datetime(current_year - 4, 1, 1)
+    
     firstdate_index = 0
     for ii in range(len(datearray)):
-        if datearray[ii].year > datearray[ii-1].year and datearray[ii].year == 2013:
+        if datearray[ii] >= recent_plot_start_date:
             firstdate_index = ii
             break
 

@@ -25,6 +25,7 @@ import numpy as np
 import configparser
 import json
 import re
+import datetime
 from typing import Tuple, Dict, Optional
 
 
@@ -85,6 +86,10 @@ def get_symbols_file(json_fn: str) -> str:
             symbol_file = "SP500_Symbols.txt"
         symbols_file = os.path.join( symbol_directory, symbol_file )
 
+    print(
+        " ... inside GetParams/get_symbols_file ",
+        flush=True
+    )
     return symbols_file
 
 
@@ -118,6 +123,11 @@ def get_performance_store(json_fn: str) -> str:
     # Access and print different sections
     valuation_section = config.get('Valuation')
     p_store = valuation_section["performance_store"]
+
+    print(
+        " ... inside GetParams/get_performance_store ",
+        flush=True
+    )
 
     return p_store
 
@@ -154,6 +164,11 @@ def get_webpage_store(json_fn: str) -> str:
     valuation_section = config.get('Valuation')
     w_store = valuation_section["webpage"]
 
+    print(
+        " ... inside GetParams/get_webpage_store",
+        flush=True
+    )
+
     return w_store
 
 
@@ -178,6 +193,11 @@ def get_web_output_dir(json_fn: str) -> str:
     if 'web_output_dir' not in config:
         raise KeyError("'web_output_dir' key not found in JSON configuration")
     
+    print(
+        " ... inside GetParams/get_web_output_dir ",
+        flush=True
+    )
+
     return config['web_output_dir']
 
 
@@ -301,8 +321,11 @@ def get_holdings(json_fn: str) -> Dict:
                 holdings_ranks.append( ranks[j] )
                 break
     holdings['ranks'] = holdings_ranks
-    print("\n\n********************************************************")
-
+    print("\n\n********************************************************", flush=True)
+    print(
+        " ... inside GetParams/get_holdings \n",
+        flush=True
+    )
     return holdings
 
 
@@ -457,6 +480,29 @@ def get_json_params(json_fn: str, verbose: bool = False) -> Dict:
     )
     params['window_size'] = int(valuation_section.get('window_size', 50))
 
+    # Fire-and-forget background plot generation
+    params['async_plot_generation'] = bool(
+        valuation_section.get('async_plot_generation', True)
+    )
+    params['plot_generation_workers'] = int(
+        valuation_section.get("plot_generation_workers", 2)
+    )
+    
+    # Recent plot start date (default: January 1 of 4 years ago)
+    if 'recent_plot_start_date' in valuation_section:
+        # If provided in JSON, parse as YYYY-MM-DD string
+        date_str = valuation_section['recent_plot_start_date']
+        params['recent_plot_start_date'] = datetime.datetime.strptime(date_str, '%Y-%m-%d')
+    else:
+        # Default: January 1 of 4 years ago
+        current_year = datetime.datetime.now().year
+        params['recent_plot_start_date'] = datetime.datetime(current_year - 4, 1, 1)
+
+    print(
+        " ... inside GetParams/get_json_params \n",
+        flush=True
+    )
+
     return params
 
 
@@ -476,6 +522,11 @@ def get_json_status(json_fn: str) -> str:
 
     # put params in a dictionary
     status = config.get("Status", "cumu_value").split()[-3]
+
+    print(
+        " ... inside GetParams/get_json_status ",
+        flush=True
+    )
 
     return status
 
@@ -602,6 +653,13 @@ def get_status(json_fn: str) -> str:
 
     # put params in a dictionary
     status = config.get("Status", "cumu_value").split()[-3]
+
+    print(
+        "\n\n***************************************\n"
+        " ... inside GetParams/get_status \n"
+        "***************************************",
+        flush=True
+    )
 
     return status
 
@@ -816,7 +874,12 @@ def GetSymbolsFile(json_fn=None):
         if json_fn is None:
             raise FileNotFoundError("No JSON config file found. Please specify json_fn parameter.")
     
+    print(
+        " ... inside GetParams/GetSymbolsFile ",
+        flush=True
+    )
     return get_symbols_file(json_fn)
+
 
 def parse_pytaaa_status(file_path: str) -> Tuple[list, list]:
     """
@@ -846,6 +909,7 @@ def parse_pytaaa_status(file_path: str) -> Tuple[list, list]:
                 print(f"Skipping line due to parsing error: {line.strip()}\nError: {e}")
 
     return dates, portfolio_values
+
 
 def validate_model_choices(model_choices: dict) -> dict:
     """

@@ -214,6 +214,11 @@ def generate_single_recent_plot(bundle: _PlotBundle) -> str:
     import matplotlib.pyplot as plt  # noqa: PLC0415
     import numpy as np  # noqa: PLC0415
 
+    # Set DPI for inline plots and saved figures
+    plt.rcParams['figure.figsize'] = (9,5)
+    plt.rcParams['figure.dpi'] = 150
+    plt.rcParams['savefig.dpi'] = 150
+
     symbol = bundle["symbol"]
     plotfilepath = os.path.join(
         bundle["output_dir"], f"0_recent_{symbol}.png"
@@ -566,17 +571,41 @@ def main(data_file: str, max_workers: int = 2) -> None:
     adjClose = data["adjClose"]
     symbols = data["symbols"]
     datearray = data["datearray"]
+    params = data["params"]
 
-    # Determine firstdate_index for 2013+ recent plots
+    # Determine firstdate_index using recent_plot_start_date parameter
+    recent_plot_start_date = params.get('recent_plot_start_date')
+    
+    if recent_plot_start_date is None:
+        # Fallback to default if parameter not in params dict
+        current_year = datetime.datetime.now().year
+        recent_plot_start_date = datetime.datetime(current_year - 4, 1, 1)
+    elif not isinstance(recent_plot_start_date, datetime.datetime):
+        # Convert to datetime if it's a date or other type
+        if isinstance(recent_plot_start_date, datetime.date):
+            recent_plot_start_date = datetime.datetime.combine(
+                recent_plot_start_date, datetime.time.min
+            )
+        elif isinstance(recent_plot_start_date, str):
+            recent_plot_start_date = datetime.datetime.strptime(
+                recent_plot_start_date, '%Y-%m-%d'
+            )
+    
     firstdate_index = 0
     for ii in range(len(datearray)):
-        if (
-            datearray[ii].year > datearray[ii - 1].year
-            and datearray[ii].year == 2013
-        ):
+        # Convert datearray element to datetime if it's a date
+        date_elem = datearray[ii]
+        if isinstance(date_elem, datetime.date) and not isinstance(date_elem, datetime.datetime):
+            date_elem = datetime.datetime.combine(date_elem, datetime.time.min)
+        
+        if date_elem >= recent_plot_start_date:
             firstdate_index = ii
             break
 
+    print(
+        f"[background_plot_generator] Using recent_plot_start_date: "
+        f"{recent_plot_start_date.strftime('%Y-%m-%d')} (index={firstdate_index})"
+    )
     print(
         f"[background_plot_generator] Generating plots for "
         f"{len(symbols)} symbols with {max_workers} workers"
