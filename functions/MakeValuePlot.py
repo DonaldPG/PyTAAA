@@ -588,6 +588,9 @@ def _spawn_background_montecarlo(json_fn: str, web_dir: str) -> None:
         json_fn,
     ]
 
+    # Ensure the web directory exists
+    os.makedirs(web_dir, exist_ok=True)
+    
     log_file = os.path.join(web_dir, "montecarlo_backtest.log")
     with open(log_file, "w") as log_fh:
         log_fh.write(
@@ -637,7 +640,7 @@ def makeDailyMonteCarloBacktest(
     ##########################################
     # make plot with daily monte carlo backtest
     ##########################################
-    webpage_dir = get_web_output_dir(json_fn)
+    webpage_dir = get_webpage_store(json_fn)
     figure6path = os.path.join(
         webpage_dir, "PyTAAA_monteCarloBacktest.png"
     )
