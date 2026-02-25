@@ -19,7 +19,7 @@ from functions.GetParams import (
     get_json_params, get_symbols_file, GetEdition, get_performance_store
 )
 from functions.TAfunctions import dpgchannel, SMA
-from functions.GetParams import get_webpage_store
+from functions.GetParams import get_webpage_store, get_web_output_dir
 
 
 def makeValuePlot(json_fn: str) -> None:
@@ -637,7 +637,7 @@ def makeDailyMonteCarloBacktest(
     ##########################################
     # make plot with daily monte carlo backtest
     ##########################################
-    webpage_dir = get_webpage_store(json_fn)
+    webpage_dir = get_web_output_dir(json_fn)
     figure6path = os.path.join(
         webpage_dir, "PyTAAA_monteCarloBacktest.png"
     )
