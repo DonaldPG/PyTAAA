@@ -35,7 +35,6 @@ from functions.backtesting.config_helpers import (
     extract_model_identifier,
     setup_output_paths,
     generate_output_filename,
-    validate_configuration,
 )
 from functions.backtesting.monte_carlo_runner import run_monte_carlo_backtest
 from functions.logger_config import get_logger
@@ -74,12 +73,17 @@ def main(json_fn: str, trials_override: int | None) -> None:
         print("=" * 80)
         print(f"Configuration: {json_fn}")
 
-        # Load and validate configuration
+        # Load configuration
         params = get_json_params(json_fn, verbose=True)
-        validated = validate_configuration(params)
+        
+        # Note: performance_store and webpage are NOT in params dict
+        # (they're retrieved separately via get_performance_store/get_webpage_store)
+        # Validate only that symbols_file exists
+        if "symbols_file" not in params:
+            raise KeyError("Missing required configuration key: 'symbols_file'")
 
         # Get trial count (CLI override or JSON or default)
-        n_trials = trials_override or validated.get(
+        n_trials = trials_override or params.get(
             "backtest_monte_carlo_trials", 250
         )
         print(f"Monte Carlo trials: {n_trials}")
@@ -97,7 +101,7 @@ def main(json_fn: str, trials_override: int | None) -> None:
         date_str = f"{today.year}-{today.month}-{today.day}"
 
         # Determine runnum from symbol file
-        symbols_file = validated.get("symbols_file", "")
+        symbols_file = params.get("symbols_file", "")
         basename = os.path.basename(symbols_file)
         runnum_map = {
             "symbols.txt": "run2501a",
