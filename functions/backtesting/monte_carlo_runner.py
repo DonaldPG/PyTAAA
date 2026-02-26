@@ -39,7 +39,7 @@ logger = get_logger(__name__, log_file="pytaaa_backtest_montecarlo.log")
 _TRADING_DAYS_PER_YEAR = 252
 
 
-def __calculate_cagr(
+def _calculate_cagr(
     end_value: float, start_value: float, days: int
 ) -> float:
     """Compute Compound Annual Growth Rate.
@@ -182,12 +182,40 @@ def _compute_metrics(
     #######################################################################
     # CAGR
     #######################################################################
-    cagr15 = _calculate_cagr(portfolio_value[-1], portfolio_value[-index], index) if n_days >= index else float("nan")
-    cagr10 = _calculate_cagr(portfolio_value[-1], portfolio_value[-_INDEX_10YR], _INDEX_10YR) if n_days >= _INDEX_10YR else float("nan")
-    cagr5 = _calculate_cagr(portfolio_value[-1], portfolio_value[-_INDEX_5YR], _INDEX_5YR) if n_days >= _INDEX_5YR else float("nan")
-    cagr3 = _calculate_cagr(portfolio_value[-1], portfolio_value[-_INDEX_3YR], _INDEX_3YR) if n_days >= _INDEX_3YR else float("nan")
-    cagr2 = _calculate_cagr(portfolio_value[-1], portfolio_value[-_INDEX_2YR], _INDEX_2YR) if n_days >= _INDEX_2YR else float("nan")
-    cagr1 = _calculate_cagr(portfolio_value[-1], portfolio_value[-_INDEX_1YR], _INDEX_1YR) if n_days >= _INDEX_1YR else float("nan")
+    cagr15 = (
+        _calculate_cagr(portfolio_value[-1], portfolio_value[-index], index)
+        if n_days >= index else float("nan")
+    )
+    cagr10 = (
+        _calculate_cagr(
+            portfolio_value[-1], portfolio_value[-_INDEX_10YR], _INDEX_10YR
+        )
+        if n_days >= _INDEX_10YR else float("nan")
+    )
+    cagr5 = (
+        _calculate_cagr(
+            portfolio_value[-1], portfolio_value[-_INDEX_5YR], _INDEX_5YR
+        )
+        if n_days >= _INDEX_5YR else float("nan")
+    )
+    cagr3 = (
+        _calculate_cagr(
+            portfolio_value[-1], portfolio_value[-_INDEX_3YR], _INDEX_3YR
+        )
+        if n_days >= _INDEX_3YR else float("nan")
+    )
+    cagr2 = (
+        _calculate_cagr(
+            portfolio_value[-1], portfolio_value[-_INDEX_2YR], _INDEX_2YR
+        )
+        if n_days >= _INDEX_2YR else float("nan")
+    )
+    cagr1 = (
+        _calculate_cagr(
+            portfolio_value[-1], portfolio_value[-_INDEX_1YR], _INDEX_1YR
+        )
+        if n_days >= _INDEX_1YR else float("nan")
+    )
 
     #######################################################################
     # Drawdown (average over period)
@@ -317,12 +345,40 @@ def _compute_bh_stats(
         "1": _return_ratio(bh_portfolio, n_days, _INDEX_1YR),
     }
     bh_cagrs = {
-        "15": _calculate_cagr(bh_portfolio[-1], bh_portfolio[-index], index) if n_days >= index else float("nan"),
-        "10": _calculate_cagr(bh_portfolio[-1], bh_portfolio[-_INDEX_10YR], _INDEX_10YR) if n_days >= _INDEX_10YR else float("nan"),
-        "5": _calculate_cagr(bh_portfolio[-1], bh_portfolio[-_INDEX_5YR], _INDEX_5YR) if n_days >= _INDEX_5YR else float("nan"),
-        "3": _calculate_cagr(bh_portfolio[-1], bh_portfolio[-_INDEX_3YR], _INDEX_3YR) if n_days >= _INDEX_3YR else float("nan"),
-        "2": _calculate_cagr(bh_portfolio[-1], bh_portfolio[-_INDEX_2YR], _INDEX_2YR) if n_days >= _INDEX_2YR else float("nan"),
-        "1": _calculate_cagr(bh_portfolio[-1], bh_portfolio[-_INDEX_1YR], _INDEX_1YR) if n_days >= _INDEX_1YR else float("nan"),
+        "15": (
+            _calculate_cagr(bh_portfolio[-1], bh_portfolio[-index], index)
+            if n_days >= index else float("nan")
+        ),
+        "10": (
+            _calculate_cagr(
+                bh_portfolio[-1], bh_portfolio[-_INDEX_10YR], _INDEX_10YR
+            )
+            if n_days >= _INDEX_10YR else float("nan")
+        ),
+        "5": (
+            _calculate_cagr(
+                bh_portfolio[-1], bh_portfolio[-_INDEX_5YR], _INDEX_5YR
+            )
+            if n_days >= _INDEX_5YR else float("nan")
+        ),
+        "3": (
+            _calculate_cagr(
+                bh_portfolio[-1], bh_portfolio[-_INDEX_3YR], _INDEX_3YR
+            )
+            if n_days >= _INDEX_3YR else float("nan")
+        ),
+        "2": (
+            _calculate_cagr(
+                bh_portfolio[-1], bh_portfolio[-_INDEX_2YR], _INDEX_2YR
+            )
+            if n_days >= _INDEX_2YR else float("nan")
+        ),
+        "1": (
+            _calculate_cagr(
+                bh_portfolio[-1], bh_portfolio[-_INDEX_1YR], _INDEX_1YR
+            )
+            if n_days >= _INDEX_1YR else float("nan")
+        ),
     }
     max_val = np.maximum.accumulate(bh_portfolio)
     dd = bh_portfolio / max_val - 1.0

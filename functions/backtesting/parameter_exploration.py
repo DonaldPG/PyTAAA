@@ -259,6 +259,8 @@ def generate_random_parameters(
     #############################################################################
     MA1 = int(random_triangle(low=75, mid=151, high=300))
     MA2 = int(random_triangle(low=10, mid=20, high=50))
+    # MA2offset is scaled to ~5-10% of the MA1-MA2 gap, keeping the two
+    # moving averages meaningfully apart while allowing natural variation.
     MA2offset = int(
         random_triangle(
             low=max(1, (MA1 - MA2) // 20),
