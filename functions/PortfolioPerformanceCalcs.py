@@ -124,7 +124,7 @@ def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
     _print_portfolio_summary(
         datearray, symbols, adjClose, signal2D_daily, monthgainlossweight,
         monthvalue, BuyHoldFinalValue, last_symbols_text, last_symbols_weight,
-        last_symbols_price, params, lowChannel, hiChannel
+        last_symbols_price, params, json_fn, lowChannel, hiChannel
     )
     
     # 3.5: Send text alerts if market is open
@@ -170,7 +170,7 @@ def _write_daily_backtest(json_fn, datearray, symbols, adjClose, params):
 def _print_portfolio_summary(
     datearray, symbols, adjClose, signal2D_daily, monthgainlossweight,
     monthvalue, BuyHoldFinalValue, last_symbols_text, last_symbols_weight,
-    last_symbols_price, params, lowChannel=None, hiChannel=None
+    last_symbols_price, params, json_fn, lowChannel=None, hiChannel=None
 ):
     """Print portfolio summary reports.
     
@@ -183,11 +183,11 @@ def _print_portfolio_summary(
         for i in range(len(symbols)):
             if signal2D_daily[i, -1] > 0:
                 uptrendCount += 1
-                print(uptrendCount, symbols[i], adjClose[i, -1], 
-                      " uptrend", lowChannel[i, -1], hiChannel[i, -1])
+                print(f"{uptrendCount:4d} {symbols[i]:5s} {adjClose[i, -1]:8,.2f} uptrend "
+                      f"{lowChannel[i, -1]:8,.2f} {hiChannel[i, -1]:8,.2f}")
             else:
-                print(uptrendCount, symbols[i], adjClose[i, -1], 
-                      "        ", lowChannel[i, -1], hiChannel[i, -1])
+                print(f"{uptrendCount:4d} {symbols[i]:5s} {adjClose[i, -1]:8,.2f}         "
+                      f"{lowChannel[i, -1]:8,.2f} {hiChannel[i, -1]:8,.2f}")
     print("\n\n\n")
     
     # Print portfolio performance summary
@@ -200,12 +200,27 @@ def _print_portfolio_summary(
           "{:,}".format(int(np.average(monthvalue, axis=0)[-1])))
     print(" ")
     
-    # Print current top holdings
+    # Print current top holdings with company names
     print("Today's top ranking choices are: ")
+    # Fetch company names
+    try:
+        from functions.readSymbols import read_company_names_local
+        companySymbolList, companyNameList = read_company_names_local(json_fn, verbose=False)
+    except Exception:
+        companySymbolList, companyNameList = [], []
+    
     for ii in range(len(symbols)):
         if monthgainlossweight[ii, -1] > 0:
-            print(datearray[-1], format(symbols[ii], '5s'), 
-                  format(monthgainlossweight[ii, -1], '5.3f'))
+            # Look up company name
+            try:
+                symbolIndex = companySymbolList.index(symbols[ii])
+                companyName = companyNameList[symbolIndex]
+            except (ValueError, IndexError):
+                companyName = ""
+            
+            print(f"{datearray[-1]}  {symbols[ii]:<6s}  "
+                  f"{monthgainlossweight[ii, -1]:6.4f}  ({monthgainlossweight[ii, -1]*100:5.2f}%)  "
+                  f"{companyName:20s}")
     
     print("\n ... inside portfolioPerformanceCalcs")
     print("   . datearray[-1] = " + str(datearray[-1]))

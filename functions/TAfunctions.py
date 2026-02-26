@@ -48,6 +48,31 @@ class TradingConstants:
     TRADING_DAYS_2_YEARS: int = 504
     TRADING_DAYS_3_YEARS: int = 756
     TRADING_DAYS_5_YEARS: int = 1260
+
+
+def format_ranking_line(
+    symbol: str,
+    rank: int,
+    weight: float,
+    price: float,
+    trend: str,
+    company_name: str = ""
+) -> str:
+    """Format a single line for ranking output with standardized column widths.
+    
+    Args:
+        symbol: Stock symbol (6 chars, left-justified)
+        rank: Ranking position (6 chars, integer)
+        weight: Portfolio weight (6 chars, 4 decimals)
+        price: Stock price (8 chars, 2 decimals with comma separator)
+        trend: Trend indicator ('up  ' or 'down')
+        company_name: Company name (15 chars, left-justified)
+    
+    Returns:
+        Formatted string with aligned columns
+    """
+    return (f"{symbol:<6s}  {rank:6d}  {weight:6.4f}  "
+            f"{price:8,.2f}  {trend}  {company_name:15s}")
     TRADING_DAYS_10_YEARS: int = 2520
 
 
@@ -1874,7 +1899,7 @@ def sharpeWeightedRank_2D_old(
         </td><td>Company \
         </td></tr>\n"
 
-    print("\n\n ... Tdoay's rankings and weights:")
+    print("\n\n ... Today's rankings and weights:")
     symbols_today = []
     weight_today = []
     price_today = []
@@ -1906,13 +1931,15 @@ def sharpeWeightedRank_2D_old(
                        "<td>" + trend  + \
                        "<td>" + format(companyName,'15s')  + \
                        "</td></tr>  \n"
-                row_text = symbols[j].ljust(6) + "  " + \
-                format(deltaRankToday[j],'6.0f') + "  " + \
-                format(monthgainlossweightToday[j],'6.04f') + "  " + \
-                format(adjClose[j,-1],'6.2f') + "  " + \
-                trend  + "  " + \
-                format(companyName,'15s')
-                print(row_text)
+                # Print with improved formatting using utility function
+                print(format_ranking_line(
+                    symbols[j],
+                    int(deltaRankToday[j]),
+                    monthgainlossweightToday[j],
+                    adjClose[j,-1],
+                    trend,
+                    companyName
+                ))
                 symbols_today.append(symbols[j])
                 weight_today.append(monthgainlossweightToday[j])
                 price_today.append(adjClose[j,-1])

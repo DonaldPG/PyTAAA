@@ -1,0 +1,34 @@
+======================================================================
+PHASE 3: SYNTHETIC CAGR EVALUATION REPORT
+======================================================================
+
+EVALUATION 1: CAGR Validation
+----------------------------------------------------------------------
+Pass band: 19% to 21%
+
+  naz100_hma: 13.6% ✗ FAIL
+  naz100_pine: 13.6% ✗ FAIL
+  naz100_pi: 13.6% ✗ FAIL
+
+Evaluation 1 Overall: ✗ FAIL
+
+EVALUATION 2: Selection Accuracy
+----------------------------------------------------------------------
+Threshold: >= 70% of top stocks have high CAGR
+
+  Overall accuracy: 100.0%
+  Status: ✓ PASS
+
+EVALUATION 3: Rotation Responsiveness
+----------------------------------------------------------------------
+Criterion: Portfolio weight changes within 60 days of rotation
+
+  naz100_hma: 0.005043679103475017 vs 0.0014380670724960353 ✓ PASS
+  naz100_pine: 0.005043679103475017 vs 0.0014380670724960353 ✓ PASS
+  naz100_pi: 0.005043679103475017 vs 0.0014380670724960353 ✓ PASS
+
+Evaluation 3 Overall: ✓ PASS
+
+======================================================================
+OVERALL: ✗ SOME FAIL
+======================================================================

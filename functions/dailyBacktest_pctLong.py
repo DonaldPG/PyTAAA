@@ -16,7 +16,7 @@ from functions.GetParams import (
 )
 #from functions.quotes_for_list_adjClose import *
 from functions.TAfunctions import (
-    cleantobeginning, cleantoend,interpolate
+    cleantobeginning, cleantoend, interpolate
 )
 from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
 from functions.CountNewHighsLows import newHighsAndLows
@@ -2398,11 +2398,27 @@ def dailyBacktest_pctLong(json_fn: str, verbose: bool = False) -> None:
         print("The portfolio final value is: ","{:,}".format(int(np.average(monthvalue,axis=0)[-1])))
         print(" ")
         print("Today's top ranking choices are: ")
+        
+        # Fetch company names
+        try:
+            from functions.readSymbols import read_company_names_local
+            companySymbolList, companyNameList = read_company_names_local(json_fn, verbose=False)
+        except Exception:
+            companySymbolList, companyNameList = [], []
+        
         last_symbols_text = []
         for ii in range(len(symbols)):
             if monthgainlossweight[ii,-1] > 0:
-                # print symbols[ii]
-                print(datearray[-1], symbols[ii],monthgainlossweight[ii,-1])
+                # Look up company name
+                try:
+                    symbolIndex = companySymbolList.index(symbols[ii])
+                    companyName = companyNameList[symbolIndex]
+                except (ValueError, IndexError):
+                    companyName = ""
+                
+                print(f"{datearray[-1]}  {symbols[ii]:<6s}  "
+                      f"{monthgainlossweight[ii,-1]:6.4f}  ({monthgainlossweight[ii,-1]*100:5.2f}%)  "
+                      f"{companyName:20s}")
                 last_symbols_text.append( symbols[ii] )
 
 
@@ -2832,24 +2848,27 @@ def dailyBacktest_pctLong(json_fn: str, verbose: bool = False) -> None:
 
         ###
         ### save backtest portfolio values ( B&H and system )
+        ### Only write Monte Carlo results when using JSON parameters (last iteration)
         ###
-        try:
-            filepath = os.path.join(p_store, "pyTAAAweb_backtestPortfolioValue.params" )
-            textmessage = ""
-            # Only write data for dates where new highs/lows are valid (>= 0)
-            # This typically skips the first ~500 days where there isn't enough historical data
-            for idate in range(len(BuyHoldPortfolioValue)):
-                textmessage = textmessage + \
-                            str(datearray[idate]) + " " + \
-                            str(BuyHoldPortfolioValue[idate]) + " " + \
-                            str(np.average(monthvalue[:,idate]))  + " " + \
-                            f"{float(sumNewHighs[idate]):.1f}" + " " + \
-                            f"{float(sumNewLows[idate]):.1f}" + "\n"
-            with open( filepath, "w" ) as f:
-                f.write(textmessage)
-        except:
-            _fn = os.path.join(p_store, "pyTAAAweb_backtestPortfolioValue.params")
-            print(" ERROR: unable to update file " + _fn)
+        if iter == randomtrials-1:
+            try:
+                filepath = os.path.join(p_store, "pyTAAAweb_backtestPortfolioValue.mc.params" )
+                textmessage = ""
+                # Only write data for dates where new highs/lows are valid (>= 0)
+                # This typically skips the first ~500 days where there isn't enough historical data
+                for idate in range(len(BuyHoldPortfolioValue)):
+                    textmessage = textmessage + \
+                                str(datearray[idate]) + " " + \
+                                str(BuyHoldPortfolioValue[idate]) + " " + \
+                                str(np.average(monthvalue[:,idate]))  + " " + \
+                                f"{float(sumNewHighs[idate]):.1f}" + " " + \
+                                f"{float(sumNewLows[idate]):.1f}" + "\n"
+                with open( filepath, "w" ) as f:
+                    f.write(textmessage)
+                print(f"\n Successfully wrote Monte Carlo backtest to {filepath}")
+            except Exception as e:
+                _fn = os.path.join(p_store, "pyTAAAweb_backtestPortfolioValue.mc.params")
+                print(f" ERROR: unable to update file {_fn}: {e}")
 
 
         ########################################################################
