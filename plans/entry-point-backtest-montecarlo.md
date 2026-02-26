@@ -1,7 +1,7 @@
 # Entry-Point Monte Carlo Backtest Implementation Plan
 
 **Feature**: JSON-Driven Monte Carlo Backtest CLI Tool  
-**Branch**: `feature/entry-point-backtest-montecarlo`  
+**Branch**: `copilot/entry-point-backtest-montecarloV2`  
 **Base Branch**: `main`  
 **Created**: February 25, 2026  
 **Status**: Planning
