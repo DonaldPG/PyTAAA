@@ -58,7 +58,8 @@
         "offset": 7,
         "window_size": 50,
         "enable_rolling_filter": false,
-        "async_montecarlo_backtest": true
+        "async_montecarlo_backtest": true,
+        "backtest_monte_carlo_trials": 250
     },
     "model_selection": {
         "performance_metrics": {
