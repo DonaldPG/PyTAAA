@@ -4,9 +4,8 @@ This module provides the high-level ``run_monte_carlo_backtest`` function
 that coordinates parameter generation, single-realization execution, metric
 collection, CSV output, and checkpoint saving.
 
-The heavy numerical work is delegated to
-``PyTAAA_backtest_sp500_pine_refactored`` so that this runner remains a
-thin orchestration layer.
+The heavy numerical work is delegated to the ``core_backtest`` module
+so that this runner remains a thin orchestration layer.
 """
 
 import os
@@ -26,14 +25,10 @@ from functions.backtesting.output_writers import (
 )
 from functions.logger_config import get_logger
 
-# NOTE: PyTAAA_backtest_sp500_pine_refactored contains module-level code
-# that executes on import.  All symbols are imported lazily inside
-# run_monte_carlo_backtest() to avoid triggering that code at import time.
-
 logger = get_logger(__name__, log_file="pytaaa_backtest_montecarlo.log")
 
 #############################################################################
-# Trading day constants (mirror TradingConstants from the refactored script)
+# Trading day constants
 #############################################################################
 
 _TRADING_DAYS_PER_YEAR = 252
@@ -74,9 +69,9 @@ _SYMBOL_FILE_MAP: dict = {
     "ProvidentFundSymbols.txt": ("run2504", [4, 6, 12]),
     "sp500_symbols.txt": ("run2505", [1, 2, 3, 4, 6, 12]),
     "cmg_symbols.txt": ("run2507", [3, 4, 6, 12]),
-    "SP500_Symbols.txt": ("run2506", [1, 2, 3, 4, 6, 12]),
+    "SP500_Symbols.txt": ("run2506", [1, 1, 1, 1, 1, 1, 2, 3, 4, 6, 12]),
 }
-_DEFAULT_HOLD_MONTHS = [1, 2, 3, 4, 6, 12]
+_DEFAULT_HOLD_MONTHS = [1, 1, 1, 1, 1, 1, 2, 3, 4, 6, 12]
 _DEFAULT_RUNNUM = "run2508d"
 
 _INDEX_15YR = 3780
@@ -409,6 +404,7 @@ def run_monte_carlo_backtest(
             - ``outfilename``: Full path to the output CSV file.
             - ``date_str``: Date string for filenames.
             - ``runnum``: Run identifier string.
+            - ``max_plots``: Maximum number of plots to generate (None=unlimited).
 
     Returns:
         Summary dict with keys:
@@ -423,10 +419,9 @@ def run_monte_carlo_backtest(
         ValueError: If quote data cannot be loaded.
     """
     #######################################################################
-    # Lazy import: avoid module-level code in the refactored backtest
-    # script running at import time.
+    # Import core backtest functions from the refactored module
     #######################################################################
-    from PyTAAA_backtest_sp500_pine_refactored import (  # noqa: PLC0415
+    from functions.backtesting.core_backtest import (  # noqa: PLC0415
         run_single_monte_carlo_realization,
     )
 
@@ -506,13 +501,20 @@ def run_monte_carlo_backtest(
         # Generate parameters for this trial
         ###################################################################
         trial_params = generate_random_parameters(
-            hold_months, iter_num, n_trials
+            hold_months, iter_num, n_trials, params=params
         )
 
         ###################################################################
         # Run single realization
         ###################################################################
         try:
+            # Generate plot based on max_plots limit (None = unlimited)
+            max_plots = output_paths.get('max_plots', None)
+            generate_plot = (max_plots is None) or (iter_num < max_plots)
+            
+            # Get runnum from output_paths to use for temp JSON filenames
+            runnum = output_paths.get('runnum', None)
+            
             results = run_single_monte_carlo_realization(
                 json_fn,
                 trial_params,
@@ -525,6 +527,8 @@ def run_monte_carlo_backtest(
                 activeCount,
                 hold_months,
                 verbose=(iter_num <= 2),
+                generate_plot=generate_plot,
+                runnum=runnum,
             )
         except Exception as exc:
             logger.warning(

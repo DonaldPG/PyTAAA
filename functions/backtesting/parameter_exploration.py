@@ -118,11 +118,11 @@ def _apply_ma_constraints(params: dict) -> dict:
     params["MA3"] = int(params["MA2"]) + int(params["MA2offset"])
     return params
 
-
 def generate_random_parameters(
     hold_months: list,
     iter_num: int,
     total_trials: int,
+    params: dict = None,
     runs_fraction: int = 4,
 ) -> dict:
     """Generate random parameters for a single Monte Carlo trial.
@@ -144,30 +144,17 @@ def generate_random_parameters(
         total_trials: Total number of Monte Carlo trials.
         runs_fraction: Denominator that determines the boundary between
             exploration and base phases.  Default is 4 (25 % exploration).
-
-    Returns:
-        Dictionary with all parameters required by
-        ``run_single_monte_carlo_realization``.  Keys:
-        monthsToHold, numberStocksTraded, LongPeriod, stddevThreshold,
-        MA1, MA2, MA3, MA2offset, sma2factor, rankThresholdPct,
-        riskDownside_min, riskDownside_max, lowPct, hiPct,
-        uptrendSignalMethod, sma_filt_val, max_weight_factor,
-        min_weight_factor, absolute_max_weight, apply_constraints,
-        paramNumberToVary.
-
-    Example:
-        >>> params = generate_random_parameters([1, 2, 3], 0, 100)
-        >>> "LongPeriod" in params
-        True
     """
-    #############################################################################
-    # Common random parameters shared across all phases
-    #############################################################################
+    paramNumberToVary = -999
+
+    # Determine uptrendSignalMethod from params if present
+    uptrendSignalMethod = "percentileChannels"
+    if params and "uptrendSignalMethod" in params:
+        uptrendSignalMethod = params["uptrendSignalMethod"]
+
+    weight_constraints = _generate_weight_constraints()
     lowPct = random.uniform(10.0, 30.0)
     hiPct = random.uniform(70.0, 90.0)
-    weight_constraints = _generate_weight_constraints()
-
-    paramNumberToVary = -999
 
     #############################################################################
     # Linux edition: fixed defaults, final trial only
@@ -177,7 +164,7 @@ def generate_random_parameters(
         p["monthsToHold"] = 1
         p["lowPct"] = lowPct
         p["hiPct"] = hiPct
-        p["uptrendSignalMethod"] = "percentileChannels"
+        p["uptrendSignalMethod"] = uptrendSignalMethod
         p.update(weight_constraints)
         p["paramNumberToVary"] = paramNumberToVary
         p = _apply_ma_constraints(p)
@@ -189,63 +176,57 @@ def generate_random_parameters(
     #############################################################################
     if iter_num >= total_trials / runs_fraction:
         p = dict(_BASE_DEFAULTS)
-        p["monthsToHold"] = 1
-
-        paramNumberToVary = choice([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
-        p["paramNumberToVary"] = paramNumberToVary
-
+        p["monthsToHold"] = choice(hold_months)
+        paramNumberToVary = stdlib_random.randint(0, 12)
+        # Vary exactly one parameter from _BASE_DEFAULTS for this trial.
+        # paramNumberToVary selects which parameter to perturb slightly.
         if paramNumberToVary == 0:
-            p["numberStocksTraded"] += choice([-1, 0, 1])
+            p["numberStocksTraded"] = stdlib_random.randint(3, 12)
         elif paramNumberToVary == 1:
-            for _ in range(15):
-                candidate = choice(hold_months)
-                if candidate != p["monthsToHold"]:
-                    p["monthsToHold"] = candidate
-                    break
+            p["LongPeriod"] = int(
+                random_triangle(low=150, mid=412, high=700)
+            )
         elif paramNumberToVary == 2:
-            delta = random.uniform(
-                -0.01 * p["LongPeriod"], 0.01 * p["LongPeriod"]
+            p["stddevThreshold"] = random_triangle(
+                low=2.0, mid=8.495, high=20.0
             )
-            p["LongPeriod"] = int(p["LongPeriod"] + delta)
         elif paramNumberToVary == 3:
-            delta = random.uniform(-0.01 * p["MA1"], 0.01 * p["MA1"])
-            p["MA1"] = int(p["MA1"] + delta)
+            p["MA1"] = int(random_triangle(low=75, mid=264, high=400))
         elif paramNumberToVary == 4:
-            delta = random.uniform(-0.01 * p["MA2"], 0.01 * p["MA2"])
-            p["MA2"] = int(p["MA2"] + delta)
+            p["MA2"] = int(random_triangle(low=7, mid=22, high=45))
         elif paramNumberToVary == 5:
-            p["MA2offset"] = choice([1, 2, 3])
+            p["MA2offset"] = int(
+                random_triangle(low=2, mid=4, high=12)
+            )
         elif paramNumberToVary == 6:
-            delta = random.uniform(
-                -0.01 * p["sma2factor"], 0.01 * p["sma2factor"]
+            p["sma2factor"] = random_triangle(
+                low=1.65, mid=3.495, high=5.0
             )
-            p["sma2factor"] = round(p["sma2factor"] + delta, 3)
         elif paramNumberToVary == 7:
-            delta = random.uniform(
-                -0.01 * p["rankThresholdPct"],
-                0.01 * p["rankThresholdPct"],
+            p["rankThresholdPct"] = random_triangle(
+                low=0.14, mid=0.321, high=0.50
             )
-            p["rankThresholdPct"] = round(p["rankThresholdPct"] + delta, 2)
         elif paramNumberToVary == 8:
-            delta = random.uniform(
-                -0.01 * p["riskDownside_min"],
-                0.01 * p["riskDownside_min"],
+            p["riskDownside_min"] = random_triangle(
+                low=0.50, mid=0.856, high=0.99
             )
-            p["riskDownside_min"] = round(p["riskDownside_min"] + delta, 3)
         elif paramNumberToVary == 9:
-            delta = random.uniform(
-                -0.01 * p["riskDownside_max"],
-                0.01 * p["riskDownside_max"],
+            p["riskDownside_max"] = random_triangle(
+                low=5.0, mid=16.9, high=25.0
             )
-            p["riskDownside_max"] = round(p["riskDownside_max"] + delta, 3)
         elif paramNumberToVary == 10:
-            p["stddevThreshold"] *= random.uniform(0.8, 1.2)
+            p["sma_filt_val"] = random_triangle(
+                low=0.010, mid=0.030, high=0.060
+            )
         elif paramNumberToVary == 11:
-            p["sma_filt_val"] *= random.uniform(0.8, 1.2)
-
-        p["lowPct"] = lowPct
-        p["hiPct"] = hiPct
-        p["uptrendSignalMethod"] = "percentileChannels"
+            p["lowPct"] = random_triangle(low=5.0, mid=20.0, high=35.0)
+        elif paramNumberToVary == 12:
+            p["hiPct"] = random_triangle(
+                low=65.0, mid=80.0, high=95.0
+            )
+        p["lowPct"] = p.get("lowPct", lowPct)
+        p["hiPct"] = p.get("hiPct", hiPct)
+        p["uptrendSignalMethod"] = uptrendSignalMethod
         p.update(weight_constraints)
         p = _apply_ma_constraints(p)
         logger.debug(
@@ -258,24 +239,16 @@ def generate_random_parameters(
     # Exploration phase: broad triangular sampling
     #############################################################################
     MA1 = int(random_triangle(low=75, mid=151, high=300))
-    MA2 = int(random_triangle(low=10, mid=20, high=50))
-    # MA2offset is scaled to ~5-10% of the MA1-MA2 gap, keeping the two
-    # moving averages meaningfully apart while allowing natural variation.
-    MA2offset = int(
-        random_triangle(
-            low=max(1, (MA1 - MA2) // 20),
-            mid=max(1, (MA1 - MA2) // 15),
-            high=max(1, (MA1 - MA2) // 10),
-        )
-    )
-
+    MA2 = int(random_triangle(low=7, mid=22, high=45))
+    MA2offset = int(random_triangle(low=2, mid=7, high=12))
     p = {
-        "numberStocksTraded": choice([5, 6, 6, 7, 7, 8, 8]),
-        "monthsToHold": choice([1, 1, 1, 1, 1, 1, 1, 1, 1, 2]),
-        "LongPeriod": int(random_triangle(low=190, mid=370, high=550)),
-        "stddevThreshold": random_triangle(low=5.0, mid=7.50, high=10.0),
+        "monthsToHold": choice(hold_months),
+        "numberStocksTraded": stdlib_random.randint(3, 12),
+        "LongPeriod": int(random_triangle(low=150, mid=300, high=600)),
+        "stddevThreshold": random_triangle(low=2.0, mid=8.0, high=20.0),
         "MA1": MA1,
         "MA2": MA2,
+        "MA3": MA2 + MA2offset,
         "MA2offset": MA2offset,
         "sma2factor": random_triangle(low=1.65, mid=2.5, high=2.75),
         "rankThresholdPct": random_triangle(low=0.14, mid=0.20, high=0.26),
@@ -284,7 +257,7 @@ def generate_random_parameters(
         "sma_filt_val": random_triangle(low=0.010, mid=0.015, high=0.0225),
         "lowPct": lowPct,
         "hiPct": hiPct,
-        "uptrendSignalMethod": "percentileChannels",
+        "uptrendSignalMethod": uptrendSignalMethod,
         "paramNumberToVary": paramNumberToVary,
     }
     p.update(weight_constraints)

@@ -57,8 +57,9 @@ def setup_output_paths(json_fn: str) -> Tuple[str, str, str]:
     """Set up output paths for a Monte Carlo backtest run.
 
     Derives the model identifier from the ``webpage`` config key,
-    constructs the output directory as ``<performance_store>/pngs/``,
-    and creates that directory if it does not already exist.
+    constructs the output directory as ``<model_base>/pytaaa_backtest/``
+    (one level up from performance_store), and creates that directory 
+    if it does not already exist.
 
     Args:
         json_fn: Path to the JSON configuration file.
@@ -78,7 +79,9 @@ def setup_output_paths(json_fn: str) -> Tuple[str, str, str]:
     perf_store = get_performance_store(json_fn)
 
     model_id = extract_model_identifier(webpage_path)
-    output_dir = os.path.join(perf_store, "pngs")
+    # Go up one level from perf_store (removes /data_store) and add /pytaaa_backtest
+    model_base = os.path.dirname(perf_store)
+    output_dir = os.path.join(model_base, "pytaaa_backtest")
 
     os.makedirs(output_dir, exist_ok=True)
     logger.debug(
