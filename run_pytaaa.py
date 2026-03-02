@@ -21,9 +21,6 @@ from functions.calculateTrades import calculateTrades
 from functions.readSymbols import get_symbols_changes
 from functions.stock_cluster import getClusterForSymbolsList
 from functions.ftp_quotes import copy_updated_quotes
-import sys
-print(sys.path)
-
 try:
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
 except OSError:

@@ -27,7 +27,7 @@ class Task(object):
             try:
                 try:
                     self.func()
-                except:
+                except Exception:
                     raise
             finally:
                 self.scheduled_time = self.calc_next_time(self.scheduled_time)

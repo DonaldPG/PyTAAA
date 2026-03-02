@@ -116,7 +116,7 @@ def getYieldCurve():
                 interestRates = todayRates
             else:
                 interestRates = np.vstack( (interestRates, np.array(todayRates)) )
-        except:
+        except Exception:
             pass
 
     # sort the interest rate information in-place using the date (in column 0)
@@ -171,7 +171,7 @@ def getYieldCurve():
     plt.savefig( os.path.join( os.getcwd(), 'pyTAAA_web', 'pyTAAA_NasdaqVsTreasuries.png' ), dpi=100, format='png' )
 
     '''
-    except:
+    except Exception:
         pass
     '''
     return interestRates

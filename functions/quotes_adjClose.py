@@ -148,7 +148,7 @@ def downloadQuotes(tickers: list, date1: Optional[str] = None, date2: Optional[s
                 if quandl_failure_count < 10:
                     try:
                         data, _ = get_q_data(ticker, start_date=date1, end_date=date2, adjusted=True, output_format='df')
-                    except:
+                    except Exception:
                         quandl_failure_count += 1
                         data, _ = get_ts_data(ticker, interval="D", outputsize=output_size, adjusted=True, output_format='df')
                         #number_days = (date2 - date1).days - 1
@@ -174,7 +174,7 @@ def downloadQuotes(tickers: list, date1: Optional[str] = None, date2: Optional[s
                 #print " ... got data[items] ..."
                 number_tries = 0
                 #print " last 5 yahoo values = ", data.values[-5:]
-            except:
+            except Exception:
                 pass
             """
 
@@ -194,7 +194,7 @@ def downloadQuotes(tickers: list, date1: Optional[str] = None, date2: Optional[s
                     number_days = (date2 - date1).days
                     data = data[-number_days:]
                     break
-                except:
+                except Exception:
                     from time import sleep
                     sleep(3)
                     pass
@@ -205,7 +205,7 @@ def downloadQuotes(tickers: list, date1: Optional[str] = None, date2: Optional[s
             try:
                 data = get_data_google(ticker, start = date1, end = date2)[google_items]
                 number_tries = 0
-            except:
+            except Exception:
                 pass
         #print ' data = ', data
         dates = data.index
@@ -259,7 +259,7 @@ def get_pe(ticker: str) -> float:
             if 'P/E' in title.text:
                 pe_text =  [td.text for td in title.findNextSiblings(attrs={'class': 'val'}) if td.text]
                 pe = float(pe_text[0].split("\n")[0])
-    except:
+    except Exception:
         pe = np.nan
 
     print(" switch to get_pe in quotes_for_list_adjClose.py")
@@ -297,7 +297,7 @@ def get_quote_and_pe(ticker: str) -> Tuple[float, float]:
         titles = text_soup.findAll('meta', {'itemprop': 'price'})
         for title in titles:
             price = float(title['content'])
-    except:
+    except Exception:
         price = np.nan
 
     return price, pe

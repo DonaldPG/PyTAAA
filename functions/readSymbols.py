@@ -32,7 +32,7 @@ def strip_accents(text: str) -> str:
         pass
     try:
         text = text.decode('ascii')
-    except:
+    except (UnicodeDecodeError, AttributeError):
         pass
     text = unicodedata.normalize('NFD', text)\
            .encode('ascii', 'ignore')\
@@ -117,7 +117,7 @@ def readSymbolList(filename: str, json_fn: str, verbose: bool = False) -> list:
     try:
         print(" ...inside readSymbolList... filename = ", filename)
         infile = open(filename,"r")
-    except:
+    except OSError:
         from functions.quotes_for_list_adjClose import get_Naz100List, get_SP500List
         symbol_directory = os.path.join( os.getcwd(), "symbols" )
         # the symbols list doesn't exist. generate from the web.
@@ -357,9 +357,7 @@ def read_symbols_list_web(json_fn: str, verbose: bool = True) -> Tuple[list, lis
             symbolList = list(symbolList)
             companyNamesList = list(companyNamesList)
 
-        except:
-
-            base_url ='https://en.wikipedia.org/wiki/NASDAQ-100#Components'
+        except (OSError, urllib.error.URLError, Exception):
             # Add User-Agent header to avoid 403 Forbidden errors from Wikipedia
             req = urllib.request.Request(
                 base_url,
@@ -659,8 +657,7 @@ def read_symbols_list_web(json_fn: str, verbose: bool = True) -> Tuple[list, lis
             response = urllib.request.urlopen(req, timeout=15)
             soup = BeautifulSoup(response.read(), "lxml")
             print("... got web content (with headers)")
-        except:
-            # Fallback to basic request
+        except (OSError, urllib.error.URLError):
             try:
                 soup = BeautifulSoup( urllib.request.urlopen(base_url), "lxml" )
                 print("... got web content (basic request)")

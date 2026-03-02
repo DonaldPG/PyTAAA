@@ -30,7 +30,7 @@ Subject: """+message_subject+"""
         #print message
         print("Successfully sent email at ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"))
         print("")
-    except :
+    except Exception:
         print("Error: unable to send email")
         print("")
 
@@ -62,6 +62,6 @@ def SendTextMessage(username: str, emailpassword: str, phoneEmail: str, frompers
         server.quit()
         print("Successfully sent text message via email at ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"))
         print("")
-    except :
+    except Exception:
         print("Error: unable to send text using email")
         print("")

@@ -7,7 +7,7 @@ from scipy.stats import gmean
 
 try:
     os.chdir(os.path.join(os.path.dirname(__file__),".."))
-except:
+except Exception:
     pass
 
 from functions.TAfunctions import SMS

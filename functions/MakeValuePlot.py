@@ -15,11 +15,14 @@ plt.rcParams['figure.figsize'] = (9, 7)
 plt.rcParams['figure.dpi'] = 150
 plt.rcParams['savefig.dpi'] = 150
 import matplotlib.gridspec as gridspec
+import logging
 from functions.GetParams import (
     get_json_params, get_symbols_file, GetEdition, get_performance_store
 )
 from functions.TAfunctions import dpgchannel, SMA
 from functions.GetParams import get_webpage_store, get_web_output_dir
+
+logger = logging.getLogger(__name__)
 
 
 def makeValuePlot(json_fn: str) -> None:
@@ -62,9 +65,8 @@ def makeValuePlot(json_fn: str) -> None:
 
             #print "rankingMessage -----"
             #print rankingMessage
-    except:
-        print(" Error: unable to read updates from PyTAAA_status.params")
-        print("")
+    except OSError as e:
+        logger.warning("Error: unable to read updates from PyTAAA_status.params: %s", e)
 
     value = np.array( value ).astype('float')
 
@@ -192,7 +194,7 @@ def makeValuePlot(json_fn: str) -> None:
     plt.savefig(figurepath)
     try:
         plt.close(1)
-    except:
+    except Exception:
         pass
 
     figurepath = 'PyTAAA_value.png'  # re-set to name without full path
@@ -238,9 +240,11 @@ def makeUptrendingPlot(json_fn: str) -> None:
                         print(f" Warning: Error parsing line {i} in numberUptrendingStocks (2nd): {e}")
                         print(f"   Line content: {statusline[:100]}")
                     break
-    except:
-        print(" Error: unable to read updates from pyTAAAweb_numberUptrendingStocks_status.params")
-        print("")
+    except OSError as e:
+        logger.warning(
+            "Error: unable to read updates from"
+            " pyTAAAweb_numberUptrendingStocks_status.params: %s", e
+        )
 
     ##########################################
     # read multi-Sharpe signal status file
@@ -269,9 +273,11 @@ def makeUptrendingPlot(json_fn: str) -> None:
                         print(f" Warning: Error parsing line {i} in MeanTrendDispersion (file2): {e}")
                         print(f"   Line content: {statusline[:100]}")
                     break
-    except:
-        print(" Error: unable to read updates from pyTAAAweb_multiSharpeIndicator_status.params")
-        print("")
+    except OSError as e:
+        logger.warning(
+            "Error: unable to read updates from"
+            " pyTAAAweb_multiSharpeIndicator_status.params: %s", e
+        )
 
     ##########################################
     # make plot
@@ -394,9 +400,11 @@ def makeTrendDispersionPlot(json_fn: str) -> None:
                         print(f" Warning: Error parsing line {i} in DailyChannelOffsetSignal: {e}")
                         print(f"   Line content: {statusline[:100]}")
                     break
-    except:
-        print(" Error: unable to read updates from pyTAAAweb_MeanTrendDispersion_status.params")
-        print("")
+    except OSError as e:
+        logger.warning(
+            "Error: unable to read updates from"
+            " pyTAAAweb_MeanTrendDispersion_status.params: %s", e
+        )
 
     valueMeans = np.array( valueMeans ).astype('float')
     #valueMeansSMA = SMA( valueMeans, 100 )
@@ -440,11 +448,13 @@ def makeTrendDispersionPlot(json_fn: str) -> None:
                         date.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                         value.append( float(statusline_list[2]) )
                         active.append( float(statusline_list[4]) )
-                except:
+                except (ValueError, IndexError):
                     break
-    except:
-        print(" Error: unable to read updates from pyTAAAweb_numberUptrendingStocks_status.params")
-        print("")
+    except OSError as e:
+        logger.warning(
+            "Error: unable to read updates from"
+            " pyTAAAweb_numberUptrendingStocks_status.params: %s", e
+        )
 
     value = np.array( value ).astype('float') / np.array( active ).astype('float')
     valueSMA = SMA( value, 100 )
@@ -481,9 +491,11 @@ def makeTrendDispersionPlot(json_fn: str) -> None:
                         print(f"   Line content: {statusline[:100]}")
                         print(f"   Split result length: {len(statusline_list)}, content: {statusline_list}")
                     break
-    except:
-        print(" Error: unable to read updates from pyTAAAweb_backtestPortfolioValue.params")
-        print("")
+    except OSError as e:
+        logger.warning(
+            "Error: unable to read updates from"
+            " pyTAAAweb_backtestPortfolioValue.params: %s", e
+        )
 
 
     ###
@@ -908,9 +920,11 @@ def makeDailyChannelOffsetSignal(json_fn: str) -> None:
                     _dates.append( datetime.datetime.strptime( statusline_list[0], '%Y-%m-%d') )
                     avgPctChannel.append( float(statusline_list[1].split('%')[0])/100. )
                     numAboveBelowChannel.append( float(statusline_list[2]) )
-    except:
-        print(" Error: unable to read updates from pyTAAAweb_numberUptrendingStocks_status.params")
-        print("")
+    except OSError as e:
+        logger.warning(
+            "Error: unable to read updates from"
+            " pyTAAAweb_numberUptrendingStocks_status.params: %s", e
+        )
     # print(" ... inside MakeValuePlot. .line 615. _dates = " + str( _dates))
     # last_date = _dates[-1].date()
     last_date = datetime.datetime.strptime(str(datearray[-1]), '%Y-%m-%d')
@@ -1080,9 +1094,11 @@ def makeDailyChannelOffsetSignal(json_fn: str) -> None:
                         print(f"   Line content: {statusline[:100]}")
                         print(f"   Split result length: {len(statusline_list)}, content: {statusline_list}")
                     break
-    except:
-        print(" Error: unable to read updates from pyTAAAweb_backtestPortfolioValue.params")
-        print("")
+    except OSError as e:
+        logger.warning(
+            "Error: unable to read updates from"
+            " pyTAAAweb_backtestPortfolioValue.params: %s", e
+        )
 
     webpage_dir = get_webpage_store(json_fn)
     figure5path = os.path.join(webpage_dir, "PyTAAA_backtestWithOffsetChannelSignal.png" )

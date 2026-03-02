@@ -85,7 +85,7 @@ def ftp_copy_quotes_hdf(computerName: str, local_path: str, json_fn: Optional[st
         traceback.print_exc()
         try:
             t.close()
-        except:
+        except Exception:
             pass
         sys.exit(1)
 
@@ -127,7 +127,7 @@ def copy_updated_quotes(json_fn: Optional[str] = None) -> None:
             print "  ...on dpg_envy, PyTAAADL_tracker"
             local_folder = u'C:\\Users\\dp\\raspberrypi\\PyTAAADL_tracker\\symbols'
             ftp_copy_quotes_hdf(computerName, local_folder)
-        except:
+        except Exception:
             print "Could not update quotes hdf from pi pyTAAApi..."
         '''
 
@@ -144,7 +144,7 @@ def copy_updated_quotes(json_fn: Optional[str] = None) -> None:
             print("  ...on pine, PyTAAA-analyzestocks")
             local_folder = 'C:\\Users\\dp\\raspberrypi\\PyTAAADL_tracker\\symbols'
             ftp_copy_quotes_hdf(computerName, local_folder, json_fn)
-        except:
+        except Exception:
             print("Could not update quotes hdf from pi pyTAAApi...")
 
     else:

@@ -76,12 +76,12 @@ from functions.readSymbols import read_symbols_list_web
 #             try:
 #                 _ticker = col[0].string.strip()
 #                 _ticker = _ticker.replace(".","-")
-#             except:
+#             except Exception:
 #                 _ticker = str(col[0]).split(":")[-1].split('"')[0]
 #                 _ticker = _ticker.split("/")[-1].upper()
 #             try:
 #                 _company = col[1].string.strip()
-#             except:
+#             except Exception:
 #                 _company = str(col[1]).split('title="')[-1].split('">')[0]
 #             #
 
@@ -89,7 +89,7 @@ from functions.readSymbols import read_symbols_list_web
 #             # _company = _company.replace(".","-")
 #             # try:
 #             #     _ticker = col[1].string.strip()
-#             # except:
+#             # except Exception:
 #             #     _ticker = str(col[1]).split('title="')[-1].split('">')[0]
 
 #             _sector = col[3].string.strip()
@@ -98,7 +98,7 @@ from functions.readSymbols import read_symbols_list_web
 #             companyNamesList.append(_company)
 #             industry.append(_sector)
 #             subIndustry.append(_subIndustry)
-#         except:
+#         except Exception:
 #             #print "/n could not add this row to SP500_Symbols.txt"
 #             #print row
 #             #print ""
@@ -391,7 +391,7 @@ from functions.readSymbols import read_symbols_list_web
 #         pass
 #     try:
 #         text = text.decode('ascii')
-#     except:
+#     except Exception:
 #         pass
 #     text = unicodedata.normalize('NFD', text)\
 #            .encode('ascii', 'ignore')\
@@ -548,7 +548,7 @@ from functions.readSymbols import read_symbols_list_web
 #             with open( symbols_file, "w" ) as f:
 #                 for i in range( len(symbolList) ) :
 #                     f.write( symbolList[i] + "\n" )
-#     except:
+#     except Exception:
 #         ###
 #         ### something didn't wor. print message and return old list.
 #         ###
@@ -715,7 +715,7 @@ from functions.readSymbols import read_symbols_list_web
 #             with open( symbols_file, "w" ) as f:
 #                 for i in range( len(symbolList) ) :
 #                     f.write( symbolList[i] + "\n" )
-#     except:
+#     except Exception:
 #         ###
 #         ### something didn't wor. print message and return old list.
 #         ###
@@ -949,7 +949,7 @@ def get_quote_google( symbol ):
         try:
             quote = scrape_quote(symbol)
             break
-        except:
+        except Exception:
             print ".",
     return quote
 '''
@@ -970,12 +970,12 @@ def get_quote_alphavantage(symbol: str) -> float:
     try:
         from functions.quotes_adjClose_alphavantage import get_last_quote
         from functions.quotes_adjClose_alphavantage import get_last_quote_daily
-    except:
+    except Exception:
         from quotes_adjClose_alphavantage import get_last_quote
         from quotes_adjClose_alphavantage import get_last_quote_daily
     try:
         _quote = get_last_quote(symbol)
-    except:
+    except Exception:
         _quote = get_last_quote_daily(symbol)
     return _quote
 
@@ -988,7 +988,7 @@ def get_pe_google(symbol: str) -> float:
     try:
         m = float(content.split("pe_ratio")[1].split('\n')[2].split(">")[-1])
         quote = m
-    except:
+    except Exception:
         quote = ""
     return quote
 
@@ -1106,12 +1106,12 @@ def get_SectorAndIndustry_google(symbol: str) -> Tuple[str, str]:
     try:
         m = content.split("Sector:")[1].split('>')[1].split("<")[0].replace("&amp;","and")
         sector = m
-    except:
+    except Exception:
         sector = ""
     try:
         m = content.split("Industry:")[1].split('>')[1].split("<")[0].replace("&amp;","and").replace(" - NEC","")
         industry = m
-    except:
+    except Exception:
         industry = ""
     return sector, industry
 
@@ -1139,7 +1139,7 @@ def get_SectorAndIndustry_google(symbol: str) -> Tuple[str, str]:
         #print values
         industry = values[0]
         sector = values[1]
-    except:
+    except Exception:
         industry= "unknown"
         sector = "unknown"
     return sector, industry
@@ -1183,7 +1183,7 @@ def LastQuotesForSymbolList(symbolList: list) -> list:
                 try:
                     quote = scrape_quote(ticker)
                     break
-                except:
+                except Exception:
                     print(".", end=' ')
                     quote = scrape_quote(ticker)
             print("ticker, quote = ", ticker, quote)
@@ -1231,7 +1231,7 @@ def LastQuotesForList(symbols_list: list) -> list:
         cash_index = symbols_list.index('CASH')
         if cash_index >= 0 and cash_index <= len(symbols_list)-1 :
             symbols_list.remove('CASH')
-    except:
+    except Exception:
         pass
 
     attempt = 1
@@ -1248,7 +1248,7 @@ def LastQuotesForList(symbols_list: list) -> list:
                 quotelist.append(singlequote)
             print(symbols_list, quotelist)
             NeedQuotes = False
-        except:
+        except Exception:
             attempt += 1
             sleep(attempt)
 

@@ -41,7 +41,7 @@ from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
 # try:
 #     os.chdir(os.path.abspath(os.path.dir(__file__)))
 #     print(" ...change to folder for this file = "+os.getcwd())
-# except:
+# except Exception:
 #     os.chdir('C:\\Users\\don\\raspberrypi\\Py3TAAA-analyzestocksSP500')
 #     print(" ...cannot change to folder for this file = "+os.getcwd())
 
@@ -256,7 +256,7 @@ def get_stored_quotes(json_fn: str, stockList: str) -> Tuple[np.ndarray, np.ndar
     #     elif stockList.lower() == "index":
     #         os.chdir(os.path.join(os.path.abspath(os.path.dirname(__file__))))
     #         os.chdir(os.path.join("..", "Py3TAAA_index"))
-    # except:
+    # except Exception:
     #     os.chdir('C:\\Users\\don\\tf\\tf\\PyTAAADLgit')
     #     os.chdir('C:\\Users\\don\\Desktop\\temp')
     #     if stockList == "SP500":
@@ -554,7 +554,7 @@ def fix_quotes(json_fn: str, _data_path: str, stockList: str = 'Naz100') -> None
         try:
             first_val = quotes[:,isymbol][~np.isnan(quotes[:,isymbol])][0]
             plt.plot(dates, quotes[:,isymbol] / first_val)
-        except:
+        except Exception:
             pass
 
     num_days = 50
@@ -814,7 +814,7 @@ def fix_quotes(json_fn: str, _data_path: str, stockList: str = 'Naz100') -> None
             fresh_close_factor = df_stored_and_fresh["_fresh_close_factor_"+symbol].values
             common_symbols.append(symbol)
             current_symbol_count += 1
-        except:
+        except Exception:
             # likely a symbol for a compnay that is not longer publicly traded
             excluded_symbols.append(symbol)
             print("   . symbol is not currently in index "+excluded_symbols[-1])
@@ -834,7 +834,7 @@ def fix_quotes(json_fn: str, _data_path: str, stockList: str = 'Naz100') -> None
             try:
                 if date == datearray_as_list[datearray_as_list.index(date)]:
                     idate_stored = datearray_as_list.index(date)
-            except:
+            except Exception:
                 if symbol == 'FOX' and datetime.date(2018,1,1) < date < datetime.date(2020,1,1):
                     print(str(date)+" case 0 "+ str((quotes[iicompany,idate_stored], adjClose[icompany,idate])))
                 if symbol == 'AAPL' and datetime.date(2018,1,1) < date < datetime.date(2020,1,1):

@@ -135,7 +135,7 @@ def compute_daily_metrics(portfolio_values: np.ndarray) -> PerformanceMetrics:
     metrics = compute_metrics_fast(portfolio_values)
     return PerformanceMetrics(*metrics)
 
-@numba.jit(nopython=True)
+@jit(nopython=True)
 def rank_models_fast(metric_values: np.ndarray) -> np.ndarray:
     """Optimized ranking calculation using Numba."""
     n_metrics, n_models = metric_values.shape
@@ -173,7 +173,7 @@ def rank_models(metrics_list: List[PerformanceMetrics]) -> np.ndarray:
     
     return rank_models_fast(metric_arrays)
 
-@numba.jit(nopython=True)
+@jit(nopython=True)
 def _compute_bin_indices(lookbacks_arr, bin_edges):
     """Convert lookback values to bin indices using Numba."""
     indices = np.zeros(len(lookbacks_arr), dtype=np.int64)
@@ -186,7 +186,7 @@ def _compute_bin_indices(lookbacks_arr, bin_edges):
         indices[i] = idx
     return indices
 
-@numba.jit(nopython=True)
+@jit(nopython=True)
 def _get_random_indices_from_probs(probs_flat):
     """Get random indices based on provided probabilities using Numba."""
     cumsum = np.zeros_like(probs_flat)
@@ -203,7 +203,7 @@ def _get_random_indices_from_probs(probs_flat):
             break
     return idx
 
-@numba.jit(nopython=True)
+@jit(nopython=True)
 def _add_noise_to_lookbacks(lookbacks, bin_width, noise_scale=1.0,
                            min_val=0.0, max_val=1000.0):
     """Add random noise to lookback values within bin width using Numba."""
