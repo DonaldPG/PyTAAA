@@ -52,7 +52,12 @@ class BacktestDataLoader:
         if json_config_path and 'models' in self.config:
             # Use JSON configuration for model paths
             models_config = self.config['models']
-            base_folder = models_config.get('base_folder', '/Users/donaldpg/pyTAAA_data')
+            base_folder = models_config.get('base_folder')
+            if not base_folder:
+                raise ValueError(
+                    "Missing 'base_folder' in config['models']. "
+                    "Ensure the JSON config contains models.base_folder."
+                )
             model_choices = {}
             
             for model_name, path_template in models_config.get('model_choices', {}).items():
@@ -67,16 +72,11 @@ class BacktestDataLoader:
                     )
                     model_choices[model_name] = model_path
         else:
-            # Use legacy hard-coded paths
-            base_folder = "/Users/donaldpg/pyTAAA_data"
-            model_choices = {
-                "cash": "",
-                "naz100_pine": f"{base_folder}/naz100_pine/data_store/{data_files[data_format]}",
-                "naz100_hma": f"{base_folder}/naz100_hma/data_store/{data_files[data_format]}",
-                "naz100_pi": f"{base_folder}/naz100_pi/data_store/{data_files[data_format]}",
-                "sp500_hma": f"{base_folder}/sp500_hma/data_store/{data_files[data_format]}",
-                "sp500_pine": f"{base_folder}/sp500_pine/data_store/{data_files[data_format]}",
-            }
+            raise ValueError(
+                "JSON config path and 'models' section are required to build "
+                "model paths. Pass a valid json_config_path and ensure the "
+                "config contains a 'models' key with 'base_folder'."
+            )
 
         return model_choices
     
@@ -243,7 +243,12 @@ def write_abacus_backtest_portfolio_values(
         # Determine output file path
         from functions.GetParams import get_json_params
         params = get_json_params(json_config_path)
-        data_folder = params.get('data_folder', '/Users/donaldpg/pyTAAA_data')
+        data_folder = params.get('data_folder')
+        if not data_folder:
+            raise ValueError(
+                "Missing 'data_folder' in JSON config. "
+                "Ensure the config file contains a 'data_folder' key."
+            )
         folder_name = params.get('folder_name', 'naz100_sp500_abacus')
         output_file = os.path.join(
             data_folder, folder_name, 'data_store',

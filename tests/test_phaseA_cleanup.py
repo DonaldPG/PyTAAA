@@ -1,4 +1,8 @@
-"""Phase A: verify mechanical cleanup via AST analysis."""
+"""Phase A and C cleanup verification via AST analysis.
+
+Phase A: verify mechanical cleanup (bare excepts, debug prints, dead code).
+Phase C: verify duplicate function definition removal.
+"""
 import ast
 import sys
 from pathlib import Path
@@ -66,3 +70,23 @@ def test_rank_models_fast_guarded_by_has_numba():
             import functions.MonteCarloBacktest  # noqa: F401
         except ImportError:
             pass  # numba ImportError is acceptable; NameError is not
+
+
+def test_no_duplicate_function_definitions():
+    """No function name defined more than once at module level."""
+    files_to_check = [
+        "functions/quotes_for_list_adjClose.py",
+        "functions/GetParams.py",
+        "functions/TAfunctions.py",
+    ]
+    for filepath in files_to_check:
+        tree = ast.parse(Path(filepath).read_text())
+        names = [
+            n.name
+            for n in ast.walk(tree)
+            if isinstance(n, ast.FunctionDef)
+        ]
+        duplicates = [n for n in set(names) if names.count(n) > 1]
+        assert not duplicates, (
+            f"{filepath}: duplicate function definitions: {duplicates}"
+        )

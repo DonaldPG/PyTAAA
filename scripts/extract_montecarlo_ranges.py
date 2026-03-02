@@ -42,19 +42,22 @@ except ImportError:
     )
     sys.exit(1)
 
+import click
+from functions.GetParams import get_json_params
+
 #############################################################################
-# Scenario \u2192 xlsx directory mapping
+# Scenario names (logical model identifiers, not file paths)
 #############################################################################
 
 _XLSX_FILENAME = "pytaaa_backtest_montecarlo.xlsx"
 
-_SCENARIO_DIRS: dict[str, str] = {
-    "naz100_pine": "/Users/donaldpg/pyTAAA_data/naz100_pine/pytaaa_backtest/",
-    "naz100_hma":  "/Users/donaldpg/pyTAAA_data/naz100_hma/pytaaa_backtest/",
-    "naz100_pi":   "/Users/donaldpg/pyTAAA_data/naz100_pi/pytaaa_backtest/",
-    "sp500_pine":  "/Users/donaldpg/pyTAAA_data/sp500_pine/pytaaa_backtest/",
-    "sp500_hma":   "/Users/donaldpg/pyTAAA_data/sp500_hma/pytaaa_backtest/",
-}
+_SCENARIO_NAMES: list[str] = [
+    "naz100_pine",
+    "naz100_hma",
+    "naz100_pi",
+    "sp500_pine",
+    "sp500_hma",
+]
 
 # Row indices (1-based, as openpyxl uses)
 _ROW_P10    = 2
@@ -206,12 +209,36 @@ def _format_ranges_dict(all_ranges: dict[str, dict[str, tuple]]) -> str:
     return "\n".join(lines)
 
 
-def main() -> None:
+@click.command()
+@click.option(
+    "--json", "json_fn",
+    type=click.Path(exists=True, dir_okay=False, readable=True),
+    required=True,
+    help="Path to JSON configuration file (provides base_folder for model dirs)",
+)
+def main(json_fn: str) -> None:
     """Extract ranges from all scenario xlsx files and print the result."""
+    params = get_json_params(json_fn)
+    base_folder = (
+        params.get("base_folder")
+        or params.get("models", {}).get("base_folder")
+    )
+    if not base_folder:
+        raise ValueError(
+            "Missing 'base_folder' in JSON config. "
+            "Ensure the config file contains 'base_folder' or "
+            "'models.base_folder'."
+        )
+
+    scenario_dirs: dict[str, str] = {
+        scenario: os.path.join(base_folder, scenario, "pytaaa_backtest", "")
+        for scenario in _SCENARIO_NAMES
+    }
+
     print("Extracting ranges from xlsx files...\n", file=sys.stderr)
 
     all_ranges: dict[str, dict[str, tuple]] = {}
-    for scenario, directory in _SCENARIO_DIRS.items():
+    for scenario, directory in scenario_dirs.items():
         xlsx_path = os.path.join(directory, _XLSX_FILENAME)
         print(f"  [{scenario}] {xlsx_path}", file=sys.stderr)
         all_ranges[scenario] = _extract_ranges(xlsx_path, scenario)
