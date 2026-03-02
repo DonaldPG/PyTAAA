@@ -1,3 +1,6 @@
+# NOTE: This file is superseded by pytaaa_backtest_montecarlo.py.
+# It is retained for historical reference only and will be moved to
+# archive/ in a future cleanup phase. Do not use for new work.
 import time, threading
 
 import numpy as np

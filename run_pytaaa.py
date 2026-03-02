@@ -24,16 +24,7 @@ from functions.ftp_quotes import copy_updated_quotes
 import sys
 print(sys.path)
 
-try:
-    os.chdir(os.path.abspath(os.path.dirname(__file__)))
-except OSError:
-    # Expected: file not found, permission denied, etc.
-    os.chdir("/Users/donaldpg/PyProjects/PyTAAA.master")
-except Exception as e:
-    # Safety fallback for unexpected exceptions
-    import logging
-    logging.getLogger(__name__).warning(f"Unexpected exception in os.chdir: {type(e).__name__}: {e}")
-    os.chdir("/Users/donaldpg/PyProjects/PyTAAA.master")
+os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 
 def run_pytaaa(json_fn):

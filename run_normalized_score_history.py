@@ -22,6 +22,7 @@ import json
 import click
 
 from functions.MonteCarloBacktest import MonteCarloBacktest
+from functions.GetParams import get_json_params
 from functions.logger_config import get_logger
 
 # Get module-specific logger
@@ -312,12 +313,19 @@ def create_combined_normalized_score_plot(
     default='assets',
     help='Output directory for plot files (default: assets)'
 )
-def main(data_format: str, output_dir: str) -> None:
+@click.option(
+    '--json', 'json_fn',
+    type=click.Path(exists=True, dir_okay=False, readable=True),
+    required=True,
+    help='Path to JSON configuration file',
+)
+def main(data_format: str, output_dir: str, json_fn: str) -> None:
     """Generate combined normalized score history plot for all PyTAAA models.
     
     Args:
         data_format: Whether to use actual or backtested portfolio values
         output_dir: Directory to save the plot files
+        json_fn: Path to JSON configuration file
     """
     
     try:
@@ -326,6 +334,19 @@ def main(data_format: str, output_dir: str) -> None:
         print("Starting combined normalized score history plot generation")
         print(f"Data format: {data_format}")
         
+        # Load base_folder from JSON config
+        params = get_json_params(json_fn)
+        base_folder = (
+            params.get("base_folder")
+            or params.get("models", {}).get("base_folder")
+        )
+        if not base_folder:
+            raise ValueError(
+                "Missing 'base_folder' in JSON config. "
+                "Ensure the config file contains 'base_folder' or "
+                "'models.base_folder'."
+            )
+        
         # Configure data files based on format
         data_files = {
             'actual': 'PyTAAA_status.params',
@@ -333,7 +354,6 @@ def main(data_format: str, output_dir: str) -> None:
         }
         
         # Configure model paths with correct data_store locations
-        base_folder = "/Users/donaldpg/pyTAAA_data"
         model_paths = {
             "cash": "",
             "naz100_pine": f"{base_folder}/naz100_pine/data_store/{data_files[data_format]}",
