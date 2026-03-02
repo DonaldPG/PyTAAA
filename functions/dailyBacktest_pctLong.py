@@ -1945,6 +1945,11 @@ def dailyBacktest_pctLong(json_fn: str, verbose: bool = False) -> None:
 
             lowPct = float(params['lowPct'])*random.uniform(.85,1.15)
             hiPct = float(params['hiPct'])*random.uniform(.85,1.15)
+            # Clamp to valid percentile range; np.percentile requires [0,
+            # 100]. hiPct * 1.15 can exceed 100 when the base value is high
+            # (e.g. 90 * 1.15 = 103.5).
+            lowPct = max(0.0, min(lowPct, 50.0))
+            hiPct = max(50.0, min(hiPct, 100.0))
 
 
         print(" LongPeriod = ", LongPeriod)
