@@ -64,7 +64,8 @@
         "sma_filt_val": 0.01916716575659826,
         "MA2offset": 24,
         "trial": 35,
-        "run_id": "run_20251214_1243"
+        "run_id": "run_20251214_1243",
+        "backtest_monte_carlo_trials": 250
     },
     "web_output_dir": "/Users/donaldpg/pyTAAA_data_static/naz100_pine/pyTAAA_web",
     "start_date": "2002-01-01",

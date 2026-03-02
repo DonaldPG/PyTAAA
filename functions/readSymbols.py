@@ -673,26 +673,27 @@ def read_symbols_list_web(json_fn: str, verbose: bool = True) -> Tuple[list, lis
         
         if soup is not None:
             print("... ran beautiful soup on web content")
-            
-            # Try multiple table selection strategies
-            t = soup.find("table", {"class" : "wikitable sortable sticky-header", "id": "constituents"})
-            
-            # If table not found with specific class, try simpler search.
+
+            # Search 1: id alone — most stable; Wikipedia class names change
+            # but the id="constituents" has been consistent.
+            t = soup.find("table", {"id": "constituents"})
+            if t is not None:
+                print("... found constituents table by id")
+
+            # Search 2: any wikitable whose header row contains 'Symbol' and
+            # 'Security' — guards against Wikipedia renaming the id.
             if t is None:
-                print("... table not found with specific class. Trying alternative search...")
-                t = soup.find("table", {"id": "constituents"})
-            
-            # Try even simpler search if still not found
-            if t is None:
-                print("... trying fallback table search...")
-                tables = soup.find_all("table", {"class": "wikitable"})
-                for table in tables:
-                    table_text = str(table).lower()
-                    if 'symbol' in table_text and 'security' in table_text:
-                        rows = table.find_all('tr')
-                        if len(rows) > 400:  # S&P 500 should have ~500 rows
+                print("... id='constituents' not found; trying content search...")
+                for table in soup.find_all("table", {"class": "wikitable"}):
+                    rows = table.find_all('tr')
+                    if len(rows) > 400:
+                        header_text = str(rows[0]).lower()
+                        if 'symbol' in header_text and 'security' in header_text:
                             t = table
-                            print(f"... found table with {len(rows)} rows using content detection")
+                            print(
+                                f"... found table with {len(rows)} rows "
+                                "via header-content detection"
+                            )
                             break
 
             symbolList = [] # store all of the records in this list

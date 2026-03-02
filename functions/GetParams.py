@@ -347,23 +347,10 @@ def get_json_params(json_fn: str, verbose: bool = False) -> Dict:
     valuation_section = config.get('Valuation')
 
     if verbose:
-        print("Email Section:")
-        print(email_section)
 
-        print("\nText from Email Section:")
-        print(text_from_email_section)
-
-        print("\nFTP Section:")
-        print(ftp_section)
-
-        print("\nStock Server Section:")
-        print(stock_server_section)
-
-        print("\nSetup Section:")
-        print(setup_section)
-
-        print("\nValuation Section:")
-        print(valuation_section)
+        # print JSON with indentation
+        formatted_config = json.dumps(config, indent=4)
+        print(formatted_config)
 
     # set default values
     params = {}

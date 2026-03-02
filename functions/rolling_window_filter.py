@@ -10,7 +10,7 @@ import numpy as np
 def apply_rolling_window_filter(
         adjClose: np.ndarray, signal2D: np.ndarray, window_size: int, 
         symbols: list = None, datearray: np.ndarray = None,
-        verbose: bool = False
+        verbose: int | bool = False
     ) -> np.ndarray:
     """Apply rolling window data quality filter to signal matrix.
     
@@ -41,7 +41,10 @@ def apply_rolling_window_filter(
         window_size: Size of rolling window in days
         symbols: List of stock symbols (optional, for debugging)
         datearray: Array of dates (optional, for debugging)
-        verbose: If True, print debug information
+        verbose: Verbosity level:
+            - False or 0: Only show summary
+            - True or 1: Only show summary (same as False)
+            - 2 or higher: Show individual zeroing messages (debug mode)
 
     Returns:
         A new signal2D matrix with filtered entries zeroed (copy of input)
@@ -76,7 +79,8 @@ def apply_rolling_window_filter(
             month_start_date = (datearray[date_idx].month != datearray[date_idx - 1].month) if (datearray is not None and date_idx > 0) else False
             if window_gainloss_std < 0.001:
                 # Low volatility in gain/loss indicates possible interpolation
-                if verbose:
+                # Only print individual messages in debug mode (verbose >= 2)
+                if isinstance(verbose, int) and verbose >= 2:
                     print(f"RollingFilter: Zeroing {symbol_str} on {date_str} due to low gainloss_std={window_gainloss_std:.6f}")
                 signal_out[stock_idx, date_idx] = 0.0
                 filtered_count += 1
@@ -85,7 +89,7 @@ def apply_rolling_window_filter(
             # Apply valid length >= 50% threshold
             valid_length = len(window_gainloss[np.abs(window_gainloss -1) >= 0.001])
             if valid_length < window_size * 0.5:
-                if verbose:
+                if isinstance(verbose, int) and verbose >= 2:
                     print(f"RollingFilter: Zeroing {symbol_str} on {date_str} due to insufficient valid_length={valid_length} (threshold={window_size*0.5})")
                 signal_out[stock_idx, date_idx] = 0.0
                 filtered_count += 1
@@ -96,7 +100,7 @@ def apply_rolling_window_filter(
             
             if len(valid_data) == 0:
                 # No valid data in window
-                if verbose:
+                if isinstance(verbose, int) and verbose >= 2:
                     print(f"RollingFilter: Zeroing {symbol_str} on {date_str} due to no valid data in window")
                 signal_out[stock_idx, date_idx] = 0.0
                 filtered_count += 1
