@@ -242,7 +242,7 @@ def get_json_ftp_params(json_fn: str, verbose: bool = False) -> Dict[str, str]:
     ftp_section = config.get('FTP')
 
     if verbose:
-        logger.debug("FTP Section: %s", ftp_section)
+        logger.info("FTP Section: %s", ftp_section)
 
     ftpHostname = config.get("FTP")["hostname"]
     ftpUsername = config.get("FTP")["username"]
@@ -323,7 +323,7 @@ def get_json_params(json_fn: str, verbose: bool = False) -> Dict:
     if verbose:
         # Log JSON with indentation
         formatted_config = json.dumps(config, indent=4)
-        logger.debug("JSON config:\n%s", formatted_config)
+        logger.info("JSON config:\n%s", formatted_config)
 
     # set default values
     params = {}

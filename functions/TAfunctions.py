@@ -75,7 +75,6 @@ def format_ranking_line(
             f"{price:8,.2f}  {trend}  {company_name:15s}")
 
 
-
 #############################################################################
 # NOTE: Phase 5+ Refactoring - Functions re-exported from functions/ta/*
 # 
