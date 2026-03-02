@@ -10,9 +10,9 @@ import bottleneck as bn
 import la
 
 import functions.quotes_adjCloseVol
-from functions.quotes_adjCloseVol import *
-from functions.TAfunctions import *
-from functions.readSymbols import *
+from functions.quotes_adjCloseVol import downloadQuotes
+from functions.TAfunctions import interpolate, cleantobeginning
+from functions.readSymbols import readSymbolList
 
 def get_Naz100List(verbose: bool = True) -> Tuple[list, list, list]:
     ###

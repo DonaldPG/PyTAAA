@@ -5,7 +5,7 @@ import pandas as pd
 from typing import Tuple
 #from functions.quotes_for_list_adjCloseVol import *
 from functions.quotes_for_list_adjClose import LastQuotesForSymbolList_hdf
-from functions.CheckMarketOpen import *
+from functions.CheckMarketOpen import CheckMarketOpen
 from functions.GetParams import (
     get_json_params, get_symbols_file, get_performance_store
 )

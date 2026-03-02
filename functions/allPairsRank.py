@@ -3,7 +3,7 @@ import os
 import datetime
 from typing import List
 
-from functions.TAfunctions import *
+from functions.TAfunctions import isnan, dpgchannel, move_sharpe_2D, sharpeWeightedRank_2D
 
 '''
 symbol_file = os.path.join( os.getcwd(), 'symbols', 'Naz100_Symbols.txt' )
