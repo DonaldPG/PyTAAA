@@ -234,7 +234,7 @@ def getClusterForSymbolsList(holdings_symbols: list, json_fn: str) -> list:
             #indexnum = list(variation.columns).index( isymbol )
             indexnum = symbols_edit.index( isymbol )
             holdings_cluster_label.append( cluster_label[indexnum] )
-        except:
+        except (ValueError, IndexError):
             holdings_cluster_label.append( "" )
 
     return holdings_cluster_label
@@ -318,7 +318,7 @@ def dailyStockClusters(json_fn: str) -> str:
                         for tic, data in all_data.items()})
             qopen = DataFrame({tic: data['Open']
                         for tic, data in all_data.items()})
-        except:
+        except (OSError, Exception):
             print("Cant find ", ticker)
 
     symbols_edit = []

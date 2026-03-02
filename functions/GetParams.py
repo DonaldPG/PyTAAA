@@ -27,6 +27,9 @@ import json
 import re
 import datetime
 from typing import Tuple, Dict, Optional
+from functions.logger_config import get_logger
+
+logger = get_logger(__name__, log_file="GetParams.log")
 
 
 def from_config_file(config_filename: str) -> configparser.ConfigParser:
@@ -86,10 +89,6 @@ def get_symbols_file(json_fn: str) -> str:
             symbol_file = "SP500_Symbols.txt"
         symbols_file = os.path.join( symbol_directory, symbol_file )
 
-    print(
-        " ... inside GetParams/get_symbols_file ",
-        flush=True
-    )
     return symbols_file
 
 
@@ -123,11 +122,6 @@ def get_performance_store(json_fn: str) -> str:
     # Access and print different sections
     valuation_section = config.get('Valuation')
     p_store = valuation_section["performance_store"]
-
-    print(
-        " ... inside GetParams/get_performance_store ",
-        flush=True
-    )
 
     return p_store
 
@@ -164,11 +158,6 @@ def get_webpage_store(json_fn: str) -> str:
     valuation_section = config.get('Valuation')
     w_store = valuation_section["webpage"]
 
-    print(
-        " ... inside GetParams/get_webpage_store",
-        flush=True
-    )
-
     return w_store
 
 
@@ -193,11 +182,6 @@ def get_web_output_dir(json_fn: str) -> str:
     if 'web_output_dir' not in config:
         raise KeyError("'web_output_dir' key not found in JSON configuration")
     
-    print(
-        " ... inside GetParams/get_web_output_dir ",
-        flush=True
-    )
-
     return config['web_output_dir']
 
 
@@ -258,8 +242,7 @@ def get_json_ftp_params(json_fn: str, verbose: bool = False) -> Dict[str, str]:
     ftp_section = config.get('FTP')
 
     if verbose:
-        print("\nFTP Section:")
-        print(ftp_section)
+        logger.info("FTP Section: %s", ftp_section)
 
     ftpHostname = config.get("FTP")["hostname"]
     ftpUsername = config.get("FTP")["username"]
@@ -303,7 +286,6 @@ def get_holdings(json_fn: str) -> Dict:
 
     # get rankings for latest dates for all stocks in index
     # read the parameters form the configuration file
-    print(" ...inside GetHoldings...  p_store = ", p_store)
     config_filename = os.path.join(p_store, "PyTAAA_ranks.params")
     configfile = open(config_filename, "r")
     config.read_file(configfile)
@@ -311,21 +293,13 @@ def get_holdings(json_fn: str) -> Dict:
     ranks = config.get("Ranks", "ranks").split()
     # put ranks params in dictionary
     holdings_ranks = []
-    print("\n\n********************************************************")
-    print(" ...inside GetParams/GetHoldings...")
     for i, holding in enumerate(holdings['stocks']):
         for j,symbol in enumerate(symbols):
             # print("... j, symbol, rank = ", j, symbol, ranks[j])
             if symbol == holding:
-                print("                                       MATCH ... i, symbol, rank = ", i, holding, symbols[j], ranks[j])
                 holdings_ranks.append( ranks[j] )
                 break
     holdings['ranks'] = holdings_ranks
-    print("\n\n********************************************************", flush=True)
-    print(
-        " ... inside GetParams/get_holdings \n",
-        flush=True
-    )
     return holdings
 
 
@@ -347,10 +321,9 @@ def get_json_params(json_fn: str, verbose: bool = False) -> Dict:
     valuation_section = config.get('Valuation')
 
     if verbose:
-
-        # print JSON with indentation
+        # Log JSON with indentation
         formatted_config = json.dumps(config, indent=4)
-        print(formatted_config)
+        logger.info("JSON config:\n%s", formatted_config)
 
     # set default values
     params = {}
@@ -485,11 +458,6 @@ def get_json_params(json_fn: str, verbose: bool = False) -> Dict:
         current_year = datetime.datetime.now().year
         params['recent_plot_start_date'] = datetime.datetime(current_year - 4, 1, 1)
 
-    print(
-        " ... inside GetParams/get_json_params \n",
-        flush=True
-    )
-
     return params
 
 
@@ -509,11 +477,6 @@ def get_json_status(json_fn: str) -> str:
 
     # put params in a dictionary
     status = config.get("Status", "cumu_value").split()[-3]
-
-    print(
-        " ... inside GetParams/get_json_status ",
-        flush=True
-    )
 
     return status
 
@@ -641,13 +604,6 @@ def get_status(json_fn: str) -> str:
     # put params in a dictionary
     status = config.get("Status", "cumu_value").split()[-3]
 
-    print(
-        "\n\n***************************************\n"
-        " ... inside GetParams/get_status \n"
-        "***************************************",
-        flush=True
-    )
-
     return status
 
 
@@ -677,11 +633,6 @@ def put_status(cumu_status: dict, json_fn: str) -> None:
     # _, traded_values, _, last_signal = computeLongHoldSignal()
     _, traded_values, _, last_signal = compute_long_hold_signal(json_fn)
 
-    print("cumu_status = ", str(cumu_status))
-    print("old_cumu_status = ", old_cumu_status)
-    print("last_signal[-1] = ", last_signal[-1])
-    print("old_cumu_signal = ", old_cumu_signal)
-    print(str(cumu_status)== old_cumu_status, str(last_signal[-1])== old_cumu_signal)
     if str(cumu_status) != str(old_cumu_status) or str(last_signal[-1]) != str(old_cumu_signal):
         with open(status_filename, 'a') as f:
             f.write( "cumu_value: "+\
@@ -757,7 +708,10 @@ def parse_pytaaa_status(file_path: str) -> Tuple[list, list]:
                 dates.append(parts[0])
                 portfolio_values.append(float(parts[3]))
             except ValueError as e:
-                print(f"Skipping line due to parsing error: {line.strip()}\nError: {e}")
+                logger.warning(
+                    "Skipping line due to parsing error: %s\nError: %s",
+                    line.strip(), e
+                )
 
     return dates, portfolio_values
 

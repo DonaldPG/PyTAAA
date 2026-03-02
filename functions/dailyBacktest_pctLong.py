@@ -2207,7 +2207,7 @@ def dailyBacktest_pctLong(json_fn: str, verbose: bool = False) -> None:
             numberStocksUpTrending[iter,:] = numberStocks
             numberStocksUpTrendingMedian = np.median(numberStocksUpTrending[:iter,:],axis=0)
             numberStocksUpTrendingMean   = np.mean(numberStocksUpTrending[:iter,:],axis=0)
-        except:
+        except (OSError, Exception):
             numberStocksUpTrending[iter,:] = numberStocks
             numberStocksUpTrendingMedian = numberStocks
             numberStocksUpTrendingMean   = numberStocks
@@ -3021,7 +3021,7 @@ def dailyBacktest_pctLong(json_fn: str, verbose: bool = False) -> None:
                         csv_text = csv_text.replace("\n",","+str(beatBuyHoldRecent)+","+str(beatPyTAARecent)+"\n")
                         csv_text = csv_text.replace("\n",","+str(last_symbols_text)+"\n")
                         f.write(csv_text)
-        except:
+        except OSError:
             filepath = os.path.join(p_store, "pyTAAAweb_backtestTodayMontecarloPortfolioValue.csv" )
             print(" Error: unable to update file " + filepath)
 

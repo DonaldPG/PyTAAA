@@ -800,7 +800,7 @@ def trade_today(json_fn: str, symbols_today: list, weight_today: np.ndarray, pri
         # merge the 2 processed df's
         merged_trades_df = pd.concat([yes_nan_df, no_nan_df], ignore_index=True)
 
-    except:
+    except Exception:
         print("\nheld_df:\n" + str(held_df))
         print("\ntrades_df_wo_buy:\n" + str(trades_df_wo_buy))
         print(

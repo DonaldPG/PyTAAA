@@ -144,7 +144,7 @@ def ftpMoveDirectory(json_fn: str) -> None:
         traceback.print_exc()
         try:
             t.close()
-        except:
+        except Exception:
             pass
         sys.exit(1)
 
@@ -192,7 +192,7 @@ def piMoveDirectory(json_fn: str) -> None:
         # create a target directory if it does not exist already
         try:
             os.mkdirs( remote_path )
-        except:
+        except Exception:
             print('  ...'+remote_path+' already exists)')
 
         print("\n\n ... diagnostic:  remote_path = ", remote_path)
@@ -202,7 +202,7 @@ def piMoveDirectory(json_fn: str) -> None:
             with open( os.path.join(remote_path, 'README'), 'w') as f:
                 f.write('This was created by pyTAAA/WriteWebPage_pi.py on piDonaldPG\n')
                 print('  ...'+os.path.join(remote_path, 'README')+' created')
-        except:
+        except Exception:
             #pass
             print('  ...'+os.path.join(remote_path, 'README')+' could not be created. Maybe already exists?')
 
@@ -234,7 +234,7 @@ def piMoveDirectory(json_fn: str) -> None:
             shutil.copyfile( local_file, remote_file )
             print('  ...created '+remote_file+' on piDonaldPG web server')
 
-    except:
+    except Exception:
         print(" Unable to create updated web page...")
 
     return
@@ -505,7 +505,7 @@ def writeWebPage(
 
     try:
         figure7_htmlText = makeStockCluster( )
-    except:
+    except Exception:
         pass
     """
 
@@ -526,7 +526,7 @@ def writeWebPage(
     try:
         with open( filepath, "r" ) as f:
             rankingMessage = f.read()
-    except:
+    except Exception:
         print(" Error: unable to read updates from pyTAAAweb_RankList.txt")
         print("")
     print("... writeWebPage: current rankings table added to message ")
@@ -547,7 +547,7 @@ def writeWebPage(
     try:
         with open( filepath, "r" ) as f:
             input = f.read()
-    except:
+    except Exception:
         print(" Error: unable to read updates from *_symbolsChanges.txt")
         print("")
 
@@ -609,7 +609,7 @@ def writeWebPage(
             f.write(figure3_htmlText)
         print(" Successfully wrote updates to pyTAAAweb html ", datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"))
         print("")
-    except :
+    except Exception:
         print(" Error: unable to write updates to pyTAAAweb html")
         print("")
 
@@ -628,7 +628,7 @@ def writeWebPage(
         if not os.path.isfile(dest_fn):
             # Copy the file with metadata
             shutil.copy2(banner_fn, os.path.split(dest_fn)[0])
-    except:
+    except Exception:
         print("\n\n ... Error:   unable to copy banner image")
     print("   . banner_fn = " + banner_fn)
     print("   . dest_fn = " + dest_fn)
@@ -648,7 +648,7 @@ def writeWebPage(
         if not os.path.isfile(dest_fn):
             # Copy the file with metadata
             shutil.copy2(banner_fn, os.path.split(dest_fn)[0])
-    except:
+    except Exception:
         print("\n\n ... Error:   unable to copy backtest image 1")
     print("   . banner_fn = " + banner_fn)
     print("   . dest_fn = " + dest_fn)
@@ -663,7 +663,7 @@ def writeWebPage(
         if not os.path.isfile(dest_fn):
             # Copy the file with metadata
             shutil.copy2(banner_fn, os.path.split(dest_fn)[0])
-    except:
+    except Exception:
         print("\n\n ... Error:   unable to copy backtest image 2")
     print("   . banner_fn = " + banner_fn)
     print("   . dest_fn = " + dest_fn)
@@ -686,28 +686,28 @@ def writeWebPage(
         piMoveDirectory(  )
         try:
             piMoveDirectory(  )
-        except:
+        except Exception:
             print("Could not ftp web files...")
 
     elif operatingSystem == 'Windows' and computerName == 'Don-XPS1530' :
         print("  ...using ftpMoveDirectory")
         try:
             ftpMoveDirectory(  )
-        except:
+        except Exception:
             print("Could not ftp web files...")
 
     elif operatingSystem == 'Windows' and computerName == 'DonEnvy' :
         print("  ...using ftpMoveDirectory")
         try:
             ftpMoveDirectory(  )
-        except:
+        except Exception:
             print("Could not ftp web files...")
 
     elif operatingSystem == 'Windows' and computerName == 'Spectre' :
         print("  ...using ftpMoveDirectory")
         try:
             ftpMoveDirectory(  )
-        except:
+        except Exception:
             print("Could not ftp web files...")
 
     elif operatingSystem == 'Linux' and computerName == 'pine64' :
@@ -715,7 +715,7 @@ def writeWebPage(
         #try:
         ftpMoveDirectory(  )
         '''
-        except:
+        except Exception:
             print "Could not ftp web files..."
         '''
 

@@ -337,10 +337,10 @@ def get_percent_change_from_52_week_low(symbol: str) -> str:
 def get_company_name(symbol: str) -> str:
     try:
         return _request(symbol, 'n')
-    except:
+    except Exception:
         try:
             return _request(symbol, 'n')
-        except:
+        except Exception:
             return " "
 
 def get_percent_change_from_52_week_high(symbol: str) -> str:

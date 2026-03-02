@@ -114,7 +114,7 @@ def loadQuotes_fromHDF(
         print(" ...date[-1] = ", date[-1], " after format conversion: ", type(dates[-1]))
         print(" ...inside loadQuotes_fromHDF ... 'try' block successful")
         which_block = 'try'
-    except:
+    except Exception:
         print(" ...inside loadQuotes_fromHDF ... top of 'except' block")
         # createHDF( hdf5_directory, symbols_file, listname, json_fn )
         createHDF( hdf_folder, symbols_file, listname, json_fn )
@@ -207,7 +207,7 @@ def loadQuotes_fromHDF(
 #     print(" ...inside loadQuotes_fromHDF ... 'try' block successful")
 #     which_block = 'try'
 #     '''
-#     except:
+#     except Exception:
 #         print " ...inside loadQuotes_fromHDF ... top of 'except' block"
 #         createHDF( hdf5_directory, symbols_file, listname )
 #         quote = pd.read_hdf( hdf5filename, listname )
@@ -438,7 +438,7 @@ def compareHDF_and_newquotes(
                 print(" ... **** symbol ", format(isymbol,'5s'), " is different in hdf and update from internet (", firstDate, " to ", lastDate, " )")
             else:
                 print(" ... symbol ", format(isymbol,'5s'), " is same in hdf and update from internet (", firstDate, " to ", lastDate, " )")
-        except:
+        except Exception:
             print(" ... **** **** symbol ", format(isymbol,'5s'), " not matched in hdf and update from internet")
 
         # '''
@@ -744,7 +744,7 @@ def UpdateHDF_yf(
         try:
             # for multiple symbols
             symbolList = data['Adj Close'].columns
-        except:
+        except Exception:
             # for single symbol
             symbolList = symbols
         datearray = data['Adj Close'].index
@@ -1035,7 +1035,7 @@ def UpdateHDF_yf(
 #             # for multiple symbols
 #             #symbolList = data['Adj Close'].columns
 #             symbolList = [str(s) for s in data['Adj Close'].columns]
-#         except:
+#         except Exception:
 #             # for single symbol
 #             symbolList = symbols
 #         datearray = data['Adj Close'].index

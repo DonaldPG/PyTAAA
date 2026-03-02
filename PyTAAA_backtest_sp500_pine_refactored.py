@@ -2966,7 +2966,7 @@ for iter_num in range(first_trial, first_trial + randomtrials + 1):
             textmessage = textmessage + str(datearray[idate])+"  "+str(BuyHoldPortfolioValue[idate])+"  "+str(np.average(monthvalue[:,idate]))+"\n"
         with open( filepath, "w" ) as f:
             f.write(textmessage)
-    except:
+    except (OSError, Exception):
         pass
 
 
@@ -3099,7 +3099,7 @@ for iter_num in range(first_trial, first_trial + randomtrials + 1):
                     print(format(str(holdMonths[ii]),'7s')+   \
                           str(datearray[-1])+         \
                           format(holdmonthscount[ii],'7.2f'), tagnorm)
-        except:
+        except Exception:
             pass
 
 
