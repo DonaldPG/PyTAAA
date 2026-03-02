@@ -1099,53 +1099,6 @@ def get_pe_finviz(symbol: str, verbose: bool = False) -> float:
 
 
 def get_SectorAndIndustry_google(symbol: str) -> Tuple[str, str]:
-    import urllib.request, urllib.parse, urllib.error
-    import re
-    base_url = 'http://finance.google.com/finance?q=NASDAQ%3A'
-    content = urllib.request.urlopen(base_url + symbol).read()
-    try:
-        m = content.split("Sector:")[1].split('>')[1].split("<")[0].replace("&amp;","and")
-        sector = m
-    except:
-        sector = ""
-    try:
-        m = content.split("Industry:")[1].split('>')[1].split("<")[0].replace("&amp;","and").replace(" - NEC","")
-        industry = m
-    except:
-        industry = ""
-    return sector, industry
-
-
-def get_SectorAndIndustry_google(symbol: str) -> Tuple[str, str]:
-    ' use finviz to get sector and industry '
-    import requests
-    import bs4 as bs
-    import os
-    import csv
-    #Get source table
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36'} # This is chrome, you can set whatever browser you like
-    url = 'https://finviz.com/quote.ashx?t='+symbol.upper()
-    r = requests.get(url, headers=headers)
-    html = r.text
-    soup = bs.BeautifulSoup(html, 'lxml')
-    table = soup.find('table', class_= 'fullview-title')
-
-    try:
-        for tr in table.find_all('tr')[2:3]:
-            td = tr.find_all('td')[0]
-            value = td.text
-            print(value)
-        values = value.split(' | ')[:-1]
-        #print values
-        industry = values[0]
-        sector = values[1]
-    except:
-        industry= "unknown"
-        sector = "unknown"
-    return sector, industry
-
-
-def get_SectorAndIndustry_google(symbol: str) -> Tuple[str, str]:
     """Get sector and industry with caching for rate limit avoidance.
     
     Uses cached values if available and fresh (<5 days old).
