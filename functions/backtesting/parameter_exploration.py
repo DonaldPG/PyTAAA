@@ -395,11 +395,11 @@ def generate_random_parameters(
     1. **JSON exact** (``iter_num == total_trials - 1``, when
        ``total_trials > 1``): copy JSON config values unchanged.  Gives
        a reproducible single-point baseline at the end of every run.
-    2. **Exploration** (``iter_num < (total_trials - 1) // 2``): draw
-       all parameters from broad triangular distributions.
-    3. **JSON + one varied** (remaining trials): start from JSON config
-       values, replace exactly one randomly selected parameter with a
-       range-sampled value.
+    2. **Exploration** (first 90 % of non-final trials): draw all
+       parameters from broad triangular distributions.
+    3. **JSON + one varied** (remaining ~10 % of non-final trials):
+       start from JSON config values, replace exactly one randomly
+       selected parameter with a range-sampled value.
 
     With ``total_trials == 1`` the single trial uses exploration mode
     so that random sampling is always exercised.
@@ -415,8 +415,10 @@ def generate_random_parameters(
     """
     usm = (params or {}).get("uptrendSignalMethod", "percentileChannels")
     ranges = _get_ranges(params or {})
-    # Ensure at least one exploration trial even when total_trials is small.
-    mid = max(1, (total_trials - 1) // 2)
+    # Boundary between exploration (first 90 %) and JSON+one (last 10 %)
+    # of non-final trials.  max(1, ...) guarantees at least one exploration
+    # trial even when total_trials is very small.
+    mid = max(1, round(0.9 * (total_trials - 1)))
 
     # Final trial: JSON values verbatim (skip when only one trial).
     if total_trials > 1 and iter_num == total_trials - 1:
