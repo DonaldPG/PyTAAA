@@ -570,34 +570,48 @@ def generate_web_content(config: Dict[str, Any]) -> None:
         logger.warning("No web_output_dir configured")
 
 
-def create_temporary_config_file(config: Dict[str, Any]) -> str:
-    """
-    Create a temporary JSON configuration file with updated paths.
-    
-    This allows us to pass the dynamically updated configuration
-    to run_pytaaa() which expects a file path.
+def create_temporary_config_file(
+    config: Dict[str, Any],
+    base_json_path: str = None,
+) -> str:
+    """Create a runtime JSON configuration file with updated paths.
+
+    Writes to a **stable, deterministic** path so the file survives until
+    the background Monte Carlo subprocess finishes reading it.  Using a
+    random ``mkstemp`` path caused a race condition: the parent process
+    deleted the temp file in its ``finally`` block before the detached
+    child process had a chance to open it.
+
+    The file is placed next to *base_json_path* (or in the system temp
+    directory as a fallback) and named ``daily_abacus_runtime.json``.
+    It is overwritten on every run, so no explicit cleanup is required.
+
+    Args:
+        config: Updated configuration dictionary to serialise.
+        base_json_path: Path to the original JSON config file; used to
+            determine the output directory.  If ``None``, the system temp
+            directory is used.
+
+    Returns:
+        Absolute path to the written runtime config file.
     """
     logger = logging.getLogger(__name__)
-    
-    # Create temporary file in same directory as script
-    import tempfile
-    temp_fd, temp_path = tempfile.mkstemp(suffix='.json', prefix='daily_abacus_temp_')
-    
-    try:
-        # Write updated config to temporary file
-        with os.fdopen(temp_fd, 'w') as temp_file:
-            json.dump(config, temp_file, indent=4)
-        
-        logger.debug(f"Created temporary config file: {temp_path}")
-        return temp_path
-        
-    except Exception as e:
-        # Clean up on error
-        try:
-            os.unlink(temp_path)
-        except:
-            pass
-        raise e
+
+    # Derive a stable directory: same folder as the original JSON, or
+    # fall back to the system temp directory.
+    if base_json_path:
+        target_dir = os.path.dirname(os.path.abspath(base_json_path))
+    else:
+        import tempfile
+        target_dir = tempfile.gettempdir()
+
+    stable_path = os.path.join(target_dir, "daily_abacus_runtime.json")
+
+    with open(stable_path, 'w') as f:
+        json.dump(config, f, indent=4)
+
+    logger.debug(f"Created runtime config file: {stable_path}")
+    return stable_path
 
 
 def cleanup_temporary_file(temp_path: str) -> None:
@@ -702,7 +716,9 @@ def generate_web_content_only(config: Dict[str, Any]) -> None:
             logger.info("Web content generated successfully")
             
         finally:
-            cleanup_temporary_file(temp_config_file)
+            # Do NOT delete the runtime config file here — the background
+            # Monte Carlo subprocess may still be reading it.
+            pass
             
     except Exception as e:
         logger.error(f"Error generating web content: {e}")
@@ -841,9 +857,13 @@ def main(json_path: str, verbose: bool) -> None:
 
         # print("Stock price update needed - proceeding with full update")
         
-        # Create temporary config file with updated paths
-        logger.info("Creating temporary configuration file...")
-        temp_config_file = create_temporary_config_file(updated_config)
+        # Create runtime config file with updated paths.
+        # Uses a stable deterministic path so the background Monte Carlo
+        # subprocess can read it after main() exits.
+        logger.info("Creating runtime configuration file...")
+        temp_config_file = create_temporary_config_file(
+            updated_config, base_json_path=json_path
+        )
         
         # Run main PyTAAA update process with updated config
         logger.info("Running PyTAAA update process...")
@@ -917,9 +937,12 @@ def main(json_path: str, verbose: bool) -> None:
         sys.exit(1)
         
     finally:
-        # Clean up temporary file
-        if temp_config_file:
-            cleanup_temporary_file(temp_config_file)
+        # Do NOT delete the runtime config file here: the background
+        # Monte Carlo subprocess (spawned by makeDailyMonteCarloBacktest)
+        # is detached and may still be reading it after main() returns.
+        # The file uses a stable deterministic path and is overwritten on
+        # the next run, so no explicit cleanup is needed.
+        pass
 
 
 if __name__ == '__main__':
