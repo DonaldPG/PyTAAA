@@ -21,15 +21,15 @@ Legacy Functions (deprecated, use JSON-based equivalents):
 """
 
 import os
-import logging
 import numpy as np
 import configparser
 import json
 import re
 import datetime
 from typing import Tuple, Dict, Optional
+from functions.logger_config import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__, log_file="GetParams.log")
 
 
 def from_config_file(config_filename: str) -> configparser.ConfigParser:

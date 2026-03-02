@@ -15,14 +15,14 @@ plt.rcParams['figure.figsize'] = (9, 7)
 plt.rcParams['figure.dpi'] = 150
 plt.rcParams['savefig.dpi'] = 150
 import matplotlib.gridspec as gridspec
-import logging
+from functions.logger_config import get_logger
 from functions.GetParams import (
     get_json_params, get_symbols_file, GetEdition, get_performance_store
 )
 from functions.TAfunctions import dpgchannel, SMA
 from functions.GetParams import get_webpage_store, get_web_output_dir
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__, log_file="MakeValuePlot.log")
 
 
 def makeValuePlot(json_fn: str) -> None:
