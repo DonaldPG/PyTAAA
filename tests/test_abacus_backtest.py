@@ -62,16 +62,12 @@ class TestBacktestDataLoader:
         assert 'PyTAAA_status.params' in paths['naz100_pine']
     
     def test_build_model_paths_legacy_mode(self):
-        """Test building model paths in legacy mode (no models in config)."""
+        """Test that legacy mode (no models in config) raises ValueError."""
         config = {}
         
         loader = BacktestDataLoader(config)
-        paths = loader.build_model_paths('backtested', None)
-        
-        assert 'cash' in paths
-        assert 'naz100_pine' in paths
-        assert 'sp500_hma' in paths
-        assert paths['cash'] == ''
+        with pytest.raises(ValueError, match="JSON config path and 'models' section are required"):
+            loader.build_model_paths('backtested', None)
     
     def test_validate_model_paths_with_cash(self):
         """Test validation handles cash model (empty path) correctly."""
