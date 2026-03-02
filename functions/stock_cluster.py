@@ -41,7 +41,7 @@ def getClusterForSymbolsList(holdings_symbols: list, json_fn: str) -> list:
 
     from sklearn import cluster, covariance, manifold
 
-    from functions.GetParams import get_json_params, GetSymbolsFile
+    from functions.GetParams import get_json_params, get_symbols_file
     from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
 
     ########################################################################
@@ -107,7 +107,7 @@ def getClusterForSymbolsList(holdings_symbols: list, json_fn: str) -> list:
 
     ###############################################################################################
     ###  UpdateHDF5( symbols_directory, symbols_file )  ### assume hdf is already up to date
-    symbols_file = GetSymbolsFile(json_fn)
+    symbols_file = get_symbols_file(json_fn)
     adjClose, quotes_symbols, datearray, _, _ = loadQuotes_fromHDF(symbols_file, json_fn)
 
     print(" ... adjClose.shape = ", adjClose.shape)
