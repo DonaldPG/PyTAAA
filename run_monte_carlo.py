@@ -2,9 +2,33 @@
 
 """Monte Carlo backtesting runner for PyTAAA.
 
-This module runs Monte Carlo simulations using actual portfolio values from 
-PyTAAA_status.params files and/or backtested portfolio values from 
-pyTAAAweb_backtestPortfolioValue.params files to evaluate portfolio performance.
+This module runs Monte Carlo simulations using actual portfolio values
+from ``PyTAAA_status.params`` files and/or backtested portfolio values
+from ``pyTAAAweb_backtestPortfolioValue.params`` files to evaluate
+portfolio performance across multiple trading models.
+
+CLI Arguments:
+    --search: Search strategy (``explore-exploit`` | ``explore`` |
+        ``exploit``). Defaults to ``explore-exploit``.
+    --verbose: Show detailed normalized score breakdown for each new
+        best performance found.
+    --json: Path to JSON configuration file for centralized settings.
+    --randomize: Use randomized values for CENTRAL_VALUES and
+        STD_VALUES (default: False).
+    --fp-duration: Focus period duration in years (default: 5).
+    --fp-year-min: Minimum year for focus period start (default: 1995).
+    --fp-year-max: Maximum year for focus period start (default: 2021).
+    --workers: Number of parallel worker processes (default: 10).
+
+Example Usage:
+    uv run python run_monte_carlo.py \\
+        --json pytaaa_model_switching_params.json
+    uv run python run_monte_carlo.py \\
+        --json pytaaa_model_switching_params.json --search explore
+    uv run python run_monte_carlo.py \\
+        --json pytaaa_model_switching_params.json \\
+        --fp-duration 5 --fp-year-min 2000 --fp-year-max 2015 \\
+        --workers 4 --verbose
 """
 
 import os

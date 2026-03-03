@@ -115,6 +115,69 @@ def computeDailyBacktest(
         uptrendSignalMethod: str = 'uptrendSignalMethod',
         verbose: bool = False
 ) -> None:
+    """Run a daily backtest and write portfolio value history to disk.
+
+    Computes a simulated portfolio value over the full date range in
+    ``datearray`` using the provided price data and strategy parameters.
+    Results are written to the JSON output directory as a ``.params``
+    file (``pyTAAAweb_backtestPortfolioValue.params``).
+
+    Args:
+        json_fn: Path to the JSON configuration file.  The output
+            directory is derived from this path.
+        datearray: 1-D array of ``datetime.date`` objects with length
+            ``n_days``, one entry per trading day.
+        symbols: List of stock ticker symbols of length ``n_symbols``.
+            The last element must be ``'CASH'``.
+        adjClose: 2-D array of adjusted close prices with shape
+            ``(n_symbols, n_days)``.
+        numberStocksTraded: Maximum number of stocks held simultaneously.
+            Defaults to 7.
+        trade_cost: Per-trade commission cost in dollars.  Defaults to
+            7.95.
+        monthsToHold: Holding period in calendar months before the
+            portfolio is re-evaluated.  Defaults to 4.
+        LongPeriod: Long lookback window in weeks used for trend and
+            Sharpe calculations.  Defaults to 104.
+        MA1: Primary moving-average period in days.  Defaults to 207.
+        MA2: Secondary moving-average period in days.  Defaults to 26.
+        MA2offset: Offset applied to MA2 signal in days.  Defaults to
+            3.
+        sma2factor: Scaling factor applied to the MA2 signal.  Defaults
+            to 0.911.
+        rankThresholdPct: Minimum rank-score threshold expressed as a
+            fraction of the total rank range.  Defaults to 0.02.
+        riskDownside_min: Minimum downside-risk threshold used to filter
+            candidate stocks.  Defaults to 0.272.
+        riskDownside_max: Maximum downside-risk threshold used to filter
+            candidate stocks.  Defaults to 4.386.
+        narrowDays: Two-element list ``[min, max]`` defining the day
+            bounds for the narrow price channel.  Defaults to
+            ``[6., 40.2]``.
+        mediumDays: Two-element list ``[min, max]`` defining the day
+            bounds for the medium price channel.  Defaults to
+            ``[25.2, 38.3]``.
+        wideDays: Two-element list ``[min, max]`` defining the day
+            bounds for the wide price channel.  Defaults to
+            ``[75.2, 512.3]``.
+        stddevThreshold: Standard-deviation threshold used for channel
+            width filtering.  Defaults to 4.0.
+        lowPct: Lower percentile bound for channel construction.
+            Defaults to 17.
+        hiPct: Upper percentile bound for channel construction.
+            Defaults to 84.
+        uptrendSignalMethod: Name of the uptrend-signal computation
+            method (e.g. ``'percentileChannels'``).  Defaults to
+            ``'uptrendSignalMethod'``.
+        verbose: If ``True``, print detailed per-step output during the
+            backtest run.  Defaults to ``False``.
+
+    Returns:
+        None.  Writes space-delimited daily backtest data to
+        ``pyTAAAweb_backtestPortfolioValue.params`` in the performance
+        store directory (each line: ``date  buy_hold_value
+        traded_value``).
+    """
 
     # put params in a dictionary
     params = {}
