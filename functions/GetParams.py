@@ -633,10 +633,10 @@ def put_status(cumu_status: dict, json_fn: str) -> None:
     # _, traded_values, _, last_signal = computeLongHoldSignal()
     _, traded_values, _, last_signal = compute_long_hold_signal(json_fn)
 
-    print(f"  Previous portfolio value : {old_cumu_status}")
-    print(f"  Updated portfolio value  : {cumu_status}  "
-          f"(traded: {traded_values[-1]:.4f})  "
+    print(f"  Previous portfolio value   : {old_cumu_status}")
+    print(f"  Updated portfolio value    : {cumu_status}  "
           f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]")
+    print(f"  System signal-timed value  : {traded_values[-1]:.4f}")
 
     if str(cumu_status) != str(old_cumu_status) or str(last_signal[-1]) != str(old_cumu_signal):
         with open(status_filename, 'a') as f:
