@@ -11,8 +11,7 @@ from math import sqrt
 from typing import List
 
 ## local imports
-from functions.quotes_for_list_adjClose import *
-from functions.TAfunctions import *
+from functions.TAfunctions import isnan, computeSignal2D, sharpeWeightedRank_2D
 from functions.GetParams import get_json_params, get_performance_store
 from functions.CountNewHighsLows import newHighsAndLows
 # from functions.UpdateSymbols_inHDF5 import UpdateHDF5

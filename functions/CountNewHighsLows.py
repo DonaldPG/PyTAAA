@@ -13,7 +13,7 @@ except Exception:
 from functions.TAfunctions import SMS
 from functions.GetParams import get_json_params, get_symbols_file
 from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
-from functions.allstats import *
+from functions.allstats import allstats
 
 #----------------------------------------------
 

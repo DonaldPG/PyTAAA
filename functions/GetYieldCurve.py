@@ -6,8 +6,7 @@ from bs4 import BeautifulSoup
 from matplotlib import pylab as plt
 
 # local imports
-from UpdateSymbols_inHDF5 import *
-from TAfunctions import *
+from functions.UpdateSymbols_inHDF5 import loadQuotes_fromHDF
 
 def getYieldCurve():
     ###
