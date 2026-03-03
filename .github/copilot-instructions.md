@@ -33,12 +33,20 @@ PyTAAA/
 ├── pytaaa_generic.json         # Template JSON configuration
 ├── pytaaa_model_switching_params.json  # Abacus model config
 ├── pyproject.toml              # Project metadata and dependencies
+├── pytaaa_backtest_montecarlo.py  # Monte Carlo backtest CLI (Click)
 ├── functions/                  # Core library modules
 │   ├── ta/                     # Technical analysis sub-package
 │   │   ├── moving_averages.py  # SMA, HMA, MoveMax, MoveMin
 │   │   ├── signal_generation.py  # computeSignal2D
 │   │   ├── rolling_metrics.py  # Sharpe, Martin ratios
 │   │   └── ...
+│   ├── backtesting/            # Modular backtesting package
+│   │   ├── config_helpers.py   # Path/model extraction utilities
+│   │   ├── parameter_exploration.py  # Parameter sampling
+│   │   ├── monte_carlo_runner.py  # Monte Carlo trial execution
+│   │   ├── output_writers.py   # CSV/JSON/PNG output
+│   │   ├── core_backtest.py    # Core backtest logic
+│   │   └── plot_generation.py  # Backtest chart generation
 │   ├── TAfunctions.py          # Backward-compat re-exports from ta/
 │   ├── abacus_recommend.py     # Recommendation engine classes
 │   ├── abacus_backtest.py      # Backtest data management
@@ -81,6 +89,10 @@ uv run python recommend_model.py --json pytaaa_model_switching_params.json
 # Run Monte Carlo optimization
 uv run python run_monte_carlo.py \
     --json pytaaa_model_switching_params.json --iterations 100
+
+# Run modular Monte Carlo backtest (new CLI)
+uv run python pytaaa_backtest_montecarlo.py \
+    --json config.json --trials 50
 ```
 
 **Always set `PYTHONPATH=$(pwd)` when running tests** so that the
@@ -127,6 +139,21 @@ logger = get_logger(__name__, log_file="module_name.log")
 After significant Copilot sessions, create a summary in
 `docs/copilot_sessions/` using the format
 `YYYY-MM-DD_brief-description.md`.
+
+### Backtesting Package
+The `functions/backtesting/` package provides the modular Monte Carlo
+backtest engine used by `pytaaa_backtest_montecarlo.py`. Prefer
+importing from this package over the legacy `MonteCarloBacktest.py`:
+
+```python
+from functions.backtesting.config_helpers import (
+    extract_model_identifier,
+    setup_output_paths,
+)
+from functions.backtesting.monte_carlo_runner import (
+    run_monte_carlo_backtest,
+)
+```
 
 ## Dependency Management
 - This Python project uses **uv** to manage dependencies.
