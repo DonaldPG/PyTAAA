@@ -18,6 +18,13 @@ import unittest.mock as mock
 import numpy as np
 import pytest
 
+##############################################################################
+# Pre-load computeDailyBacktest at collection time so scipy is fully in
+# sys.modules before any test in test_phaseE_imports.py can trigger module-
+# cache manipulation that leaves scipy submodules in a corrupted state.
+##############################################################################
+from functions.dailyBacktest import computeDailyBacktest  # noqa: E402
+
 
 # ---------------------------------------------------------------------------
 # Shared fixtures
@@ -94,8 +101,6 @@ def test_runs_without_error_declining_stock(
 
     Mocks out all disk I/O so the test stays hermetic.
     """
-    from functions.dailyBacktest import computeDailyBacktest
-
     symbols, adjClose = declining_universe
     zeros = np.zeros(N_DAYS)
 
@@ -133,8 +138,6 @@ def test_output_file_written(
     tmp_path, business_dates, rising_universe
 ):
     """The portfolio-value params file must be created after a successful run."""
-    from functions.dailyBacktest import computeDailyBacktest
-
     symbols, adjClose = rising_universe
     zeros = np.zeros(N_DAYS)
 
@@ -187,8 +190,6 @@ def test_output_file_has_numeric_columns(
     The full-success path writes 5 columns; the fallback writes 3.
     The test simply verifies numeric parsability of the value columns.
     """
-    from functions.dailyBacktest import computeDailyBacktest
-
     symbols, adjClose = declining_universe
     zeros = np.zeros(N_DAYS)
 
