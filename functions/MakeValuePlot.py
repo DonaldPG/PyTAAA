@@ -848,33 +848,6 @@ def makeStockCluster(json_fn: str) -> None:
     return figure7_htmlText
 
 
-def makeMinimumSpanningTree(json_fn: str) -> None:
-
-    from functions.make_stock_xcorr_network_plots import make_networkx_spanning_tree_plot
-
-    ##########################################
-    # make plot with daily monte carlo backtest
-    ##########################################
-    webpage_dir = get_webpage_store(json_fn)
-    figure7apath = os.path.join(webpage_dir, 'minimum_spanning_tree.png' )
-
-    ###
-    ### make plot of minimum spanning tree based on correlations between
-    ### stock's recent (22 day) performance
-    ###
-
-    make_networkx_spanning_tree_plot(figure7apath, json_fn)
-
-    figure7apath = 'minimum_spanning_tree.png'  # re-set to name without full path
-    figure7a_htmlText = "\n<br><h3>Daily stock minimum-spanning tree analyis. Based on 22 day performance correlations.</h3>\n"
-    figure7a_htmlText = figure7a_htmlText + "\nCorrelations for graph network based on daily variation quotes for the stock universe.\n"
-    figure7a_htmlText = figure7a_htmlText + "\nUse to visually observe if patterns are related to (desirable attributes from) portfolio diversity\n"
-    figure7a_htmlText = figure7a_htmlText + '''<br><img src="'''+figure7apath+'''" alt="PyTAAA by DonaldPG" width="850" height="500"><br>\n'''
-
-    return figure7a_htmlText
-
-
-
 def makeDailyChannelOffsetSignal(json_fn: str) -> None:
     from functions.TAfunctions import recentTrendAndStdDevs
     #import functions.allstats

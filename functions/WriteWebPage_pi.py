@@ -27,7 +27,7 @@ Example:
 import shutil
 from typing import List
 from functions.GetParams import get_json_ftp_params, get_webpage_store
-from functions.MakeValuePlot import makeMinimumSpanningTree
+from functions.graph_plots import makeMinimumSpanningTree
 
 
 def ftpMoveDirectory(json_fn: str) -> None:
