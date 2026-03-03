@@ -17,6 +17,7 @@ from typing import Dict, Any, Optional
 import logging
 
 from functions.logger_config import get_logger
+from functions.config_cache import config_cache
 
 logger = get_logger(__name__)
 
@@ -454,9 +455,8 @@ def update_json_config(
             f.write(backup_content)
         logger.info(f"Created backup at {backup_file}")
     
-    with open(json_file, 'r') as f:
-        config = json.load(f)
-    
+    config = config_cache.get(json_file)
+
     # Update model_selection section
     if 'model_selection' not in config:
         config['model_selection'] = {}
@@ -493,7 +493,8 @@ def update_json_config(
     
     with open(json_file, 'w') as f:
         json.dump(config, f, indent=4)
-    
+    config_cache.invalidate(json_file)
+
     logger.info(f"Updated {json_file} with all parameters from CSV/Excel row")
     logger.info(f"  - Normalization values (central and std)")
     logger.info(f"  - Lookback days: {lookback_days}")

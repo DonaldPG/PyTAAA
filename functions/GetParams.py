@@ -28,6 +28,7 @@ import re
 import datetime
 from typing import Tuple, Dict, Optional
 from functions.logger_config import get_logger
+from functions.config_cache import config_cache
 
 logger = get_logger(__name__, log_file="GetParams.log")
 
@@ -116,8 +117,7 @@ def get_performance_store(json_fn: str) -> str:
     ######################
     ### get folder where performance history files (*.params) are stored
     ######################
-    with open(json_fn, 'r') as json_file:
-        config = json.load(json_file)
+    config = config_cache.get(json_fn)
 
     # Access and print different sections
     valuation_section = config.get('Valuation')
@@ -150,9 +150,7 @@ def get_webpage_store(json_fn: str) -> str:
     ######################
     ### get folder where updated webpage is created
     ######################
-
-    with open(json_fn, 'r') as json_file:
-        config = json.load(json_file)
+    config = config_cache.get(json_fn)
 
     # Access and print different sections
     valuation_section = config.get('Valuation')
@@ -176,9 +174,8 @@ def get_web_output_dir(json_fn: str) -> str:
         KeyError: If the web_output_dir key is missing.
         json.JSONDecodeError: If the JSON file is malformed.
     """
-    with open(json_fn, 'r') as json_file:
-        config = json.load(json_file)
-    
+    config = config_cache.get(json_fn)
+
     if 'web_output_dir' not in config:
         raise KeyError("'web_output_dir' key not found in JSON configuration")
     
@@ -201,9 +198,8 @@ def get_central_std_values(json_fn: str) -> Dict[str, Dict[str, float]]:
         KeyError: If required normalization keys are missing.
         json.JSONDecodeError: If the JSON file is malformed.
     """
-    with open(json_fn, 'r') as json_file:
-        config = json.load(json_file)
-    
+    config = config_cache.get(json_fn)
+
     # Navigate through the nested JSON structure
     model_selection = config.get('model_selection')
     if model_selection is None:
@@ -235,8 +231,7 @@ def get_json_ftp_params(json_fn: str, verbose: bool = False) -> Dict[str, str]:
     # set default values
     ftpparams = {}
 
-    with open(json_fn, 'r') as json_file:
-        config = json.load(json_file)
+    config = config_cache.get(json_fn)
 
     # Access and print different sections
     ftp_section = config.get('FTP')
@@ -309,8 +304,7 @@ def get_json_params(json_fn: str, verbose: bool = False) -> Dict:
     ### Input parameters from json file with multiple sections
     ######################
 
-    with open(json_fn, 'r') as json_file:
-        config = json.load(json_file)
+    config = config_cache.get(json_fn)
 
     # Access and print different sections
     email_section = config.get('Email')

@@ -37,12 +37,24 @@ def test_no_bare_except_in_any_module():
 
 
 def test_no_debug_prints_in_getparams():
-    """No print() calls inside public functions of GetParams.py."""
+    """No debug print() calls inside public functions of GetParams.py.
+
+    put_status() is explicitly allowed to print operational status lines
+    (Previous/Updated portfolio value) restored after Phase A incorrectly
+    removed them alongside actual debug prints.
+    """
+    # Functions allowed to emit operational print() output.
+    ALLOWED_PRINT_FUNCS = {"put_status"}
+
     path = Path("functions/GetParams.py")
     tree = ast.parse(path.read_text())
     violations = []
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and not node.name.startswith("_"):
+        if (
+            isinstance(node, ast.FunctionDef)
+            and not node.name.startswith("_")
+            and node.name not in ALLOWED_PRINT_FUNCS
+        ):
             for child in ast.walk(node):
                 if (
                     isinstance(child, ast.Call)
