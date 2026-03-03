@@ -10,11 +10,6 @@ from typing import Any, Optional, Tuple
 
 #from scipy.stats import gmean
 
-import matplotlib
-if os.environ.get('DISPLAY','') == '':
-    print('no display found. Using non-interactive Agg backend')
-    matplotlib.use('Agg')
-
 ## local imports
 from functions.quotes_for_list_adjClose import arrayFromQuotesForList
 from functions.TAfunctions import (interpolate,

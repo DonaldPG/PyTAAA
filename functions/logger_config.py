@@ -76,14 +76,31 @@ def get_logger(
     )
 
 
-# Create main system logger (with default log file)
-system_logger = setup_logger('PyTAAA', log_file='pytaaa_system.log')
+_system_logger: Optional[logging.Logger] = None
 
-# Create Monte Carlo specific logger
-monte_carlo_logger = setup_logger(
-    'PyTAAA.MonteCarloBacktest',
-    log_file='monte_carlo_backtest.log'
-)
+
+def get_system_logger() -> logging.Logger:
+    """Return the system-level logger, creating it on first call."""
+    global _system_logger
+    if _system_logger is None:
+        _system_logger = setup_logger(
+            'PyTAAA', log_file='pytaaa_system.log'
+        )
+    return _system_logger
+
+
+_monte_carlo_logger: Optional[logging.Logger] = None
+
+
+def get_monte_carlo_logger() -> logging.Logger:
+    """Return the Monte Carlo logger, creating it on first call."""
+    global _monte_carlo_logger
+    if _monte_carlo_logger is None:
+        _monte_carlo_logger = setup_logger(
+            'PyTAAA.MonteCarloBacktest',
+            log_file='monte_carlo_backtest.log'
+        )
+    return _monte_carlo_logger
 
 
 def prompt_continue_iteration() -> bool:

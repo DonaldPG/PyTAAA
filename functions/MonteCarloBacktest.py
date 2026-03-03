@@ -28,15 +28,13 @@ from functions.PortfolioMetrics import (
 # Global interrupt flag using threading.Event for thread safety
 _INTERRUPT_EVENT = threading.Event()
 
-# Set up global signal handler at module level
+# Signal handler installed by run() for the duration of each run.
 def _global_signal_handler(signum, frame):
     """Global signal handler for immediate interrupt detection."""
     print("\n\n*** INTERRUPT SIGNAL RECEIVED! ***")
     print("Stopping after current iteration...")
     _INTERRUPT_EVENT.set()
 
-# Install the signal handler immediately when module is imported
-signal.signal(signal.SIGINT, _global_signal_handler)
 
 def check_interrupt():
     """Check if interrupt was requested."""
@@ -548,7 +546,12 @@ class MonteCarloBacktest:
             
         # Reset interrupt flag
         reset_interrupt()
-            
+
+        # Install interrupt handler for the duration of this run.
+        # Restore the original handler when run() exits.
+        original_handler = signal.getsignal(signal.SIGINT)
+        signal.signal(signal.SIGINT, _global_signal_handler)
+
         n_dates = len(self.dates)
         top_models = []
         best_performance = float('-inf')
@@ -575,7 +578,10 @@ class MonteCarloBacktest:
             print(f"Completed iterations so far")
             if not self.best_portfolio_value:
                 return []
-        
+        finally:
+            # Restore the original SIGINT handler unconditionally.
+            signal.signal(signal.SIGINT, original_handler)
+
         total_time = time.time() - start_time
         print(f"\nMonte Carlo simulation completed in {total_time/60:.1f} minutes")
         print(f"Best normalized score: {best_performance:.2f}")

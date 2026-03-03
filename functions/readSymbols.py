@@ -8,6 +8,7 @@ import datetime
 from typing import Optional, Tuple
 import pandas as pd
 import pandas_market_calendars as mcal
+from functions.ta.utils import strip_accents
 
 class webpage_companies_extractor:
     Url = None
@@ -22,22 +23,6 @@ class webpage_companies_extractor:
         symbols = list(company_names['Ticker'].values)
         companyNames = list(company_names['Company'].values)
         return symbols, companyNames
-
-
-def strip_accents(text: str) -> str:
-    import unicodedata
-    try:
-        text = unicode(text, 'utf-8')
-    except NameError: # unicode is a default on python 3
-        pass
-    try:
-        text = text.decode('ascii')
-    except (UnicodeDecodeError, AttributeError):
-        pass
-    text = unicodedata.normalize('NFD', text)\
-           .encode('ascii', 'ignore')\
-           .decode("utf-8")
-    return str(text)
 
 
 # '''

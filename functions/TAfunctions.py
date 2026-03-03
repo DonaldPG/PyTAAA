@@ -29,11 +29,6 @@ from functions.quotes_adjClose import get_pe
 from functions.readSymbols import read_symbols_list_local
 from functions.GetParams import get_webpage_store, get_performance_store
 
-import matplotlib
-if os.environ.get('DISPLAY','') == '':
-    print('no display found. Using non-interactive Agg backend')
-    matplotlib.use('Agg')
-
 
 class TradingConstants:
     """
