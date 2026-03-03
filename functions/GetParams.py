@@ -644,8 +644,6 @@ def put_status(cumu_status: dict, json_fn: str) -> None:
     print(f"  Previous portfolio value        : {_fmt(old_cumu_status)}")
     print(f"  Updated portfolio value         : {_fmt(cumu_status)}"
           f"  [{ts}]")
-    print(f"  Signal-timed backtest (history) : {_fmt(traded_values[-1])}"
-          f"  (long-run backtest since inception)")
 
     if str(cumu_status) != str(old_cumu_status) or str(last_signal[-1]) != str(old_cumu_signal):
         with open(status_filename, 'a') as f:
