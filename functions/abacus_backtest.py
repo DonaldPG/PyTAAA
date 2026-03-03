@@ -240,19 +240,12 @@ def write_abacus_backtest_portfolio_values(
         dates = monte_carlo.dates
         nasdaq_start_date = dates[0]  # Should be 1991-01-02
         
-        # Determine output file path
-        from functions.GetParams import get_json_params
-        params = get_json_params(json_config_path)
-        data_folder = params.get('data_folder')
-        if not data_folder:
-            raise ValueError(
-                "Missing 'data_folder' in JSON config. "
-                "Ensure the config file contains a 'data_folder' key."
-            )
-        folder_name = params.get('folder_name', 'naz100_sp500_abacus')
+        # Determine output file path using the performance_store from JSON config.
+        # This is already the full data_store directory path.
+        from functions.GetParams import get_performance_store
+        p_store = get_performance_store(json_config_path)
         output_file = os.path.join(
-            data_folder, folder_name, 'data_store',
-            'pyTAAAweb_backtestPortfolioValue.params'
+            p_store, 'pyTAAAweb_backtestPortfolioValue.params'
         )
         
         # Read existing file
