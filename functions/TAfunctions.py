@@ -903,73 +903,64 @@ def sharpeWeightedRank_2D(
     stockList: str = "SP500",  # Add stockList parameter for early period logic
     **kwargs: Any  # Accept any additional keyword arguments for compatibility.
 ) -> np.ndarray:
-    """
-    Compute Sharpe-ratio-weighted portfolio allocation for all dates.
+    """Compute Sharpe-ratio-weighted portfolio allocation for all dates.
 
-    This function computes rolling Sharpe ratios for each stock and
-    returns a 2D array of portfolio weights [n_stocks, n_days].
-    Stocks are selected based on:
-    1. Having an uptrend signal (signal2D > 0)
-    2. Ranking in the top N by Sharpe ratio
-    3. Passing data quality checks
+    Computes rolling Sharpe ratios for each stock and returns a 2D array
+    of portfolio weights ``(n_stocks, n_days)``.  Stocks are selected
+    based on: (1) having an uptrend signal (``signal2D > 0``), (2)
+    ranking in the top N by Sharpe ratio, and (3) passing data-quality
+    checks.  Weights are assigned proportionally to Sharpe ratios with
+    optional constraints, and are forward-filled so every day has
+    valid weights.
 
-    Weights are assigned proportionally to Sharpe ratios, with constraints
-    applied via max_weight_factor, min_weight_factor, and absolute_max_weight.
+    Args:
+        json_fn: Path to JSON configuration file (not used but kept
+            for API compatibility).
+        datearray: 1D array of dates corresponding to ``adjClose``
+            columns.
+        symbols: List of stock ticker symbols corresponding to rows
+            of ``adjClose``.
+        adjClose: 2D array of adjusted close prices
+            ``(n_stocks, n_days)``.
+        signal2D: 2D monthly uptrend signal array
+            ``(n_stocks, n_days)``; 1 = uptrending.
+        signal2D_daily: 2D daily uptrend signal array
+            ``(n_stocks, n_days)`` (not used; kept for API
+            compatibility).
+        LongPeriod: Rolling lookback period in days for Sharpe ratio
+            calculation.
+        numberStocksTraded: Number of top-ranked stocks to include in
+            the portfolio at each date (clamped to a maximum of 20).
+        riskDownside_min: Minimum portfolio weight per position.
+        riskDownside_max: Maximum portfolio weight per position.
+        rankThresholdPct: Percentile threshold for rank filtering
+            (currently unused; reserved for future use).
+        stddevThreshold: Standard-deviation multiplier for spike
+            detection. Defaults to 5.0.
+        makeQCPlots: If ``True``, generate quality-control plots.
+            Defaults to ``False``.
+        max_weight_factor: Maximum weight as a multiple of the equal
+            weight. Defaults to 3.0.
+        min_weight_factor: Minimum weight as a multiple of the equal
+            weight. Defaults to 0.3.
+        absolute_max_weight: Absolute cap on any single position
+            weight. Defaults to 0.9.
+        apply_constraints: If ``True``, enforce weight constraints.
+            Defaults to ``True``.
+        is_backtest: If ``True``, run in backtest mode (uses
+            historical data).  If ``False``, run in production mode.
+            Defaults to ``True``.
+        verbose: If ``True``, print detailed progress messages.
+            Defaults to ``False``.
+        stockList: Stock-list identifier (``"SP500"`` or
+            ``"Naz100"``).  Early-period CASH logic only applies to
+            ``"SP500"``. Defaults to ``"SP500"``.
+        **kwargs: Additional keyword arguments accepted for forward
+            compatibility.
 
-    IMPORTANT: Weights are forward-filled so every day has valid weights.
-    This ensures portfolio calculations don't result in zero values.
-
-    Parameters
-    ----------
-    json_fn : str
-        Path to JSON configuration file (not used but kept for API).
-    datearray : np.ndarray
-        Array of dates corresponding to adjClose columns.
-    symbols : list
-        List of stock symbols corresponding to adjClose rows.
-    adjClose : np.ndarray
-        2D array of adjusted close prices [n_stocks, n_days].
-    signal2D : np.ndarray
-        2D array of uptrend signals [n_stocks, n_days], 1=uptrend.
-    signal2D_daily : np.ndarray
-        Daily signals before monthly hold logic (not used but kept).
-    LongPeriod : int
-        Lookback period for Sharpe ratio calculation.
-    numberStocksTraded : int
-        Number of top stocks to select for the portfolio.
-    riskDownside_min : float
-        Minimum weight constraint per position.
-    riskDownside_max : float
-        Maximum weight constraint per position.
-    rankThresholdPct : float
-        Percentile threshold for rank filtering (not used currently).
-    stddevThreshold : float
-        Threshold for spike detection (default 5.0).
-    makeQCPlots : bool
-        If True, generate QC plots (default False).
-    max_weight_factor : float
-        Maximum weight as multiple of equal weight (default 3.0).
-    min_weight_factor : float
-        Minimum weight as multiple of equal weight (default 0.3).
-    absolute_max_weight : float
-        Absolute maximum weight cap (default 0.9).
-    apply_constraints : bool
-        Whether to apply weight constraints (default True).
-    is_backtest : bool
-        If True, running in backtest mode (default True).
-        If False, running in production mode.
-    verbose : bool
-        If True, print progress information (default False).
-    stockList : str
-        Stock list identifier ("SP500" or "Naz100"). Early period logic only applies to "SP500" (default "SP500").
-    **kwargs : dict
-        Additional keyword arguments for forward compatibility.
-
-    Returns
-    -------
-    np.ndarray
-        2D array of portfolio weights [n_stocks, n_days].
-        Weights sum to 1.0 for each day (column).
+    Returns:
+        2D NumPy array of portfolio weights, shape
+        ``(n_stocks, n_days)``.  Each column sums to 1.0.
     """
     from math import sqrt
 
