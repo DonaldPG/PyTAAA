@@ -240,21 +240,9 @@ def run_pytaaa(json_fn):
     elapsedYears = ( (datetime.date( today.year, today.month, today.day ) - datetime.date( 2013,1,1)).days ) / 365.25
     lifetimeProfitAnnualized = (( 1. + lifetimeProfit ) ** 1./elapsedYears ) - 1.
 
-    message_text = "<h3>Current stocks and weights are :</h3><font face='courier new' size=3><table border='1'> \
-                   <tr><td>symbol  \
-                   </td><td>shares  \
-                   </td><td>purch price  \
-                   </td><td>purch cost  \
-                   </td><td>cumu purch  \
-                   </td><td>last price  \
-                   </td><td>% change  \
-                   </td><td>Value ($)  \
-                   </td><td>cumu Value ($)  \
-                   </td><td>Curr Rank  \
-                   </td><td>Cluster  \
-                   </td><td>Sector  \
-                   </td><td>Industry  \
-                   </td></tr>\n"
+    # holding_rows is built inside the loop below; message_text is rendered
+    # from the Jinja2 template after the loop (Item 9).
+    holding_rows = []
     cumu_purchase_value = 0.
     cumu_value = 0.
     print("holdings_shares = ", holdings_shares)
@@ -297,49 +285,49 @@ def run_pytaaa(json_fn):
         sector, industry = sector_industry_map.get(
             holdings_symbols[i], ("", "")
         )
-        message_text = message_text+"<p><tr><td>"+format(holdings_symbols[i],'5s') \
-                                   +"</td><td>"+format(holdings_shares[i],'6.0f') \
-                                   +"</td><td>"+format(holdings_buyprice[i],'6.2f') \
-                                   +"</td><td>"+format(purchase_value,'6.2f') \
-                                   +"</td><td>"+format(cumu_purchase_value,'6.2f') \
-                                   +"</td><td>"+format(float(holdings_currentPrice[i]),'6.2f') \
-                                   +"</td><td>"+format(float(profitPct),'6.2%') \
-                                   +"</td><td>"+format(value,'6.2f') \
-                                   +"</td><td>"+format(cumu_value,'6.2f') \
-                                   +"</td><td>"+format(holdings_ranks[i],'3d') \
-                                   +"</td><td>"+str(holdings_cluster_labels[i]) \
-                                   +"</td><td>"+str(sector) \
-                                   +"</td><td>"+str(industry) \
-                                   +"</td></tr>\n"
+        # Build the row dict with pre-formatted values for the template.
+        holding_rows.append({
+            "symbol": format(holdings_symbols[i], "5s"),
+            "shares": format(holdings_shares[i], "6.0f"),
+            "buy_price": format(holdings_buyprice[i], "6.2f"),
+            "purchase_cost": format(purchase_value, "6.2f"),
+            "cumu_purchase": format(cumu_purchase_value, "6.2f"),
+            "current_price": format(float(holdings_currentPrice[i]), "6.2f"),
+            "profit_pct": format(float(profitPct), "6.2%"),
+            "value": format(value, "6.2f"),
+            "cumu_value": format(cumu_value, "6.2f"),
+            "rank": format(holdings_ranks[i], "3d"),
+            "cluster": str(holdings_cluster_labels[i]),
+            "sector": str(sector),
+            "industry": str(industry),
+        })
     print("")
 
-    # Notify with buys/sells on trade dates
+    # Notify with buys/sells on trade dates.
     trade_message = "<br>"
     trade_message = calculateTrades(
         holdings, last_symbols_text,
         last_symbols_weight, last_symbols_price, json_fn
     )
-    message_text = message_text + trade_message
     print("   . returned from calculateTrades ...\n\n")
 
-
     edition = GetEdition()
-    message_text = message_text+"</table><br></font><p>Lifetime profit = $"+str(lifetimeProfit)+"   = "+format(lifetimeProfit/float(holdings['cumulativecashin'][0]),'6.1%')+"</p>"
-    message_text = message_text+"</font><p>Lifetime profit (annualized rate of return) = "+format(lifetimeProfitAnnualized/float(holdings['cumulativecashin'][0]),'6.1%')+"</p>"
 
-
-    # Update message for changes in  tickers removed from or added to the Nasdaq100 index
-    if removedTickers != [] or addedTickers != []:
-        message_text = message_text+"<br><p>There are changes in the stock list<p>"
-        for i, ticker in enumerate( removedTickers ):
-            message_text = message_text+"<p> ...Ticker "+ticker+" has been removed from the stock index list"
-        message_text += "<p>"
-        for i, ticker in enumerate( addedTickers ):
-            message_text = message_text+"<p> ...Ticker "+ticker+" has been added to the stock index list"
-
-    message_text = message_text+"<br><p>"+edition+" edition software running at "+str(ip)
-    message_text = message_text+"<br>Stock universe is "+params['stockList']
-    message_text = message_text+"<br>up-trending signal method is "+params['uptrendSignalMethod']+"<p>"
+    # Render the holdings HTML report via Jinja2 replacing the previous
+    # manual string concatenation (Item 9).
+    from functions.report_builders import build_holdings_html_report
+    message_text = build_holdings_html_report(
+        holdings_rows=holding_rows,
+        trade_message=trade_message,
+        lifetime_profit=lifetimeProfit,
+        cumulative_cash_in=float(holdings['cumulativecashin'][0]),
+        lifetime_profit_annualized=lifetimeProfitAnnualized,
+        removed_tickers=removedTickers,
+        added_tickers=addedTickers,
+        edition=edition,
+        ip=ip,
+        params=params,
+    )
 
     elapsed_time_total = time.time() - start_time_total
 

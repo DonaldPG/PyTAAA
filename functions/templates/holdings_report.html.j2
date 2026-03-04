@@ -1,0 +1,35 @@
+<h3>Current stocks and weights are :</h3><font face='courier new' size=3><table border='1'>
+<tr>
+<td>symbol  </td>
+<td>shares  </td>
+<td>purch price  </td>
+<td>purch cost  </td>
+<td>cumu purch  </td>
+<td>last price  </td>
+<td>% change  </td>
+<td>Value ($)  </td>
+<td>cumu Value ($)  </td>
+<td>Curr Rank  </td>
+<td>Cluster  </td>
+<td>Sector  </td>
+<td>Industry  </td>
+</tr>
+{% for row in holdings_rows -%}
+<p><tr><td>{{ row.symbol }}</td><td>{{ row.shares }}</td><td>{{ row.buy_price }}</td><td>{{ row.purchase_cost }}</td><td>{{ row.cumu_purchase }}</td><td>{{ row.current_price }}</td><td>{{ row.profit_pct }}</td><td>{{ row.value }}</td><td>{{ row.cumu_value }}</td><td>{{ row.rank }}</td><td>{{ row.cluster }}</td><td>{{ row.sector }}</td><td>{{ row.industry }}</td></tr>
+{% endfor %}
+{{ trade_message }}
+</table><br></font><p>Lifetime profit = ${{ lifetime_profit }}   = {{ lifetime_profit_pct }}</p>
+</font><p>Lifetime profit (annualized rate of return) = {{ lifetime_profit_annualized_pct }}</p>
+{% if removed_tickers or added_tickers %}
+<br><p>There are changes in the stock list<p>
+{%- for ticker in removed_tickers %}
+<p> ...Ticker {{ ticker }} has been removed from the stock index list
+{%- endfor %}
+<p>
+{%- for ticker in added_tickers %}
+<p> ...Ticker {{ ticker }} has been added to the stock index list
+{%- endfor %}
+{% endif %}
+<br><p>{{ edition }} edition software running at {{ ip }}
+<br>Stock universe is {{ stock_list }}
+<br>up-trending signal method is {{ uptrend_method }}<p>
