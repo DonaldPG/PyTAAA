@@ -307,12 +307,51 @@ def get_pe_cached(symbol: str) -> float:
 
 def get_sector_industry_cached(symbol: str) -> Tuple[str, str]:
     """Get sector and industry with caching (backward compatible interface).
-    
+
     Args:
-        symbol: Stock ticker symbol
-        
+        symbol: Stock ticker symbol.
+
     Returns:
-        Tuple of (sector, industry) strings
+        Tuple of (sector, industry) strings.
     """
     cache = get_cache()
     return cache.get_sector_industry(symbol)
+
+
+def prefetch_sector_industry(symbols: list) -> dict:
+    """Pre-fetch sector and industry for a list of symbols.
+
+    Warms the on-disk cache for every non-CASH symbol in *symbols* and
+    returns a mapping ready for O(1) look-up in a hot loop.  Network
+    failures are caught per-symbol; the fallback value is ``("", "")``,
+    matching the behaviour of the previous inline call.
+
+    Args:
+        symbols: Iterable of ticker symbol strings (may include
+            ``'CASH'``).
+
+    Returns:
+        ``dict`` mapping each symbol to its ``(sector, industry)`` tuple.
+        CASH and any symbol that could not be fetched map to
+        ``("", "")``.``
+    """
+    cache_obj = get_cache()
+    result = {}
+    for symbol in symbols:
+        if symbol == 'CASH':
+            result[symbol] = ("", "")
+            continue
+        try:
+            sector, industry = cache_obj.get_sector_industry(symbol)
+            # Normalise the sentinel "unknown" used by the cache to the
+            # empty string expected by the HTML report.
+            result[symbol] = (
+                "" if sector == "unknown" else sector,
+                "" if industry == "unknown" else industry,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "prefetch_sector_industry: failed for %s: %s", symbol, exc
+            )
+            result[symbol] = ("", "")
+    return result

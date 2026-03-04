@@ -16,7 +16,7 @@ from functions.UpdateSymbols_inHDF5 import UpdateHDF_yf
 from functions.CheckMarketOpen import (get_MarketOpenOrClosed,
                                        CheckMarketOpen)
 from functions.PortfolioPerformanceCalcs import run_portfolio_analysis
-from functions.quotes_for_list_adjClose import LastQuotesForSymbolList_hdf, get_SectorAndIndustry_google
+from functions.quotes_for_list_adjClose import LastQuotesForSymbolList_hdf
 from functions.calculateTrades import calculateTrades
 # from functions.quotes_for_list_adjClose import get_Naz100List, get_SP500List
 from functions.readSymbols import get_symbols_changes
@@ -265,6 +265,13 @@ def run_pytaaa(json_fn):
     print("holdings_ranks = ", holdings_ranks)
     print("\n\n")
 
+    # Pre-fetch sector/industry data for all holding symbols before the
+    # reporting loop.  This eliminates N synchronous web requests from
+    # the hot path; the fundamentals cache handles freshness and
+    # network fallback transparently.
+    from functions.stock_fundamentals_cache import prefetch_sector_industry
+    sector_industry_map = prefetch_sector_industry(list(holdings_symbols))
+
     #for i in range(len(holdings_shares)):
     for i in range(len(holdings_ranks)):
         purchase_value = holdings_buyprice[i]*holdings_shares[i]
@@ -285,11 +292,11 @@ def run_pytaaa(json_fn):
               format(holdings_ranks[i],'3d'),\
               str(holdings_cluster_labels[i]),\
               "\n")
-        # get sector and industry for holdings symbol
-        if holdings_symbols[i] != 'CASH':
-            sector, industry = get_SectorAndIndustry_google( holdings_symbols[i] )
-        else:
-            sector, industry = "",""
+        # Look up sector/industry from the pre-fetched map instead of
+        # making a live web request for each symbol.
+        sector, industry = sector_industry_map.get(
+            holdings_symbols[i], ("", "")
+        )
         message_text = message_text+"<p><tr><td>"+format(holdings_symbols[i],'5s') \
                                    +"</td><td>"+format(holdings_shares[i],'6.0f') \
                                    +"</td><td>"+format(holdings_buyprice[i],'6.2f') \
