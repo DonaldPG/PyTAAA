@@ -16,27 +16,29 @@
         "remotepath": "/var/www/mysite/pyTAAApi"
     },
     "stock_server": {
-        "quote_download_server": "MacBook.local"
+        "quote_download_server": "Donalds-MacBook-Pro.local_NO"
     },
     "Setup": {
         "runtime": "15 days",
         "pausetime": "24 hours"
     },
     "Valuation": {
-        "symbols_file": "/Users/me/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt",
+        "symbols_file": "/Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt",
+        "performance_store": "/Users/donaldpg/pyTAAA_data/naz100_pine/data_store",
+        "webpage": "/Users/donaldpg/PyProjects/worktree2/PyTAAA/analysis_results2/baseline_pre_refactor/html",
         "stockList": "Naz100",
         "uptrendSignalMethod": "HMAs",
-        "numberStocksTraded": 7,
+        "numberStocksTraded": 8,
         "monthsToHold": 1,
-        "LongPeriod": 600,
-        "stddevThreshold": 8.714,
-        "MA1": 176,
-        "MA2": 8,
-        "MA3": 11,
-        "sma2factor": 1.536,
-        "rankThresholdPct": 0.133,
-        "riskDownside_min": 0.467,
-        "riskDownside_max": 9.027,
+        "LongPeriod": 245,
+        "stddevThreshold": 11.855795962801292,
+        "MA1": 152,
+        "MA2": 17,
+        "MA3": 21,
+        "sma2factor": 2.1440129588219037,
+        "rankThresholdPct": 0.1712437224764814,
+        "riskDownside_min": 0.6742688078404235,
+        "riskDownside_max": 9.091082043678533,
         "longShort_mindays": 5,
         "longShort_maxdays": 18,
         "longShort_percent": 0.985,
@@ -47,8 +49,8 @@
         "mediumDays_max": 38.3,
         "wideDays_min": 75.2,
         "wideDays_max": 512.3,
-        "lowPct": 17,
-        "hiPct": 84,
+        "lowPct": 19.947020789369134,
+        "hiPct": 77.47323373729564,
         "trade_cost": 7.95,
         "minperiod": 4,
         "maxperiod": 12,
@@ -57,9 +59,19 @@
         "numdaysinfit2": 15,
         "offset": 7,
         "window_size": 50,
-        "enable_rolling_filter": false,
+        "enable_rolling_filter": true,
+        "async_plot_generation": true,
+        "plot_generation_workers": 2,
         "async_montecarlo_backtest": true,
-        "backtest_monte_carlo_trials": 250
+        "recent_plot_start_date": "2022-01-01",
+        "MA2offset": 4,
+        "sma_filt_val": 0.018072194716200314,
+        "paramNumberToVary": -999,
+        "max_weight_factor": 3.6918500789749285,
+        "min_weight_factor": 0.25923966285405253,
+        "absolute_max_weight": 0.8041207031229124,
+        "apply_constraints": true,
+        "trial": "nhma-05_041"
     },
     "model_selection": {
         "performance_metrics": {
@@ -117,5 +129,22 @@
         "generate_plot": true,
         "show_model_ranks": true
     },
-    "web_output_dir": "/Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web"
+
+    "web_output_dir": "/Users/donaldpg/PyProjects/worktree2/PyTAAA/analysis_results2/baseline_pre_refactor/html",
+    "data_paths": {
+        "filename": "/Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/symbols/abacus_symbols.txt",
+        "start_date": "2020-01-01",
+        "end_date": "2025-12-31"
+    },
+    "models": {
+        "base_folder": "/Users/donaldpg/pyTAAA_data",
+        "model_choices": {
+            "cash": "",
+            "naz100_pine": "{base_folder}/naz100_pine/data_store/{data_file}",
+            "naz100_hma": "{base_folder}/naz100_hma/data_store/{data_file}",
+            "naz100_pi": "{base_folder}/naz100_pi/data_store/{data_file}",
+            "sp500_hma": "{base_folder}/sp500_hma/data_store/{data_file}",
+            "sp500_pine": "{base_folder}/sp500_pine/data_store/{data_file}"
+        }
+    }
 }
