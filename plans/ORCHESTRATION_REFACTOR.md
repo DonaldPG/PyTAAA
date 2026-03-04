@@ -1037,9 +1037,9 @@ Critical Bugs section states they must be fixed before any architectural
 work — promoted to Phase 0 (prerequisite fixes).
 
 ```
-Phase 0   (critical bugs):   3, 2              ← fix before anything else
-Phase I   (no risk):         12, 4, 17
-Phase II  (low risk):        5, 6, 10+11*, 13, 16
+Phase 0   (critical bugs):   3, 2              ✅ DONE (dc5ceb3, f904cdb)
+Phase I   (no risk):         12, 4, 17         ✅ DONE (1e7828b)
+Phase II  (low risk):        5, 6, 10+11*, 13, 16  ✅ DONE (e949c16, afbfcce)
 Phase III (medium risk):     18, 9, 14
 Phase IV  (high risk):       8, 1, 7, 15
 ```
