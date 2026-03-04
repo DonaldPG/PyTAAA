@@ -84,29 +84,6 @@ def setup_logging(verbose: bool = False) -> logging.Logger:
     return logging.getLogger(__name__)
 
 
-def suppress_matplotlib_output():
-    """Suppress matplotlib backend selection messages."""
-    # Redirect matplotlib's backend selection messages
-    import matplotlib.backends.backend_agg
-    matplotlib.backends.backend_agg.FigureCanvasAgg._get_output_dpi = lambda self, dpi: dpi or 100
-
-    # Set matplotlib to quiet mode
-    plt.ioff()  # Turn off interactive mode
-    
-    # Suppress specific matplotlib messages
-    original_print = print
-    def quiet_print(*args, **kwargs):
-        message = ' '.join(str(arg) for arg in args)
-        if 'no display found' in message.lower() or 'using non-interactive agg backend' in message.lower():
-            return  # Suppress these specific messages
-        original_print(*args, **kwargs)
-    
-    # Temporarily replace print during matplotlib operations
-    import builtins
-    builtins.__original_print__ = original_print  # Save for numba compatibility
-    builtins.print = quiet_print
-
-
 def load_config_file(config_path: str) -> Dict[str, Any]:
     """Load and validate JSON configuration file."""
     logger = logging.getLogger(__name__)
@@ -805,11 +782,8 @@ def main(json_path: str, verbose: bool) -> None:
     This tool automatically detects the active trading model, updates stock
     prices only if needed, and generates web content for the HTML dashboard.
     """
-    # Setup logging with matplotlib suppression
+    # Setup logging
     logger = setup_logging(verbose)
-    
-    # Suppress matplotlib output at startup
-    suppress_matplotlib_output()
     
     temp_config_file = None
     
