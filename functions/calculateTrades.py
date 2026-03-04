@@ -851,15 +851,15 @@ def trade_today(json_fn: str, symbols_today: list, weight_today: np.ndarray, pri
     holdings_text = holdings_text + "\nshares:      "
     for i, _share in enumerate(merged_trades_df2.loc[:]["shares_target"]):
         if merged_trades_df2.loc[i]["shares_target"] > 0.0:
-            holdings_text = holdings_text + str(_share).ljust(8)
+            holdings_text = holdings_text + str(int(_share)).ljust(8)
     for i, _share in enumerate(trades_df_only_buy.loc[:]["shares"]):
-            holdings_text = holdings_text + str(_share).ljust(8)
+            holdings_text = holdings_text + str(int(_share)).ljust(8)
     holdings_text = holdings_text + "\nbuyprice:    "
     for i, _buyprice in enumerate(merged_trades_df2.loc[:]["buyprice"]):
         if merged_trades_df2.loc[i]["shares_target"] > 0.0:
-            holdings_text = holdings_text + str(np.round(_buyprice,2)).ljust(8)
+            holdings_text = holdings_text + f"{_buyprice:.2f}".ljust(8)
     for i, _buyprice in enumerate(trades_df_only_buy.loc[:]["buyprice"]):
-            holdings_text = holdings_text + str(np.round(_buyprice,2)).ljust(8)
+            holdings_text = holdings_text + f"{_buyprice:.2f}".ljust(8)
 
     print(holdings_text)
 

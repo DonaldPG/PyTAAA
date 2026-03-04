@@ -17,7 +17,7 @@ from functions.CheckMarketOpen import (get_MarketOpenOrClosed,
                                        CheckMarketOpen)
 from functions.PortfolioPerformanceCalcs import run_portfolio_analysis
 from functions.quotes_for_list_adjClose import LastQuotesForSymbolList_hdf
-from functions.calculateTrades import calculateTrades
+from functions.calculateTrades import calculateTrades, trade_today
 # from functions.quotes_for_list_adjClose import get_Naz100List, get_SP500List
 from functions.readSymbols import get_symbols_changes
 from functions.stock_cluster import getClusterForSymbolsList
@@ -311,6 +311,22 @@ def run_pytaaa(json_fn):
     )
     print("   . returned from calculateTrades ...\n\n")
 
+    # Generate hypothetical trade recommendations for stdout and for the
+    # next run's pyTAAAweb_RankList.txt (via write_rank_list_html).
+    # trade_today() prints the formatted text to stdout and writes
+    # PyTAAA_hypothetical_trades.txt in the performance store.
+    try:
+        trade_today(
+            json_fn,
+            list(last_symbols_text),
+            list(last_symbols_weight),
+            list(last_symbols_price),
+        )
+    except Exception as trade_today_exc:
+        print(
+            f" Warning: trade_today() failed: {trade_today_exc}"
+        )
+
     edition = GetEdition()
 
     # Render the holdings HTML report via Jinja2 replacing the previous
@@ -359,11 +375,21 @@ def run_pytaaa(json_fn):
     else:
         subjecttext = "PyTAAA status update"
 
-    print("cumu_value_prior, cumu_value = ", cumu_value_prior, cumu_value)
-    print(np.round(float(cumu_value_prior),2) != np.round(cumu_value,2))
-    print("trade_message = ", trade_message)
-    print(trade_message != "<br>")
-    if np.round(float(cumu_value_prior),2) != np.round(cumu_value,2) or trade_message != "<br>":
+    # cumu_value_prior: portfolio value stored at end of previous run.
+    # cumu_value: current holdings * today's HDF5 prices (pre-trade).
+    # Values are identical when run twice in the same day with the same
+    # HDF5 data — not a bug; email gate uses this to suppress duplicates.
+    value_changed = np.round(float(cumu_value_prior), 2) != np.round(cumu_value, 2)
+    message_changed = trade_message != "<br>"
+    print(
+        f"  Portfolio value (prior run)  : {float(cumu_value_prior):>14,.2f}"
+    )
+    print(
+        f"  Portfolio value (this run)   : {cumu_value:>14,.2f}"
+        f"  (changed={value_changed})"
+    )
+    print(f"  trade_message changed        : {message_changed}")
+    if value_changed or message_changed:
         headlinetext = "Regularly scheduled update. Market status: " + get_MarketOpenOrClosed()
         SendEmail(username,emailpassword,params['toaddrs'],params['fromaddr'],subjecttext,regulartext,boldtext,headlinetext)
     else:
