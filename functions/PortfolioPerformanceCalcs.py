@@ -25,7 +25,8 @@ from functions.GetParams import get_webpage_store
 from functions.output_generators import (
     compute_portfolio_metrics,
     generate_portfolio_plots,
-    write_portfolio_status_files
+    write_portfolio_status_files,
+    write_rank_list_html,
 )
 
 logger = logging.getLogger(__name__)
@@ -61,15 +62,18 @@ def run_portfolio_analysis(symbol_directory, symbol_file, params, json_fn):
     filename = os.path.join(symbol_directory, symbol_file)
     logger.debug("filename for load_quotes_for_analysis = %s", filename)
     
-    adjClose, symbols, datearray = load_quotes_for_analysis(
-        filename, json_fn, verbose=True
+    adjClose, symbols, datearray, active_mask = load_quotes_for_analysis(
+        filename, json_fn, verbose=True, include_active_mask=True
     )
 
     #############################################################################
     # PHASE 2: COMPUTE PORTFOLIO METRICS (Pure Computation)
     #############################################################################
-    
-    metrics = compute_portfolio_metrics(adjClose, symbols, datearray, params, json_fn)
+
+    metrics = compute_portfolio_metrics(
+        adjClose, symbols, datearray, params, json_fn,
+        active_mask=active_mask,
+    )
     
     # Extract computed values for output phase
     signal2D = metrics['signal2D']
@@ -129,7 +133,17 @@ def run_portfolio_analysis(symbol_directory, symbol_file, params, json_fn):
         last_symbols_price, params, json_fn, lowChannel, hiChannel
     )
     
-    # 3.5: Send text alerts if market is open
+    # 3.5: Write rank list HTML for the webpage.
+    # Uses weights/signals computed above and reads PyTAAA_hypothetical_trades.txt
+    # (written by trade_today() on the prior run) to produce the composite
+    # pyTAAAweb_RankList.txt that WriteWebPage_pi.writeWebPage() reads.
+    write_rank_list_html(
+        json_fn, symbols, adjClose,
+        signal2D_daily, monthgainlossweight,
+        datearray,
+    )
+
+    # 3.6: Send text alerts if market is open
     marketStatus = get_MarketOpenOrClosed()
     if 'Market Open' in marketStatus:
         textmessageOutsideTrendChannel(symbols, adjClose, json_fn)

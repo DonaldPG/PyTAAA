@@ -387,7 +387,8 @@ def execute_single_backtest(
     absolute_max_weight=0.9, apply_constraints=True,
     verbose=False,
     generate_plot=False,
-    runnum=None
+    runnum=None,
+    active_mask=None,
 ):
     """
     Execute the core backtest logic for a single realization.
@@ -539,6 +540,19 @@ def execute_single_backtest(
             if datearray[j] < cutoff_date:
                 signal2D[:, j] = 0.0  # No signals = no stock selection
         print(f" ... Applied SP500 pre-2002 signal constraint: zero signals for dates before {cutoff_date}")
+
+    # Apply index-membership mask: stocks removed from the index have
+    # trailing NaN in HDF5 (filled constant by cleantoend). Their signals
+    # must be forced to 0 so they never receive portfolio weight in
+    # historical backtesting.
+    if active_mask is not None:
+        n_masked = int(np.sum(~active_mask))
+        signal2D[~active_mask] = 0
+        signal2D_daily[~active_mask] = 0
+        print(
+            f" ... active_mask applied: {n_masked} (symbol,date) "
+            f"cells forced to signal=0 (ex-index members)"
+        )
 
     numberStocks = np.sum(signal2D, axis=0)
     print(f" ... Number of stocks with signals: min={numberStocks.min():.1f}, max={numberStocks.max():.1f}, mean={numberStocks.mean():.1f}")
@@ -824,7 +838,8 @@ def run_single_monte_carlo_realization(
     holdMonths,
     verbose=False,
     generate_plot=False,
-    runnum=None
+    runnum=None,
+    active_mask=None,
 ):
     """
     Run a single Monte Carlo realization using temporary JSON configuration.
@@ -933,7 +948,8 @@ def run_single_monte_carlo_realization(
             apply_constraints=apply_constraints,
             verbose=verbose,
             generate_plot=generate_plot,
-            runnum=runnum
+            runnum=runnum,
+            active_mask=active_mask,
         )
         
         if results is None:

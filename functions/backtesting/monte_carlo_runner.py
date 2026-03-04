@@ -431,8 +431,8 @@ def run_monte_carlo_backtest(
     params = get_json_params(json_fn)
     symbols_file = params["symbols_file"]
 
-    adjClose, symbols, datearray = load_quotes_for_analysis(
-        symbols_file, json_fn, verbose=True
+    adjClose, symbols, datearray, active_mask = load_quotes_for_analysis(
+        symbols_file, json_fn, verbose=True, include_active_mask=True
     )
 
     # Build gainloss, value and activeCount arrays (mirrors original script)
@@ -529,6 +529,7 @@ def run_monte_carlo_backtest(
                 verbose=(iter_num <= 2),
                 generate_plot=generate_plot,
                 runnum=runnum,
+                active_mask=active_mask,
             )
         except Exception as exc:
             logger.warning(

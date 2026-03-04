@@ -84,6 +84,167 @@ def write_portfolio_status_files(
         print("")
 
 
+def write_rank_list_html(
+    json_fn: str,
+    symbols: List[str],
+    adjClose: np.ndarray,
+    signal2D_daily: np.ndarray,
+    monthgainlossweight: np.ndarray,
+    datearray: Optional[np.ndarray] = None,
+) -> None:
+    """Write the composite pyTAAAweb_RankList.txt for the webpage.
+
+    Restores the behaviour of the legacy ``sharpeWeightedRank_2D(
+    makeQCPlots=True)`` block that was removed during refactoring.
+    The file contains two sections:
+
+    1. Hypothetical-trades HTML – read from
+       ``<p_store>/PyTAAA_hypothetical_trades.txt`` (written by
+       ``trade_today()`` on the *previous* run).  If the file does not
+       exist the section is omitted silently.
+    2. Rank-table HTML – built from the already-computed weights and
+       signals; symbols are ordered by current weight (highest first).
+
+    The combined HTML is written to
+    ``<webpage_dir>/pyTAAAweb_RankList.txt``, which
+    ``WriteWebPage_pi.writeWebPage()`` reads each run.
+
+    Args:
+        json_fn: Path to the JSON configuration file.
+        symbols: List of stock ticker symbols (n_stocks,).
+        adjClose: Adjusted close prices array (n_stocks, n_days).
+        signal2D_daily: Daily uptrend signal array (n_stocks, n_days);
+            1 = uptrending, 0 = downtrending.
+        monthgainlossweight: Portfolio weight array (n_stocks, n_days).
+
+    Returns:
+        None
+
+    Side Effects:
+        - Reads ``<p_store>/PyTAAA_hypothetical_trades.txt`` if present.
+        - Writes ``<webpage_dir>/pyTAAAweb_RankList.txt``.
+        - Prints success or error messages to stdout.
+    """
+    from functions.GetParams import (
+        get_performance_store, get_webpage_store,
+    )
+
+    p_store = get_performance_store(json_fn)
+    webpage_dir = get_webpage_store(json_fn)
+
+    ############################################################
+    # Section 1 — hypothetical-trades HTML
+    # Read plain-text file written by trade_today() on prior run.
+    ############################################################
+    hypothetical_trades_html = ""
+    hyp_filepath = os.path.join(
+        p_store, "PyTAAA_hypothetical_trades.txt"
+    )
+    try:
+        with open(hyp_filepath, "r") as f:
+            lines = f.readlines()
+        # Convert plain text to HTML: spaces → &nbsp;, newlines → <br>.
+        html_lines = ""
+        for line in lines:
+            # Preserve leading spaces by replacing them with &nbsp;.
+            html_line = line.rstrip("\n").replace(" ", "&nbsp;")
+            html_lines += html_line + "<br>"
+        hypothetical_trades_html = (
+            "\n\n\n<font face='courier new' size=5>"
+            "<p>PyTAAA_hypothetical_trades (if performed today):"
+            "</p></h3><font face='courier new' size=4><pre>"
+            + html_lines
+            + "</pre></p></h3><font face='courier new' size=4>"
+            "         \n\n"
+        )
+    except FileNotFoundError:
+        print(
+            " ... write_rank_list_html: "
+            "PyTAAA_hypothetical_trades.txt not found, "
+            "omitting hypothetical trades section"
+        )
+    except Exception as e:
+        print(
+            f" ... write_rank_list_html: "
+            f"could not read hypothetical trades file: {e}"
+        )
+
+    ############################################################
+    # Section 2 — rank-table HTML
+    # Load company names via read_company_names_local() which resolves
+    # the correct filename (Naz100_companyNames.txt / SP500_companyNames.txt).
+    ############################################################
+    from functions.readSymbols import read_company_names_local
+    try:
+        companySymbolList, companyNameList = read_company_names_local(
+            json_fn, verbose=False
+        )
+    except Exception as e:
+        print(
+            f" ... write_rank_list_html: "
+            f"could not load company names: {e}"
+        )
+        companySymbolList = []
+        companyNameList = []
+
+    # Sort symbols by current weight (highest weight = rank 1).
+    last_weights = monthgainlossweight[:, -1]
+    sort_order = np.argsort(-last_weights)
+
+    rank_text = (
+        "<div id='rank_table_container'><h3>"
+        "<p>Current stocks, with ranks, weights, and prices "
+        "are :</p></h3>"
+        "<font face='courier new' size=3>"
+        "<table border='1'> "
+        "<tr>"
+        "<td>Rank (start of month)</td>"
+        "<td>Symbol</td>"
+        "<td>Company</td>"
+        "<td>Weight</td>"
+        "<td>Price</td>"
+        "<td>Trend</td>"
+        "</tr>\n"
+    )
+    for rank, j in enumerate(sort_order, 1):
+        trend = "up" if signal2D_daily[j, -1] == 1.0 else "down"
+        sym_stripped = symbols[j].strip()
+        try:
+            idx = companySymbolList.index(sym_stripped)
+            company_name = companyNameList[idx]
+        except (ValueError, IndexError):
+            company_name = ""
+        rank_text += (
+            f"<tr>"
+            f"<td>{rank:6d}"
+            f"<td>{sym_stripped}"
+            f"<td>{format(company_name, '15s')}"
+            f"<td>{last_weights[j]:5.03f}"
+            f"<td>{adjClose[j, -1]:6.2f}"
+            f"<td>{trend}"
+            "</td></tr>  \n"
+        )
+    rank_text += "</table></div>\n"
+
+    composite = hypothetical_trades_html + rank_text
+
+    ############################################################
+    # Write composite HTML to webpage store.
+    ############################################################
+    filepath = os.path.join(webpage_dir, "pyTAAAweb_RankList.txt")
+    try:
+        with open(filepath, "w") as f:
+            f.write(composite)
+        print(
+            f" Successfully wrote pyTAAAweb_RankList.txt at "
+            f"{datetime.datetime.now().strftime('%A, %d. %B %Y %I:%M%p')}"
+        )
+    except Exception as e:
+        print(
+            f" Error: unable to write pyTAAAweb_RankList.txt: {e}"
+        )
+
+
 def _generate_full_history_plots(
     adjClose: np.ndarray,
     symbols: List[str],
@@ -588,7 +749,8 @@ def compute_portfolio_metrics(
     symbols: List[str],
     datearray: np.ndarray,
     params: Dict[str, Any],
-    json_fn: str
+    json_fn: str,
+    active_mask: Optional[np.ndarray] = None,
 ) -> Dict[str, Any]:
     """Pure computation function for portfolio metrics.
     
@@ -786,9 +948,22 @@ def compute_portfolio_metrics(
         # Be permissive if variables or shapes are unexpected
         pass
     
+    # Apply index-membership mask: zero signals for stocks that are not
+    # currently in the index (removed stocks have trailing NaN in HDF5
+    # which become constant prices after cleaning — their signals must
+    # be forced to 0 so they receive no portfolio weight).
+    if active_mask is not None:
+        n_masked = int(np.sum(~active_mask))
+        signal2D[~active_mask] = 0
+        signal2D_daily[~active_mask] = 0
+        print(
+            f"   . active_mask applied to signals: {n_masked} "
+            f"(symbol,date) cells forced to signal=0"
+        )
+
     numberStocks = np.sum(signal2D, axis=0)
     dailyNumberUptrendingStocks = np.sum(signal2D, axis=0)
-    
+
     #############################################################################
     # Phase 5: Compute weights for each stock
     #############################################################################
