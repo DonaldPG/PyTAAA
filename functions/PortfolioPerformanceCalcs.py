@@ -11,6 +11,7 @@ Phase 4b refactoring: Separated concerns into load → compute → output patter
 """
 
 import logging
+import warnings
 import numpy as np
 import os
 import datetime
@@ -30,19 +31,20 @@ from functions.output_generators import (
 logger = logging.getLogger(__name__)
 
 
-def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
+def run_portfolio_analysis(symbol_directory, symbol_file, params, json_fn):
     """Main orchestrator for portfolio performance analysis.
-    
+
     Follows the pattern: Load Data → Compute Metrics → Generate Outputs
-    
+
     Args:
-        symbol_directory: Directory containing symbol file
-        symbol_file: Name of file with stock symbols
-        params: Dictionary of parameters from JSON config
-        json_fn: Path to JSON configuration file
-    
+        symbol_directory: Directory containing symbol file.
+        symbol_file: Name of file with stock symbols.
+        params: Dictionary of parameters from JSON config.
+        json_fn: Path to JSON configuration file.
+
     Returns:
-        Tuple of (date, symbols_list, weights_list, prices_list) for current holdings
+        Tuple of (date, symbols_list, weights_list, prices_list) for
+        current holdings.
     """
     
     #############################################################################
@@ -133,6 +135,24 @@ def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
         textmessageOutsideTrendChannel(symbols, adjClose, json_fn)
 
     return datearray[-1], last_symbols_text, last_symbols_weight, last_symbols_price
+
+
+def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
+    """Deprecated alias for :func:`run_portfolio_analysis`.
+
+    .. deprecated::
+        Use ``run_portfolio_analysis()`` instead.  This alias will be
+        removed in a future release.
+    """
+    warnings.warn(
+        "PortfolioPerformanceCalcs() is deprecated; "
+        "use run_portfolio_analysis() instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return run_portfolio_analysis(
+        symbol_directory, symbol_file, params, json_fn
+    )
 
 
 def _write_daily_backtest(json_fn, datearray, symbols, adjClose, params):

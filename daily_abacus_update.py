@@ -605,7 +605,7 @@ def generate_web_content_only(config: Dict[str, Any]) -> None:
     try:
         from functions.WriteWebPage_pi import writeWebPage
         from functions.GetParams import get_holdings, get_status, get_webpage_store
-        from functions.PortfolioPerformanceCalcs import PortfolioPerformanceCalcs
+        from functions.PortfolioPerformanceCalcs import run_portfolio_analysis
         
         # Create temporary config file for web generation
         temp_config_file = create_temporary_config_file(config)

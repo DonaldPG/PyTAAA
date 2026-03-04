@@ -15,7 +15,7 @@ from functions.GetParams import (
 from functions.UpdateSymbols_inHDF5 import UpdateHDF_yf
 from functions.CheckMarketOpen import (get_MarketOpenOrClosed,
                                        CheckMarketOpen)
-from functions.PortfolioPerformanceCalcs import PortfolioPerformanceCalcs
+from functions.PortfolioPerformanceCalcs import run_portfolio_analysis
 from functions.quotes_for_list_adjClose import LastQuotesForSymbolList_hdf, get_SectorAndIndustry_google
 from functions.calculateTrades import calculateTrades
 # from functions.quotes_for_list_adjClose import get_Naz100List, get_SP500List
@@ -176,7 +176,7 @@ def run_pytaaa(json_fn):
             _cached_last_symbols_text,
             _cached_last_symbols_weight,
             _cached_last_symbols_price,
-        ) = PortfolioPerformanceCalcs(
+        ) = run_portfolio_analysis(
             symbol_directory, symbol_file, params, json_fn,
         )
         _calcs_update_count += 1

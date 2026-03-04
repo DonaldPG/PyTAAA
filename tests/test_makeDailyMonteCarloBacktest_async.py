@@ -57,7 +57,7 @@ class TestSpawnBackgroundMontecarlo:
         """_spawn_background_montecarlo calls subprocess.Popen."""
         from functions.MakeValuePlot import _spawn_background_montecarlo
 
-        with patch("functions.MakeValuePlot.subprocess.Popen") as mock_popen:
+        with patch("functions.background_montecarlo_runner.subprocess.Popen") as mock_popen:
             _spawn_background_montecarlo(
                 "config.json", str(tmp_path)
             )
@@ -68,7 +68,7 @@ class TestSpawnBackgroundMontecarlo:
         """_spawn_background_montecarlo passes start_new_session=True."""
         from functions.MakeValuePlot import _spawn_background_montecarlo
 
-        with patch("functions.MakeValuePlot.subprocess.Popen") as mock_popen:
+        with patch("functions.background_montecarlo_runner.subprocess.Popen") as mock_popen:
             _spawn_background_montecarlo("config.json", str(tmp_path))
             _, kwargs = mock_popen.call_args
             assert kwargs.get("start_new_session") is True
@@ -78,7 +78,7 @@ class TestSpawnBackgroundMontecarlo:
         """_spawn_background_montecarlo creates montecarlo_backtest.log."""
         from functions.MakeValuePlot import _spawn_background_montecarlo
 
-        with patch("functions.MakeValuePlot.subprocess.Popen"):
+        with patch("functions.background_montecarlo_runner.subprocess.Popen"):
             _spawn_background_montecarlo("config.json", str(tmp_path))
 
         log_file = tmp_path / "montecarlo_backtest.log"
@@ -96,7 +96,7 @@ class TestSpawnBackgroundMontecarlo:
             return MagicMock()
 
         with patch(
-            "functions.MakeValuePlot.subprocess.Popen",
+            "functions.background_montecarlo_runner.subprocess.Popen",
             side_effect=fake_popen,
         ):
             _spawn_background_montecarlo(
@@ -112,7 +112,7 @@ class TestSpawnBackgroundMontecarlo:
         """_spawn_background_montecarlo sets PYTHONPATH in subprocess env."""
         from functions.MakeValuePlot import _spawn_background_montecarlo
 
-        with patch("functions.MakeValuePlot.subprocess.Popen") as mock_popen:
+        with patch("functions.background_montecarlo_runner.subprocess.Popen") as mock_popen:
             _spawn_background_montecarlo("config.json", str(tmp_path))
             _, kwargs = mock_popen.call_args
             assert "env" in kwargs
@@ -130,7 +130,7 @@ class TestSpawnBackgroundMontecarlo:
             return MagicMock()
 
         with patch(
-            "functions.MakeValuePlot.subprocess.Popen",
+            "functions.background_montecarlo_runner.subprocess.Popen",
             side_effect=fake_popen,
         ):
             _spawn_background_montecarlo("config.json", str(tmp_path))
