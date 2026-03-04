@@ -22,7 +22,6 @@ from functions.calculateTrades import calculateTrades
 from functions.readSymbols import get_symbols_changes
 from functions.stock_cluster import getClusterForSymbolsList
 from functions.ftp_quotes import copy_updated_quotes
-os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 # Module-level sentinels that persist across repeated scheduler calls.
 # These replace the broken `x in locals()` patterns that reset on every
@@ -39,6 +38,10 @@ def run_pytaaa(json_fn):
     global _daily_update_done, _calcs_update_count
     global _cached_lastdate, _cached_last_symbols_text
     global _cached_last_symbols_weight, _cached_last_symbols_price
+
+    # Resolve all paths relative to this file's directory so callers do
+    # not need to set CWD before invoking run_pytaaa().
+    os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
     computerName = platform.uname()[1]
 
@@ -304,15 +307,12 @@ def run_pytaaa(json_fn):
     print("")
 
     # Notify with buys/sells on trade dates
-    month = datetime.datetime.now().month
-    monthsToHold = params['monthsToHold']
     trade_message = "<br>"
-    if 0 == 0 :
-        trade_message = calculateTrades(
-            holdings, last_symbols_text,
-            last_symbols_weight, last_symbols_price, json_fn
-        )
-        message_text = message_text + trade_message
+    trade_message = calculateTrades(
+        holdings, last_symbols_text,
+        last_symbols_weight, last_symbols_price, json_fn
+    )
+    message_text = message_text + trade_message
     print("   . returned from calculateTrades ...\n\n")
 
 

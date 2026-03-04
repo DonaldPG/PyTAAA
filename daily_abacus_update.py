@@ -873,35 +873,6 @@ def main(json_path: str, verbose: bool) -> None:
         
         print("--- Abacus Backtest Update Complete ---\n")
 
-        # if update_needed:
-        #     print("Stock price update needed - proceeding with full update")
-            
-        #     # Create temporary config file with updated paths
-        #     logger.info("Creating temporary configuration file...")
-        #     temp_config_file = create_temporary_config_file(updated_config)
-            
-        #     # Run main PyTAAA update process with updated config
-        #     logger.info("Running PyTAAA update process...")
-        #     print("\n--- PyTAAA Update Process ---")
-            
-        #     run_pytaaa(temp_config_file)
-            
-        #     print("--- PyTAAA Update Complete ---\n")
-            
-        # else:
-        #     print("Stock prices are current - updating web pages only")
-        #     logger.info("Skipping stock update - updating web pages only")
-            
-        #     # Generate web content even when stock quotes don't need updating
-        #     logger.info("Generating web content...")
-        #     print("\n--- Web Page Generation ---")
-            
-        #     # Suppress matplotlib messages during web generation
-        #     suppress_matplotlib_output()
-        #     generate_web_content_only(updated_config)
-            
-        #     print("--- Web Page Generation Complete ---\n")
-        
         print("=== Daily Abacus Update Complete ===")
         print(f"Completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         
