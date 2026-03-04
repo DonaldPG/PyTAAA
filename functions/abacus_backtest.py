@@ -175,7 +175,7 @@ def write_abacus_backtest_portfolio_values(
             # Restore original print during import to avoid numba conflicts
             if hasattr(builtins, '__original_print__'):
                 builtins.print = builtins.__original_print__
-            from functions.MonteCarloBacktest import MonteCarloBacktest
+            from functions.MonteCarloBacktest import MonteCarloBacktest, MonteCarloConfig
         finally:
             # Restore whatever print was being used
             builtins.print = original_print
@@ -192,16 +192,19 @@ def write_abacus_backtest_portfolio_values(
         
         print(f"Initializing Monte Carlo backtest system...")
         
-        # Initialize Monte Carlo instance
-        monte_carlo = MonteCarloBacktest(
+        # Initialize Monte Carlo instance.
+        mc_config = MonteCarloConfig(
             model_paths=model_choices,
             iterations=1,
-            trading_frequency=monte_carlo_config.get('trading_frequency', 'monthly'),
+            trading_frequency=monte_carlo_config.get(
+                'trading_frequency', 'monthly'
+            ),
             min_lookback=monte_carlo_config.get('min_lookback', 10),
             max_lookback=monte_carlo_config.get('max_lookback', 400),
             search_mode='exploit',
-            json_config=config
+            json_config=config,
         )
+        monte_carlo = MonteCarloBacktest(mc_config)
         
         # Force date range to use longest available model (Nasdaq starts 1991, SP500 starts 2000)
         # Find the model with the most dates (earliest start date)

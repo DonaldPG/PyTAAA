@@ -45,7 +45,7 @@ import logging
 import json
 import click
 
-from functions.MonteCarloBacktest import MonteCarloBacktest
+from functions.MonteCarloBacktest import MonteCarloBacktest, MonteCarloConfig
 from functions.logger_config import get_logger
 
 # Get module-specific logger
@@ -288,8 +288,8 @@ def main(
         print(f"Reading from: {data_files[data_format]}")
         start_time = time.time()
         
-        # Initialize Monte Carlo backtesting with config settings and search mode
-        monte_carlo = MonteCarloBacktest(
+        # Initialize Monte Carlo backtesting with config settings and search mode.
+        mc_config = MonteCarloConfig(
             model_paths=model_choices,
             iterations=iterations,
             min_iterations_for_exploit=min_iterations_for_exploit,
@@ -299,8 +299,9 @@ def main(
             search_mode=search,
             verbose=verbose,
             json_config=config,
-            workers=workers
+            workers=workers,
         )
+        monte_carlo = MonteCarloBacktest(mc_config)
         
         # Apply JSON normalization values if available by updating class constants
         if not randomize and normalization_values:

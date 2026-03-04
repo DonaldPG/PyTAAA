@@ -21,7 +21,7 @@ import logging
 import json
 import click
 
-from functions.MonteCarloBacktest import MonteCarloBacktest
+from functions.MonteCarloBacktest import MonteCarloBacktest, MonteCarloConfig
 from functions.GetParams import get_json_params
 from functions.logger_config import get_logger
 
@@ -80,14 +80,15 @@ def create_combined_normalized_score_plot(
     else:
         print(f"No Monte Carlo state found, using default lookbacks: {lookbacks_to_use}")
     
-    # Initialize MonteCarloBacktest with minimal iterations since we're just using for data loading
-    monte_carlo = MonteCarloBacktest(
+    # Initialize MonteCarloBacktest with minimal iterations — data loading only.
+    mc_config = MonteCarloConfig(
         model_paths=model_paths,
         iterations=1,
         trading_frequency="monthly",
         min_lookback=10,
-        max_lookback=252
+        max_lookback=252,
     )
+    monte_carlo = MonteCarloBacktest(mc_config)
     
     print(f"Loaded data for {len(monte_carlo.portfolio_histories)} models")
     print(f"Date range: {monte_carlo.dates[0]} to {monte_carlo.dates[-1]}")

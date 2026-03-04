@@ -195,14 +195,16 @@ class TestRecommendModelJsonSupport:
             runner = click.testing.CliRunner()
             result = runner.invoke(main, ['--json', json_config_path])
             
-            # Verify MonteCarloBacktest was called with correct model paths
+            # Verify MonteCarloBacktest was called with a MonteCarloConfig arg.
             assert mock_monte_carlo.called
-            call_kwargs = mock_monte_carlo.call_args[1]
-            model_paths = call_kwargs.get('model_paths', {})
-            
-            # Check that cash model is empty string
+            # MonteCarloBacktest is now called with a single MonteCarloConfig
+            # positional argument; inspect its attributes directly.
+            config_arg = mock_monte_carlo.call_args[0][0]
+            model_paths = config_arg.model_paths
+
+            # Check that cash model is empty string.
             assert model_paths.get('cash') == ""
-            # Check that test model path was constructed correctly
+            # Check that test model path was constructed correctly.
             expected_path = "/tmp/test_data/test_model/data_store/PyTAAA_status.params"
             assert model_paths.get('test_model') == expected_path
             

@@ -17,7 +17,7 @@ from datetime import date as date_type, datetime
 from typing import List, Tuple, Optional, Dict, Any
 import logging
 
-from functions.MonteCarloBacktest import MonteCarloBacktest
+from functions.MonteCarloBacktest import MonteCarloBacktest, MonteCarloConfig
 from functions.logger_config import get_logger
 from functions.abacus_recommend import (
     DateHelper, ModelRecommender, RecommendationDisplay, 
@@ -88,16 +88,19 @@ def main(date: Optional[str], lookbacks: Optional[str], json_config_path: Option
         print(f"\nInitializing model recommendation system...")
         print(f"Using {'actual' if data_format == 'actual' else 'backtested'} portfolio values")
         
-        # Initialize Monte Carlo backtesting in recommendation mode
-        monte_carlo = MonteCarloBacktest(
+        # Initialize Monte Carlo backtesting in recommendation mode.
+        mc_config = MonteCarloConfig(
             model_paths=model_choices,
-            iterations=1,  # Single iteration for recommendation
-            trading_frequency=monte_carlo_config.get('trading_frequency', 'monthly'),
+            iterations=1,  # Single iteration for recommendation.
+            trading_frequency=monte_carlo_config.get(
+                'trading_frequency', 'monthly'
+            ),
             min_lookback=monte_carlo_config.get('min_lookback', 10),
             max_lookback=monte_carlo_config.get('max_lookback', 400),
-            search_mode='exploit',  # Use exploitation for recommendations
-            json_config=config
+            search_mode='exploit',  # Use exploitation for recommendations.
+            json_config=config,
         )
+        monte_carlo = MonteCarloBacktest(mc_config)
         
         # Apply JSON normalization values if available by updating class constants
         if normalization_values:

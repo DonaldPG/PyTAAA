@@ -216,14 +216,16 @@ class TestRunMonteCarloJsonSupport:
             runner = click.testing.CliRunner()
             result = runner.invoke(main, ['--json', json_config_path])
             
-            # Verify MonteCarloBacktest was called with correct model paths
+            # Verify MonteCarloBacktest was called with a MonteCarloConfig arg.
             assert mock_monte_carlo.called
-            call_kwargs = mock_monte_carlo.call_args[1]
-            model_paths = call_kwargs.get('model_paths', {})
-            
-            # Check that cash model is empty string
+            # MonteCarloBacktest is now called with a single MonteCarloConfig
+            # positional argument; inspect its attributes directly.
+            config_arg = mock_monte_carlo.call_args[0][0]
+            model_paths = config_arg.model_paths
+
+            # Check that cash model is empty string.
             assert model_paths.get('cash') == ""
-            # Check that test model paths were constructed correctly
+            # Check that test model paths were constructed correctly.
             expected_path_1 = "/tmp/test_data/test_model_1/data_store/pyTAAAweb_backtestPortfolioValue.params"
             expected_path_2 = "/tmp/test_data/test_model_2/data_store/pyTAAAweb_backtestPortfolioValue.params"
             assert model_paths.get('test_model_1') == expected_path_1
@@ -252,15 +254,17 @@ class TestRunMonteCarloJsonSupport:
             runner = click.testing.CliRunner()
             result = runner.invoke(main, ['--json', json_config_path])
             
-            # Verify MonteCarloBacktest was called with correct parameters
+            # Verify MonteCarloBacktest was called with a MonteCarloConfig arg.
             assert mock_monte_carlo.called
-            call_kwargs = mock_monte_carlo.call_args[1]
-            
-            assert call_kwargs.get('iterations') == 10
-            assert call_kwargs.get('min_iterations_for_exploit') == 5
-            assert call_kwargs.get('trading_frequency') == 'monthly'
-            assert call_kwargs.get('min_lookback') == 10
-            assert call_kwargs.get('max_lookback') == 100
+            # MonteCarloBacktest is now called with a single MonteCarloConfig
+            # positional argument; inspect its attributes directly.
+            config_arg = mock_monte_carlo.call_args[0][0]
+
+            assert config_arg.iterations == 10
+            assert config_arg.min_iterations_for_exploit == 5
+            assert config_arg.trading_frequency == 'monthly'
+            assert config_arg.min_lookback == 10
+            assert config_arg.max_lookback == 100
             
         finally:
             os.unlink(json_config_path)

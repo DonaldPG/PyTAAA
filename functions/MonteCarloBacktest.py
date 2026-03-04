@@ -18,7 +18,7 @@ import json
 import random
 import pickle
 from pathlib import Path
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from functions.PortfolioMetrics import (
     calculate_period_metrics, 
@@ -212,6 +212,102 @@ def _add_noise_to_lookbacks(lookbacks, bin_width, noise_scale=1.0,
         noisy[i] = min(max(val, min_val), max_val)
     return noisy
 
+@dataclass
+class MonteCarloConfig:
+    """Configuration dataclass for MonteCarloBacktest.
+
+    Groups all constructor parameters with types and defaults.
+    Use ``from_dict()`` to build from a JSON-derived dictionary.
+    """
+
+    # Required — no default value.
+    model_paths: Dict[str, str]
+
+    # Iteration control.
+    iterations: int = 50000
+    min_iterations_for_exploit: int = 50
+    max_iterations: int = 50000  # Legacy alias for iterations.
+
+    # Lookback search space.
+    min_lookback: int = 20
+    max_lookback: int = 300
+    n_lookbacks: int = 3
+
+    # Behaviour flags.
+    trading_frequency: str = "monthly"
+    search_mode: str = "explore-exploit"
+    verbose: bool = False
+    workers: int = 10
+
+    # Optional JSON configuration blob (focus-period blending, etc.).
+    json_config: Optional[Dict] = field(default=None)
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
+
+    def __post_init__(self) -> None:
+        """Validate cross-field constraints after construction."""
+        if not self.model_paths:
+            raise ValueError("model_paths must not be empty.")
+        if self.iterations < 1:
+            raise ValueError(
+                f"iterations must be >= 1, got {self.iterations}."
+            )
+        if self.min_iterations_for_exploit < 1:
+            raise ValueError(
+                "min_iterations_for_exploit must be >= 1, "
+                f"got {self.min_iterations_for_exploit}."
+            )
+        if self.min_lookback < 1:
+            raise ValueError(
+                f"min_lookback must be >= 1, got {self.min_lookback}."
+            )
+        if self.max_lookback < self.min_lookback:
+            raise ValueError(
+                f"max_lookback ({self.max_lookback}) must be >= "
+                f"min_lookback ({self.min_lookback})."
+            )
+        if self.n_lookbacks < 1:
+            raise ValueError(
+                f"n_lookbacks must be >= 1, got {self.n_lookbacks}."
+            )
+        if self.workers < 1:
+            raise ValueError(
+                f"workers must be >= 1, got {self.workers}."
+            )
+        _valid_modes = {"explore-exploit", "explore", "exploit"}
+        if self.search_mode not in _valid_modes:
+            raise ValueError(
+                f"search_mode must be one of {_valid_modes}, "
+                f"got '{self.search_mode}'."
+            )
+        _valid_freqs = {"monthly", "daily"}
+        if self.trading_frequency not in _valid_freqs:
+            raise ValueError(
+                f"trading_frequency must be one of {_valid_freqs}, "
+                f"got '{self.trading_frequency}'."
+            )
+        # Synchronise legacy alias.
+        if self.max_iterations != self.iterations:
+            self.max_iterations = self.iterations
+
+    # ------------------------------------------------------------------
+    # Alternative constructor
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> "MonteCarloConfig":
+        """Construct a MonteCarloConfig from a JSON-derived dictionary.
+
+        Only keys that match field names are consumed; all others are
+        silently ignored so callers may pass the full JSON config blob.
+        """
+        _fields = {f.name for f in fields(cls)}
+        kwargs = {k: v for k, v in d.items() if k in _fields}
+        return cls(**kwargs)
+
+
 class MonteCarloBacktest:
     # Define normalization parameters as class constants
     # most recent set of values
@@ -323,50 +419,27 @@ class MonteCarloBacktest:
         'max_drawdown': np.random.choice([0.05, 0.06, 0.07]),
         'avg_drawdown': np.random.choice([0.010, 0.013, 0.016, 0.019])
     }
-    def __init__(
-        self,
-        model_paths: Dict[str, str],
-        iterations: int = 50000,
-        min_iterations_for_exploit: int = 50,
-        trading_frequency: str = "monthly",
-        max_iterations: int = 50000,
-        min_lookback: int = 20,
-        max_lookback: int = 300,
-        n_lookbacks: int = 3,
-        search_mode: str = "explore-exploit",
-        verbose: bool = False,
-        json_config: Optional[Dict] = None,
-        workers: int = 10
-    ) -> None:
-        """Initialize Monte Carlo backtesting framework with permutation-invariant tracking.
-        
+    def __init__(self, config: "MonteCarloConfig") -> None:
+        """Initialize Monte Carlo backtesting framework.
+
         Args:
-            model_paths: Dictionary mapping model names to data file paths
-            iterations: Number of Monte Carlo iterations to run
-            min_iterations_for_exploit: Minimum iterations before exploitation starts
-            trading_frequency: Frequency of trading decisions ("monthly" or "daily")
-            max_iterations: Maximum iterations (legacy parameter, same as iterations)
-            min_lookback: Minimum lookback period in days
-            max_lookback: Maximum lookback period in days
-            n_lookbacks: Number of lookback periods to use
-            search_mode: Search strategy - "explore-exploit" (default), "explore", or "exploit"
-            verbose: Whether to show detailed normalized score breakdown
-            json_config: Optional JSON configuration dictionary
-            workers: Number of parallel worker processes (default: 10, use 1 for serial)
+            config: ``MonteCarloConfig`` dataclass carrying all
+                construction parameters.  Build one directly or via
+                ``MonteCarloConfig.from_dict()``.
         """
-        self.iterations = iterations
-        self.min_iterations_for_exploit = min_iterations_for_exploit
-        self.trading_frequency = trading_frequency
-        self.model_paths = model_paths
-        self.min_lookback = min_lookback
-        self.max_lookback = max_lookback
-        self.n_lookbacks = n_lookbacks
-        self.search_mode = search_mode
-        self.verbose = verbose  # Store verbose setting
-        self.workers = workers  # Number of parallel worker processes
-        
-        # Store JSON configuration for focus period blending
-        self.json_config = json_config or {}
+        self.iterations = config.iterations
+        self.min_iterations_for_exploit = config.min_iterations_for_exploit
+        self.trading_frequency = config.trading_frequency
+        self.model_paths = config.model_paths
+        self.min_lookback = config.min_lookback
+        self.max_lookback = config.max_lookback
+        self.n_lookbacks = config.n_lookbacks
+        self.search_mode = config.search_mode
+        self.verbose = config.verbose  # Store verbose setting.
+        self.workers = config.workers  # Number of parallel worker processes.
+
+        # Store JSON configuration for focus period blending.
+        self.json_config = config.json_config or {}
         self.metric_blending_config = self.json_config.get('metric_blending', {})
         self.focus_period_enabled = self.metric_blending_config.get('enabled', False)
         
@@ -418,7 +491,10 @@ class MonteCarloBacktest:
 
         # Initialize additional tracking for equivalent lookback combinations
         self.equivalent_combinations_found = 0
-        self.logger.info(f"Initialized MonteCarloBacktest with permutation-invariant tracking (search_mode: {search_mode})")
+        self.logger.info(
+            f"Initialized MonteCarloBacktest with permutation-invariant "
+            f"tracking (search_mode: {self.search_mode})"
+        )
         
     def _parse_line(self, line: str, is_backtested: bool) -> Tuple[Optional[date], Optional[float]]:
         """Parse a line from portfolio value file.
