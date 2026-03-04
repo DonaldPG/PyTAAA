@@ -1,0 +1,156 @@
+PART 1:
+
+command used:
+uv run python pytaaa_main.py --json pytaaa_model_switching_params.json \
+    > $BASELINE/logs/pytaaa_main_stdout.txt 2>&1
+
+
+output to record:
+Key numbers to record manually (extract from stdout log):
+
+cumu_value (total portfolio value)
+The B&H portfolio final value is:  1,784,949
+Monthly re-balance based on  245 days of recent performance.
+The portfolio final value is:  9,536,599,654
+
+
+last_symbols_text (ranked symbol list)
+Today's top ranking choices are: 
+ ...inside readSymbolList... existing_company_names_fn =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_companyNames.txt
+2026-03-02  CEG     0.0892  ( 8.92%)  Constellation Energy
+2026-03-02  CSX     0.1255  (12.55%)  CSX Corporation     
+2026-03-02  EA      0.1274  (12.74%)  Electronic Arts     
+2026-03-02  GOOG    0.1598  (15.98%)  Alphabet Inc. (Class C)
+2026-03-02  GOOGL   0.1613  (16.13%)  Alphabet Inc. (Class A)
+2026-03-02  INTC    0.1218  (12.18%)  Intel 
+2026-03-02  PLTR    0.0964  ( 9.64%)  Palantir Technologies
+2026-03-02  WMT     0.1186  (11.86%)  Walmart 
+
+
+last_symbols_weight (weights)
+   . datearray[-1] = 2026-03-02
+   . last_symbols_text = ['CEG', 'CSX', 'EA', 'GOOG', 'GOOGL', 'INTC', 'PLTR', 'WMT']
+   . last_symbols_weight = [0.0892, 0.1255, 0.1274, 0.1598, 0.1613, 0.1218, 0.0964, 0.1186]
+   . last_symbols_price = [301.91, 41.06, 201.06, 269.67, 269.61, 45.21, 130.48, 127.1]
+
+current Holdings :
+stocks:  ['CASH', 'INTC', 'LRCX', 'WBD', 'ASML', 'INTC', 'WBD', 'AMAT', 'INTC', 'LRCX', 'WBD', 'ADI', 'AMAT', 'ASML', 'INTC', 'LRCX', 'MNST']
+shares:  ['1031', '144', '36', '47', '2', '212', '8', '75', '11', '35', '24', '38', '23', '7', '45', '21', '81']
+buyprice:  ['1.0', '36.37', '157.46', '17.1', '1087.99', '40.01', '23.87', '268.87', '39.38', '185.06', '28.51', '310.88', '322.32', '1423.0', '46.47', '233.46', '80.76']
+current ranks:  ['47', '7', '5', '47', '4', '7', '47', '2', '7', '5', '47', '12', '2', '4', '7', '5', '11']
+cumulativecashin:  10000
+
+0 CASH  1.0     1031     1.00  1031.00  1031.00    1.00  0.01%  1031.09   1031.09  47 0 
+1 INTC  36.37    144    36.37  5237.28  6268.28   45.50 25.10%  6552.00   7583.09   7 0 
+2 LRCX  157.46    36   157.46  5668.56 11936.84  231.00 46.70%  8316.00  15899.09   5 0 
+3 WBD   17.1      47    17.10   803.70 12740.54   28.50 66.67%  1339.50  17238.59  47 0 
+4 ASML  1087.99    2  1087.99  2175.98 14916.52 1423.54 30.84%  2847.08  20085.67   4 0 
+5 INTC  40.01    212    40.01  8482.12 23398.64   45.50 13.72%  9646.00  29731.67   7 0 
+6 WBD   23.87      8    23.87   190.96 23589.60   28.50 19.40%   228.00  29959.67  47 0 
+7 AMAT  268.87    75   268.87 20165.25 43754.85  372.18 38.42% 27913.50  57873.17   2 0 
+8 INTC  39.38     11    39.38   433.18 44188.03   45.50 15.54%   500.50  58373.67   7 0 
+9 LRCX  185.06    35   185.06  6477.10 50665.13  231.00 24.82%  8085.00  66458.67   5 0 
+10 WBD   28.51    24    28.51   684.24 51349.37   28.50 -0.04%   684.00  67142.67  47 0 
+11 ADI   310.88    38  310.88 11813.44 63162.81  352.41 13.36% 13391.58  80534.25  12 0 
+12 AMAT  322.32    23  322.32  7413.36 70576.17  372.18 15.47%  8560.14  89094.39   2 0 
+13 ASML  1423.0     7 1423.00  9961.00 80537.17 1423.54  0.04%  9964.78  99059.17   4 0 
+14 INTC  46.47     45   46.47  2091.15 82628.32   45.50 -2.09%  2047.50 101106.67   7 0 
+15 LRCX  233.46    21  233.46  4902.66 87530.98  231.00 -1.05%  4851.00 105957.67   5 0 
+16 MNST  80.76     81   80.76  6541.56 94072.54   81.06  0.37%  6565.86 112523.53  11 0 
+
+
+Lifetime profit line
+Lifetime profit =  102523.53092179526
+
+
+PART 2:
+
+command used:
+uv run python daily_abacus_update.py \
+    --json pytaaa_model_switching_params.json \
+    > $BASELINE/logs/daily_abacus_stdout.txt 2>&1
+
+cp abacus_best_performers.csv $BASELINE/csv/abacus_best_performers_baseline.csv \
+    2>/dev/null || true
+
+
+important parts of output:
+2026-03-03 16:39:06 - __main__ - INFO - Detected active trading model: naz100_pine
+2026-03-03 16:40:40 - __main__ - INFO - Abacus backtest portfolio values updated
+
+Abacus Model-Switching Portfolio:
+  Final Value: $3,322,265,723
+  Annual Return: 0.4%
+  Sharpe Ratio: 1.56
+  Normalized Score: 0.845
+✓ Abacus backtest portfolio values updated successfully
+--- Abacus Backtest Update Complete ---
+
+
+PART 3:
+
+command:
+uv run python recommend_model.py \
+    --json pytaaa_model_switching_params.json \
+    > $BASELINE/logs/recommend_model_stdout.txt 2>&1
+    
+important parts of output:
+----------------------------------------
+Recommendation for 2026-03-03:
+----------------------------------------
+  Using closest available date: 2026-03-02 (1 days difference)
+  Best model: sp500_pine
+Model     Multi  Normalized
+rankings  Rank   Score
+  1. sp500_pine        2    26.07
+  2. sp500_hma         3    17.94
+  3. naz100_pine       3    23.78
+  4. naz100_pi         7     9.37
+  5. cash              7     0.00
+  6. naz100_hma        8    16.24
+
+----------------------------------------
+Recommendation for 2026-03-02:
+----------------------------------------
+  Best model: sp500_pine
+Model     Multi  Normalized
+rankings  Rank   Score
+  1. sp500_pine        2    26.07
+  2. sp500_hma         3    17.94
+  3. naz100_pine       3    23.78
+  4. naz100_pi         7     9.37
+  5. cash              7     0.00
+  6. naz100_hma        8    16.24
+============================================================
+Generated recommendations for manual portfolio updates
+Based on model-switching trading system methodology
+
+======================================================================
+PARAMETERS SUMMARY
+======================================================================
+
+Lookback Periods:
+  Values: [20, 86, 177] days
+  Count: 3 periods
+
+Normalization Parameters:
+  Metric             Central Value  Std Deviation 
+  ------------------ -------------- --------------
+  Annual Return              43.5%          2.0%
+  Sharpe Ratio               1.450         0.165
+  Sortino Ratio              1.350         0.140
+  Max Drawdown              -58.0%         22.5%
+  Avg Drawdown              -10.5%          8.5%
+
+Final Portfolio Results:
+  Initial Value        : $   10,000.00
+  Final Value          : $838,072,050.91
+  Annualized Return    :       38.0%
+  Time Period          :        35.2 years
+
+Model-Switching Effectiveness:
+  Outperformance Rate  :        37.8%
+  vs Equal-Weight Base :         0.0% excess annual return
+  
+  
+  

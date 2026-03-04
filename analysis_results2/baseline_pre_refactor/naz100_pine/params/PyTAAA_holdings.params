@@ -1,0 +1,1258 @@
+
+[Holdings]
+
+TradeDate: 2013-1-2
+cumulativecashin: 10000
+stocks:   ATVI  DELL  FB    FOSL  MU   ORLY  TXN  CASH
+shares:   102   294   13    16    266  14    17   303.51
+buyprice: 10.95 10.68 28.00 94.04 6.63 89.87 32.31 1.0
+
+TradeDate: 2013-3-1
+stocks:   ATVI   CELG   CERN  DELL   MU     CASH
+shares:   207    22     21    190    194    777.27
+buyprice: 14.57  116.51 94.97 14.21  8.73   1.0
+
+TradeDate: 2013-4-1
+stocks:   AMAT   INTC  LIFE  DELL  MU   CASH
+shares:   289    50    24    190   194  689.49
+buyprice: 14.47  23.99 73.57 14.21 8.73 1.0
+
+TradeDate: 2013-5-1
+stocks:   AMAT  INTC  LIFE  DELL  MU   CASH
+shares:   289   50    24    190   194  689.49
+buyprice: 14.47 23.99 73.57 14.21 8.73 1.0
+
+TradeDate: 2013-6-1
+stocks:   MU   ATVI  BIIB   MSFT   CASH  STX
+shares:   155  269   16     48     1050  19
+buyprice: 6.66 14.63 227.39 35.59  1.0   43.70
+
+TradeDate: 2013-7-1
+stocks:   BIIB   STX   DLTR  GILD  MNST  CASH
+shares:   16     19    65    25    44    1283
+buyprice: 227.39 43.70 51.63 51.65 60.82 1.0
+
+TradeDate: 2013-8-2
+stocks:   GILD  GILD  ALXN   BBBY  BIDU   REGN   CASH
+shares:   25    14    17     49    27     4      514
+buyprice: 51.65 61.75 117.28 77.51 139.70 272.39 1.0
+
+TradeDate: 2013-9-4
+stocks:   GILD  GILD  BIDU   AKAM  FOSL   GRMN  LMCA   PCLN   CASH
+shares:   25    14    27     60    8      25    10     1      27
+buyprice: 51.65 61.75 139.70 46.97 115.11 41.53 140.09 945.00 1.0
+
+# mid-month correction based on code bug-fix
+TradeDate: 2013-9-16
+stocks:   BIDU   AKAM  FOSL   GRMN  LMCA   PCLN   CASH
+shares:   27     60    8      25    10     1      2527
+buyprice: 139.70 46.97 115.11 41.53 140.09 945.00 1.0
+
+TradeDate: 2013-10-2
+stocks:   BIDU   AVGO  FB    GRMN  MYL   PCLN   CASH
+shares:   27     86    46    25    34    1      660
+buyprice: 139.70 43.24 50.10 41.53 39.23 945.00 1.0
+
+TradeDate: 2013-11-1
+stocks:   BIDU    FB    GRMN  ALXN   AMZN   CTSH  CASH
+shares:   27      46    25    18     8      19    39
+buyprice: 139.70  50.10 41.53 123.36 359.00 87.54 1.0
+
+TradeDate: 2013-12-3
+stocks:   BIDU    FB    GRMN   CTSH  MYL   AAPL   CASH
+shares:   27      46    25     19    32    4      1699
+buyprice: 139.70  50.10 41.530 87.54 31.17 551.23 1.0
+
+# several days late due to major changes for downloading yahoo quotes from internet
+TradeDate: 2014-1-3
+stocks:   CTSH  CTSH  ADSK  AVGO  EXPE  CASH
+shares:   19    17    86    75    37    1235
+buyprice: 87.54 98.32 48.90 52.85 69.20 1.0
+
+TradeDate: 2014-2-4
+stocks:   CTSH  CTSH  ADSK  AVGO  EXPE  ALXN   CASH
+shares:   19    17    86    75    21    16     -130
+buyprice: 87.54 98.32 48.90 52.85 69.20 154.67 1.0
+
+TradeDate: 2014-3-3
+stocks:   EXPE EXPE DTV   GOOG     ISRG   MAR   MNST  CASH
+shares:   21   23   46    2        5      42    30    967
+buyprice: 69.2 76.7 77.96 1202.69  453.84 53.29 72.59 1
+
+# GOOG splits into GOOGL and GOOG (assume 2:1 split for original shares -- needs to be verified)
+TradeDate: 2014-3-27
+stocks:   EXPE EXPE DTV   GOOG   GOOGL ISRG   MAR   MNST  CASH
+shares:   21   23   46    2      2     5      42    30    967
+buyprice: 69.2 76.7 77.96 601.35 568.  453.84 53.29 72.59 1
+
+# adjusted shares dowward by 5 shares each AKAM, ESRX, FFIV, GMCR to maintain positive cash balance
+TradeDate: 2014-4-3
+stocks:   EXPE EXPE  ISRG   MNST  AKAM  ESRX   FFIV   GMCR   CASH
+shares:   21   23    5      30    33    37     21     20     215
+buyprice: 69.2 76.7  453.84 72.59 58.25 75.75  109.15 108.60 1
+
+TradeDate: 2014-5-2
+stocks:    AKAM  GMCR   AVGO  DTV   SNDK  TSLA   CASH
+shares:    33    20     83    35    10    4      2007
+buyprice:  58.25 108.60 64.27 79.87 85.64 210.91 1
+
+TradeDate: 2014-7-2
+stocks:    GMCR   TSLA   ATVI  AKAM  GRMN  TRIP   CTXS  CASH
+shares:    20     4      164   56    49    12     12    1920
+buyprice:  108.60 210.91 20.62 62.01 61.20 108.12 63.50 1
+
+TradeDate: 2014-8-4
+stocks:    AAPL  BIDU   BRCM  CHRW  CHTR   CSCO  INTC     CASH
+shares:    37    7      68    43    14     81    52       226
+buyprice:  96.37 213.19 38.15 68.06 152.79 24.94 33.79    1
+
+TradeDate: 2014-9-3
+stocks:    AAPL  BIDU   CHRW  CELG  GILD   NFLX      CASH
+shares:    37    7      43    33    22     2         2427
+buyprice:  96.37 213.19 68.06 95.89 110.00 480.52    1
+
+TradeDate: 2014-10-16
+stocks:    BIDU   CELG  NFLX   BIDU   CELG  ISRG   MNST  SIAL      CASH
+shares:    7      33    2      20     5     4      15    8         1820
+buyprice:  213.19 95.89 480.52 211.29 85.65 460.00 90.54 134.40    1
+
+TradeDate: 2014-11-10
+stocks:    BIDU   CELG  BIDU   CELG  ISRG   MNST  AMGN      CASH
+shares:    7      33    20     5     4      15    22        146
+buyprice:  213.19 95.89 211.29 85.65 460.00 90.54 160.25    1
+
+TradeDate: 2014-12-2
+stocks:    ISRG   MNST  AMGN   ROST  SPLS  ISRG   MNST   AMGN   CASH
+shares:    4      15    22     23    71    1      12     25     1775
+buyprice:  460.00 90.54 160.25 90.16 13.89 513.73 111.30 166.41 1
+
+# changed params slightly. Number stocks to hold is now 6, not 7. Also adopted LongPeriod from Rpi version.
+TradeDate: 2015-1-5
+stocks:   BRCM  MAR   AAPL   CHRW  EA    KLAC  CASH
+shares:   67    40    33     34    85    29    107
+buyprice: 38.15 77.45 109.33 72.84 46.87 70.29 1.00
+
+# changed params slightly. Number stocks to hold is now 7. Also adopted "percentileChannels" method for signal2D.
+TradeDate: 2015-2-3
+stocks:   AAPL   CELG   FISV  INTC  KRFT  MNST   DLTR  CASH
+shares:   36     44     18    89    30    8      27    89
+buyprice: 109.33 119.52 73.86 33.78 66.31 118.23 72.23 1.00
+
+TradeDate: 2015-03-9
+stocks:   AAPL  CELG   FISV  MNST   DLTR  BRCM  CHTR   CASH
+shares:   39    39     24    10     34    49    15     35
+buyprice: 110.8 119.26 74.91 122.81 73.76 44.33 183.52 1.0
+
+TradeDate: 2015-04-03
+stocks:   MNST   CHTR   CERN  CTRX  ISRG   LVNTA REGN   CASH
+shares:   10     15     46    126   2      50    2      1288
+buyprice: 122.81 183.52 72.77 59.26 508.29 42.48 438.27 1.0
+
+TradeDate: 2015-05-04
+stocks:   MNST   REGN   REGN   MNST   BRCM  EA    NFLX   CASH
+shares:   10     2      2      13     102   58    9      2245
+buyprice: 122.81 438.27 471.16 141.13 45.03 59.33 557.03 1.0
+
+TradeDate: 2015-06-02
+stocks:   REGN   REGN   ALTR  CTRX  GILD   CASH
+shares:   2      2      94    183   20     2015
+buyprice: 438.27 471.16 51.68 59.72 114.08 1.0
+
+TradeDate: 2015-07-02
+stocks:   ALTR  CTRX  EA     ESRX  ORLY   CASH
+shares:   94    183   43     28    4      28
+buyprice: 51.68 59.72 67.49  89.22 230.79 1.0
+
+TradeDate: 2015-08-09
+stocks:   ORLY   BMRN    EA     AMZN   MNST   NFLX   CASH
+shares:   4      46      61     7      8      13     4039
+buyprice: 230.79 146.27  71.55  522.62 149.17 123.52 1.0
+
+TradeDate: 2015-9-2
+stocks:   BMRN   ATVI  CELG   CHTR    CTSH   CASH
+shares:   33     385   13     12      23     617
+buyprice: 146.27 27.86 115.46 177.76  61.23  1.00
+
+TradeDate: 2015-10-8
+stocks:   ATVI  CTSH   CTSH   EBAY   NVDA   ORLY    SBUX   CASH
+shares:   174   23     65     90     58     11      55     357
+buyprice: 27.86 61.23  66.36  24.15  26.17  253.56  59.46  1.00
+
+TradeDate: 2015-11-2
+stocks:   ATVI  SBUX   ATVI  AMZN   FB     PCLN    CASH
+shares:   174   32     11    9      16     2       4429
+buyprice: 27.86 59.46  34.57 628.35 103.31 1467.19 1.00
+
+TradeDate: 2015-12-3
+info:  sell 32 SBUX  at $61.37
+info:  sell  2 PCLN  at $1284.19
+info:  buy   1 GOOG  at $766.01
+info:  buy   1 GOOGL at $780.70
+info:  buy 110 JD    at $32.00
+ifno:  buy   9 NFLX  at $129.74
+stocks:   ATVI  ATVI  AMZN   FB     GOOG   GOOGL  JD     NFLX   CASH
+shares:   174   11    9      16     1      1      110    9      2764
+buyprice: 27.86 34.57 628.35 103.31 766.01 780.70 32.00  129.74 1.00
+
+TradeDate: 2016-01-05
+info:  Sell ATVI -185.0 at 37.14
+info:  Sell AMZN -9.0 at 633.79
+info:  Sell FB -16.0 at 102.73
+info:  Sell GOOG -1.0 at 742.58
+info:  Sell GOOGL -1.0 at 761.53
+info:  Sell JD -110.0 at 30.00
+info:  Sell NFLX -9.0 at 107.66
+stocks:   ADBE   INTU   KHC    MAT    MSFT   TMUS   CASH
+shares:   11     16     129    274    22     25     1696
+buyprice: 92.4   95.95  73.39  27.26  55.05  40.22  1.00
+
+TradeDate: 2016-02-01
+info:  Sell ADBE -11.0 at 89.61
+info:  Sell INTU -16.0 at 96.37
+info:  Sell KHC -129.0 at 96.37
+info:  Sell MAT -274.0 at 26.76
+info:  Sell MSFT -22.0 at 54.71
+info:  Sell TMUS -25.0 at 40.59
+stocks:   FB     GOOG   GOOGL  MDLZ   ORLY   CASH
+shares:   54     4      4      85     18     2996
+buyprice: 115.09 752.00 770.77 42.73  265.25 1.00
+
+TradeDate: 2016-02-03
+info:  Sell FB -15.0 at 8112.69
+info:  Sell GOOGL -1.0 at 749.38
+info:  Sell MDLZ -61.0 at 39.23
+info:  Sell ORLY -4.0 at 2253.62
+stocks:   FB     GOOG   GOOGL  MDLZ   ORLY   ROST   CASH
+shares:   39     4      3      24     14     100    3333
+buyprice: 115.09 752.00 770.77 42.73  265.25 55.10  1.00
+
+TradeDate: 2016-03-02
+info:  Sell FB -39.0 at 109.95
+info:  Sell GOOG -4.0 at 718.85
+info:  Sell GOOGL -3.0 at 739.48
+info:  Sell MDLZ -13.0 at 42.22
+info:  Sell ORLY -14.0 at 269.55
+info:  Sell ROST -100.0 at 57.74
+stocks:   MDLZ   AMZN   ATVI   MAT    NFLX   NVDA   PCLN    CASH
+shares:   11     10     184    138    12     42     2       1516
+buyprice: 42.73  582.44 32.00  32.27  98.01  32.57  1297.36 1
+
+TradeDate: 2016-04-02
+info:  Sell MDLZ -11.0 at 41.24
+info:  Sell NFLX -12.0 at 105.70
+info:  Sell PCLN -2.0 at 1299.70
+stocks:   AMZN   ATVI   MAT    NVDA   ADBE   GOOGL  MSFT   CASH
+shares:   10     184    138    42     30     2      17     499
+buyprice: 582.44 32.00  32.27  32.57  95.16  769.67 55.57  1
+
+TradeDate: 2016-05-02
+info:  Sell AMZN -10.0 at 683.85
+info:  Sell MAT -138.0 at 31.33
+info:  Sell ADBE -30.0 at 94.90
+info:  Sell GOOGL -2.0 at 714.41
+info:  Sell MSFT -17.0 at 50.61
+stocks:   ATVI   NVDA   ATVI   NVDA  CHTR   FAST   FB     ISRG   CASH
+shares:   184    42     116    37    24     29     12     3      1571
+buyprice: 32.00  32.57  34.58  36.00 216.53 47.02  118.57 633.36 1
+
+TradeDate: 2016-06-02
+info:  Sell ATVI -122.0 at 38.65
+info:  Sell NVDA -31.0 at 46.81
+info:  Sell CHTR -10.0 at 227.50
+info:  Sell FAST -29.0 at 46.24
+info:  Sell FB -4.0 at 118.78
+info:  Sell ISRG -3.0 at 637.69
+stocks:   ATVI   NVDA   ATVI   NVDA  CHTR   FB     AMAT  GOOG   GOOGL  CASH
+shares:   62     11     116    37    14     8      127   7      7      267
+buyprice: 32.00  32.57  34.58  36.00 216.53 118.57 24.38 734.15 748.46 1
+
+TradeDate: 2016-07-05
+info:  Sell CHTR -14.0 at 232.29
+info:  Sell FB -8.0 at 114.19
+info:  Sell GOOG -7.0 at 699.21
+info:  Sell GOOGL -7.0 at 710.25
+stocks:   ATVI   NVDA   ATVI   NVDA  AMAT  ATVI   NVDA   AMAT   ISRG   NTES   PAYX   CASH
+shares:   62     11     116    37    127   97     27     59     4      19     13     842
+buyprice: 32.00  32.57  34.58  36.00 24.38 39.61  46.66  23.89  666.31 184.57 59.44  1
+
+TradeDate: 2016-08-01
+info:  Sell ATVI -34.0 at 240.07
+info:  Sell NVDA -75.0 at 56.73
+info:  Sell ISRG -4.0 at 693.87
+info:  Sell NTES -19.0 at 202.71
+info:  Sell PAYX -13.0 at 59.26
+stocks:   ATVI   ATVI   AMAT  ATVI   AMAT   NTES   AMAT   AVGO   LLTC   CASH
+shares:   28     116    127   97     59     19     45     16     91     778
+buyprice: 32.00  34.58  24.38 39.61  23.89  184.57 26.27  163.51 59.66  1
+
+TradeDate: 2016-09-01
+info:  Sell ATVI -241.0 at 42.15
+info:  Sell AVGO -16.0 at 177.09
+info:  Sell LLTC -91.0 at 59.66
+stocks:   AMAT  AMAT   NTES   AMAT   AMZN   NVDA   LLTC   MCHP   CASH
+shares:   127   59     19     45     10     53     69     21     2688
+buyprice: 24.38 23.89  184.57 26.27  770.62 63.15  59.66  62.80  1
+
+TradeDate: 2016-10-05
+info:  Sell NTES -19.0 at 248.13
+info:  Sell NVDA -53.0 at 68.23
+info:  Sell MCHP -21.0 at 62.12
+stocks:   AMAT  AMAT   AMAT   AMZN   LLTC   AMAT   AMZN   LLTC   ISRG    LRCX   CASH
+shares:   127   59     45     10     69     45     2      33     5       22     1615
+buyprice: 24.38 23.89  26.27  770.62 59.66  29.94  844.36 59.57  718.10  96.17  1
+
+TradeDate: 2016-11-1
+info:  Sell AMAT -276.0 at 28.90
+info:  Sell AMZN -12.0 at 785.14
+info:  Sell LLTC -102.0 at 659.89
+info:  Sell ISRG -5.0 at 669.34
+stocks:   LRCX   LRCX   CSX    MAT    PYPL   QCOM   SYMC   TMUS   CASH
+shares:   22     55     199    48     36     156    70     31     195
+buyprice: 96.17  96.05  30.41  31.03  41.54  68.34  25.22  49.29  1
+
+TradeDate: 2016-12-2
+info:  Sell LRCX -77.0 at 100.55
+info:  Sell MAT -48.0 at 29.93
+info:  Sell PYPL -36.0 at 38.63
+info:  Sell QCOM -156.0 at 65.90
+info:  Sell SYMC -70.0 at 23.51
+stocks:   CSX    TMUS   AMAT   FAST   MU     NTAP   PCAR   CASH
+shares:   199    31     267    47     178    74     38     3645
+buyprice: 30.41  49.29  31.44  47.83  18.79  35.96  63.10  1
+
+
+TradeDate: 2017-1-3
+info:  Sell CSX -199.0 at 30.41
+info:  Sell TMUS -31.0 at 49.29
+info:  Sell AMAT -267.0 at 31.94
+info:  Sell FAST -47.0 at 47.83
+info:  Sell MU -49.0 at 18.79
+info:  Sell NTAP -74.0 at 35.96
+info:  Sell PCAR -38.0 at 63.10
+stocks:   MU     ADSK   CHTR   LRCX   NVDA   STX    CASH
+shares:   129    126    27     32     52     63     999
+buyprice: 18.79  76.18  285.77 107.26 102.01 39.62  1
+
+TradeDate: 2017-2-3
+info:  Sell LRCX -32.0 at 107.26
+info:  Sell STX -63.0 at 39.62
+stocks:   MU     ADSK   CHTR   NVDA   AMAT   CSX    CASH
+shares:   129    126    27     52     105    79     278
+buyprice: 18.79  76.18  285.77 102.01 34.94  46.27  1
+
+TradeDate: 2017-3-11
+info:  Sell ADSK -126.0 at 86.12
+info:  Sell CHTR -27.0 at 323.48
+info:  Sell NVDA -52.0 at 99.12
+stocks:   MU     AMAT   CSX    MU     AMAT   CSX    INCY   NTES   CASH
+shares:   129    105    79     75     152    100    32     25     544
+buyprice: 18.79  34.94  46.27  25.18  38.12  47.80  149.24 289.40 1
+
+TradeDate: 2017-04-15
+info:  Sell AMAT -257.0 at 37.52
+info:  Sell CSX -179.0 at 46.42
+info:  Sell NTES -25.0 at 265.68
+stocks:   MU     MU     INCY   AAPL   MAR    SYMC   CASH
+shares:   129    75     32     88     71     43     4933
+buyprice: 18.79  25.18  149.24 141.05 91.55  30.04  1
+
+TradeDate: 2017-06-03
+info:  Sell MU -53 at 31.21
+info:  Sell INCY -32 at 131.50
+info:  Sell AAPL -5 at 155.50
+info:  Sell MAR -15 at 110.10
+info:  Sell SYMC -43 at 30.08
+stocks:   MU     MU     AAPL   MAR    CSX    JD     CASH
+shares:   76     75     83     56     102    198    988
+buyprice: 18.79  25.18  141.05 91.55  54.54  40.23  1.00
+
+TradeDate: 2017-07-03
+info:  Sell MU -151 at 29.14
+info:  Sell AAPL -83 at 143.50
+info:  Sell MAR -56 at 100.11
+info:  Sell JD -198 at 38.86
+stocks:   CSX    CSX    ADBE   HAS    TSLA   CASH
+shares:   102    119    103    63     2      2728
+buyprice: 54.54  54.49  138.41 110.74 352.62 1.00
+
+TradeDate: 2017-09-03
+info:  Sell CSX -221 at 49.78
+info:  Sell ADBE -103 at 155.06
+info:  Sell HAS -63 at 98.34
+info:  Sell TSLA -2 at 355.40
+stocks:   INCY   LVNTA  MU     NCLH   NFLX   PYPL   VRTX   CASH
+shares:   17     112    234    99     30     101    14     287
+buyprice: 139.03 60.97  32.60  58.54  174.74 61.46  162.24 1.00
+
+TradeDate: 2017-10-07
+info:  Sell MU -94 at 32.60
+info:  Sell INCY -17 at 139.03
+info:  Sell LVNTA -112 at 60.97
+info:  Sell NCLH -99 at 58.54
+info:  Sell NFLX -30 at 174.74
+info:  Sell PYPL -101 at 61.46
+info:  Sell VRTX -14 at 162.24
+stocks:   MU     BIDU   CELG   CHKP   ILMN   MAR    CASH
+shares:   140    18     59     108    15     34     1074
+buyprice: 32.60  247.69 139.21 116.75 204.18 111.76 1.00
+
+TradeDate: 2017-11-05
+info:  Sell BIDU  -18 at 241.54
+info:  Sell CELG -59 at 100.04
+info:  Sell CHKP -108 at 105.65
+info:  Sell MAR -34 at 121.55
+stocks:   MU     ILMN   ALGN   AMAT   ISRG   NFLX   CASH
+shares:   140    15     58     100    15     5      450
+buyprice: 32.60  204.18 241.35 56.55  384.25 200.01 1.00
+
+TradeDate: 2017-12-06
+info:  Sell MU  -140 at 41.58
+info:  Sell AMAT -100 at 51.01
+info:  Sell NFLX -5 at 185.30
+stocks:   ILMN   ALGN   ISRG   ADBE   MELI   PYPL   CASH
+shares:   15     58     15     33     6      33     1860.81
+buyprice: 204.18 241.35 384.25 173.52 272.21 73.14  1.00
+
+TradeDate: 2018-1-04
+info:  Sell ILMN -15 at 232.18
+info:  Sell ALGN -58 at 231.40
+info:  Sell ISRG -15 at 376.26
+info:  Sell ADBE -33 at 182.82
+info:  Sell MELI -6 at 324.30
+info:  Sell PYPL -33 at 76.50
+stocks:   AMZN    CSX    DLTR   JD     NTES   VRTX   WYNN   CASH
+shares:   12      17     72     80     6      12     11     2426
+buyprice: 1209.59 56.78  108.86 43.67  340.01 153.07 163.40 1.00
+
+TradeDate: 2018-3-02
+info:  Sell AMZN -12 at 1500.25
+info:  Sell CSX  -17 at 55.04
+info:  Sell DLTR -72 at 104.41
+info:  Sell JD   -80 at 43.80
+info:  Sell NTES -6 at 288.71
+info:  Sell VRTX -4 at 1224.56
+info:  Sell WYNN -11 at 163.06
+stocks:   VRTX   CTSH   INTC   ISRG   NVDA   PYPL   CASH
+shares:   8      162    93     24     8      12     6014
+buyprice: 153.07 81.28  48.98  417.39 236.54 78.87  1.00
+
+TradeDate: 2018-06-04
+info:  Sell VRTX   -8 at 149.65
+info:  Sell CTSH -162 at 77.22
+info:  Sell ISRG  -24 at 477.93
+info:  Sell NVDA   -8 at 264.85
+info:  Sell PYPL  -12 at 84.57
+stocks:   INTC   INTC   AMZN    CTXS   FOX    FOXA   ILMN   JBHT   CASH
+shares:   93     12     8       57     79     40     8      50     987
+buyprice: 48.98  56.83  1665.27 107.60 38.44  38.66  280.26 127.50 1.00
+
+TradeDate: 2018-07-07
+info:  Sell INTC -105 at  51.37
+info:  Sell CTXS  -57 at 106.57
+info:  Sell FOXA  -40 at  48.93
+info:  Sell JBHT  -50 at 122.04
+stocks:   AMZN    FOX    ILMN   AMZN    FOX    ILMN   INTU   NFLX   ROST   TTWO   CASH
+shares:   8       79     8      1       98     1      26     11     16     11     1130
+buyprice: 1665.27 38.44  280.26 1710.63 48.43  286.13 208.15 408.25 86.32  123.44 1.00
+
+TradeDate: 2018-08-06
+info:  Sell  FOX -177 at  45.26
+info:  Sell INTU  -26 at 207.47
+info:  Sell NFLX  -11 at 350.91
+info:  Sell TTWO  -11 at 121.35
+stocks:   AMZN    ILMN   AMZN    ILMN   ROST   CTXS   IDXX   ORLY   VRSK   CASH
+shares:   8       8      1       1      16     53     34     8      8      2141
+buyprice: 1665.27 280.26 1710.63 286.13 86.32  111.12 242.91 315.47 114.58 1.00
+
+TradeDate: 2018-10-05
+info:  Sell AMZN   -2 at 1889.89
+info:  Sell ILMN   -9 at 329.52
+info:  Sell ROST  -16 at 94.63
+info:  Sell CTXS  -53 at 107.89
+info:  Sell IDXX  -34 at 229.24
+info:  Sell VRSK   -8 at 119.46
+stocks:   AMZN    ORLY   AAPL   ADBE   ESRX   INTU   QCOM   CASH
+shares:   7       8      31     16     70     16     31     1217
+buyprice: 1665.27 315.47 224.29 263.22 96.03  222.31 71.21  1.00
+
+TradeDate: 2018-11-02
+info:  Sell AMZN   -7 at 1665.53
+info:  Sell ORLY   -8 at 325.23
+info:  Sell AAPL  -31 at 207.48
+info:  Sell ADBE  -16 at 239.64
+info:  Sell INTU  -16 at 212.98
+info:  Sell QCOM  -31 at 63.33
+stocks:   ESRX   ESRX   BMRN   HSIC   MELI   ROST   CASH
+shares:   70     15     72     154    7      17     5550
+buyprice: 96.03  96.74  97.96  83.51  354.39 100.03 1.00
+
+TradeDate: 2018-12-03
+info:  Sell ESRX   -70 at 100.46
+info:  Sell EXRX   -15 at 100.46
+info:  Sell BMRN   -72 at 97.24
+info:  Sell HSIC  -154 at 90.07
+info:  Sell MELI  -7   at 364.04
+info:  Sell ROST  -17  at 85.03
+stocks:   ADSK   ORLY   ULTA   VRTX   WBA    WDAY   XLNX   CASH
+shares:   63     26     23     14     37     38     10     497
+buyprice: 148.02 346.34 306.49 184.65 85.69  167.80 94.63  1.00
+
+TradeDate: 2019-1-04
+info:  Sell ADSK   -63 at 128.00
+info:  Sell ORLY   -26 at 345.91
+info:  Sell ULTA   -21 at 255.38
+info:  Sell VRTX   -14 at 170.63
+info:  Sell WBA    -37 at 69.58
+info:  Sell XLNX   -10 at 86.00
+stocks:   ULTA   AMD    AMGN   LULU   NTAP   PYPL   CASH
+shares:   2      806    9      29     215    10     465
+buyprice: 306.49 18.97  195.61 128.44 59.52  86.27  1.00
+
+TradeDate: 2019-02-08
+info:  Sell ULTA   -2 at 296.06
+info:  Sell AMGN   -9 at 186.00
+info:  Sell NTAP   -215 at 66.00
+info:  Sell PYPL   -10 at 91.87
+stocks:   AMD    LULU   AMD    LULU   EXPE   REGN   VRSN   CASH
+shares:   806    29     250    18     33     7      6      1199
+buyprice: 18.97  128.44 23.05  148.62 130.80 406.86 173.09 1.00
+
+TradeDate: 2019-04-05
+info:  Sell AMD   -60 at  28.98
+info:  Sell LULU  -29 at 169.37
+info:  Sell AMD  -250 at  28.98
+info:  Sell LULU  -18 at 169.37
+info:  Sell EXPE  -33 at 122.50
+info:  Sell REGN   -7 at 408.94
+stocks:   AMD    VRSN   CDNS   MELI   ORLY   CASH
+shares:   746    6      304    3      7      1215
+buyprice: 18.97  173.09 64.20  502.85 401.13 1.00
+
+TradeDate: 2019-06-07
+info:  Sell AMD  -746 at  32.41
+info:  Sell VRSN   -6 at 207.09
+info:  Sell CDNS -304 at  65.57
+info:  Sell ORLY   -7 at 382.26
+stocks:   MELI   MELI   CERN   CHTR   MDLZ   PEP    TMUS   XEL    CASH
+shares:   3      3      284    19     205    24     42     15     882
+buyprice: 502.85 604.49 72.74  394.04 54.02  133.47 77.03  59.43  1.00
+
+TradeDate: 2019-10-04
+info:  Sell MELI   -3 at  559.22
+info:  Sell MELI   -3 at  559.22
+info:  Sell CERN -284 at   66.82
+info:  Sell CHTR  -19 at  427.72
+info:  Sell MDLZ -205 at   55.98
+info:  Sell PEP   -24 at  140.28
+info:  Sell TMUS  -42 at   77.99
+stocks:   XEL    ASML   AVGO   CTAS   DLTR   KLAC   LRCX   CASH
+shares:   15     44     12     64     111    12     13     622
+buyprice: 59.43  246.04 281.43 262.86 115.72 161.11 233.27 1.00
+
+TradeDate: 2019-11-15
+info:  Sell XEL    -15 at  60.08
+info:  Sell AVGO   -12 at 313.41
+info:  Sell CTAS   -64 at 260.88
+info:  Sell DLTR  -111 at 110.35
+stocks:   ASML   KLAC   LRCX   ASML   KLAC   LRCX   AMAT   AMD    CHTR   NXPI   CASH
+shares:   44     12     13     1      8      7      109    521    4      25     826
+buyprice: 246.04 161.11 233.27 267.29 174.21 272.68 56.03  36.29  469.75 117.62 1.00
+
+TradeDate: 2019-12-06
+info:  Sell ASML   -45 at 280.09
+info:  Sell KLAC   -20 at 162.89
+info:  Sell LRCX   -20 at 269.86
+info:  Sell NXPI   -25 at 118.67
+stocks:   AMAT   AMD    CHTR   CHTR   AAPL   CELG   INCY   PCAR   CASH
+shares:   109    521    4      4      58     27     20     50     498
+buyprice: 56.03  36.29  469.75 467.85 270.71 108.24 94.48  81.12  1.00
+
+TradeDate: 2020-01-03
+info:  Sell AMD   -521 at  48.60
+info:  Sell CHTR    -8 at 494.47
+info:  Sell CELG   -27 at 108.24
+info:  Sell INCY   -20 at  77.90
+info:  Sell PCAR   -50 at  78.73
+stocks:   AMAT   AAPL   AMAT   AAPL    ASML   KLAC   LRCX   QCOM   SWKS   CASH
+shares:   109    58     88     14      45     20     17     13     28     2188
+buyprice: 56.03  270.71 61.21  297.43  297.95 179.08 294.69 87.02  118.65 1.00
+
+TradeDate: 2020-02-21
+info:  Sell AMAT  -109 at  64.27
+info:  Sell AMAT   -88 at  64.27
+info:  Sell ASML   -45 at 306.00
+info:  Sell KLAC   -20 at 161.12
+info:  Sell QCOM   -13 at  87.03
+info:  Sell SWKS   -28 at 114.63
+stocks:   AAPL   AAPL    LRCX   AAPL   LRCX   JD     MELI   NVDA   TSLA   CASH
+shares:   58     14      17     20     6      85     11     32     6      1677
+buyprice: 270.71 297.43  294.69 313.05 316.80 40.42  735.60 294.07 901.00 1.00
+
+TradeDate: 2020-04-06
+info:  Sell AAPL   -58 at 256.50
+info:  Sell AAPL   -14 at 256.50
+info:  Sell AAPL   -20 at 256.50
+info:  Sell LCRX    -6 at 246.00
+info:  Sell JD     -46 at 306.00
+info:  Sell MELI   -11 at 501.80
+info:  Sell NVDA   -32 at 264.00
+info:  Sell TSLA    -6 at 508.10
+stocks:   JD     ATVI   BIIB   CTXS   SGEN   TTWO   CASH
+shares:   85     44     71     131    23     15     1097
+buyprice: 40.42  61.60  311.39 147.14 124.47 121.29 1.00
+
+TradeDate: 2020-05-08
+info:  Sell   JD   -85 at  46.78
+info:  Sell BIIB   -71 at 314.02
+info:  Sell CTXS  -100 at 150.98
+info:  Sell TTWO   -15 at 129.85
+stocks:   ATVI   CTXS   SGEN   ATVI   SGEN   KLAC   NVDA   REGN   SWKS   CASH
+shares:   44     31     23     216    52     9      20     6      77     679
+buyprice: 61.60  147.14 124.47 73.14  157.67 171.50 312.50 563.40 111.22 1.00
+
+TradeDate: 2020-06-05
+info:  Sell ATVI   -44 at  69.43
+info:  Sell CTXS   -31 at 139.15
+info:  Sell ATVI  -216 at  69.43
+info:  Sell KLAC    -9 at 192.48
+info:  Sell SWKS   -77 at 136.18
+stocks:   SGEN   SGEN   NVDA   REGN   NVDA   JD     LULU   TSLA   VRTX   CASH
+shares:   23     52     20     6      3      215    40     5      3      512
+buyprice: 124.47 157.67 312.50 563.40 356.80 59.04  319.78 885.66 265.69 1.00
+
+TradeDate: 2020-07-02
+info:  Sell SGEN   -23 at  170.03
+info:  Sell SGEN   -52 at  170.03
+info:  Sell NVDA    -9 at  387.57
+info:  Sell REGN    -2 at  626.22
+info:  Sell NVDA    -3 at  387.57
+info:  Sell LULU   -40 at  304.44
+info:  Sell TSLA    -3 at 1208.33
+info:  Sell VRTX    -3 at  292.91
+stocks:   NVDA   REGN   JD     TSLA   ASML   ATVI   DOCU   CASH
+shares:   11     4      97     2      34     129    103    275
+buyprice: 312.50 563.40 59.04  885.66 374.88 77.84  194.86 1.00
+
+TradeDate: 2020-08-07
+info:  Sell JD     -97 at   62.06
+info:  Sell ASML   -34 at  366.07
+info:  Sell ATVI  -129 at   82.47
+info:  Sell DOCU   -13 at  204.76
+info: TSLA split 5 for 1 on 2020-08-31
+info: AAPL split 4 for 1 on 2020-08-28
+stocks:   NVDA   REGN   TSLA   DOCU   AAPL   MRNA   CASH
+shares:   11     4      10     90     188    123    275
+buyprice: 312.50 563.40 177.13 194.86 111.11 74.10  1.00
+
+TradeDate: 2020-09-04
+info:  Sell NVDA    -1 at  504.90
+info:  Sell REGN    -4 at  580.36
+info:  Sell TSLA   -10 at  418.32
+info:  Sell DOCU   -26 at  216.26
+info:  Sell AAPL  -188 at  120.96
+info:  Sell MRNA  -123 at   62.60
+stocks:   NVDA   DOCU   AMD    AMZN    JD     SWKS   CASH
+shares:   11     90     86     4       115    25     4313
+buyprice: 312.50 194.86 82.01  3294.62 80.00  139.01 1.00
+
+TradeDate: 2020-10-02
+info:  Sell DOCU   -90 at  218.27
+info:  Sell AMZN    -4 at 3125.00
+info:  Sell SWKS   -25 at   77.10
+stocks:   NVDA   AMD    JD     NVDA   AMD    JD     ALGN   PYPL   CASH
+shares:   11     86     115    8      50     51     62     36     1545
+buyprice: 312.50 82.01  80.00  522.49 81.80  76.10  314.89 191.91 1.
+
+TradeDate: 2020-11-13
+info:  Sell NVDA   -11 at   531.88
+info:  Sell AMD    -86 at    81.43
+info:  Sell JD    -115 at    92.08
+info:  Sell NVDA    -8 at   531.88
+info:  Sell AMD    -50 at    81.43
+info:  Sell JD     -51 at    92.08
+info:  Sell ALGN   -62 at   457.26
+info:  Sell PYPL   -36 at   188.62
+stocks:   BIDU   CTSH   IDXX   KHC    MELI    CASH
+shares:   100    140    33     346    11      702
+buyprice: 145.08 77.19  453.64 31.61  1301.66 1.
+
+TradeDate: 2020-12-04
+info:  Sell BIDU  -100 at   144.07
+info:  Sell CTSH  -140 at    81.06
+info:  Sell IDXX   -11 at   457.15
+info:  Sell KHC   -346 at    34.12
+info:  Sell MELI   -11 at  1557.38
+stocks:   IDXX   PDD    ALGN   TMUS   QCOM   MRNA   SNPS   CASH
+shares:   22     80     55     3      33     80     9      101
+buyprice: 453.64 144.36 521.72 131.80 157.62 152.52 236.88 1.
+
+TradeDate: 2021-01-08
+info:  Sell IDXX   -22 at   513.20
+info:  Sell PDD    -36 at   180.77
+info:  Sell ALGN   -23 at   570.53
+info:  Sell TMUS    -3 at   135.06
+info:  Sell QCOM   -33 at   156.64
+info:  Sell MRNA   -80 at   112.75
+info:  Sell SNPS    -9 at   262.80
+stocks:   PDD    ALGN   ALXN   BIDU   PTON   PYPL   CASH
+shares:   44     32     149    54     53     15     1252
+buyprice: 144.36 521.72 157.35 207.89 158.88 242.46 1.
+
+TradeDate: 2021-02-08
+info:  Sell ALXN  -149 at   154.41
+info:  Sell PTON   -53 at   144.99
+info:  Sell PYPL   -15 at   282.17
+stocks:   PDD    ALGN   BIDU   MRNA   PDD    BIDU   MRVL   ALGN   QCOM   ILMN   CASH
+shares:   44     32     54     31     3      35     50     14     21     13     156
+buyprice: 144.36 521.72 207.89 185.98 188.26 276.60 51.60  602.44 147.38 451.06 1.
+
+TradeDate: 2021-03-05
+info:  Sell PDD    -44 at   156.82
+info:  Sell ALGN   -32 at   536.46
+info:  Sell MRNA   -31 at   132.19
+info:  Sell PDD     -3 at   156.82
+info:  Sell MRVL   -50 at    41.51
+info:  Sell ALGN   -14 at   536.46
+info:  Sell QCOM   -21 at   129.75
+info:  Sell ILMN   -13 at   398.85
+stocks:   BIDU   BIDU   BIDU   AMAT   AVGO   MCHP   MTCH   PYPL   CASH
+shares:   54     35     64     73     13     19     42     14     3149
+buyprice: 207.89 276.60 261.72 113.45 450.14 145.44 146.29 239.05 1.
+
+TradeDate: 2021-05-05
+info:  Sell BIDU   -54 at   195.63
+info:  Sell BIDU   -35 at   195.63
+info:  Sell BIDU   -64 at   195.63
+info:  Sell AVGO   -13 at   443.83
+info:  Sell MCHP   -19 at   145.64
+info:  Sell MTCH   -42 at   143.67
+info:  Sell PYPL   -14 at   247.40
+stocks:   AMAT   AMAT   ALXN   ASML   BKNG    CDW    CSX    CTSH   CASH
+shares:   73     13     15     12     1       70     121    136    1510
+buyprice: 113.45 130.29 169.91 641.88 2337.92 171.40 101.20 81.46  1.
+
+TradeDate: 2021-06-04
+info:  Sell AMAT   -73 at   139.85
+info:  Sell AMAT   -13 at   139.85
+info:  Sell ASML   -12 at   683.30
+info:  Sell BKNG    -1 at  2315.69
+info:  Sell CDW    -70 at   167.49
+info:  Sell CTSH  -136 at    71.50
+info:  Split CSX  3:1 on 6/29/2021
+stocks:   ALXN   CSX    ALXN   TCOM   NXPI   CSX    MXIM   CMCSA  XLNX   CASH
+shares:   15     363    3      17     42     432    45     260    4      1529
+buyprice: 169.91 33.73  177.12 39.24  202.00 33.21  102.43 57.00  128.63 1.
+
+TradeDate: 2021-07-02
+info:  Sell CSX   -363 at    32.58
+info:  Sell CSX   -432 at    32.58
+info:  Sell TCOM   -17 at    35.49
+info:  Sell NXPI   -42 at   202.73
+info:  Sell MXIM   -45 at   104.03
+info:  Sell CMCSA  260 at    58.42
+info:  Sell XLNX    -4 at   144.56
+stocks:   ALXN   ALXN   MRNA   AMD    GOOG    AMAT   ALXN   ROST   PAYX   CASH
+shares:   15     3      63     29     3       111    11     22     83     2580
+buyprice: 169.91 177.12 234.30 94.70  2574.38 138.16 186.28 126.25 108.73 1.
+info: ALXN acquired on 7/21/21 at 182.50 per share
+stocks:   MRNA   AMD    GOOG    AMAT   ROST   PAYX   CASH
+shares:   63     29     3       111    22     83     7873
+buyprice: 234.30 94.70  2574.38 138.16 126.25 108.73 1.
+
+TradeDate: 2021-08-07
+info:  Sell MRNA   -63 at   413.72
+info:  Sell AMD    -29 at   110.11
+info:  Sell AMAT  -111 at   142.65
+info:  Sell ROST   -22 at   123.09
+stocks:   GOOG    PAYX   ADP    ASML   GOOGL   SBUX   TEAM   CASH
+shares:   3       83     108    20     3       12     4      6092
+buyprice: 2574.38 108.73 213.00 783.28 2714.77 119.05 334.51 1.
+
+TradeDate: 2021-09-03
+info:  Sell GOOG    -3 at  2895.50
+info:  Sell PAYX   -83 at   113.60
+info:  Sell ADP   -108 at   207.38
+info:  Sell ASML   -20 at   858.11
+info:  Sell GOOGL   -3 at  2874.79
+info:  Sell SBUX   -12 at   117.19
+stocks:   TEAM   MRNA   LRCX   CDW    EXC    CSCO   TEAM   EBAY   CASH
+shares:   4      11     9      130    223    356    6      30     499
+buyprice: 334.51 334.51 610.71 202.70 49.82  59.42  384.59 76.53  1.
+
+TradeDate: 2021-10-08
+info:  Sell MRNA    -11 at  304.91
+info:  Sell LRCX     -9 at  550.16
+info:  Sell CDW    -130 at  176.88
+info:  Sell EXC    -223 at   48.35
+info:  Sell CSCO   -356 at   55.08
+info:  Sell EBAY   -30 at    75.05
+stocks:   TEAM   TEAM   MAR    FOXA   DXCM   FOX    SIRI   CASH
+shares:   4      6      6      302    41     360    2030   2675
+buyprice: 334.51 384.59 157.09 42.25  529.10 39.08  6.06   1.
+
+TradeDate: 2022-03-04
+info:  Sell TEAM    -10 at  298.07
+info:  Sell MAR      -6 at  174.92
+info:  Sell FOXA   -302 at   37.32
+info:  Sell DXCM    -41 at  381.24
+info:  Sell FOX    -360 at   24.62
+info:  Sell SIRI  -2030 at    6.03
+stocks:   PAYX   AMD    VRTX   ADP    MDLZ   INTU   GILD   CASH
+shares:   19     49     1      12     253    11     411    1223
+buyprice: 123.58 108.41 238.66 208.46 63.83  464.95 61.86  1.
+
+TradeDate: 2022-03-11
+info:  Sell PAYX    -19 at  120.59
+info:  Sell AMD     -28 at  104.29
+info:  Sell VRTX     -1 at  236.48
+info:  Sell ADP     -12 at  207.27
+info:  Sell MDLZ   -253 at   59.12
+info:  Sell INTU    -11 at  439.32
+info:  Sell GILD   -411 at   58.00
+stocks:   SNPS   TSLA   VRSN   KDP    AEP    CEG    CASH
+shares:   22     1      11     403    253    11     3735
+buyprice: 392.69 795.35 204.16 36.81  95.54  49.32  1.
+
+TradeDate: 2022-04-01
+info:  Sell SNPS    -22 at  334.98
+info:  Sell TSLA     -1 at 1084.59
+info:  Sell VRSN    -11 at  225.27
+info:  Sell KDP    -403 at   38.24
+info:  Sell AEP    -253 at  101.51
+stocks:   CEG    REGN   TEAM   VRTX   CEG    COST   CTAS   DXCM   CASH
+shares:   11     1      12     2      102    15     56     21     1412
+buyprice: 49.32  694.83 305.75 266.15 58.02  575.57 423.88 531.57 1.
+
+TradeDate: 2022-06-03
+info:  Sell REGN     -1 at  630.35
+info:  Sell TEAM    -12 at  190.57
+info:  Sell VRTX     -2 at  269.44
+info:  Sell COST    -15 at  476.25
+info:  Sell CTAS    -56 at  396.09
+info:  Sell DXCM    -21 at  292.79
+stocks:   CEG    CEG    AVGO   AEP    MAR    KLAC   AMGN   CASH
+shares:   11     102    3      139    36     21     55     632
+buyprice: 49.32  58.02  563.32 101.95 174.65 362.44 248.45 1.
+
+TradeDate: 2022-08-08
+info:  Sell AVGO     -3 at  551.44
+info:  Sell AEP    -139 at   99.46
+info:  Sell MAR     -36 at  157.01
+info:  Sell KLAC    -21 at  395.74
+info:  Sell AMGN    -55 at  246.25
+stocks:   CEG    CEG    SIRI   KDP    PCAR   XEL    SNPS   COST   CASH
+shares:   11     102    1770   57     169    1      29     5      732
+buyprice: 49.32  58.02  6.58   38.72  91.13  73.80  374.29 540.67 1.
+
+TradeDate: 2022-09-02
+info:  Sell CEG     -28 at   74.30
+info:  Sell SIRI  -1770 at    6.07
+info:  Sell KDP     -57 at   37.83
+info:  Sell PCAR   -169 at   86.47
+info:  Sell XEL      -1 at   74.41
+info:  Sell SNPS    -29 at  330.56
+info:  Sell COST     -5 at  519.11
+stocks:   CEG    CEG    VRTX   NTES   KHC    BIDU   JD     CASH
+shares:   11     74     2      11     295    128    182    1148
+buyprice: 49.32  58.02  281.04 88.52  37.31  140.05 61.29  1.
+
+TradeDate: 2022-10-21
+info:  Sell KHC    -295 at   35.21
+info:  Sell BIDU   -128 at   91.23
+info:  Sell JD     -182 at   42.15
+stocks:   CEG    CEG    VRTX   NTES   VRTX   CEG    DLTR   COST   SPLK   NTES   CASH
+shares:   11     74     2      11     1      6      13     33     59     102    1372
+buyprice: 49.32  58.02  281.04 88.52  300.00 87.28  143.61 478.18 79.20  62.43  1.
+
+TradeDate: 2023-3-10
+info:  Sell VRTX     -3 at  287.24
+info:  Sell CEG     -91 at   77.55
+info:  Sell COST    -33 at  471.14
+info:  Sell NTES    -11 at   71.30
+info:  Sell DLTR   -182 at  140.29
+info:  Sell SPLK    -59 at   87.40
+stocks:   MELI    PCAR   SGEN   GFS    BKNG    ADI    FISV   CASH
+shares:   3       2      3      105    4       60     62     1611
+buyprice: 1168.04 72.32  172.61 64.20  2480.49 181.76 111.83 1.
+
+TradeDate: 2023-4-6
+info:  Sell MELI     -3 at 1245.00
+info:  Sell PCAR     -2 at   68.49
+info:  Sell SGEN     -3 at  205.55
+info:  Sell ADI     -60 at  187.17
+info:  Sell FISV    -62 at  113.01
+stocks:   GFS    BKNG    BIIB   MNST   MCHP   GFS    CPRT   BKNG    CASH
+shares:   105    4       19     19     82     35     68     1       1452
+buyprice: 64.20  2480.49 286.80 52.56  78.70  66.90  74.38  2583.85 1.
+
+TradeDate: 2023-5-5
+info:  Sell GFS    -140 at   59.41
+info:  Sell BKNG     -5 at 2569.30
+info:  Sell MCHP    -82 at   75.18
+info:  Sell CPRT    -68 at   78.89
+stocks:   BIIB   MNST   MELI    NVDA   CSGP   PCAR   SBUX   BIIB   MNST   CASH
+shares:   19     19     1       8      38     79     4      40     37     6664
+buyprice: 286.80 52.56  1243.85 286.80 74.60  72.76  107.21 318.06 59.71  1.
+
+TradeDate: 2023-6-2
+info:  Sell BIIB    -19 at  300.20
+info:  Sell BIIB    -40 at  300.20
+info:  Sell MNST    -19 at   59.48
+info:  Sell MNST    -37 at   59.48
+info:  Sell MELI     -1 at 1270.67
+info:  Sell NVDA     -2 at  393.27
+info:  Sell PCAR    -79 at   73.30
+info:  Sell SBUX     -4 at   99.50
+stocks:   NVDA   CSGP   NFLX   CPRT   META   AMAT   LRCX   CSGP   CASH
+shares:   5      38     2      120    17     131    2      7      909
+buyprice: 286.80 74.60  400.47 88.03  272.61 134.63 613.67 81.88  1.
+
+TradeDate: 2023-8-12
+info:  Sell CSGP    -38 at   80.84
+info:  Sell CPRT   -120 at   87.85
+info:  Sell AMAT   -106 at  138.83
+info:  Sell CSGP     -7 at   80.84
+stocks:   NVDA   NFLX   META   AMAT   LRCX   NVDA   NFLX   FTNT   META   WDAY   LRCX   CASH
+shares:   5      2      17     25     2      18     5      27     37     2      9      1250
+buyprice: 286.80 400.47 272.61 134.63 613.67 408.55 421.66 59.68  301.64 226.46 651.97 1.
+
+TradeDate: 2023-9-8
+info:  Sell NFLX     -3 at  442.80
+info:  Sell FTNT    -27 at   64.07
+info:  Sell LRCX    -11 at  668.88
+info:  Sell META    -54 at  297.89
+stocks:   NVDA   AMAT   NVDA   NFLX   WDAY   BKNG    NVDA   WDAY   MELI    AMAT   PDD    CASH
+shares:   5      25     18     4      2      3       1      1      1       25     84     4491
+buyprice: 286.80 134.63 408.55 421.66 226.46 3143.10 455.72 250.63 1428.19 147.53 95.34  1.
+
+TradeDate: 2023-11-3
+info:  Sell  PDD    -31  106.42
+info:  Sell  WDAY   -1   218.41
+info:  Sell  amat   -50  139.75
+info:  Sell  nvda   -24  450.05
+info:  Sell bkng    -3  2859.75
+stocks:   NFLX   WDAY   MELI    PDD    NFLX   CDNS   CPRT   SGEN   CASH
+shares:   4      2      1       53     21     39     233    20     560
+buyprice: 421.66 226.46 1428.19 95.34  432.36 249.54 45.93  215.00 1.
+
+TradeDate: 2024-1-5
+info:  Sell  NFLX   -25  474.06
+info:  Sell  WDAY   -2   265.80
+info:  Sell  MELI   -1  1538.83
+info:  Sell  PDD    -53  146.53
+info:  Sell  CDNS   -39  252.71
+info:  Sell  CPRT  -233   46.55
+info:  Sell  SGEN   -20  228.74
+stocks:   META   AMD    SPLK   INTC   CRWD   ZS     TSLA    CASH
+shares:   40     31     26     57     81     1      7       604
+buyprice: 351.95 138.58 152.22 46.89  247.46 209.81 237.49  1.
+
+TradeDate: 2024-2-2
+info:  Sell   CRWD  -7   304
+info:  Sell   META  -40  395
+info:  Sell   SPLK  -26 153.39
+info:  Sell   INTC  -57 42.60
+info:  Sell   TSLA  -7  187.91
+stocks:   AMD    CRWD   ZS     NVDA   AMD    DASH   PANW   CASH
+shares:   31     74     1      11     3      47     6      11224
+buyprice: 138.58 247.46 209.81 661.6  177.66 109.50 345.06 1.
+
+TradeDate: 2024-3-1
+info:  Sell    ZS     -1  219.23
+info:  Sell    DASH  -47  822.79
+info:  Sell    PANW   -6  302.40
+info:  Sell    NVDA   -3  822.79
+info:  Sell    CRWD  -29  314.60
+stocks:   AMD    CRWD   NVDA   AMD    META   DDOG   LRCX   AMZN   AMD    CASH
+shares:   31     45     8      3      16     11     8      63     2      1884
+buyprice: 138.58 247.46 661.6  177.66 502.30 130.22 981.53 178.22 202.64 1.
+
+TradeDate: 2024-5-1
+info:  Sell   LRCX   -8 868.10
+info:  Sell   META  -16 439.19
+info:  Sell   NVDA   -8 830.41
+info:  Sell   AMD   -36 144.27
+info:  Sell   CRWD  -45 295.44
+info:  Sell   DDOG  -11 126.42
+info:  Sell   AMZN  -63 179.00
+stocks:   NXPI   PDD    AMGN   SNPS   PYPL   TSLA   TMUS   CASH
+shares:   20     146    67     2      40     4      34     1871
+buyprice: 249.43 124.49 277.37 522.18 66.14  179.99 165.47 1.00
+
+TradeDate: 2024-06-28
+stocks: NXPI AMGN TMUS BKNG QCOM ROST VRTX CASH
+shares: 8 72 26 4 23 38 2 4881.77
+buyprice: 219.94 279.81 162.17 3961.5 199.18 145.32 468.72 1.0
+commissons: 69.30000000000001
+
+TradeDate: 2024-8-2
+info:  Sell     TMUS    -13 188.76
+info:  Sell     VRTX     -1 494.46
+info:  Sell     AMZN    -63 179.00
+info:  Sell     BKNG     -4 494.46
+info:  Sell     NXPI     -8 237.75
+info:  Sell     AMGN    -72 333.99
+info:  Sell     QCOM    -23 159.31
+info:  Sell     ROST    -38 140.24
+stocks:   TMUS   VRTX   ISRG    EA     AEP    CSX    ADSK   CASH
+shares:   13     1      6       121    52     133    108    565
+buyprice: 162.17 468.72 449.73  148.83 101.79 34.08  231.37 1.0
+
+TradeDate: 2024-9-6
+info:  Sell     TMUS    -13  193.00
+info:  Sell     VRTX     -1  468.00
+info:  Sell     EA     -121  144.01
+info:  Sell     CSX    -133   33.37
+info:  Sell     ADSK   -108  250.37
+stocks:   ISRG    AEP    COST   ISRG   PANW   CCEP   AEP    CRWD   GEHC   CASH
+shares:   6       52     13     4      34     225    29     6      43     1478
+buyprice: 449.73  101.79 876.68 471.82 335.82 80.75  102.05 246.39 85.09  1
+
+TradeDate: 2024-10-4
+info:  Sell   CRWD    -6   292.24
+info:  Sell   PANW   -34   342.36
+info:  Sell   ISRG   -10   481.95
+info:  Sell   AEP    -81   100.28
+info:  Sell   COST   -13   883.11
+info:  Sell   CCEP  -225    78.01
+info:  Sell   GEHC   -43    91.42
+stocks:   CEG    QCOM   NFLX   DASH   KDP    MELI    CTAS   CASH
+shares:   45     22     2      93     153    1       101    1078
+buyprice: 285.52 168.90 719.70 144.86 36.39  1960.00 204.91 1
+
+TradeDate: 2024-11-8
+info:  Sell    NFLX     -2    795.04
+info:  Sell    MELI     -1  1,872.01
+info:  Sell    QCOM    -22    170.91
+info:  Sell    CEG     -45    239.37
+info:  Sell    KDP    -153     32.88
+info:  Sell    CTAS   -101    225.72
+stocks:   DASH   NVDA   TMUS   TTD    ISRG   DASH   ILMN   FTNT   CASH
+shares:   93     33     25     7      23     55     19     109    601
+buyprice: 144.86 147.63 235.31 125.13 536.45 171.40 151.09 92.04  1.00
+
+TradeDate: 2024-12-13
+info:  Sell     FTNT   -3    98.00
+info:  Sell     ISRG   -6   539.58
+info:  Sell     NVDA  -33   134.25
+info:  Sell     DASH -148   175.09
+info:  Sell     TMUS  -25   231.94
+info:  Sell     TTD    -7   132.42
+info:  Sell     ILMN  -19   143.87
+stocks:   ISRG   FTNT   APP    PYPL   BKR    SMCI   XEL    CASH
+shares:   17     106    110    8      73     90     9      544
+buyprice: 536.45 92.04  324.47 91.02  42.15  36.45  68.12  1.00
+
+TradeDate: 2025-02-28
+info:  Sell 2025-02-28 ISRG      -17  573.15
+info:  Sell 2025-02-28 FTNT     -106  108.01
+info:  Sell 2025-02-28 APP      -110  325.74
+info:  Sell 2025-02-28 PYPL       -8   71.05
+info:  Sell 2025-02-28 BKR       -73   44.59
+info:  Sell 2025-02-28 SMCI      -90   31.59
+info:  Sell 2025-02-28 XEL        -9   72.10
+info:  Buy  2025-02-28 GILD      147  114.31
+info:  Buy  2025-02-28 SBUX       96  115.81
+info:  Buy  2025-02-28 MELI        1 2121.87
+info:  Buy  2025-02-28 PANW       74  190.43
+info:  Buy  2025-02-28 TMUS       18  269.69
+info:  Buy  2025-02-28 TEAM        8  284.26
+info:  Buy  2025-02-28 EXC       286   44.20
+stocks:      GILD    SBUX    MELI    PANW    TMUS    TEAM    EXC     CASH    
+shares:      147     96      1       74      18      8       286     979     
+buyprice:    114.31  115.81  2121.87 190.43  269.69  284.26  44.2    1.0   
+TradeDate: 2025-03-01
+info:  Sell 2025-03-01 GILD       -1  114.31
+info:  Sell 2025-03-01 SBUX       -1  115.81
+info:  Sell 2025-03-01 PANW       -1  190.43
+info:  Buy  2025-03-01 EXC        12   44.20
+stocks:      CASH    EXC     EXC     GILD    MELI    PANW    SBUX    TEAM    TMUS    
+shares:      869.0   12.0    286.0   146.0   1.0     73.0    95.0    8.0     18.0    
+buyprice:    1.0     44.21   44.2    114.31  2121.87 190.43  115.81  284.26  269.69
+
+TradeDate: 2025-04-04
+info:  Sell 2025-04-04 MELI       -1 1841.29
+info:  Sell 2025-04-04 PANW      -73  153.57
+info:  Sell 2025-04-04 SBUX      -95   82.10
+info:  Sell 2025-04-04 TEAM       -8  187.67
+info:  Sell 2025-04-04 TMUS       -1  248.11
+info:  Buy  2025-04-04 AEP       139  104.48
+info:  Buy  2025-04-04 TSLA        5  239.43
+info:  Buy  2025-04-04 TTWO        1  194.58
+info:  Buy  2025-04-04 XEL         9   67.89
+info:  Buy  2025-04-04 EXC        67   45.35
+info:  Buy  2025-04-04 GILD       33  107.25
+stocks:      CASH    EXC     EXC     EXC     GILD    GILD    TMUS    AEP     TSLA    TTWO    XEL     
+shares:      367.0   286.0   12.0    67.0    33.0    146.0   17.0    139     5       1       9       
+buyprice:    1.0     44.2    44.21   45.35   107.25  114.31  269.69  104.48  239.43  194.58  67.89   
+
+TradeDate: 2025-05-01
+info:  Sell 2025-05-01 AEP      -139  108.50
+info:  Sell 2025-05-01 TMUS      -17  241.59
+info:  Sell 2025-05-01 EXC       -47   46.85
+info:  Sell 2025-05-01 GILD       -2  104.21
+info:  Sell 2025-05-01 XEL        -1   70.67
+info:  Buy  2025-05-01 BKNG        3 4909.23
+info:  Buy  2025-05-01 ORLY        2 1399.23
+info:  Buy  2025-05-01 TSLA        2  292.03
+info:  Buy  2025-05-01 TTWO        6  230.71
+stocks:      CASH    EXC     EXC     EXC     GILD    GILD    TSLA    TSLA    TTWO    TTWO    XEL     BKNG    ORLY
+shares:      2542.0  239.0   12.0    67.0    31.0    146.0   5.0     2.0     1.0     6.0     8.0     3       2 
+buyprice:    1.0     44.2    44.21   45.35   107.25  114.31  239.43  292.03  194.58  230.71  67.89   4909.23 1399.23
+
+TradeDate: 2025-05-10
+info:  Sell 2025-05-10 BKNG       -3 5072.54
+info:  Sell 2025-05-10 EXC      -318   45.21
+info:  Sell 2025-05-10 GILD     -177   96.91
+info:  Sell 2025-05-10 ORLY       -2 1359.34
+info:  Sell 2025-05-10 TTWO       -7  226.55
+info:  Sell 2025-05-10 TSLA       -2  298.26
+info:  Sell 2025-05-10 XEL        -2   70.61
+info:  Buy  2025-05-10 APP       103  328.54
+info:  Buy  2025-05-10 DASH       27  183.52
+info:  Buy  2025-05-10 MSTR        2  416.03
+info:  Buy  2025-05-10 NFLX        3 1140.22
+info:  Buy  2025-05-10 PLTR       83  117.30
+stocks:      CASH    TSLA    TSLA    XEL     APP     DASH    MSTR    NFLX    PLTR    
+shares:      1549.0  3.0     2.0     6.0     103     27      2       3       83      
+buyprice:    1.0     239.43  292.03  67.89   328.54  183.52  416.03  1140.22 117.3
+
+TradeDate: 2025-06-07
+info:  Sell 2025-06-07 APP      -103  417.89
+info:  Sell 2025-06-07 MSTR       -2  374.47
+info:  Sell 2025-06-07 NFLX       -3 1241.47
+info:  Sell 2025-06-07 XEL        -6   68.51
+info:  Buy  2025-06-07 AXON       22  791.85
+info:  Buy  2025-06-07 MELI        2 2482.39
+info:  Buy  2025-06-07 WBD       449    9.82
+info:  Buy  2025-06-07 DASH       57  218.45
+info:  Buy  2025-06-07 PLTR       58  127.72
+info:  Buy  2025-06-07 TSLA        4  295.14
+stocks:      DASH    PLTR    TSLA    TSLA    AXON    CASH    DASH    MELI    PLTR    TSLA    WBD
+shares:      27      83      3       2       22      1642    57      2       58      4       449
+buyprice:    183.52  117.3   239.43  292.03  791.85  1.0     218.45  2482.39 127.72  295.14  9.82
+
+TradeDate: 2025-07-04
+info:  Sell 2025-07-04 MELI       -2 2514.05
+info:  Sell 2025-07-04 PLTR     -141  134.36
+info:  Sell 2025-07-04 TSLA       -9  315.35
+info:  Sell 2025-07-04 WBD      -449   11.22
+info:  Sell 2025-07-04 DASH      -27  238.79
+info:  Sell 2025-07-04 AXON      -10  795.48
+info:  Buy  2025-07-04 CHTR       14  416.97
+info:  Buy  2025-07-04 CSCO      339   69.37
+info:  Buy  2025-07-04 GILD      134  111.75
+info:  Buy  2025-07-04 TTWO        6  240.11
+info:  Buy  2025-07-04 XEL         7   68.19
+stocks:      AXON    CASH    CHTR    CSCO    DASH    GILD    TTWO    XEL
+shares:      12.0    1647.0  14.0    339.0   57.0    134.0   6.0     7.0
+buyprice:    791.85  1.0     416.97  69.37   218.45  111.75  240.11  68.19
+
+TradeDate: 2025-08-02
+info:  Sell 2025-08-02 AXON      -12  742.47
+info:  Sell 2025-08-02 CHTR      -14  264.69
+info:  Sell 2025-08-02 CSCO     -339   67.11
+info:  Sell 2025-08-02 TTWO       -6  220.58
+info:  Sell 2025-08-02 XEL        -7   73.47
+info:  Sell 2025-08-02 DASH      -14  248.35
+info:  Sell 2025-08-02 GILD      -49  113.18
+info:  Buy  2025-08-02 APP        67  379.17
+info:  Buy  2025-08-02 AVGO       41  288.64
+info:  Buy  2025-08-02 CSGP       11   94.60
+info:  Buy  2025-08-02 PLTR       54  154.27
+info:  Buy  2025-08-02 WBD        46   12.87
+stocks:      APP     AVGO    CASH    CSGP    DASH    GILD    PLTR    WBD     
+shares:      67.0    41.0    671.0   11.0    43.0    85.0    54.0    46.0    
+buyprice:    379.17  288.64  1.0     94.6    218.45  111.75  154.27  12.87
+
+TradeDate: 2025-09-02
+info:  Sell 2025-09-02 APP       -67  481.73
+info:  Sell 2025-09-02 CSGP      -11   88.12
+info:  Sell 2025-09-02 DASH      -43  244.10
+info:  Sell 2025-09-02 GILD      -85  112.71
+info:  Sell 2025-09-02 PLTR      -54  157.09
+info:  Sell 2025-09-02 WBD       -46   11.62
+info:  Buy  2025-09-02 BKR       383   45.36
+info:  Buy  2025-09-02 GOOG       37  211.99
+info:  Buy  2025-09-02 GOOGL      38  211.35
+info:  Buy  2025-09-02 IDXX       21  639.45
+info:  Buy  2025-09-02 SHOP       13  139.04
+info:  Buy  2025-09-02 TTWO        7  240.95
+info:  Buy  2025-09-02 AVGO       41  298.24
+stocks:      AVGO    AVGO    BKR     CASH    GOOG    GOOGL   IDXX    SHOP    TTWO    
+shares:      41.0    41.0    383.0   612.0   37.0    38.0    21.0    13.0    7.0     
+buyprice:    288.64  298.24  45.36   1.0     211.99  211.35  639.45  139.04  240.95  
+
+TradeDate: 2025-10-10
+info:  Sell 2025-10-10 BKR      -383   45.04
+info:  Sell 2025-10-10 GOOG      -37  237.49
+info:  Sell 2025-10-10 GOOGL     -38  236.57
+info:  Sell 2025-10-10 IDXX      -21  616.15
+info:  Sell 2025-10-10 SHOP      -13  151.02
+info:  Buy  2025-10-10 INTC      253   36.37
+info:  Buy  2025-10-10 KLAC        5  982.75
+info:  Buy  2025-10-10 MSTR        6  304.79
+info:  Buy  2025-10-10 WBD       422   17.10
+info:  Buy  2025-10-10 AVGO       73  324.63
+info:  Buy  2025-10-10 TTWO        8  251.97
+stocks:      AVGO    AVGO    TTWO    AVGO    CASH    INTC    KLAC    MSTR    TTWO    WBD     
+shares:      41.0    41.0    7.0     73.0    1668.0  253.0   5.0     6.0     8.0     422.0   
+buyprice:    288.64  298.24  240.95  324.63  1.0     36.37   982.75  304.79  251.97  17.1    
+
+TradeDate: 2025-11-01
+info:  Sell 2025-11-01 MSTR       -6  269.51
+info:  Sell 2025-11-01 TTWO      -15  256.37
+info:  Sell 2025-11-01 AVGO      -15  369.63
+info:  Sell 2025-11-01 INTC     -109   39.99
+info:  Sell 2025-11-01 WBD      -375   22.45
+info:  Buy  2025-11-01 LRCX       58  157.46
+info:  Buy  2025-11-01 SHOP       42  173.86
+info:  Buy  2025-11-01 KLAC        7 1208.74
+stocks:      KLAC    AVGO    AVGO    AVGO    CASH    INTC    KLAC    LRCX    SHOP    WBD     
+shares:      5.0     26.0    41.0    73.0    557.0   144.0   7.0     58.0    42.0    47.0    
+buyprice:    982.75  288.64  298.24  324.63  1.0     36.37   1208.74 157.46  173.86  17.1    
+
+TradeDate: 2025-12-01
+info:  Sell 2025-12-01 SHOP      -42  149.28
+info:  Sell 2025-12-01 AVGO       -9  386.08
+info:  Sell 2025-12-01 KLAC       -3 1157.18
+info:  Sell 2025-12-01 LRCX      -22  154.79
+info:  Buy  2025-12-01 ASML        3 1087.99
+info:  Buy  2025-12-01 INTC      212   40.01
+info:  Buy  2025-12-01 MNST       45   75.95
+info:  Buy  2025-12-01 WBD         8   23.87
+stocks:      KLAC    AVGO    AVGO    AVGO    CASH    INTC    KLAC    LRCX    WBD     ASML    INTC    MNST    WBD
+shares:      5       26      41      64      1824    144     4       36      47      3       212     45      8   
+buyprice:    982.75  288.64  298.24  324.63  1.0     36.37   1208.74 157.46  17.1    1087.99 40.01   75.95   23.87
+
+TradeDate: 2026-01-02
+info:  Sell 2026-01-02 AVGO      -26  347.62
+info:  Sell 2026-01-02 AVGO      -41  347.62
+info:  Sell 2026-01-02 AVGO      -64  347.62
+info:  Sell 2026-01-02 MNST      -45   76.16
+info:  Sell 2026-01-02 ASML       -1 1163.78
+info:  Buy  2026-01-02 AMAT       75  268.87
+info:  Buy  2026-01-02 INTC       11   39.38
+info:  Buy  2026-01-02 KLAC        1 1274.47
+info:  Buy  2026-01-02 LRCX       35  185.06
+info:  Buy  2026-01-02 MU         66  315.42
+info:  Buy  2026-01-02 WBD        33   28.51
+stocks:      KLAC    CASH    INTC    KLAC    LRCX    WBD     ASML    INTC    WBD     AMAT    INTC    KLAC    LRCX    MU      WBD
+shares:      5       1845    144     4       36      47      2       212     8       75      11      1       35      66      33
+buyprice:    982.75  1.0     36.37   1208.74 157.46  17.1    1087.99 40.01   23.87   268.87  39.38   1274.47 185.06  315.42  28.51
+
+TradeDate: 2026-01-30
+info:  Sell 2026-01-31 KLAC       -5 1427.94
+info:  Sell 2026-01-31 KLAC       -4 1427.94
+info:  Sell 2026-01-31 KLAC       -1 1427.94
+info:  Sell 2026-01-31 MU        -66  414.88
+info:  Sell 2026-01-31 WBD        -9   27.54
+info:  Buy  2026-01-31 ADI        38  310.88
+info:  Buy  2026-01-31 AMAT       23  322.32
+info:  Buy  2026-01-31 ASML        7 1423.00
+info:  Buy  2026-01-31 INTC       45   46.47
+info:  Buy  2026-01-31 LRCX       21  233.46
+info:  Buy  2026-01-31 MNST       81   80.76
+stocks:      CASH    INTC    LRCX    WBD     ASML    INTC    WBD     AMAT    INTC    LRCX    WBD     ADI     AMAT    ASML    INTC    LRCX    MNST    
+shares:      1031    144     36      47      2       212     8       75      11      35      24      38      23      7       45      21      81      
+buyprice:    1.0     36.37   157.46  17.1    1087.99 40.01   23.87   268.87  39.38   185.06  28.51   310.88  322.32  1423.0  46.47   233.46  80.76
