@@ -1030,11 +1030,14 @@ network failure without stalling.
 
 Items are ordered by risk and dependency. Items 8 and 1 have been
 resequenced (8 before 1). Item 7 has been moved to Phase IV (risk
-revised to High).
+revised to High). Items 2 and 3 were listed in Phase II but the
+Critical Bugs section states they must be fixed before any architectural
+work — promoted to Phase 0 (prerequisite fixes).
 
 ```
+Phase 0   (critical bugs):   3, 2              ← fix before anything else
 Phase I   (no risk):         12, 4, 17
-Phase II  (low risk):        2, 3, 5, 6, 10+11*, 13, 16
+Phase II  (low risk):        5, 6, 10+11*, 13, 16
 Phase III (medium risk):     18, 9, 14
 Phase IV  (high risk):       8, 1, 7, 15
 ```
@@ -1042,10 +1045,15 @@ Phase IV  (high risk):       8, 1, 7, 15
 *Items 10 and 11 (deploy.py extraction, process mgmt extraction) are the
 same type of extraction — consider combining into one commit.
 
-**Starting point:** Phase I items first (all no-risk / no-behaviour-change),
+**Starting point:** Phase 0 (Items 3 then 2) to remove silent bugs that
+corrupt every run, then Phase I items (no-risk / no-behaviour-change),
 then Phase II, in parallel where independent. Items 8 → 1 must stay in
 that order within Phase IV. Item 7 depends on Items 3 and 6 being
 complete. Item 15 depends on Item 8 being complete.
+
+**Phase 0 commit order:** Item 3 first (`run_pytaaa.py` sentinel fix +
+`import logging` + regression test), then Item 2 (`daily_abacus_update.py`
+builtins.print removal) as a second independent commit.
 
 ---
 

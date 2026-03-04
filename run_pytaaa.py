@@ -1,4 +1,5 @@
 import datetime
+import logging
 import numpy as np
 import os
 import time
@@ -23,8 +24,21 @@ from functions.stock_cluster import getClusterForSymbolsList
 from functions.ftp_quotes import copy_updated_quotes
 os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
+# Module-level sentinels that persist across repeated scheduler calls.
+# These replace the broken `x in locals()` patterns that reset on every
+# function invocation, making the hour-of-day guard non-functional.
+_daily_update_done: bool = False
+_calcs_update_count: int = 0
+_cached_lastdate = None
+_cached_last_symbols_text = None
+_cached_last_symbols_weight = None
+_cached_last_symbols_price = None
+
 
 def run_pytaaa(json_fn):
+    global _daily_update_done, _calcs_update_count
+    global _cached_lastdate, _cached_last_symbols_text
+    global _cached_last_symbols_weight, _cached_last_symbols_price
 
     computerName = platform.uname()[1]
 
@@ -41,12 +55,10 @@ def run_pytaaa(json_fn):
         ip = GetIP()
     except (urllib.error.URLError, OSError, TimeoutError) as e:
         # Expected: network unavailable, timeout, etc.
-        import logging
         logging.getLogger(__name__).debug(f"Could not get external IP: {e}")
         ip = '0.0.0.0'
     except Exception as e:
         # Safety fallback for unexpected exceptions
-        import logging
         logging.getLogger(__name__).warning(f"Unexpected exception in GetIP: {type(e).__name__}: {e}")
         ip = '0.0.0.0'
     print("Current ip address is ", ip)
@@ -124,18 +136,14 @@ def run_pytaaa(json_fn):
     symbol_directory, symbol_file = os.path.split(symbols_file)
 
     start_time = time.time()
-    try:
-        daily_update_done in locals()
-        if hourOfDay <= 15:
-            daily_update_done = False
-    except NameError:
-        # Expected: variable doesn't exist on first run
-        daily_update_done = False
-    except Exception as e:
-        # Safety fallback for unexpected exceptions
-        import logging
-        logging.getLogger(__name__).warning(f"Unexpected exception checking daily_update_done: {type(e).__name__}: {e}")
-        daily_update_done = False
+    # Reset daily HDF5 update flag and calcs counter before the cutoff
+    # hour so each new business day triggers a fresh update. Module-level
+    # sentinels persist across repeated scheduler calls; local variables
+    # cannot (new frame on every call).
+    if hourOfDay <= 15:
+        _daily_update_done = False
+        _calcs_update_count = 0
+    daily_update_done = _daily_update_done
     print("hourOfDay, daily_update_done =", hourOfDay, daily_update_done)
     if quote_server != computerName:
         copy_updated_quotes(json_fn)
@@ -146,6 +154,7 @@ def run_pytaaa(json_fn):
         elif quote_server.endswith('_NO'):
             print("Stock quote updating disabled due to _NO suffix in quote_server setting")
         if hourOfDay > 15:
+            _daily_update_done = True
             daily_update_done = True
     marketOpen, lastDayOfMonth = CheckMarketOpen()
     elapsed_time = time.time() - start_time
@@ -154,27 +163,24 @@ def run_pytaaa(json_fn):
     print("  . inside run_taaa: symbol_dirctory" + symbol_directory)
     print("  . inside run_taaa: symbol_file" + symbol_file)
 
-    # Re-compute stock ranks and weightings
-    try:
-        last_symbols_text in locals()
-    except NameError:
-        # Expected: variable doesn't exist on first run
-        CalcsUpdateCount = 0
-        not_Calculated = True
-    except Exception as e:
-        # Safety fallback for unexpected exceptions
-        import logging
-        logging.getLogger(__name__).warning(f"Unexpected exception checking last_symbols_text: {type(e).__name__}: {e}")
-        CalcsUpdateCount = 0
-        not_Calculated = True
-    if (daily_update_done and CalcsUpdateCount == 0) or not_Calculated:
-        lastdate, \
-        last_symbols_text, \
-        last_symbols_weight, \
-        last_symbols_price = PortfolioPerformanceCalcs(
+    # Re-compute stock ranks and weightings when HDF5 data is fresh or
+    # results have never been computed. Module-level cached results avoid
+    # redundant recomputation across repeated scheduler calls.
+    not_Calculated = (_calcs_update_count == 0)
+    if (daily_update_done and _calcs_update_count == 0) or not_Calculated:
+        (
+            _cached_lastdate,
+            _cached_last_symbols_text,
+            _cached_last_symbols_weight,
+            _cached_last_symbols_price,
+        ) = PortfolioPerformanceCalcs(
             symbol_directory, symbol_file, params, json_fn,
         )
-        CalcsUpdateCount += 1
+        _calcs_update_count += 1
+    lastdate = _cached_lastdate
+    last_symbols_text = _cached_last_symbols_text
+    last_symbols_weight = _cached_last_symbols_weight
+    last_symbols_price = _cached_last_symbols_price
 
     # Get updated Holdings from file (ranks are updated)
     holdings = get_holdings(json_fn)
@@ -209,12 +215,10 @@ def run_pytaaa(json_fn):
         )
     except (FileNotFoundError, KeyError, OSError) as e:
         # Expected: cluster data missing or symbol not found
-        import logging
         logging.getLogger(__name__).debug(f"Cluster data unavailable: {e}")
         holdings_cluster_labels = np.zeros((len(holdings_symbols)), 'int')
     except Exception as e:
         # Safety fallback for unexpected exceptions
-        import logging
         logging.getLogger(__name__).warning(f"Unexpected exception in getClusterForSymbolsList: {type(e).__name__}: {e}")
         holdings_cluster_labels = np.zeros((len(holdings_symbols)), 'int')
 

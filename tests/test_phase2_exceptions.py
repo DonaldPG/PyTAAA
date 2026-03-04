@@ -191,8 +191,11 @@ class TestSafetyFallbackPattern:
         # Count safety fallbacks
         safety_fallbacks = content.count('except Exception as e:')
         
-        # We have 5 try blocks in run_pytaaa.py
-        assert safety_fallbacks >= 5, f"Expected at least 5 safety fallbacks, found {safety_fallbacks}"
+        # After Item 3 (Phase 0) fix: 2 broken `in locals()` try/except
+        # blocks were removed and replaced with module-level sentinels.
+        # 4 legitimate safety fallbacks remain: GetIP (1), stock fundamentals
+        # cache (1), get_symbols_changes (1), getClusterForSymbolsList (1).
+        assert safety_fallbacks >= 4, f"Expected at least 4 safety fallbacks, found {safety_fallbacks}"
 
 
 class TestLoggingPresence:
