@@ -818,7 +818,7 @@ means the audit must be repeated.
 
 ---
 
-### Item 9 — Extract HTML report builder  *(Medium Risk)*
+### Item 9 — Extract HTML report builder  *(Medium Risk)*  ✅ DONE (36276db)
 
 **Problem:** `run_pytaaa.py` contains ~100 lines of raw HTML string
 concatenation (`message_text = message_text + "<tr><td>..."`) mixed
@@ -908,7 +908,7 @@ this is safe to execute without risk of silent breakage.
 
 ---
 
-### Item 14 — `MonteCarloConfig` dataclass  *(Medium Risk)*
+### Item 14 — `MonteCarloConfig` dataclass  *(Medium Risk)*  ✅ DONE (12f0480)
 
 **Problem:** `MonteCarloBacktest.__init__` accepts 15+ positional and
 keyword parameters. Call sites are fragile — parameter order mistakes
@@ -1010,7 +1010,7 @@ and remove it entirely.
 
 ---
 
-### Item 18 — Replace synchronous `get_SectorAndIndustry_google()` in hot loop  *(Moderate Risk)*
+### Item 18 — Replace synchronous `get_SectorAndIndustry_google()` in hot loop  *(Moderate Risk)*  ✅ DONE (f7e5c71)
 
 **Problem:** `run_pytaaa.py` calls `get_SectorAndIndustry_google(symbol)`
 inside a `for i in range(len(holdings_ranks)):` loop. This is N
@@ -1040,7 +1040,7 @@ work — promoted to Phase 0 (prerequisite fixes).
 Phase 0   (critical bugs):   3, 2              ✅ DONE (dc5ceb3, f904cdb)
 Phase I   (no risk):         12, 4, 17         ✅ DONE (1e7828b)
 Phase II  (low risk):        5, 6, 10+11*, 13, 16  ✅ DONE (e949c16, afbfcce)
-Phase III (medium risk):     18, 9, 14
+Phase III (medium risk):     18, 9, 14         ✅ DONE (f7e5c71, 36276db, 12f0480)
 Phase IV  (high risk):       8, 1, 7, 15
 ```
 
