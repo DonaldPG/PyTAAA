@@ -345,19 +345,11 @@ class TestRunMonteCarloEdgeCases:
 
     @patch('run_monte_carlo.MonteCarloBacktest')
     @patch('os.path.exists')
-    def test_legacy_fallback_without_models_section(self, mock_exists, mock_monte_carlo):
-        """Test that legacy model paths are used when models section is missing."""
+    def test_missing_models_section_raises_error(self, mock_exists, mock_monte_carlo):
+        """Test that a clear error is raised when 'models' section is absent."""
         mock_exists.return_value = True
-        mock_monte_carlo_instance = MagicMock()
-        mock_monte_carlo.return_value = mock_monte_carlo_instance
-        
-        # Mock required attributes
-        mock_monte_carlo_instance.load_state.return_value = None
-        mock_monte_carlo_instance.run.return_value = []
-        mock_monte_carlo_instance.save_state.return_value = None
-        mock_monte_carlo_instance.best_portfolio_value = None
-        
-        # Config without models section
+
+        # Config without models section — should now raise UsageError / ValueError
         temp_config = {
             "web_output_dir": "/tmp/test",
             "monte_carlo": {
@@ -365,25 +357,20 @@ class TestRunMonteCarloEdgeCases:
                 "data_files": {"actual": "PyTAAA_status.params"}
             }
         }
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', 
-                                       delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json',
+                                         delete=False) as f:
             json.dump(temp_config, f)
             json_config_path = f.name
-        
+
         try:
             runner = click.testing.CliRunner()
             result = runner.invoke(main, ['--json', json_config_path])
-            
-            # Should use legacy hard-coded paths
-            assert mock_monte_carlo.called
-            call_kwargs = mock_monte_carlo.call_args[1]
-            model_paths = call_kwargs.get('model_paths', {})
-            
-            # Should contain legacy model names
-            assert 'cash' in model_paths
-            assert 'naz100_pine' in model_paths or 'sp500_hma' in model_paths
-            
+
+            # Should fail with a descriptive error about missing 'models'
+            assert result.exit_code != 0
+            assert "models" in (result.output + str(result.exception)).lower()
+
         finally:
             os.unlink(json_config_path)
 

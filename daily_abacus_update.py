@@ -37,6 +37,7 @@ with suppress_stderr():
 
 # Now safe to import other modules
 import click
+import copy
 import json
 import logging
 from datetime import datetime
@@ -59,6 +60,7 @@ warnings.filterwarnings("ignore", message=".*no display found.*")
 warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*Mean of empty slice.*")
 warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*invalid value encountered.*")
 
+from functions.config_cache import config_cache
 from functions.GetParams import get_json_params
 from run_pytaaa import run_pytaaa
 
@@ -82,22 +84,6 @@ def setup_logging(verbose: bool = False) -> logging.Logger:
     logging.getLogger('PIL').setLevel(logging.WARNING)  # Pillow image library
     
     return logging.getLogger(__name__)
-
-
-def load_config_file(config_path: str) -> Dict[str, Any]:
-    """Load and validate JSON configuration file."""
-    logger = logging.getLogger(__name__)
-    
-    if not os.path.exists(config_path):
-        raise FileNotFoundError(f"Configuration file not found: {config_path}")
-    
-    try:
-        with open(config_path, 'r') as f:
-            config = json.load(f)
-        logger.info(f"Loaded configuration from: {config_path}")
-        return config
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Invalid JSON in configuration file: {e}")
 
 
 def validate_config_structure(config: Dict[str, Any]) -> None:
@@ -586,6 +572,9 @@ def create_temporary_config_file(
 
     with open(stable_path, 'w') as f:
         json.dump(config, f, indent=4)
+    # Invalidate cache so any subsequent config_cache.get() on this path
+    # re-reads the freshly written runtime file rather than stale data.
+    config_cache.invalidate(stable_path)
 
     logger.debug(f"Created runtime config file: {stable_path}")
     return stable_path
@@ -793,9 +782,11 @@ def main(json_path: str, verbose: bool) -> None:
         print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print()
         
-        # Load and validate configuration
+        # Load and validate configuration. Use a deep copy so that
+        # in-memory modifications (model config merging) do not
+        # corrupt the shared config_cache entry.
         logger.info("Loading configuration file...")
-        config = load_config_file(json_path)
+        config = copy.deepcopy(config_cache.get(json_path))
         
         logger.info("Validating configuration structure...")
         validate_config_structure(config)

@@ -77,8 +77,8 @@ def print_progress(i: int, total: int, start_time: float) -> None:
     help='Show detailed normalized score breakdown for each new best performance'
 )
 @click.option(
-    '--json', 'json_config_path', 
-    default=None,
+    '--json', 'json_config_path',
+    required=True,
     help='Path to JSON configuration file for centralized settings'
 )
 @click.option(
@@ -140,25 +140,19 @@ def main(
     print(f"Search strategy: {search}")
         
     # Determine configuration source and load config
-    if json_config_path:
-        print(f"Using JSON configuration: {json_config_path}")
-        config_path = json_config_path
-        # Use JSON configuration functions for centralized values
-        from functions.GetParams import get_web_output_dir, get_central_std_values
-        try:
-            web_output_dir = get_web_output_dir(json_config_path)
-        except (KeyError, FileNotFoundError):
-            print("Warning: Could not load web output directory from JSON, using default")
-            web_output_dir = None
-        try:
-            normalization_values = get_central_std_values(json_config_path)
-        except (KeyError, FileNotFoundError):
-            print("Warning: Could not load normalization values from JSON, using defaults")
-            normalization_values = None
-    else:
-        # Use legacy configuration
-        config_path = 'pytaaa_model_switching_params.json'
+    print(f"Using JSON configuration: {json_config_path}")
+    config_path = json_config_path
+    # Use JSON configuration functions for centralized values
+    from functions.GetParams import get_web_output_dir, get_central_std_values
+    try:
+        web_output_dir = get_web_output_dir(json_config_path)
+    except (KeyError, FileNotFoundError):
+        print("Warning: Could not load web output directory from JSON, using default")
         web_output_dir = None
+    try:
+        normalization_values = get_central_std_values(json_config_path)
+    except (KeyError, FileNotFoundError):
+        print("Warning: Could not load normalization values from JSON, using defaults")
         normalization_values = None
 
     # Load monte carlo settings from config
@@ -240,35 +234,30 @@ def main(
             'backtested': 'pyTAAAweb_backtestPortfolioValue.params'
         })
         
-        # Configure model paths - use JSON config if available
-        if json_config_path and 'models' in config:
-            # Use JSON configuration for model paths
-            models_config = config['models']
-            base_folder = models_config.get('base_folder', '/Users/donaldpg/pyTAAA_data')
-            model_choices = {}
-            
-            for model_name, path_template in models_config.get('model_choices', {}).items():
-                if path_template == "":  # Cash model
-                    model_choices[model_name] = ""
-                else:
-                    # Replace placeholders in path template
-                    data_file = data_files[data_format]
-                    model_path = path_template.format(
-                        base_folder=base_folder,
-                        data_file=data_file
-                    )
-                    model_choices[model_name] = model_path
-        else:
-            # Use legacy hard-coded paths
-            base_folder = "/Users/donaldpg/pyTAAA_data"
-            model_choices = {
-                "cash": "",
-                "naz100_pine": f"{base_folder}/naz100_pine/data_store/{data_files[data_format]}",
-                "naz100_hma": f"{base_folder}/naz100_hma/data_store/{data_files[data_format]}",
-                "naz100_pi": f"{base_folder}/naz100_pi/data_store/{data_files[data_format]}",
-                "sp500_hma": f"{base_folder}/sp500_hma/data_store/{data_files[data_format]}",
-                "sp500_pine": f"{base_folder}/sp500_pine/data_store/{data_files[data_format]}",
-            }
+        # Configure model paths from JSON config.
+        if 'models' not in config:
+            raise ValueError(
+                f"Config {json_config_path!r} is missing required 'models' section."
+                " Add 'models.base_folder' and 'models.model_choices'."
+            )
+        models_config = config['models']
+        base_folder = models_config.get('base_folder')
+        if not base_folder:
+            raise ValueError(
+                f"Config {json_config_path!r} 'models.base_folder' is missing or empty."
+            )
+        model_choices = {}
+        for model_name, path_template in models_config.get('model_choices', {}).items():
+            if path_template == "":  # Cash model
+                model_choices[model_name] = ""
+            else:
+                # Replace placeholders in path template.
+                data_file = data_files[data_format]
+                model_path = path_template.format(
+                    base_folder=base_folder,
+                    data_file=data_file
+                )
+                model_choices[model_name] = model_path
 
         # Validate that each resolved model path actually exists. If a model's
         # data file is missing, log an error and skip that model instead of

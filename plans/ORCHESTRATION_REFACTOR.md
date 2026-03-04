@@ -976,16 +976,18 @@ all callers
 
 ### Item 16 — Fix `allPairsRank.py` module-level HDF5 call  *(Low Risk)*
 
-**Problem:** `functions/allPairsRank.py` calls `loadQuotes_fromHDF()` at
-module scope — a real disk read that fires on any import of the module.
-This is the same class of side-effect bug remediated in Phase H and was
-missed. Any test that imports from this module hits the filesystem.
+**Status: PRE-RESOLVED — no code change required.**
 
-**Solution:** Move the call inside the function(s) that use the result.
-Verify no test is inadvertently using real HDF5 data for what should be
-in-memory synthetic fixtures.
+**Investigation result:** `functions/allPairsRank.py` lines 9-10 appear to
+call `loadQuotes_fromHDF()` at module scope, but closer inspection of the
+source confirmed that these lines reside inside a `'''...'''` triple-quoted
+string (a module-level docstring / block comment). They are never executed
+at import time. No live module-scope HDF5 call exists in this file.
 
-**Files changed:** `functions/allPairsRank.py`
+**Original concern:** `functions/allPairsRank.py` calls `loadQuotes_fromHDF()`
+at module scope — a real disk read that fires on any import of the module.
+
+**Files changed:** *(none)*
 
 ---
 

@@ -34,7 +34,7 @@ logger = get_logger(__name__, log_file='recommend_model.log')
               help='Specific date for recommendation (YYYY-MM-DD), defaults to today')
 @click.option('--lookbacks', default=None, 
               help='Lookback periods: comma-separated values like "25,50,100" or "use-saved" for Monte Carlo results')
-@click.option('--json', 'json_config_path', default=None,
+@click.option('--json', 'json_config_path', required=True,
               help='Path to JSON configuration file for centralized settings')
 def main(date: Optional[str], lookbacks: Optional[str], json_config_path: Optional[str]) -> None:
     """Generate model recommendation for specified date or today.
@@ -49,19 +49,13 @@ def main(date: Optional[str], lookbacks: Optional[str], json_config_path: Option
         print("Starting model recommendation generation...")
         
         # Determine configuration source and load config
-        if json_config_path:
-            print(f"Using JSON configuration: {json_config_path}")
-            config_path = json_config_path
-            # Use JSON configuration functions for centralized values
-            from functions.GetParams import get_web_output_dir, get_central_std_values
-            web_output_dir = get_web_output_dir(json_config_path)
-            normalization_values = get_central_std_values(json_config_path)
-        else:
-            # Use legacy configuration
-            config_path = 'pytaaa_model_switching_params.json'
-            web_output_dir = None
-            normalization_values = None
-            
+        print(f"Using JSON configuration: {json_config_path}")
+        config_path = json_config_path
+        # Use JSON configuration functions for centralized values
+        from functions.GetParams import get_web_output_dir, get_central_std_values
+        web_output_dir = get_web_output_dir(json_config_path)
+        normalization_values = get_central_std_values(json_config_path)
+
         if not os.path.exists(config_path):
             raise FileNotFoundError(f"Configuration file not found: {config_path}")
             

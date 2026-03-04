@@ -1,0 +1,8 @@
+2026-02-23 00:00:17.283217 
+currently held stocks:   ['CASH']
+currently held shares:   [10000.]
+currently held buyprice: [1.]
+currently held nowprice: [11376.133026518757]
+new stock selection: ['AXON', 'CTRX', 'DLTR', 'HON', 'HSIC', 'MELI', 'SBUX']
+new stock weight:    [0.1465, 0.133, 0.1361, 0.1399, 0.1418, 0.1439, 0.1588]
+new stock nowprice:  [650422.05, 265164.75, 496835.01, 142124.37, 17047.45, 4425.01, 128430.97]
