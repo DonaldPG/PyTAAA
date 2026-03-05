@@ -209,12 +209,19 @@ def write_rank_list_html(
     weights_month_start = monthgainlossweight[:, _month_start_idx]
 
     ############################################################
-    # Compute "Rank (start of month)" — rank based on each stock's
-    # rolling Sharpe ratio over the last LongPeriod trading days,
-    # matching the logic inside sharpeWeightedRank_2D().
-    # This correctly ranks ALL stocks — including zero-weight ones —
-    # by a meaningful Sharpe score rather than using the arbitrary
-    # row position from argsort of tied zero weights.
+    # Compute "Rank (start of month)" — must be consistent with
+    # "Wt (mo start)" the same way rank_today is consistent with
+    # Wt (today): use a single shared sort that uses the same
+    # primary/secondary keys that actually determined the weights.
+    #
+    # Primary key  : was the stock selected at month start?
+    #                (weights_month_start > 0)
+    # Secondary key: Sharpe computed over the window ending at the
+    #                month-start trading day (_sharpe_mo_start).
+    #
+    # This guarantees ranks 1..numberStocksTraded == stocks with
+    # non-zero Wt (mo start), matching how sharpeWeightedRank_2D
+    # assigned those weights.
     ############################################################
     from math import sqrt as _sqrt
     try:
@@ -232,22 +239,39 @@ def write_rank_list_html(
     _daily_gl[:, 1:] = adjClose[:, 1:] / adjClose[:, :-1]
     _daily_gl = np.nan_to_num(_daily_gl, nan=1.0, posinf=1.0, neginf=1.0)
 
-    # Returns window: last _lookback_mo days ending at yesterday.
-    _start = max(0, _n_days_mo - _lookback_mo - 1)
-    _returns_win = _daily_gl[:, _start:-1] - 1.0   # (n_stocks, window)
+    # Sharpe at today's date — used for Rank (today) / Wt (today).
+    _start_today = max(0, _n_days_mo - _lookback_mo - 1)
+    _returns_today = _daily_gl[:, _start_today:-1] - 1.0
+    _mean_today = np.nanmean(_returns_today, axis=1)
+    _std_today  = np.nanstd(_returns_today, axis=1, ddof=1)
+    _std_today[_std_today == 0.0] = np.nan
+    _sharpe_mo = np.nan_to_num(
+        _mean_today / _std_today * _sqrt(252), nan=0.0
+    )
 
-    _mean_ret = np.nanmean(_returns_win, axis=1)
-    _std_ret = np.nanstd(_returns_win, axis=1, ddof=1)
-    # Avoid division by zero for flat/zero-history stocks.
-    _std_ret[_std_ret == 0.0] = np.nan
-    _sharpe_mo = _mean_ret / _std_ret * _sqrt(252)
-    _sharpe_mo = np.nan_to_num(_sharpe_mo, nan=0.0)
+    # Sharpe at the month-start trading day — used for
+    # Rank (start of month). Window ends 1 day before _month_start_idx
+    # (same convention as the "today" window above).
+    _ms = _month_start_idx  # shorthand
+    if _ms > 0:
+        _start_ms = max(0, _ms - _lookback_mo)
+        _returns_ms = _daily_gl[:, _start_ms:_ms] - 1.0
+        _mean_ms = np.nanmean(_returns_ms, axis=1)
+        _std_ms  = np.nanstd(_returns_ms, axis=1, ddof=1)
+        _std_ms[_std_ms == 0.0] = np.nan
+        _sharpe_mo_start = np.nan_to_num(
+            _mean_ms / _std_ms * _sqrt(252), nan=0.0
+        )
+    else:
+        # Month start IS day 0 — no history; fall back to today's Sharpe.
+        _sharpe_mo_start = _sharpe_mo.copy()
 
     # CASH is not ranked (forced to bottom-most rank).
     _cash_mask = np.array(
         [s.strip() == "CASH" for s in symbols], dtype=bool
     )
     _sharpe_mo[_cash_mask] = -np.inf
+    _sharpe_mo_start[_cash_mask] = -np.inf
 
     # Stocks not in the current index (ex-members still in the HDF5
     # price store) must be excluded from both ranking and display.
@@ -257,6 +281,7 @@ def write_rank_list_html(
         [s.strip() in companySymbolList for s in symbols], dtype=bool
     )
     _sharpe_mo[~_in_index_mask & ~_cash_mask] = -np.inf
+    _sharpe_mo_start[~_in_index_mask & ~_cash_mask] = -np.inf
 
     ############################################################
     # Compute "Rank (today)" and "Wt (today)" from a single shared
@@ -303,10 +328,15 @@ def write_rank_list_html(
     # Single shared sort order — used for BOTH rank and weight.
     _today_sort_order = np.argsort(-_rank_score_today, kind="stable")
 
-    # Rank (today): 1-based position in the shared sort order.
-    rank_today = np.empty(_n_stocks_mo, dtype=int)
-    for _r, _ji in enumerate(_today_sort_order, 1):
-        rank_today[_ji] = _r
+    # Rank (today): 1-based position within in-index stocks only,
+    # matching the same ordering used to select Wt (today) stocks.
+    # ex-index stocks are excluded from the count (rank stays 0).
+    rank_today = np.zeros(_n_stocks_mo, dtype=int)
+    _today_rank_ctr = 0
+    for _ji in _today_sort_order:
+        if _in_index_mask[_ji]:
+            _today_rank_ctr += 1
+            rank_today[_ji] = _today_rank_ctr
 
     # Wt (today): walk the same sort order, collect only uptrending
     # in-index stocks until we have numberStocksTraded selected.
@@ -337,19 +367,24 @@ def write_rank_list_html(
             _cw = np.ones(len(_sel_idx)) / len(_sel_idx)
         weights_today[_sel_idx] = _cw
 
-    # rank_month_start[i] = 1-based rank of stock i (1 = best Sharpe).
-    _sort_mo = np.argsort(-_sharpe_mo, kind="stable")
-    rank_month_start = np.empty(_n_stocks_mo, dtype=int)
-    for _r, _ji in enumerate(_sort_mo, 1):
-        rank_month_start[_ji] = _r
-
-    # Table display order: ascending by Sharpe rank (rank 1 first).
-    # Only include stocks that are current index members (in_index_mask);
-    # this hides ex-index stocks still present in the HDF5 price store.
+    # Table display order for month-start: walk the global sort of
+    # _rank_score_mo, keeping only in-index stocks.
+    _active_for_mo = _in_index_mask & ~_cash_mask
+    _rank_score_mo = np.full(_n_stocks_mo, -np.inf)
+    _rank_score_mo[_active_for_mo] = (
+        (weights_month_start[_active_for_mo] > 0).astype(float) * 1000.0
+        + _sharpe_mo_start[_active_for_mo]
+    )
+    # sort_order: in-index stocks in descending _rank_score_mo order.
     sort_order = np.array(
-        [j for j in np.argsort(rank_month_start, kind="stable")
+        [j for j in np.argsort(-_rank_score_mo, kind="stable")
          if _in_index_mask[j]]
     )
+    # Rank (start of month): 1-based position within the displayed
+    # in-index set. Stocks with weight = 0 are ranked beyond Wt-holders.
+    rank_month_start = np.zeros(_n_stocks_mo, dtype=int)
+    for _r, _ji in enumerate(sort_order, 1):
+        rank_month_start[_ji] = _r
 
     # Column header widths (px).  Text wrapping is allowed inside cells.
     _COL_RANK_MO   = 60
