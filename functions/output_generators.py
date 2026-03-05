@@ -192,6 +192,53 @@ def write_rank_list_html(
     sort_order = np.argsort(-last_weights)
 
     ############################################################
+    # Compute "Rank (start of month)" — rank based on each stock's
+    # rolling Sharpe ratio over the last LongPeriod trading days,
+    # matching the logic inside sharpeWeightedRank_2D().
+    # This correctly ranks ALL stocks — including zero-weight ones —
+    # by a meaningful Sharpe score rather than using the arbitrary
+    # row position from argsort of tied zero weights.
+    ############################################################
+    from math import sqrt as _sqrt
+    try:
+        _params_mo = get_json_params(json_fn)
+        _long_period_mo = int(_params_mo.get("LongPeriod", 65))
+    except Exception:
+        _long_period_mo = 65
+
+    _n_stocks_mo = adjClose.shape[0]
+    _n_days_mo = adjClose.shape[1]
+    _lookback_mo = min(_long_period_mo, _n_days_mo - 1)
+
+    # Daily gain/loss ratios: shape (n_stocks, n_days).
+    _daily_gl = np.ones((_n_stocks_mo, _n_days_mo), dtype=float)
+    _daily_gl[:, 1:] = adjClose[:, 1:] / adjClose[:, :-1]
+    _daily_gl = np.nan_to_num(_daily_gl, nan=1.0, posinf=1.0, neginf=1.0)
+
+    # Returns window: last _lookback_mo days ending at yesterday.
+    _start = max(0, _n_days_mo - _lookback_mo - 1)
+    _returns_win = _daily_gl[:, _start:-1] - 1.0   # (n_stocks, window)
+
+    _mean_ret = np.nanmean(_returns_win, axis=1)
+    _std_ret = np.nanstd(_returns_win, axis=1, ddof=1)
+    # Avoid division by zero for flat/zero-history stocks.
+    _std_ret[_std_ret == 0.0] = np.nan
+    _sharpe_mo = _mean_ret / _std_ret * _sqrt(252)
+    _sharpe_mo = np.nan_to_num(_sharpe_mo, nan=0.0)
+
+    # CASH is not ranked (forced to bottom-most rank).
+    _cash_mask = np.array(
+        [s.strip() == "CASH" for s in symbols], dtype=bool
+    )
+    _sharpe_mo[_cash_mask] = -np.inf
+
+    # rank_month_start[i] = 1-based rank of stock i (1 = best Sharpe).
+    _sort_mo = np.argsort(-_sharpe_mo, kind="stable")
+    rank_month_start = np.empty(_n_stocks_mo, dtype=int)
+    for _r, _ji in enumerate(_sort_mo, 1):
+        rank_month_start[_ji] = _r
+
+    ############################################################
     # Compute "Rank (today)" — rank based on today's daily signal.
     # Primary key: signal_today (1=up > 0=down).
     # Tiebreaker: recent price gain over LongPeriod trading days.
@@ -265,7 +312,7 @@ def write_rank_list_html(
         + _th("Trend", _COL_TREND)
         + "</tr>\n"
     )
-    for rank, j in enumerate(sort_order, 1):
+    for j in sort_order:
         trend = "up" if signal2D_daily[j, -1] == 1.0 else "down"
         sym_stripped = symbols[j].strip()
         try:
@@ -275,7 +322,7 @@ def write_rank_list_html(
             company_name = ""
         rank_text += (
             "<tr>"
-            + _td(str(rank), _COL_RANK_MO)
+            + _td(str(rank_month_start[j]), _COL_RANK_MO)
             + _td(str(rank_today[j]), _COL_RANK_NOW)
             + _td(sym_stripped, _COL_SYMBOL)
             + _td(company_name, _COL_COMPANY)
