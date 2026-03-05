@@ -26,7 +26,6 @@ from functions.output_generators import (
     compute_portfolio_metrics,
     generate_portfolio_plots,
     write_portfolio_status_files,
-    write_rank_list_html,
 )
 
 logger = logging.getLogger(__name__)
@@ -133,22 +132,18 @@ def run_portfolio_analysis(symbol_directory, symbol_file, params, json_fn):
         last_symbols_price, params, json_fn, lowChannel, hiChannel
     )
     
-    # 3.5: Write rank list HTML for the webpage.
-    # Uses weights/signals computed above and reads PyTAAA_hypothetical_trades.txt
-    # (written by trade_today() on the prior run) to produce the composite
-    # pyTAAAweb_RankList.txt that WriteWebPage_pi.writeWebPage() reads.
-    write_rank_list_html(
-        json_fn, symbols, adjClose,
-        signal2D_daily, monthgainlossweight,
-        datearray,
-    )
-
-    # 3.6: Send text alerts if market is open
+    # 3.5: Send text alerts if market is open
     marketStatus = get_MarketOpenOrClosed()
     if 'Market Open' in marketStatus:
         textmessageOutsideTrendChannel(symbols, adjClose, json_fn)
 
-    return datearray[-1], last_symbols_text, last_symbols_weight, last_symbols_price
+    # Return computed arrays so the caller can write the rank-list HTML
+    # AFTER trade_today() writes the fresh PyTAAA_hypothetical_trades.txt.
+    # This ensures the webpage shows this run's trades, not the prior run's.
+    return (
+        datearray[-1], last_symbols_text, last_symbols_weight, last_symbols_price,
+        symbols, adjClose, signal2D_daily, monthgainlossweight, datearray,
+    )
 
 
 def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):

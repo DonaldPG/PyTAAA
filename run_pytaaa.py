@@ -16,6 +16,7 @@ from functions.UpdateSymbols_inHDF5 import UpdateHDF_yf
 from functions.CheckMarketOpen import (get_MarketOpenOrClosed,
                                        CheckMarketOpen)
 from functions.PortfolioPerformanceCalcs import run_portfolio_analysis
+from functions.output_generators import write_rank_list_html
 from functions.quotes_for_list_adjClose import LastQuotesForSymbolList_hdf
 from functions.calculateTrades import calculateTrades, trade_today
 # from functions.quotes_for_list_adjClose import get_Naz100List, get_SP500List
@@ -32,12 +33,19 @@ _cached_lastdate = None
 _cached_last_symbols_text = None
 _cached_last_symbols_weight = None
 _cached_last_symbols_price = None
+_cached_symbols = None
+_cached_adjClose = None
+_cached_signal2D_daily = None
+_cached_monthgainlossweight = None
+_cached_datearray = None
 
 
 def run_pytaaa(json_fn):
     global _daily_update_done, _calcs_update_count
     global _cached_lastdate, _cached_last_symbols_text
     global _cached_last_symbols_weight, _cached_last_symbols_price
+    global _cached_symbols, _cached_adjClose
+    global _cached_signal2D_daily, _cached_monthgainlossweight, _cached_datearray
 
     # Resolve all paths relative to this file's directory so callers do
     # not need to set CWD before invoking run_pytaaa().
@@ -176,6 +184,11 @@ def run_pytaaa(json_fn):
             _cached_last_symbols_text,
             _cached_last_symbols_weight,
             _cached_last_symbols_price,
+            _cached_symbols,
+            _cached_adjClose,
+            _cached_signal2D_daily,
+            _cached_monthgainlossweight,
+            _cached_datearray,
         ) = run_portfolio_analysis(
             symbol_directory, symbol_file, params, json_fn,
         )
@@ -311,10 +324,10 @@ def run_pytaaa(json_fn):
     )
     print("   . returned from calculateTrades ...\n\n")
 
-    # Generate hypothetical trade recommendations for stdout and for the
-    # next run's pyTAAAweb_RankList.txt (via write_rank_list_html).
-    # trade_today() prints the formatted text to stdout and writes
-    # PyTAAA_hypothetical_trades.txt in the performance store.
+    # Generate hypothetical trade recommendations for stdout and write
+    # PyTAAA_hypothetical_trades.txt in the performance store.  Then
+    # immediately write pyTAAAweb_RankList.txt so the webpage shows
+    # THIS run's trades (not the previous run's).
     try:
         trade_today(
             json_fn,
@@ -326,6 +339,19 @@ def run_pytaaa(json_fn):
         print(
             f" Warning: trade_today() failed: {trade_today_exc}"
         )
+
+    # Write rank-list HTML now that the fresh trades file is on disk.
+    if _cached_symbols is not None:
+        try:
+            write_rank_list_html(
+                json_fn, _cached_symbols, _cached_adjClose,
+                _cached_signal2D_daily, _cached_monthgainlossweight,
+                _cached_datearray,
+            )
+        except Exception as rank_html_exc:
+            print(
+                f" Warning: write_rank_list_html() failed: {rank_html_exc}"
+            )
 
     edition = GetEdition()
 
