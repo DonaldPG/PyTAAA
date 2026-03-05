@@ -258,6 +258,61 @@ def write_rank_list_html(
     )
     _sharpe_mo[~_in_index_mask & ~_cash_mask] = -np.inf
 
+    ############################################################
+    # Compute "Wt (today)" — hypothetical weights if a rebalancing
+    # happened right now, using today's signals and current Sharpe
+    # ratios. This differs from "Wt (mo start)" because
+    # monthgainlossweight is forward-filled within each month, so
+    # both columns would otherwise be identical.
+    ############################################################
+    try:
+        _num_stocks_traded = int(
+            _params_mo.get("numberStocksTraded", 7)
+        )
+        _max_wt_factor = float(
+            _params_mo.get("max_weight_factor", 3.0)
+        )
+        _min_wt_factor = float(
+            _params_mo.get("min_weight_factor", 0.3)
+        )
+        _abs_max_wt = float(
+            _params_mo.get("absolute_max_weight", 0.9)
+        )
+    except Exception:
+        _num_stocks_traded = 7
+        _max_wt_factor = 3.0
+        _min_wt_factor = 0.3
+        _abs_max_wt = 0.9
+
+    weights_today = np.zeros(_n_stocks_mo, dtype=float)
+    _today_signal = signal2D_daily[:, -1] > 0   # Uptrending today.
+    _eligible_today = _today_signal & _in_index_mask & ~_cash_mask
+    _eligible_idx = np.where(_eligible_today)[0]
+    if len(_eligible_idx) > 0:
+        # Sort eligible stocks by Sharpe descending, take top-N.
+        _sorted_eligible = _eligible_idx[
+            np.argsort(-_sharpe_mo[_eligible_idx])
+        ]
+        _n_select = min(_num_stocks_traded, len(_sorted_eligible))
+        _selected = _sorted_eligible[:_n_select]
+        _sel_sharpe = np.nan_to_num(_sharpe_mo[_selected], nan=0.0)
+        if _sel_sharpe.sum() == 0:
+            _raw_wt = np.ones(_n_select) / _n_select
+        else:
+            _raw_wt = _sel_sharpe / _sel_sharpe.sum()
+        # Apply weight constraints matching sharpeWeightedRank_2D.
+        _eq_wt = 1.0 / _n_select
+        _cw = np.clip(
+            _raw_wt,
+            _min_wt_factor * _eq_wt,
+            min(_max_wt_factor * _eq_wt, _abs_max_wt),
+        )
+        if _cw.sum() > 0:
+            _cw /= _cw.sum()
+        else:
+            _cw = np.ones(_n_select) / _n_select
+        weights_today[_selected] = _cw
+
     # rank_month_start[i] = 1-based rank of stock i (1 = best Sharpe).
     _sort_mo = np.argsort(-_sharpe_mo, kind="stable")
     rank_month_start = np.empty(_n_stocks_mo, dtype=int)
@@ -364,7 +419,7 @@ def write_rank_list_html(
             + _td(sym_stripped, _COL_SYMBOL)
             + _td(company_name, _COL_COMPANY)
             + _td(f"{weights_month_start[j]:5.03f}", _COL_WEIGHT_MO)
-            + _td(f"{last_weights[j]:5.03f}", _COL_WEIGHT)
+            + _td(f"{weights_today[j]:5.03f}", _COL_WEIGHT)
             + _td(f"{adjClose[j, -1]:6.2f}", _COL_PRICE)
             + _td(trend, _COL_TREND)
             + "</tr>\n"
