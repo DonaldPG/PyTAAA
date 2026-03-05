@@ -259,11 +259,16 @@ def write_rank_list_html(
     _sharpe_mo[~_in_index_mask & ~_cash_mask] = -np.inf
 
     ############################################################
-    # Compute "Wt (today)" — hypothetical weights if a rebalancing
-    # happened right now, using today's signals and current Sharpe
-    # ratios. This differs from "Wt (mo start)" because
-    # monthgainlossweight is forward-filled within each month, so
-    # both columns would otherwise be identical.
+    # Compute "Rank (today)" and "Wt (today)" from a single shared
+    # sort order so they are definitionally consistent:
+    #   rank 1..numberStocksTraded → non-zero Wt (today)
+    #   rank >numberStocksTraded  → Wt (today) == 0.000
+    #
+    # Only in-index non-CASH stocks receive real scores.
+    # Primary sort key : today's daily signal (1=up > 0=down).
+    # Secondary sort key: _sharpe_mo (descending).
+    # All other stocks (ex-index, CASH) receive score -inf and
+    # rank at the bottom.
     ############################################################
     try:
         _num_stocks_traded = int(
@@ -284,24 +289,43 @@ def write_rank_list_html(
         _min_wt_factor = 0.3
         _abs_max_wt = 0.9
 
+    _today_signal_arr = signal2D_daily[:, -1]   # 0.0 or 1.0
+
+    # Build a score for every stock; only in-index non-CASH get real
+    # values. ex-index and CASH go to -inf so they tail the ranking.
+    _active_for_rank = _in_index_mask & ~_cash_mask
+    _rank_score_today = np.full(_n_stocks_mo, -np.inf)
+    _rank_score_today[_active_for_rank] = (
+        _today_signal_arr[_active_for_rank] * 1000.0
+        + _sharpe_mo[_active_for_rank]
+    )
+
+    # Single shared sort order — used for BOTH rank and weight.
+    _today_sort_order = np.argsort(-_rank_score_today, kind="stable")
+
+    # Rank (today): 1-based position in the shared sort order.
+    rank_today = np.empty(_n_stocks_mo, dtype=int)
+    for _r, _ji in enumerate(_today_sort_order, 1):
+        rank_today[_ji] = _r
+
+    # Wt (today): walk the same sort order, collect only uptrending
+    # in-index stocks until we have numberStocksTraded selected.
     weights_today = np.zeros(_n_stocks_mo, dtype=float)
-    _today_signal = signal2D_daily[:, -1] > 0   # Uptrending today.
-    _eligible_today = _today_signal & _in_index_mask & ~_cash_mask
-    _eligible_idx = np.where(_eligible_today)[0]
-    if len(_eligible_idx) > 0:
-        # Sort eligible stocks by Sharpe descending, take top-N.
-        _sorted_eligible = _eligible_idx[
-            np.argsort(-_sharpe_mo[_eligible_idx])
-        ]
-        _n_select = min(_num_stocks_traded, len(_sorted_eligible))
-        _selected = _sorted_eligible[:_n_select]
-        _sel_sharpe = np.nan_to_num(_sharpe_mo[_selected], nan=0.0)
+    _selected_today = []
+    for _ji in _today_sort_order:
+        if (_today_signal_arr[_ji] > 0) and _active_for_rank[_ji]:
+            _selected_today.append(_ji)
+            if len(_selected_today) == _num_stocks_traded:
+                break
+    if _selected_today:
+        _sel_idx = np.array(_selected_today, dtype=int)
+        _sel_sharpe = np.nan_to_num(_sharpe_mo[_sel_idx], nan=0.0)
         if _sel_sharpe.sum() == 0:
-            _raw_wt = np.ones(_n_select) / _n_select
+            _raw_wt = np.ones(len(_sel_idx)) / len(_sel_idx)
         else:
             _raw_wt = _sel_sharpe / _sel_sharpe.sum()
         # Apply weight constraints matching sharpeWeightedRank_2D.
-        _eq_wt = 1.0 / _n_select
+        _eq_wt = 1.0 / len(_sel_idx)
         _cw = np.clip(
             _raw_wt,
             _min_wt_factor * _eq_wt,
@@ -310,8 +334,8 @@ def write_rank_list_html(
         if _cw.sum() > 0:
             _cw /= _cw.sum()
         else:
-            _cw = np.ones(_n_select) / _n_select
-        weights_today[_selected] = _cw
+            _cw = np.ones(len(_sel_idx)) / len(_sel_idx)
+        weights_today[_sel_idx] = _cw
 
     # rank_month_start[i] = 1-based rank of stock i (1 = best Sharpe).
     _sort_mo = np.argsort(-_sharpe_mo, kind="stable")
@@ -322,32 +346,10 @@ def write_rank_list_html(
     # Table display order: ascending by Sharpe rank (rank 1 first).
     # Only include stocks that are current index members (in_index_mask);
     # this hides ex-index stocks still present in the HDF5 price store.
-    _display_mask = _in_index_mask
     sort_order = np.array(
         [j for j in np.argsort(rank_month_start, kind="stable")
-         if _display_mask[j]]
+         if _in_index_mask[j]]
     )
-
-    ############################################################
-    # Compute "Rank (today)" — rank based on today's Sharpe score,
-    # matching the selection logic used by "Wt (today)".
-    # Primary key: signal_today (1=up > 0=down).
-    # Tiebreaker: _sharpe_mo (same Sharpe used to pick Wt (today)),
-    # so rank 1..numberStocksTraded among uptrending stocks exactly
-    # corresponds to the stocks that receive non-zero Wt (today).
-    ############################################################
-    n_stocks = adjClose.shape[0]
-
-    # Score: signal_today * 1000 + Sharpe (uptrending stocks always
-    # outrank downtrending stocks regardless of Sharpe magnitude).
-    today_signal = signal2D_daily[:, -1]
-    today_score = today_signal * 1000.0 + _sharpe_mo
-
-    # rank_today[i] = 1-based rank of stock i for today.
-    today_sort_order = np.argsort(-today_score)   # best score first
-    rank_today = np.empty(n_stocks, dtype=int)
-    for r, j in enumerate(today_sort_order, 1):
-        rank_today[j] = r
 
     # Column header widths (px).  Text wrapping is allowed inside cells.
     _COL_RANK_MO   = 60
