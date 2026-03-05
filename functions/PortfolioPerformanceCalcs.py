@@ -102,7 +102,10 @@ def run_portfolio_analysis(symbol_directory, symbol_file, params, json_fn):
     web_dir = get_webpage_store(json_fn)
     
     # 3.1: Write daily backtest results
-    _write_daily_backtest(json_fn, datearray, symbols, adjClose, params)
+    _write_daily_backtest(
+        json_fn, datearray, symbols, adjClose, params,
+        active_mask=active_mask,
+    )
     
     # 3.2: Write portfolio status files
     write_portfolio_status_files(
@@ -164,10 +167,19 @@ def PortfolioPerformanceCalcs(symbol_directory, symbol_file, params, json_fn):
     )
 
 
-def _write_daily_backtest(json_fn, datearray, symbols, adjClose, params):
+def _write_daily_backtest(
+    json_fn, datearray, symbols, adjClose, params,
+    active_mask=None,
+):
     """Write daily backtest portfolio and B&H values to file.
-    
-    Helper function to keep orchestrator clean.
+
+    Parameters
+    ----------
+    active_mask : np.ndarray, optional
+        Boolean mask ``(n_stocks, n_days)`` where True indicates a stock
+        was an active index member on that date.  Passed through to
+        ``computeDailyBacktest`` so the B&H benchmark only averages
+        over currently-active stocks.
     """
     computeDailyBacktest(
         json_fn, datearray, symbols, adjClose,
@@ -188,9 +200,10 @@ def _write_daily_backtest(json_fn, datearray, symbols, adjClose, params):
         stddevThreshold=float(params['stddevThreshold']),
         lowPct=float(params['lowPct']),
         hiPct=float(params['hiPct']),
-        uptrendSignalMethod=params['uptrendSignalMethod']
+        uptrendSignalMethod=params['uptrendSignalMethod'],
+        active_mask=active_mask,
     )
-    
+
     print("\n\n Successfully updated daily backtest at in 'pyTAAAweb_backtestPortfolioValue.params'.")
     print(f" Completed on {datetime.datetime.now().strftime('%A, %d. %B %Y %I:%M%p')}")
     print("")

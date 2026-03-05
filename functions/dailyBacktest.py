@@ -113,7 +113,8 @@ def computeDailyBacktest(
         lowPct: int = 17,
         hiPct: int = 84,
         uptrendSignalMethod: str = 'uptrendSignalMethod',
-        verbose: bool = False
+        verbose: bool = False,
+        active_mask: np.ndarray = None,
 ) -> None:
     """Run a daily backtest and write portfolio value history to disk.
 
@@ -225,7 +226,11 @@ def computeDailyBacktest(
     gainloss[:,1:] = adjClose[:,1:] / adjClose[:,:-1]
     gainloss[isnan(gainloss)]=1.
     value = 10000. * np.cumprod(gainloss,axis=1)
-    BuyHoldFinalValue = np.average(value,axis=0)[-1]
+    if active_mask is not None:
+        _value_masked = np.where(active_mask, value, np.nan)
+        BuyHoldFinalValue = float(np.nanmean(_value_masked[:, -1]))
+    else:
+        BuyHoldFinalValue = np.average(value,axis=0)[-1]
 
     print(" gainloss check: ",gainloss[isnan(gainloss)].shape)
     print(" value check: ",value[isnan(value)].shape)
@@ -454,7 +459,11 @@ def computeDailyBacktest(
     Drawdown2Yr = np.mean(PortfolioDrawdown[-504:])
     Drawdown1Yr = np.mean(PortfolioDrawdown[-252:])
 
-    BuyHoldPortfolioValue = np.mean(value,axis=0)
+    if active_mask is not None:
+        _value_masked_ts = np.where(active_mask, value, np.nan)
+        BuyHoldPortfolioValue = np.nanmean(_value_masked_ts, axis=0)
+    else:
+        BuyHoldPortfolioValue = np.mean(value,axis=0)
     BuyHoldDailyGains = BuyHoldPortfolioValue[1:] / BuyHoldPortfolioValue[:-1]
     BuyHoldSharpe15Yr = ( gmean(BuyHoldDailyGains[-index:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-index:])*sqrt(252) )
     BuyHoldSharpe10Yr = ( gmean(BuyHoldDailyGains[-2520:])**252 -1. ) / ( np.std(BuyHoldDailyGains[-2520:])*sqrt(252) )

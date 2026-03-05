@@ -968,8 +968,17 @@ def compute_portfolio_metrics(
     gainloss[np.isnan(gainloss)] = 1.
     gainloss[np.isinf(gainloss)] = 1.
     value = 10000. * np.cumprod(gainloss, axis=1)
-    
-    BuyHoldFinalValue = np.average(value, axis=0)[-1]
+
+    # B&H: average only stocks that were actively in the index on each
+    # date. active_mask[i, j] = True when stock i was a current index
+    # member at date j. Without this filter, ex-index stocks whose
+    # prices were infilled before/after index membership inflate the
+    # B&H benchmark.
+    if active_mask is not None:
+        _value_masked = np.where(active_mask, value, np.nan)
+        BuyHoldFinalValue = float(np.nanmean(_value_masked[:, -1]))
+    else:
+        BuyHoldFinalValue = np.average(value, axis=0)[-1]
     
     lastEmptyPriceIndex = np.zeros(adjClose.shape[0], dtype=int)
     

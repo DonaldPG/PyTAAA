@@ -741,8 +741,12 @@ def execute_single_backtest(
         try:
             from functions.backtesting.plot_generation import generate_backtest_plot
             
-            # Calculate Buy & Hold portfolio for comparison (average of all stocks)
-            BuyHoldPortfolioValue = np.mean(value, axis=0)
+            # B&H: average only stocks active in the index at each date.
+            if active_mask is not None:
+                _value_masked_bh = np.where(active_mask, value, np.nan)
+                BuyHoldPortfolioValue = np.nanmean(_value_masked_bh, axis=0)
+            else:
+                BuyHoldPortfolioValue = np.mean(value, axis=0)
             
             # Build list of symbols held at final date 
             last_symbols_text = []
