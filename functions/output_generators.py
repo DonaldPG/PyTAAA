@@ -187,9 +187,8 @@ def write_rank_list_html(
         companySymbolList = []
         companyNameList = []
 
-    # Sort symbols by current weight (highest weight = rank 1).
+    # Keep last_weights for the weight column values.
     last_weights = monthgainlossweight[:, -1]
-    sort_order = np.argsort(-last_weights)
 
     ############################################################
     # Compute "Rank (start of month)" — rank based on each stock's
@@ -237,6 +236,9 @@ def write_rank_list_html(
     rank_month_start = np.empty(_n_stocks_mo, dtype=int)
     for _r, _ji in enumerate(_sort_mo, 1):
         rank_month_start[_ji] = _r
+
+    # Table display order: ascending by Sharpe rank (rank 1 first).
+    sort_order = np.argsort(rank_month_start, kind="stable")
 
     ############################################################
     # Compute "Rank (today)" — rank based on today's daily signal.
