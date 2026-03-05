@@ -187,8 +187,26 @@ def write_rank_list_html(
         companySymbolList = []
         companyNameList = []
 
-    # Keep last_weights for the weight column values.
+    # Today's weights (last column) and month-start weights (first
+    # trading day of the current calendar month).
     last_weights = monthgainlossweight[:, -1]
+
+    _n_days_all = monthgainlossweight.shape[1]
+    _month_start_idx = _n_days_all - 1  # safe fallback: use today
+    if datearray is not None and len(datearray) > 0:
+        try:
+            _last_d = datearray[-1]
+            _cur_yr = _last_d.year if hasattr(_last_d, 'year') else _last_d.item().year
+            _cur_mo = _last_d.month if hasattr(_last_d, 'month') else _last_d.item().month
+            for _d_idx, _d in enumerate(datearray):
+                _dy = _d.year if hasattr(_d, 'year') else _d.item().year
+                _dm = _d.month if hasattr(_d, 'month') else _d.item().month
+                if _dy == _cur_yr and _dm == _cur_mo:
+                    _month_start_idx = _d_idx
+                    break
+        except Exception:
+            pass  # Keep fallback index.
+    weights_month_start = monthgainlossweight[:, _month_start_idx]
 
     ############################################################
     # Compute "Rank (start of month)" — rank based on each stock's
@@ -278,7 +296,8 @@ def write_rank_list_html(
     _COL_RANK_NOW  = 60
     _COL_SYMBOL    = 60
     _COL_COMPANY   = 180
-    _COL_WEIGHT    = 55
+    _COL_WEIGHT_MO = 60
+    _COL_WEIGHT    = 60
     _COL_PRICE     = 80
     _COL_TREND     = 50
 
@@ -309,7 +328,8 @@ def write_rank_list_html(
         + _th("Rank (today)", _COL_RANK_NOW)
         + _th("Symbol", _COL_SYMBOL)
         + _th("Company", _COL_COMPANY)
-        + _th("Weight", _COL_WEIGHT)
+        + _th("Wt (mo start)", _COL_WEIGHT_MO)
+        + _th("Wt (today)", _COL_WEIGHT)
         + _th("Price", _COL_PRICE)
         + _th("Trend", _COL_TREND)
         + "</tr>\n"
@@ -328,6 +348,7 @@ def write_rank_list_html(
             + _td(str(rank_today[j]), _COL_RANK_NOW)
             + _td(sym_stripped, _COL_SYMBOL)
             + _td(company_name, _COL_COMPANY)
+            + _td(f"{weights_month_start[j]:5.03f}", _COL_WEIGHT_MO)
             + _td(f"{last_weights[j]:5.03f}", _COL_WEIGHT)
             + _td(f"{adjClose[j, -1]:6.2f}", _COL_PRICE)
             + _td(trend, _COL_TREND)
