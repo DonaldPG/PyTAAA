@@ -249,6 +249,15 @@ def write_rank_list_html(
     )
     _sharpe_mo[_cash_mask] = -np.inf
 
+    # Stocks not in the current index (ex-members still in the HDF5
+    # price store) must be excluded from both ranking and display.
+    # companySymbolList is already the authoritative current-member
+    # list loaded from Naz100_companyNames.txt / SP500_companyNames.txt.
+    _in_index_mask = np.array(
+        [s.strip() in companySymbolList for s in symbols], dtype=bool
+    )
+    _sharpe_mo[~_in_index_mask & ~_cash_mask] = -np.inf
+
     # rank_month_start[i] = 1-based rank of stock i (1 = best Sharpe).
     _sort_mo = np.argsort(-_sharpe_mo, kind="stable")
     rank_month_start = np.empty(_n_stocks_mo, dtype=int)
@@ -256,7 +265,13 @@ def write_rank_list_html(
         rank_month_start[_ji] = _r
 
     # Table display order: ascending by Sharpe rank (rank 1 first).
-    sort_order = np.argsort(rank_month_start, kind="stable")
+    # Only include stocks that are current index members (in_index_mask);
+    # this hides ex-index stocks still present in the HDF5 price store.
+    _display_mask = _in_index_mask
+    sort_order = np.array(
+        [j for j in np.argsort(rank_month_start, kind="stable")
+         if _display_mask[j]]
+    )
 
     ############################################################
     # Compute "Rank (today)" — rank based on today's daily signal.
