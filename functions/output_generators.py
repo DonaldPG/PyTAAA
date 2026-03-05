@@ -191,20 +191,79 @@ def write_rank_list_html(
     last_weights = monthgainlossweight[:, -1]
     sort_order = np.argsort(-last_weights)
 
+    ############################################################
+    # Compute "Rank (today)" — rank based on today's daily signal.
+    # Primary key: signal_today (1=up > 0=down).
+    # Tiebreaker: recent price gain over LongPeriod trading days.
+    # A higher gain gets a lower (better) rank number.
+    ############################################################
+    try:
+        _params = get_json_params(json_fn)
+        long_period = int(_params.get("LongPeriod", 65))
+    except Exception:
+        long_period = 65
+
+    n_stocks = adjClose.shape[0]
+    n_days = adjClose.shape[1]
+    lookback = min(long_period, n_days - 1)
+    recent_gain = np.where(
+        adjClose[:, -lookback - 1] > 0,
+        adjClose[:, -1] / adjClose[:, -lookback - 1],
+        1.0,
+    )
+    recent_gain = np.nan_to_num(recent_gain, nan=1.0)
+
+    # Score: signal_today * 1000 + recent_gain (so up-trending stocks
+    # always rank above down-trending stocks regardless of gain size).
+    today_signal = signal2D_daily[:, -1]
+    today_score = today_signal * 1000.0 + recent_gain
+
+    # rank_today[i] = 1-based rank of stock i for today.
+    today_sort_order = np.argsort(-today_score)   # best score first
+    rank_today = np.empty(n_stocks, dtype=int)
+    for r, j in enumerate(today_sort_order, 1):
+        rank_today[j] = r
+
+    # Column header widths (px).  Text wrapping is allowed inside cells.
+    _COL_RANK_MO   = 60
+    _COL_RANK_NOW  = 60
+    _COL_SYMBOL    = 60
+    _COL_COMPANY   = 180
+    _COL_WEIGHT    = 55
+    _COL_PRICE     = 80
+    _COL_TREND     = 50
+
+    def _th(label: str, width: int) -> str:
+        """Return a header cell with fixed width and text wrapping."""
+        return (
+            f"<td style='width:{width}px; max-width:{width}px; "
+            f"word-wrap:break-word; white-space:normal'>"
+            f"{label}</td>"
+        )
+
+    def _td(content: str, width: int) -> str:
+        """Return a data cell with fixed width."""
+        return (
+            f"<td style='width:{width}px; max-width:{width}px; "
+            f"word-wrap:break-word; white-space:normal'>"
+            f"{content}</td>"
+        )
+
     rank_text = (
         "<div id='rank_table_container'><h3>"
         "<p>Current stocks, with ranks, weights, and prices "
         "are :</p></h3>"
         "<font face='courier new' size=3>"
-        "<table border='1'> "
+        "<table border='1' style='border-collapse:collapse;'>"
         "<tr>"
-        "<td>Rank (start of month)</td>"
-        "<td>Symbol</td>"
-        "<td>Company</td>"
-        "<td>Weight</td>"
-        "<td>Price</td>"
-        "<td>Trend</td>"
-        "</tr>\n"
+        + _th("Rank (start of month)", _COL_RANK_MO)
+        + _th("Rank (today)", _COL_RANK_NOW)
+        + _th("Symbol", _COL_SYMBOL)
+        + _th("Company", _COL_COMPANY)
+        + _th("Weight", _COL_WEIGHT)
+        + _th("Price", _COL_PRICE)
+        + _th("Trend", _COL_TREND)
+        + "</tr>\n"
     )
     for rank, j in enumerate(sort_order, 1):
         trend = "up" if signal2D_daily[j, -1] == 1.0 else "down"
@@ -215,14 +274,15 @@ def write_rank_list_html(
         except (ValueError, IndexError):
             company_name = ""
         rank_text += (
-            f"<tr>"
-            f"<td>{rank:6d}"
-            f"<td>{sym_stripped}"
-            f"<td>{format(company_name, '15s')}"
-            f"<td>{last_weights[j]:5.03f}"
-            f"<td>{adjClose[j, -1]:6.2f}"
-            f"<td>{trend}"
-            "</td></tr>  \n"
+            "<tr>"
+            + _td(str(rank), _COL_RANK_MO)
+            + _td(str(rank_today[j]), _COL_RANK_NOW)
+            + _td(sym_stripped, _COL_SYMBOL)
+            + _td(company_name, _COL_COMPANY)
+            + _td(f"{last_weights[j]:5.03f}", _COL_WEIGHT)
+            + _td(f"{adjClose[j, -1]:6.2f}", _COL_PRICE)
+            + _td(trend, _COL_TREND)
+            + "</tr>\n"
         )
     rank_text += "</table></div>\n"
 
