@@ -329,31 +329,19 @@ def write_rank_list_html(
     )
 
     ############################################################
-    # Compute "Rank (today)" — rank based on today's daily signal.
+    # Compute "Rank (today)" — rank based on today's Sharpe score,
+    # matching the selection logic used by "Wt (today)".
     # Primary key: signal_today (1=up > 0=down).
-    # Tiebreaker: recent price gain over LongPeriod trading days.
-    # A higher gain gets a lower (better) rank number.
+    # Tiebreaker: _sharpe_mo (same Sharpe used to pick Wt (today)),
+    # so rank 1..numberStocksTraded among uptrending stocks exactly
+    # corresponds to the stocks that receive non-zero Wt (today).
     ############################################################
-    try:
-        _params = get_json_params(json_fn)
-        long_period = int(_params.get("LongPeriod", 65))
-    except Exception:
-        long_period = 65
-
     n_stocks = adjClose.shape[0]
-    n_days = adjClose.shape[1]
-    lookback = min(long_period, n_days - 1)
-    recent_gain = np.where(
-        adjClose[:, -lookback - 1] > 0,
-        adjClose[:, -1] / adjClose[:, -lookback - 1],
-        1.0,
-    )
-    recent_gain = np.nan_to_num(recent_gain, nan=1.0)
 
-    # Score: signal_today * 1000 + recent_gain (so up-trending stocks
-    # always rank above down-trending stocks regardless of gain size).
+    # Score: signal_today * 1000 + Sharpe (uptrending stocks always
+    # outrank downtrending stocks regardless of Sharpe magnitude).
     today_signal = signal2D_daily[:, -1]
-    today_score = today_signal * 1000.0 + recent_gain
+    today_score = today_signal * 1000.0 + _sharpe_mo
 
     # rank_today[i] = 1-based rank of stock i for today.
     today_sort_order = np.argsort(-today_score)   # best score first
