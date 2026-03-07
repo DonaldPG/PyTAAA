@@ -1,4 +1,4 @@
-# Session Summary: Algorithm Restoration (AR-2 through AR-5)
+# Session Summary: Algorithm Restoration (AR-1 through AR-5)
 
 ## Date and Context
 
@@ -20,9 +20,10 @@ three weighting methods can be selected via JSON.
 
 1. Committed 5 logical groups of outstanding changes plus pushed to
    `origin/orchestration-refactor`.
-2. Implemented 4 of 5 Algorithm Restoration items from
-   `plans/ORCHESTRATION_REFACTOR.md` (AR-3 → AR-4 → AR-2 → AR-5).
-   AR-1 (documentation) was deferred.
+2. Implemented all 5 Algorithm Restoration items from
+   `plans/ORCHESTRATION_REFACTOR.md`. AR-1 (port `despike_2D`/`move_sharpe_2D`)
+   was pre-resolved (functions already existed in worktree2); AR-3 → AR-4
+   → AR-2 → AR-5 were implemented this session.
 
 ## Key Changes
 
@@ -124,9 +125,6 @@ AR-2 commit):
 
 ## Follow-up Items
 
-- AR-1 (documentation of all three methods in `ARCHITECTURE.md`) was
-  not explicitly addressed this session; consider adding a `Methods`
-  section to `ARCHITECTURE.md` comparing the three approaches.
 - The `pytaaa_sp500_pine_montecarlo_optimized_*.json` files use integer
   indices for `uptrendSignalMethod` (result/output files from Monte
   Carlo runs) and were deliberately excluded from AR-5 updates.
