@@ -29,6 +29,7 @@
         "webpage": "/tmp",
         "stockList": "Naz100",
         "uptrendSignalMethod": "SMAs",
+        "stockWeightMethod": "delta_rank_sharpe_weight",
         "numberStocksTraded": 7,
         "monthsToHold": 1,
         "LongPeriod": 600,

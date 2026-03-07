@@ -29,6 +29,7 @@
         "webpage": "/Users/donaldpg/pyTAAA_data_static/sp500_pine/webpage",
         "stockList": "SP500",
         "uptrendSignalMethod": "percentileChannels",
+        "stockWeightMethod": "delta_rank_sharpe_weight",
         "numberStocksTraded": 5,
         "monthsToHold": 1,
         "LongPeriod": 396,

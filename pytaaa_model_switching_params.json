@@ -28,6 +28,7 @@
         "webpage": "/Users/donaldpg/PyProjects/worktree2/PyTAAA/analysis_results2/baseline_pre_refactor/html",
         "stockList": "Naz100",
         "uptrendSignalMethod": "HMAs",
+        "stockWeightMethod": "delta_rank_sharpe_weight",
         "numberStocksTraded": 8,
         "monthsToHold": 1,
         "LongPeriod": 245,

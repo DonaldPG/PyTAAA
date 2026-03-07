@@ -42,6 +42,7 @@
         "symbols_file": "/Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/symbols/abacus_symbols.txt",
         "stockList": "abacus_combined",
         "uptrendSignalMethod": "HMAs",
+        "stockWeightMethod": "delta_rank_sharpe_weight",
         "numberStocksTraded": 7,
         "monthsToHold": 1,
         "LongPeriod": 600,
