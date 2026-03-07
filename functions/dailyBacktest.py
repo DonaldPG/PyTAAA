@@ -11,7 +11,12 @@ from math import sqrt
 from typing import List
 
 ## local imports
-from functions.TAfunctions import isnan, computeSignal2D, sharpeWeightedRank_2D
+from functions.TAfunctions import (
+    isnan, computeSignal2D,
+    sharpeWeightedRank_2D,
+    delta_rank_sharpe_weight_2D,
+    UnWeightedRank_2D,
+)
 from functions.GetParams import get_json_params, get_performance_store
 from functions.CountNewHighsLows import newHighsAndLows
 # from functions.UpdateSymbols_inHDF5 import UpdateHDF5
@@ -357,12 +362,34 @@ def computeDailyBacktest(
         # Re-raise after printing to make failure visible in logs
         raise
 
-    monthgainlossweight = sharpeWeightedRank_2D(
-        json_fn, datearray, symbols, adjClose, signal2D ,signal2D_daily,
-        LongPeriod, numberStocksTraded, riskDownside_min, riskDownside_max,
-        rankThresholdPct, stddevThreshold=stddevThreshold,
-        stockList=params.get('stockList', 'SP500')
+    # 3-way dispatch based on stockWeightMethod config key.
+    _stock_weight_method = params.get(
+        "stockWeightMethod", "delta_rank_sharpe_weight"
     )
+    if _stock_weight_method == "equal_weight":
+        monthgainlossweight = UnWeightedRank_2D(
+            datearray, adjClose, signal2D,
+            LongPeriod, numberStocksTraded,
+            riskDownside_min, riskDownside_max, rankThresholdPct,
+        )
+    elif _stock_weight_method == "delta_rank_sharpe_weight":
+        monthgainlossweight = delta_rank_sharpe_weight_2D(
+            json_fn, datearray, symbols, adjClose, signal2D, signal2D_daily,
+            LongPeriod, numberStocksTraded, riskDownside_min, riskDownside_max,
+            rankThresholdPct, stddevThreshold=stddevThreshold,
+            stockList=params.get("stockList", "SP500"),
+        )
+    elif _stock_weight_method == "abs_sharpe_weight":
+        monthgainlossweight = sharpeWeightedRank_2D(
+            json_fn, datearray, symbols, adjClose, signal2D, signal2D_daily,
+            LongPeriod, numberStocksTraded, riskDownside_min, riskDownside_max,
+            rankThresholdPct, stddevThreshold=stddevThreshold,
+            stockList=params.get("stockList", "SP500"),
+        )
+    else:
+        raise ValueError(
+            f"Unknown stockWeightMethod: {_stock_weight_method!r}"
+        )
 
     print_even_year_selections(
         datearray=datearray,

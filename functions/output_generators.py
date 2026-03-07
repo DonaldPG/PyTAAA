@@ -1204,26 +1204,54 @@ def compute_portfolio_metrics(
     #############################################################################
     # Phase 5: Compute weights for each stock
     #############################################################################
-    
-    # Import here to avoid circular dependency
-    from functions.TAfunctions import sharpeWeightedRank_2D
-    
+
+    # 3-way dispatch based on stockWeightMethod config key.
+    # AR-2: "delta_rank_sharpe_weight" currently uses a stub that calls
+    # through to sharpeWeightedRank_2D; replace stub body to activate
+    # the restored master algorithm.
+    _stock_weight_method = params.get(
+        "stockWeightMethod", "delta_rank_sharpe_weight"
+    )
+
     signal2D_4before = signal2D.copy()
 
-    monthgainlossweight = sharpeWeightedRank_2D(
-        json_fn, datearray, symbols, adjClose_despike,
-        signal2D, signal2D_daily, LongPeriod, numberStocksTraded,
-        riskDownside_min, riskDownside_max, rankThresholdPct,
-        stddevThreshold=stddevThreshold,
-        is_backtest=False, makeQCPlots=True,
-        stockList=params.get('stockList', 'SP500')  # Pass stockList for early period logic
-    )
+    if _stock_weight_method == "equal_weight":
+        from functions.TAfunctions import UnWeightedRank_2D
+        monthgainlossweight = UnWeightedRank_2D(
+            datearray, adjClose_despike, signal2D,
+            LongPeriod, numberStocksTraded,
+            riskDownside_min, riskDownside_max, rankThresholdPct,
+        )
+    elif _stock_weight_method == "delta_rank_sharpe_weight":
+        from functions.TAfunctions import delta_rank_sharpe_weight_2D
+        monthgainlossweight = delta_rank_sharpe_weight_2D(
+            json_fn, datearray, symbols, adjClose_despike,
+            signal2D, signal2D_daily, LongPeriod, numberStocksTraded,
+            riskDownside_min, riskDownside_max, rankThresholdPct,
+            stddevThreshold=stddevThreshold,
+            is_backtest=False, makeQCPlots=True,
+            stockList=params.get("stockList", "SP500"),
+        )
+    elif _stock_weight_method == "abs_sharpe_weight":
+        from functions.TAfunctions import sharpeWeightedRank_2D
+        monthgainlossweight = sharpeWeightedRank_2D(
+            json_fn, datearray, symbols, adjClose_despike,
+            signal2D, signal2D_daily, LongPeriod, numberStocksTraded,
+            riskDownside_min, riskDownside_max, rankThresholdPct,
+            stddevThreshold=stddevThreshold,
+            is_backtest=False, makeQCPlots=True,
+            stockList=params.get("stockList", "SP500"),
+        )
+    else:
+        raise ValueError(
+            f"Unknown stockWeightMethod: {_stock_weight_method!r}"
+        )
 
     signal2D_4after = signal2D.copy()
     iii,jjj = np.where(signal2D_4after != signal2D_4before)
     print(
-        "\n   . DEBUG: output_generators: Completed sharpeWeightedRank_2D. "
-         "number of changed signals in signal2D = ", len(iii)
+        f"\n   . DEBUG: output_generators: Completed {_stock_weight_method}. "
+        "number of changed signals in signal2D = ", len(iii)
     )
     del signal2D_4after
     del signal2D_4before

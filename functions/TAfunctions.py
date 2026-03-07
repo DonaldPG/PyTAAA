@@ -1337,6 +1337,92 @@ def sharpeWeightedRank_2D(
     return
 
 
+#############
+# AR-2 stub — will be replaced with the full delta-rank implementation.
+# Signature intentionally matches sharpeWeightedRank_2D so that AR-4
+# call sites require no further changes when AR-2 fills this in.
+#############
+
+def delta_rank_sharpe_weight_2D(
+    json_fn: str,
+    datearray: np.ndarray,
+    symbols: list,
+    adjClose: np.ndarray,
+    signal2D: np.ndarray,
+    signal2D_daily: np.ndarray,
+    LongPeriod: int,
+    numberStocksTraded: int,
+    riskDownside_min: float,
+    riskDownside_max: float,
+    rankThresholdPct: float,
+    stddevThreshold: float = 5.0,
+    makeQCPlots: bool = False,
+    max_weight_factor: float = 3.0,
+    min_weight_factor: float = 0.3,
+    absolute_max_weight: float = 0.9,
+    apply_constraints: bool = True,
+    is_backtest: bool = True,
+    verbose: bool = False,
+    stockList: str = "SP500",
+    **kwargs: Any,
+) -> np.ndarray:
+    """Momentum-of-momentum delta-rank with inverse-Sharpe weights (Method A).
+
+    This is the modernised port of the original ``sharpeWeightedRank_2D``
+    implementation from the master branch.  It uses soft signal
+    suppression (gain/loss × signal2D), cross-sectional ``rankdata``
+    rather than a column-by-column loop, and normalised inverse-Sharpe
+    ratio weights.
+
+    **AR-2 STUB** — the body below is a temporary pass-through to
+    ``sharpeWeightedRank_2D`` so that AR-4 dispatch can be wired
+    before AR-2 is implemented.  Replace this body with the full
+    10-step algorithm described in ``plans/ORCHESTRATION_REFACTOR.md``
+    (items AR-2a through AR-2j) to activate the restored method.
+
+    Args:
+        json_fn: Path to the JSON configuration file.
+        datearray: 1D array of dates, one per ``adjClose`` column.
+        symbols: List of ticker symbols, one per ``adjClose`` row.
+        adjClose: 2D adjusted-close price array ``(n_stocks, n_dates)``.
+        signal2D: Monthly uptrend signal array ``(n_stocks, n_dates)``.
+        signal2D_daily: Daily uptrend signal array ``(n_stocks, n_dates)``.
+        LongPeriod: Lookback period in days for gain/loss calculation.
+        numberStocksTraded: Maximum number of stocks to hold at once.
+        riskDownside_min: Minimum allowed inverse-Sharpe weight.
+        riskDownside_max: Maximum allowed inverse-Sharpe weight.
+        rankThresholdPct: Fraction used to exclude extreme-ranked stocks.
+        stddevThreshold: Spike-removal threshold passed to ``despike_2D``.
+        makeQCPlots: Generate diagnostic plots (production only).
+        max_weight_factor: Max weight as multiple of equal weight.
+        min_weight_factor: Min weight as multiple of equal weight.
+        absolute_max_weight: Hard cap on any single stock weight.
+        apply_constraints: Apply weight constraints when ``True``.
+        is_backtest: Suppress plots/logging when ``True``.
+        verbose: Extra logging when ``True``.
+        stockList: Portfolio universe name for early-period logic.
+        **kwargs: Additional keyword arguments (ignored).
+
+    Returns:
+        2D NumPy array ``(n_stocks, n_dates)`` of portfolio weights.
+    """
+    # AR-2 TODO: Replace this pass-through with the full algorithm.
+    return sharpeWeightedRank_2D(
+        json_fn, datearray, symbols, adjClose,
+        signal2D, signal2D_daily, LongPeriod, numberStocksTraded,
+        riskDownside_min, riskDownside_max, rankThresholdPct,
+        stddevThreshold=stddevThreshold,
+        makeQCPlots=makeQCPlots,
+        max_weight_factor=max_weight_factor,
+        min_weight_factor=min_weight_factor,
+        absolute_max_weight=absolute_max_weight,
+        apply_constraints=apply_constraints,
+        is_backtest=is_backtest,
+        verbose=verbose,
+        stockList=stockList,
+    )
+
+
 def multiSharpe(
         datearray: np.ndarray,
         adjClose: np.ndarray,

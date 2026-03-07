@@ -17,7 +17,11 @@ from functions.ta.data_cleaning import interpolate, cleantobeginning, cleantoend
 from functions.ta.moving_averages import SMA, hma, SMA_filtered_2D
 from functions.ta.channels import percentileChannel_2D
 from functions.ta.signal_generation import computeSignal2D
-from functions.TAfunctions import sharpeWeightedRank_2D
+from functions.TAfunctions import (
+    sharpeWeightedRank_2D,
+    delta_rank_sharpe_weight_2D,
+    UnWeightedRank_2D,
+)
 from functions.GetParams import get_json_params, get_performance_store, get_webpage_store
 
 
@@ -558,11 +562,13 @@ def execute_single_backtest(
     print(f" ... Number of stocks with signals: min={numberStocks.min():.1f}, max={numberStocks.max():.1f}, mean={numberStocks.mean():.1f}")
 
     #############################################################################
-    # Compute portfolio weights using sharpeWeightedRank_2D
+    # Compute portfolio weights (3-way dispatch on stockWeightMethod)
     #############################################################################
-    
-    # Use weight constraint parameters passed to this function (no hardcoding)
-    print(f" ... Weight constraint parameters for realization {iter_num}:")
+
+    _stock_weight_method = validated_params.get(
+        "stockWeightMethod", "delta_rank_sharpe_weight"
+    )
+    print(f" ... Computing weights using method: {_stock_weight_method!r}")
     print(f" ...   max_weight_factor = {max_weight_factor}")
     print(f" ...   min_weight_factor = {min_weight_factor}")
     print(f" ...   absolute_max_weight = {absolute_max_weight}")
@@ -573,25 +579,50 @@ def execute_single_backtest(
         print(f" ...   equal_weight (1/numberStocksTraded) = {equal_weight:.4f}")
         print(f" ...   max_weight = {min(equal_weight * max_weight_factor, absolute_max_weight):.4f}")
         print(f" ...   min_weight = {equal_weight * min_weight_factor:.4f}")
-    
+
     try:
-        monthgainlossweight = sharpeWeightedRank_2D(
-            json_fn, datearray, symbols, adjClose, signal2D, signal2D_daily,
-            LongPeriod, numberStocksTraded,
-            riskDownside_min, riskDownside_max, rankThresholdPct,
-            stddevThreshold=stddevThreshold,
-            makeQCPlots=False,
-            max_weight_factor=max_weight_factor,
-            min_weight_factor=min_weight_factor,
-            absolute_max_weight=absolute_max_weight,
-            apply_constraints=apply_constraints,
-            is_backtest=True,
-            stockList=validated_params.get('stockList', 'SP500')  # Pass stockList for early period logic
-        )
+        if _stock_weight_method == "equal_weight":
+            monthgainlossweight = UnWeightedRank_2D(
+                datearray, adjClose, signal2D,
+                LongPeriod, numberStocksTraded,
+                riskDownside_min, riskDownside_max, rankThresholdPct,
+            )
+        elif _stock_weight_method == "delta_rank_sharpe_weight":
+            monthgainlossweight = delta_rank_sharpe_weight_2D(
+                json_fn, datearray, symbols, adjClose, signal2D,
+                signal2D_daily, LongPeriod, numberStocksTraded,
+                riskDownside_min, riskDownside_max, rankThresholdPct,
+                stddevThreshold=stddevThreshold,
+                makeQCPlots=False,
+                max_weight_factor=max_weight_factor,
+                min_weight_factor=min_weight_factor,
+                absolute_max_weight=absolute_max_weight,
+                apply_constraints=apply_constraints,
+                is_backtest=True,
+                stockList=validated_params.get("stockList", "SP500"),
+            )
+        elif _stock_weight_method == "abs_sharpe_weight":
+            monthgainlossweight = sharpeWeightedRank_2D(
+                json_fn, datearray, symbols, adjClose, signal2D,
+                signal2D_daily, LongPeriod, numberStocksTraded,
+                riskDownside_min, riskDownside_max, rankThresholdPct,
+                stddevThreshold=stddevThreshold,
+                makeQCPlots=False,
+                max_weight_factor=max_weight_factor,
+                min_weight_factor=min_weight_factor,
+                absolute_max_weight=absolute_max_weight,
+                apply_constraints=apply_constraints,
+                is_backtest=True,
+                stockList=validated_params.get("stockList", "SP500"),
+            )
+        else:
+            raise ValueError(
+                f"Unknown stockWeightMethod: {_stock_weight_method!r}"
+            )
         print(f" ... Generated weights with shape: {monthgainlossweight.shape}")
         
     except Exception as e:
-        print(f" ... Error in sharpeWeightedRank_2D: {e}")
+        print(f" ... Error in {_stock_weight_method}: {e}")
         print(" ... Using fallback equal-weight allocation")
         
         # Fallback to equal-weight allocation for stocks with positive signals

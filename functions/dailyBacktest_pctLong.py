@@ -1593,7 +1593,9 @@ def dailyBacktest_pctLong(json_fn: str, verbose: bool = False) -> None:
                                        dpgchannel_2D,
                                        computeSignal2D,
                                        percentileChannel_2D,
-                                       sharpeWeightedRank_2D)
+                                       sharpeWeightedRank_2D,
+                                       delta_rank_sharpe_weight_2D,
+                                       UnWeightedRank_2D)
     #from functions.UpdateSymbols_inHDF5 import UpdateHDF5, loadQuotes_fromHDF
     #---------------------------------------------
 
@@ -2111,16 +2113,42 @@ def dailyBacktest_pctLong(json_fn: str, verbose: bool = False) -> None:
         ### 2. sharpe ratio computed from daily gains over "LongPeriod"
         ########################################################################
 
-        monthgainlossweight = sharpeWeightedRank_2D(
-            json_fn, datearray, symbols, adjClose,
-            signal2D, signal2D_daily,
-            LongPeriod, numberStocksTraded, riskDownside_min, riskDownside_max,
-            rankThresholdPct,
-            stddevThreshold=stddevThreshold,
-            is_backtest=True,
-            makeQCPlots=False,
-            stockList=params.get('stockList', 'SP500')
+        # 3-way dispatch based on stockWeightMethod config key.
+        _stock_weight_method = params.get(
+            "stockWeightMethod", "delta_rank_sharpe_weight"
         )
+        if _stock_weight_method == "equal_weight":
+            monthgainlossweight = UnWeightedRank_2D(
+                datearray, adjClose, signal2D,
+                LongPeriod, numberStocksTraded,
+                riskDownside_min, riskDownside_max, rankThresholdPct,
+            )
+        elif _stock_weight_method == "delta_rank_sharpe_weight":
+            monthgainlossweight = delta_rank_sharpe_weight_2D(
+                json_fn, datearray, symbols, adjClose,
+                signal2D, signal2D_daily,
+                LongPeriod, numberStocksTraded,
+                riskDownside_min, riskDownside_max, rankThresholdPct,
+                stddevThreshold=stddevThreshold,
+                is_backtest=True,
+                makeQCPlots=False,
+                stockList=params.get("stockList", "SP500"),
+            )
+        elif _stock_weight_method == "abs_sharpe_weight":
+            monthgainlossweight = sharpeWeightedRank_2D(
+                json_fn, datearray, symbols, adjClose,
+                signal2D, signal2D_daily,
+                LongPeriod, numberStocksTraded,
+                riskDownside_min, riskDownside_max, rankThresholdPct,
+                stddevThreshold=stddevThreshold,
+                is_backtest=True,
+                makeQCPlots=False,
+                stockList=params.get("stockList", "SP500"),
+            )
+        else:
+            raise ValueError(
+                f"Unknown stockWeightMethod: {_stock_weight_method!r}"
+            )
 
         print("here I am........")
 

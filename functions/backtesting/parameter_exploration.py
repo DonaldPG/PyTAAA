@@ -414,6 +414,9 @@ def generate_random_parameters(
             scenario selection.
     """
     usm = (params or {}).get("uptrendSignalMethod", "percentileChannels")
+    swm = (params or {}).get(
+        "stockWeightMethod", "delta_rank_sharpe_weight"
+    )
     ranges = _get_ranges(params or {})
     # Boundary between exploration (first 90 %) and JSON+one (last 10 %)
     # of non-final trials.  max(1, ...) guarantees at least one exploration
@@ -423,14 +426,20 @@ def generate_random_parameters(
     # Final trial: JSON values verbatim (skip when only one trial).
     if total_trials > 1 and iter_num == total_trials - 1:
         logger.debug("Trial %d: JSON-exact phase", iter_num)
-        return _generate_json_exact_params(params or {}, usm)
+        result = _generate_json_exact_params(params or {}, usm)
+        result["stockWeightMethod"] = swm
+        return result
 
     # First half: broad exploration across the full parameter space.
     if iter_num < mid:
         logger.debug("Trial %d: exploration phase", iter_num)
-        return _generate_exploration_params(hold_months, usm, ranges)
+        result = _generate_exploration_params(hold_months, usm, ranges)
+        result["stockWeightMethod"] = swm
+        return result
 
     # Second half (minus last): JSON baseline with one param varied.
-    return _generate_json_plus_one_param(
+    result = _generate_json_plus_one_param(
         params or {}, iter_num, usm, ranges
     )
+    result["stockWeightMethod"] = swm
+    return result
