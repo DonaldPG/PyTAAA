@@ -1,8 +1,8 @@
 # PyTAAA Codebase Refactoring Plan
 
 **Date:** 2026-03-03
-**Last reviewed:** 2026-03-03 (sub-agent architectural review)
-**Status:** Planning — no implementation started (Phases A, E, F, G, H complete)
+**Last reviewed:** 2026-03-07 (algorithm-drift findings; algorithm restoration added)
+**Status:** Planning — Phases A, E, F, G, H, Config-split complete; Algorithm Restoration item added
 **Branch:** main
 
 ---
@@ -19,6 +19,7 @@ Phases A–H have been completed:
 | G | Unit tests for `sharpeWeightedRank_2D`, `computeSignal2D`, `computeDailyBacktest` | ✅ Done |
 | H | Data layer side effects (duplicate functions, module-level `matplotlib.use()`, SIGINT handler, lazy loggers) | ✅ Done |
 | Config split | `GetParams.py` → `config_loader.py` + `config_validators.py` + `config_accessors.py` (shim preserved) | ✅ Done |
+| **AR** | **Algorithm Restoration — `delta_rank_sharpe_weight_2D` + `stockWeightMethod` dispatch** | ⏳ AR-1 done; AR-2–5 planned |
 
 All tests pass (count will grow as items are implemented; do not hard-code the
 target number in commit messages). The items below are the next work to be done.
@@ -558,6 +559,411 @@ Commit format follows conventional commits:
 
 ---
 
+---
+
+## Algorithm Restoration (Behavioral Priority)
+
+### Background — Why the algorithm drifted
+
+Three distinct implementations of the core portfolio weighting function
+now exist across the codebase.  Their differences are documented in full
+in `docs/STOCK_SELECTION_ALGORITHM_COMPARISON.md`.  In summary:
+
+| ID | Name in code | Algorithm | Status |
+|---|---|---|---|
+| A | Master `sharpeWeightedRank_2D` | deltaRank momentum-of-momentum + soft signal suppression + inverse-Sharpe weights + `despike_2D` + symbol-list filter + global `rankdata` | Production in master branch only |
+| B | `UnWeightedRank_2D` | deltaRank + equal weights; signal2D not applied to ranking (bug) | In worktree2; not called in production |
+| C | `sharpeWeightedRank_2D` in worktree2 | Absolute Sharpe rank + hard binary signal gate + proportional-Sharpe weights + rolling window | Current worktree2 production |
+
+**Objective:** Restore Method A as the default algorithm; retain Methods B
+and C as selectable alternatives; introduce a `stockWeightMethod` JSON key
+to choose between them at runtime.
+
+---
+
+### Item AR-1 — Port `despike_2D` and `move_sharpe_2D` into worktree2  ✅ ALREADY DONE
+
+**Status: Pre-resolved — no code change required.**
+
+Both helper functions already exist in worktree2:
+
+- `despike_2D` — present in `functions/TAfunctions.py` re-export block
+  (line 102); implemented in the package and called in
+  `functions/output_generators.py` and
+  `functions/background_plot_generator.py`.
+- `move_sharpe_2D` — present in `functions/ta/rolling_metrics.py` and
+  re-exported from `functions/TAfunctions.py` (line 129).
+
+`functions/allPairsRank.py` already imports `move_sharpe_2D` from
+`functions.TAfunctions` and will continue to resolve correctly.
+
+**Files changed:** *(none)*
+
+---
+
+### Item AR-2 — Create `delta_rank_sharpe_weight_2D`  *(Medium Risk)*
+
+**Problem:** No worktree2 function implements the full Method A algorithm.
+The existing `UnWeightedRank_2D` is closest but omits signal masking of
+`monthgainloss`, `despike_2D`, `move_sharpe_2D` weighting, and the
+index-membership delta penalty.
+
+**Solution:** Create `delta_rank_sharpe_weight_2D` in
+`functions/TAfunctions.py`.  The function is a modernised port of the
+master's `sharpeWeightedRank_2D` with the following design decisions:
+
+#### Signature (proposed)
+
+```python
+def delta_rank_sharpe_weight_2D(
+    json_fn: str,
+    datearray: np.ndarray,
+    symbols: list[str],
+    adjClose: np.ndarray,
+    signal2D: np.ndarray,
+    signal2D_daily: np.ndarray,
+    LongPeriod: int,
+    numberStocksTraded: int,
+    riskDownside_min: float,
+    riskDownside_max: float,
+    rankThresholdPct: float,
+    stddevThreshold: float = 4.0,
+    is_backtest: bool = False,
+    makeQCPlots: bool = False,
+    stockList: str = "SP500",
+) -> np.ndarray:
+```
+
+Returns `monthgainlossweight: np.ndarray` of shape `(n_stocks, n_dates)`.
+
+#### Algorithm steps (in order)
+
+1. **Spike removal** — `adjClose_despike = despike_2D(adjClose, LongPeriod,
+   stddevThreshold)`.  All subsequent ratio and rank computations use
+   `adjClose_despike`, not the raw `adjClose`.
+
+2. **Signal normalisation** — Work on a local copy so the caller's array
+   is not mutated.  Normalise to [0, 1]:
+   ```python
+   signal2D = signal2D.copy()
+   signal2D -= signal2D.min()
+   denom = signal2D.max()
+   if denom > 0:
+       signal2D /= denom
+   ```
+
+3. **Daily gain/loss with soft signal mask** — Compute `gainloss` from
+   `adjClose_despike` daily ratios; multiply by `signal2D` so downtrending
+   stocks contribute `gainloss = 1.0` (neutral, no gain/loss).  This is
+   the soft-suppression mechanism that makes Method A different from Method C:
+   downtrending stocks are not excluded, they merely compete with a
+   neutral return.  `gainloss` drives the portfolio value tracking line.
+
+4. **LongPeriod gain/loss with soft signal mask** —
+   ```python
+   monthgainloss = np.ones_like(adjClose_despike)
+   monthgainloss[:, LP:] = adjClose_despike[:, LP:] / adjClose_despike[:, :-LP]
+   monthgainloss *= signal2D          # downtrending -> neutral ratio
+   monthgainloss[monthgainloss == 0] = 1.0
+   ```
+   This is the key difference from Method B: `monthgainloss` for a
+   downtrending stock is forced to 1.0, pushing it toward the middle of
+   the rank distribution rather than letting it compete on raw price momentum.
+
+5. **Cross-sectional rank — no look-ahead bias**
+
+   `scipy.stats.rankdata(array, axis=0)` ranks stocks against each other
+   within each date column independently.  There is no look-ahead: rank at
+   date `j` depends only on the values of `monthgainloss[:, j]`, not on
+   any future column.  A single vectorised call is sufficient:
+
+   ```python
+   from scipy.stats import rankdata
+
+   monthgainlossRank = rankdata(monthgainloss, axis=0).astype(float)
+   # Shift previous-period gainloss back by LongPeriod and rank:
+   monthgainlossPrevious = np.ones_like(monthgainloss)
+   monthgainlossPrevious[:, LP:] = monthgainloss[:, :-LP]
+   monthgainlossPreviousRank = rankdata(monthgainlossPrevious, axis=0).astype(float)
+   ```
+
+   Both rank arrays have shape `(n_stocks, n_dates)`.  Higher rank = higher
+   LongPeriod gain.  No reversal step is needed if `delta` is defined so
+   that a *rising* rank (improving momentum) produces a *higher* selection
+   score (see step 6).
+
+6. **Delta and rank-threshold penalty** —
+   ```python
+   delta = (monthgainlossRank - monthgainlossPreviousRank) \
+           / (monthgainlossRank + rankthreshold)
+   # Penalise stocks outside the acceptable rank band:
+   rank_ceiling = (1.0 - rankThresholdPct) \
+                  * (monthgainlossRank.max() - monthgainlossRank.min())
+   delta[monthgainloss > rank_ceiling] = -n_stocks / 2.0
+   ```
+   A positive `delta` means the stock's rank is *improving* faster than
+   its current rank position, which is the momentum-of-momentum signal.
+
+7. **Index-membership penalty** — Read `currentSymbolList` via
+   `read_symbols_list_local(json_fn)`.  Penalise ex-index stocks so they
+   sink to the bottom of `deltaRank`:
+   ```python
+   for i, sym in enumerate(symbols):
+       if sym not in currentSymbolList and sym != "CASH":
+           delta[i, :] = -n_stocks / 2.0
+   ```
+   When `active_mask` is provided (from `detect_infilled_from_df` via the
+   data pipeline), additionally zero-out delta for infilled dates without
+   iterating over symbols:
+   ```python
+   if active_mask is not None:
+       delta[~active_mask] = -n_stocks / 2.0
+   ```
+
+8. **`deltaRank` and month carry-forward** —
+   ```python
+   deltaRank = rankdata(delta, axis=0)   # cross-sectional, no look-ahead
+   # Freeze selections at month-start: carry forward within each calendar month
+   for j in range(1, n_dates):
+       if datearray[j].month == datearray[j - 1].month:
+           monthgainloss[:, j] = monthgainloss[:, j - 1]
+           deltaRank[:, j]     = deltaRank[:, j - 1]
+   ```
+
+9. **Selection mask — top-N by deltaRank** —
+   ```python
+   # Higher deltaRank = faster-improving momentum = selected
+   selected = deltaRank >= (deltaRank.max(axis=0) - numberStocksTraded - 0.5)
+   # selected shape: (n_stocks, n_dates), dtype bool
+   ```
+   This mirrors the pattern in the study code (`rank >= rank.max() - N - 0.5`)
+   applied column-wise.  No per-date loop is required.
+
+10. **Inverse-Sharpe weighting and normalisation** —
+    Compute `riskDownside = 1 / move_sharpe_2D(adjClose, gainloss, LongPeriod)`,
+    clip to `[riskDownside_min, riskDownside_max]`, fill NaN.  Then build
+    the weight array in three vectorised lines:
+    ```python
+    raw_weights = selected.astype(float) / riskDownside  # high Sharpe -> large weight
+    col_sums = raw_weights.sum(axis=0, keepdims=True)
+    col_sums[col_sums == 0] = 1.0                        # avoid divide-by-zero
+    monthgainlossweight = raw_weights / col_sums          # columns sum to 1.0
+    ```
+    No per-date loop is needed.  The `/col_sums` normalisation guarantees
+    every date's weights sum to exactly 1.0 regardless of how many stocks
+    are selected.  No post-loop clipping or fallback loop is required —
+    the only edge case is `col_sums == 0` (no stocks selected on a date),
+    which is handled by the guard above; those dates get zero weight for
+    all stocks (the pipeline caller handles allocation to CASH in that case).
+
+#### Scope and constraints
+- The function must NOT write any files when called from a backtest
+  (`is_backtest=True`).  The uptrending-symbols log file write and any
+  QC plot generation must be gated on `not is_backtest` and `makeQCPlots`.
+- The function must NOT mutate the caller's `signal2D` array.  Operate on
+  a local copy (`signal2D = signal2D.copy()` at entry).
+- All `print()` calls in master must be replaced with `logger.debug()` via
+  `get_logger(__name__)` (project convention).
+- The `activeCount` / `rankthresholdpercentequiv` loop from the master
+  is not required by the simplified implementation: selection is done
+  by `deltaRank >= deltaRank.max(axis=0) - numberStocksTraded - 0.5` and
+  normalisation is a single `/ col_sums` divide.  Omit `activeCount`.
+
+**Tests required:**
+- Synthetic 3-stock × 60-date test: verify the stock with the highest
+  persistent `monthgainloss` improvement is selected; verify output weights
+  sum to ≈1.0 for every date column.
+- Verify that `weights.sum(axis=0)` is exactly 1.0 (not just approximately)
+  for all dates except those where no stock is selected (col_sums == 0).
+- Verify that a stock with constant price (simulating infill) falls out
+  of selection after `LongPeriod` dates.
+- Verify that setting `signal2D` to all-zero forces all stocks to neutral
+  `monthgainloss = 1.0`; the selection should then fall back to pure
+  deltaRank ordering (all stocks compete equally).
+- Verify `is_backtest=True` suppresses any file writes.
+
+**Files changed:**
+- `functions/TAfunctions.py` — add `delta_rank_sharpe_weight_2D`
+- `tests/test_delta_rank_sharpe_weight.py` — new test file
+
+---
+
+### Item AR-3 — `stockWeightMethod` JSON key + validation  *(Low Risk)*
+
+**Problem:** No mechanism exists to choose among the three weighting
+algorithms at runtime.  The current worktree2 hard-codes Method C.
+
+**Solution:** Add `stockWeightMethod` to the validated JSON parameter set.
+
+#### Valid values
+
+| Value | Algorithm | Function called |
+|---|---|---|
+| `"delta_rank_sharpe_weight"` | Method A — restored master | `delta_rank_sharpe_weight_2D()` |
+| `"equal_weight"` | Method B — equal weight | `UnWeightedRank_2D()` |
+| `"abs_sharpe_weight"` | Method C — absolute Sharpe | `sharpeWeightedRank_2D()` |
+
+**Default:** `"delta_rank_sharpe_weight"` when the key is absent from the
+JSON file.  This is the intended behavior for all existing configs that
+have not yet been updated.
+
+**Where to add validation:**
+- `functions/config_validators.py` — add `stockWeightMethod` to the
+  allowed-keys set and validate its value against the three strings above.
+- `functions/config_accessors.py` — add a `get_stock_weight_method(params)`
+  accessor that returns the value with the default applied.
+- `pytaaa_generic.json` — add `"stockWeightMethod": "delta_rank_sharpe_weight"`
+  inside the `Valuation` sub-object (alongside `uptrendSignalMethod` which
+  already lives at `Valuation.uptrendSignalMethod`).  The top-level JSON
+  object has five keys (`Email`, `FTP`, `Setup`, `Valuation`, `stock_server`);
+  all trading-method parameters are under `Valuation`.
+
+**Note on `uptrendSignalMethod`:** This existing key controls how
+`computeSignal2D` determines whether a stock is uptrending.  It is
+orthogonal to `stockWeightMethod`.  Both keys must be present (or
+default) for the system to operate.
+
+**Files changed:**
+- `functions/config_validators.py`
+- `functions/config_accessors.py`
+- `pytaaa_generic.json`
+
+---
+
+### Item AR-4 — Wire 3-way dispatch in call sites  *(Medium Risk)*
+
+**Problem:** `sharpeWeightedRank_2D` (Method C) is called directly in
+four locations without any `stockWeightMethod` awareness:
+
+1. `functions/output_generators.py` line 1209 — live portfolio computation
+2. `functions/backtesting/core_backtest.py` line 578 — backtest computation
+3. `functions/dailyBacktest.py` line 360 — legacy daily backtest path
+4. `functions/dailyBacktest_pctLong.py` line 2114 — legacy long-form backtest
+
+A fifth location, `functions/backtesting/parameter_exploration.py`, builds
+parameter dicts that include `uptrendSignalMethod` but not `stockWeightMethod`;
+these dicts must also carry the new key.
+
+Note: `functions/allPairsRank.py` defines its own `allPairs_sharpeWeightedRank_2D`
+which is a different function — it does not call the dispatch path and
+does not need to be updated.
+
+**Solution:** Replace the direct `sharpeWeightedRank_2D(...)` calls
+with a 3-way conditional as specified by the user:
+
+```python
+stock_weight_method = get_stock_weight_method(params)  # from config_accessors
+
+if stock_weight_method == "delta_rank_sharpe_weight":
+    monthgainlossweight = delta_rank_sharpe_weight_2D(
+        json_fn, datearray, symbols, adjClose_despike,
+        signal2D, signal2D_daily, LongPeriod, numberStocksTraded,
+        riskDownside_min, riskDownside_max, rankThresholdPct,
+        stddevThreshold=stddevThreshold,
+        is_backtest=is_backtest, makeQCPlots=makeQCPlots,
+        stockList=params.get("stockList", "SP500"),
+    )
+elif stock_weight_method == "equal_weight":
+    monthgainlossweight = UnWeightedRank_2D(
+        datearray, adjClose_despike,
+        signal2D, LongPeriod, numberStocksTraded,
+        riskDownside_min, riskDownside_max, rankThresholdPct,
+    )
+elif stock_weight_method == "abs_sharpe_weight":
+    monthgainlossweight = sharpeWeightedRank_2D(
+        json_fn, datearray, symbols, adjClose_despike,
+        signal2D, signal2D_daily, LongPeriod, numberStocksTraded,
+        riskDownside_min, riskDownside_max, rankThresholdPct,
+        stddevThreshold=stddevThreshold,
+    )
+else:
+    raise ValueError(
+        f"Unknown stockWeightMethod: {stock_weight_method!r}.  "
+        "Valid values: 'delta_rank_sharpe_weight', 'equal_weight', "
+        "'abs_sharpe_weight'."
+    )
+```
+
+**Note on `adjClose_despike`:** All three branches should receive
+`adjClose_despike` (output of `despike_2D`) rather than raw `adjClose`,
+because `delta_rank_sharpe_weight_2D` calls `despike_2D` internally for
+Method A and the other methods benefit from the same clean prices.  For
+Methods B and C the `despike_2D` step in the caller is a new pre-processing
+step that was not present before; validate that this does not significantly
+alter outputs for existing production configs before deploying.
+
+**Also update `backtesting/parameter_exploration.py`:** Any dict-building
+function that sets `uptrendSignalMethod` must also set `stockWeightMethod`
+(defaulting to `"delta_rank_sharpe_weight"` when absent from the source
+params dict).  This ensures Monte Carlo trials carry the correct method
+through the entire backtest pipeline.
+
+**Also update `backtesting/output_writers.py`:** The CSV column list
+already includes `uptrendSignalMethod`; add `stockWeightMethod` alongside
+it so trial results are fully attributable.
+
+**Files changed:**
+- `functions/output_generators.py`
+- `functions/backtesting/core_backtest.py`
+- `functions/backtesting/parameter_exploration.py`
+- `functions/backtesting/output_writers.py`
+
+---
+
+### Item AR-5 — Update JSON config files  *(No Risk)*
+
+Add `"stockWeightMethod": "delta_rank_sharpe_weight"` to each per-method
+JSON config that specifies an `uptrendSignalMethod`.  The default behaviour
+will apply if the key is absent, but explicit values in the config files
+make the choice visible and auditable.
+
+**Files to update** (all outside the repo; update in-place):
+- `/Users/donaldpg/pyTAAA_data/naz100_hma/pytaaa_naz100_hma.json`
+- `/Users/donaldpg/pyTAAA_data/naz100_pine/pytaaa_naz100_pine.json`
+- `/Users/donaldpg/pyTAAA_data/naz100_pi/pytaaa_naz100_pi.json`
+- `/Users/donaldpg/pyTAAA_data/sp500_hma/pytaaa_sp500_hma.json`
+- `/Users/donaldpg/pytaaa_data/sp500_pine/pytaaa_sp500_pine.json`
+- `pytaaa_model_switching_params.json` (repo root — controls Abacus)
+- `pytaaa_generic.json` (template — already covered by AR-3)
+
+Also update `pytaaa_sp500_pine_montecarlo.json` and any other Monte Carlo
+config files if they specify `uptrendSignalMethod` directly.
+
+---
+
+### AR Sequencing and Baseline Impact
+
+The Algorithm Restoration items are **behavioral changes**, not pure
+refactors.  They change the default algorithm from Method C (current
+production in worktree2) to Method A (master branch original).
+
+This has implications for the Pre-Refactor Baseline Capture:
+
+- The existing baseline instructions capture Method C (current code).
+- After AR is implemented, Method A becomes the default and produces
+  **different numbers** than the Method-C baseline.
+- **Do not use Method-C baselines to validate AR changes.**
+  Instead, compare AR results against Method A outputs from the master
+  branch (`/Users/donaldpg/PyProjects/PyTAAA.master`).
+
+**Recommended order:**
+```
+1. AR-1 — ALREADY DONE (despike_2D and move_sharpe_2D confirmed present)
+2. Complete AR-3 (JSON key validation) — no behaviour change with Method-C default
+3. Complete AR-4 (wire dispatch) — no behaviour change while default is still
+   Method C; temporarily use "abs_sharpe_weight" as the effective default
+   during development by keeping existing call paths unchanged
+4. Complete AR-2 (implement delta_rank_sharpe_weight_2D)
+5. Change default to "delta_rank_sharpe_weight" and run end-to-end against
+   master outputs to validate
+6. Complete AR-5 (update JSON configs)
+```
+
+This order allows each step to be validated independently before switching
+the default.
+
+---
+
 ## Critical Bugs to Fix First
 
 Before any architectural work, three bugs produce silently incorrect
@@ -1041,6 +1447,9 @@ Phase 0   (critical bugs):   3, 2              ✅ DONE (dc5ceb3, f904cdb)
 Phase I   (no risk):         12, 4, 17         ✅ DONE (1e7828b)
 Phase II  (low risk):        5, 6, 10+11*, 13, 16  ✅ DONE (e949c16, afbfcce)
 Phase III (medium risk):     18, 9, 14         ✅ DONE (f7e5c71, 36276db, 12f0480)
+Phase AR  (algorithm restoration, behavioral):
+                             AR-1 ✅ done; AR-3, AR-4, AR-2, AR-5
+                             (execute in that order; see AR Sequencing note)
 Phase IV  (high risk):       8, 1, 7, 15
 ```
 
@@ -1063,7 +1472,9 @@ builtins.print removal) as a second independent commit.
 
 | Category | Items | Guidance |
 |---|---|---|
-| Mechanical / bounded (agentic-ready) | 2–6, 9–14, 16–18 | Agentic execution with human review before each commit |
+| Mechanical / bounded (agentic-ready) | 2–6, 9–14, 16–18, AR-1, AR-3, AR-5 | Agentic execution with human review before each commit |
+| New algorithm implementation | AR-2 | Agentic draft; human review of deltaRank logic and rolling-window ranking before commit |
+| Call-site wiring (behavioral) | AR-4 | Agentic execution; human must validate that Method-C results are unchanged transitionally |
 | Exhaustive audit required | 1 | Agentic execution but human must validate full write-site list |
 | Behavioural equivalence verification | 8 | Human review of golden-file results before routing live traffic |
 | Production pipeline call-contract change | 7 | Human review at each method extraction point |
