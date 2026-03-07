@@ -742,8 +742,11 @@ def execute_single_backtest(
             from functions.backtesting.plot_generation import generate_backtest_plot
             
             # B&H: average only stocks active in the index at each date.
+            # active_mask is bool (True = real price, False = infilled);
+            # zero-out infilled rows by setting them to NaN before nanmean.
             if active_mask is not None:
-                _value_masked_bh = np.where(active_mask, value, np.nan)
+                _value_masked_bh = value.copy()
+                _value_masked_bh[~active_mask] = np.nan
                 BuyHoldPortfolioValue = np.nanmean(_value_masked_bh, axis=0)
             else:
                 BuyHoldPortfolioValue = np.mean(value, axis=0)

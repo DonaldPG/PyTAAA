@@ -1054,8 +1054,11 @@ def compute_portfolio_metrics(
     # member at date j. Without this filter, ex-index stocks whose
     # prices were infilled before/after index membership inflate the
     # B&H benchmark.
+    # active_mask is bool (True = real price, False = infilled);
+    # zero-out infilled rows by setting them to NaN before nanmean.
     if active_mask is not None:
-        _value_masked = np.where(active_mask, value, np.nan)
+        _value_masked = value.copy()
+        _value_masked[~active_mask] = np.nan
         BuyHoldFinalValue = float(np.nanmean(_value_masked[:, -1]))
     else:
         BuyHoldFinalValue = np.average(value, axis=0)[-1]
