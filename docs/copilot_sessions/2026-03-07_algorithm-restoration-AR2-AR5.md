@@ -1,4 +1,4 @@
-# Session Summary: Algorithm Restoration (AR-1 through AR-5)
+# Session Summary: Algorithm Restoration (AR-2 through AR-5)
 
 ## Date and Context
 
@@ -20,8 +20,9 @@ three weighting methods can be selected via JSON.
 
 1. Committed 5 logical groups of outstanding changes plus pushed to
    `origin/orchestration-refactor`.
-2. Implemented all 5 Algorithm Restoration items from
+2. Implemented 4 of 5 Algorithm Restoration items from
    `plans/ORCHESTRATION_REFACTOR.md` (AR-3 → AR-4 → AR-2 → AR-5).
+   AR-1 (documentation) was deferred.
 
 ## Key Changes
 
