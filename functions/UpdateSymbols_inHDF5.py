@@ -17,7 +17,34 @@ from functions.TAfunctions import (interpolate,
                                 cleanspikes)
 # from functions.readSymbols import readSymbolList
 from functions.readSymbols import read_symbols_list_web
-from functions.GetParams import get_json_params, get_symbols_file
+from functions.GetParams import get_json_params, get_symbols_file, get_hdf_store
+
+
+def _resolve_hdf5_path(json_fn: str, fallback: str) -> str:
+    """Return the HDF5 file path, preferring an explicit config override.
+
+    When the JSON config has an ``hdf_store`` key under ``Valuation``,
+    that value is returned directly so a caller-specified file path
+    (e.g. a NaN-masked copy) is used instead of the default name that
+    is derived from the symbols file name.  Falls back to *fallback*
+    when ``hdf_store`` is absent or when ``json_fn`` is empty.
+
+    Args:
+        json_fn:  Path to the JSON configuration file.
+        fallback: Default HDF5 path constructed from symbols file name
+                  and location.
+
+    Returns:
+        Resolved absolute path to the HDF5 quotes file.
+    """
+    if json_fn:
+        try:
+            override = get_hdf_store(json_fn)
+            if override:
+                return override
+        except Exception:
+            pass
+    return fallback
 
 
 def listvals_tostring(mylist: list) -> list:
@@ -69,7 +96,9 @@ def loadQuotes_fromHDF(
 
     symbols_fn = symbols_file
     hdf_folder = os.path.split(symbols_file)[0]
-    hdf5filename = os.path.join(hdf_folder, listname + "_.hdf5")
+    hdf5filename = _resolve_hdf5_path(
+        json_fn, os.path.join(hdf_folder, listname + "_.hdf5")
+    )
     
     # hdf5_directory = directory_name
     # hdf5filename = os.path.join(hdf5_directory, listname + "_.hdf5")
@@ -262,7 +291,9 @@ def cleanup_quotes(
 
     json_dir = os.path.split(json_fn)[0]
     hdf5_directory = os.path.join( json_dir, "symbols" )
-    hdf5filename = os.path.join(hdf5_directory, listname + "_.hdf5")
+    hdf5filename = _resolve_hdf5_path(
+        json_fn, os.path.join(hdf5_directory, listname + "_.hdf5")
+    )
 
     print("")
     print("")
@@ -343,7 +374,9 @@ def compareHDF_and_newquotes(
 
     json_dir = os.path.split(json_fn)[0]
     hdf5_directory = os.path.join( json_dir, "symbols" )
-    hdf5filename = os.path.join(hdf5_directory, listname + "_.hdf5")
+    hdf5filename = _resolve_hdf5_path(
+        json_fn, os.path.join(hdf5_directory, listname + "_.hdf5")
+    )
 
     print("")
     print("")
@@ -930,7 +963,9 @@ def UpdateHDF_yf(
     # dirname = os.path.join( os.getcwd(), "symbols" )
 
     hdf_folder = symbols_folder
-    hdf5filename = os.path.join(hdf_folder, listname + "_.hdf5")
+    hdf5filename = _resolve_hdf5_path(
+        json_fn, os.path.join(hdf_folder, listname + "_.hdf5")
+    )
     print("\n\n ... json_fn = " + json_fn)
     print("\n\n ... hdf_folder = " + hdf_folder)
     print("hdf5 filename = ",hdf5filename)

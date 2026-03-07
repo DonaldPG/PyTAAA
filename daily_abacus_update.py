@@ -477,8 +477,12 @@ def check_if_update_needed(config: Dict[str, Any],
         symbol_directory = os.path.dirname(symbols_file)
         symbols_filename = os.path.basename(symbols_file)
         
-        # Determine HDF5 filename based on symbols file
-        if "Naz100" in symbols_filename:
+        # Determine HDF5 filename: prefer hdf_store from JSON config
+        # if present, then fall back to pattern-based default name.
+        hdf_store_override = config.get("Valuation", {}).get("hdf_store")
+        if hdf_store_override:
+            hdf5_filename = hdf_store_override
+        elif "Naz100" in symbols_filename:
             hdf5_filename = os.path.join(symbol_directory, "Naz100_Symbols_.hdf5")
         elif "SP500" in symbols_filename:
             hdf5_filename = os.path.join(symbol_directory, "SP500_Symbols_.hdf5")

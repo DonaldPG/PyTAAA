@@ -180,7 +180,7 @@ def clean_signal(array1D: np.ndarray, symbol_name: str, verbose: bool = False) -
     return adjClose
 
 
-def get_hdf_name(symbols_file: str) -> Tuple[str, str]:
+def get_hdf_name(symbols_file: str, json_fn: str = "") -> Tuple[str, str]:
     (directory_name, file_name) = os.path.split(symbols_file)
     (shortname, extension) = os.path.splitext( file_name )
 
@@ -210,6 +210,16 @@ def get_hdf_name(symbols_file: str) -> Tuple[str, str]:
 
     hdf5_directory = os.path.join( os.getcwd(), "symbols" )
     hdf5filename = os.path.join(hdf5_directory, listname + "_.hdf5")
+
+    # Override with hdf_store path from JSON config if present.
+    if json_fn:
+        try:
+            from functions.GetParams import get_hdf_store
+            override = get_hdf_store(json_fn)
+            if override:
+                hdf5filename = override
+        except Exception:
+            pass
 
     print("")
     print("")
@@ -1055,6 +1065,15 @@ def fix_quotes(json_fn: str, _data_path: str, stockList: str = 'Naz100') -> None
     dirname = symbols_directory
     listname = stockList + "_Symbols"
     hdf5filename = os.path.join( dirname, listname + "_.hdf5" )
+    # Override with hdf_store path from JSON config if present.
+    if json_fn:
+        try:
+            from functions.GetParams import get_hdf_store
+            override = get_hdf_store(json_fn)
+            if override:
+                hdf5filename = override
+        except Exception:
+            pass
     print("hdf5 filename = ",hdf5filename)
     notupdated_data = pd.read_hdf(hdf5filename, listname)
 
