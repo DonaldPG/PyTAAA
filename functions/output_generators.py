@@ -945,9 +945,12 @@ def generate_portfolio_plots(
     # Determine first date index for recent plots using recent_plot_start_date parameter
     recent_plot_start_date = params.get('recent_plot_start_date')
     if recent_plot_start_date is None:
-        # Fallback to default if parameter not in params dict
-        current_year = datetime.datetime.now().year
-        recent_plot_start_date = datetime.datetime(current_year - 4, 1, 1)
+        # Fallback to default if parameter not in params dict.
+        # Convert to date() so comparison with datearray entries
+        # (datetime.date) does not raise a TypeError.
+        recent_plot_start_date = (
+            datetime.datetime.now() - datetime.timedelta(days=4 * 365)
+        ).date()
     
     firstdate_index = 0
     for ii in range(len(datearray)):

@@ -28,6 +28,9 @@ from functions.quotes_adjClose import get_pe
 # from functions.readSymbols import readSymbolList
 from functions.readSymbols import read_symbols_list_local
 from functions.GetParams import get_webpage_store, get_performance_store
+from functions.logger_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class TradingConstants:
@@ -1361,7 +1364,7 @@ def delta_rank_sharpe_weight_2D(
     min_weight_factor: float = 0.3,
     absolute_max_weight: float = 0.9,
     apply_constraints: bool = True,
-    is_backtest: bool = True,
+    is_backtest: bool = False,
     verbose: bool = False,
     stockList: str = "SP500",
     **kwargs: Any,
@@ -1373,12 +1376,6 @@ def delta_rank_sharpe_weight_2D(
     suppression (gain/loss × signal2D), cross-sectional ``rankdata``
     rather than a column-by-column loop, and normalised inverse-Sharpe
     ratio weights.
-
-    **AR-2 STUB** — the body below is a temporary pass-through to
-    ``sharpeWeightedRank_2D`` so that AR-4 dispatch can be wired
-    before AR-2 is implemented.  Replace this body with the full
-    10-step algorithm described in ``plans/ORCHESTRATION_REFACTOR.md``
-    (items AR-2a through AR-2j) to activate the restored method.
 
     Args:
         json_fn: Path to the JSON configuration file.
@@ -1414,7 +1411,7 @@ def delta_rank_sharpe_weight_2D(
 
     nStocks, nDates = adjClose.shape
 
-    print("\n\n ... inside delta_rank_sharpe_weight_2D ... ")
+    logger.debug("inside delta_rank_sharpe_weight_2D")
 
     ########################################################################
     # Step 1: Despike adjusted-close to remove extreme single-day outliers.
@@ -1503,15 +1500,16 @@ def delta_rank_sharpe_weight_2D(
             if sym != "CASH" and sym not in currentSymbolList:
                 delta[idx, :] = -nStocks / 2.0
                 if verbose:
-                    print(
-                        f"Setting delta low: {sym} not in "
-                        f"current symbol list"
+                    logger.debug(
+                        "Setting delta low: %s not in current symbol list",
+                        sym,
                     )
     except Exception as exc:
         # Skip if symbol list is unavailable (e.g. in unit tests).
-        print(
-            f" ... delta_rank_sharpe_weight_2D: "
-            f"symbol list unavailable ({exc}); skipping membership check"
+        logger.debug(
+            "delta_rank_sharpe_weight_2D: symbol list unavailable (%s);"
+            " skipping membership check",
+            exc,
         )
 
     active_mask = kwargs.get("active_mask", None)
@@ -1586,10 +1584,10 @@ def delta_rank_sharpe_weight_2D(
     col_sums2 = np.where(col_sums2 == 0.0, 1.0, col_sums2)
     monthgainlossweight = monthgainlossweight / col_sums2
 
-    print(
-        f" ... delta_rank_sharpe_weight_2D done: "
-        f"weight sum range [{monthgainlossweight.sum(axis=0).min():.3f}, "
-        f"{monthgainlossweight.sum(axis=0).max():.3f}]"
+    logger.debug(
+        "delta_rank_sharpe_weight_2D done; weight sum range [%.3f, %.3f]",
+        monthgainlossweight.sum(axis=0).min(),
+        monthgainlossweight.sum(axis=0).max(),
     )
 
     return monthgainlossweight

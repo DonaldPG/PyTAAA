@@ -200,13 +200,11 @@ def test_number_of_nonzero_weights_bounded_by_n():
         adjClose, signal2D, symbols, n_days=n_days, numberStocksTraded=N
     )
 
-    # Count nonzero weight stocks per column; allow a small tolerance
-    # for the weight threshold (1e-3) which can eliminate a few extra stocks.
     nonzero_counts = (weights > 0).sum(axis=0)
     # Active columns (enough history) should have at most N non-zero weights.
     active_cols = weights.sum(axis=0) > 0
-    assert (nonzero_counts[active_cols] <= N * 2).all(), (
-        "Nonzero weight count substantially exceeds numberStocksTraded"
+    assert (nonzero_counts[active_cols] <= N).all(), (
+        "Nonzero weight count exceeds numberStocksTraded"
     )
 
 
@@ -228,3 +226,40 @@ def test_returns_float_array():
         f"Expected float dtype, got {weights.dtype}"
     )
     assert not np.any(np.isnan(weights)), "Output must not contain NaN"
+
+
+def test_flat_price_stock_not_selected_after_warm_up():
+    """A stock with constant price gains zero delta and should not be selected.
+
+    One stock is held flat (constant price) while the rest trend upward.
+    After LongPeriod columns the flat stock's monthly-gain ratio stays at
+    1.0 every period, while the trending stocks improve — its delta should
+    be low enough to exclude it from the top-N selection.
+    """
+    n_stocks, n_days = 5, 300
+    LongPeriod = 52
+    N = 2
+    rng = np.random.default_rng(42)
+
+    # Stock 0 is the flat (infill-like) stock; all others trend upward.
+    adjClose = np.cumprod(
+        1.0 + rng.normal(0.003, 0.01, (n_stocks, n_days)), axis=1
+    ) * 100.0
+    adjClose[0, :] = 100.0  # Flat price; no gain, no momentum.
+
+    signal2D = np.ones((n_stocks, n_days))
+    symbols = [f"S{i}" for i in range(n_stocks)]
+
+    weights = _call_delta_rank(
+        adjClose, signal2D, symbols, n_days=n_days,
+        LongPeriod=LongPeriod, numberStocksTraded=N,
+    )
+
+    # After warm-up, the flat stock (index 0) should carry near-zero weight
+    # on most dates since it has zero relative momentum.
+    active_cols = weights.sum(axis=0) > 0
+    flat_stock_selected = (weights[0, active_cols] > 0).mean()
+    assert flat_stock_selected < 0.2, (
+        f"Flat-price stock selected on {flat_stock_selected:.0%} of active "
+        f"dates; expected < 20%"
+    )

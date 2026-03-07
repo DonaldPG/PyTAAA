@@ -26,6 +26,7 @@ _REQUIRED_KEYS = {
     "lowPct",
     "hiPct",
     "uptrendSignalMethod",
+    "stockWeightMethod",
     "sma_filt_val",
     "max_weight_factor",
     "min_weight_factor",
@@ -163,9 +164,10 @@ class TestGenerateRandomParameters:
 
     def test_json_plus_one_phase_has_param_number_to_vary(self):
         """JSON+one phase sets paramNumberToVary in [0, 12]."""
-        # With total_trials=10, iter_num=5 is in JSON+one range.
+        # With total_trials=10, mid=8 (round(0.9*9)).  iter_num=8 is the
+        # first and only JSON+one trial; iter_num=9 is the JSON-exact trial.
         p = generate_random_parameters(
-            _HOLD_MONTHS, iter_num=5, total_trials=10,
+            _HOLD_MONTHS, iter_num=8, total_trials=10,
             params=_SAMPLE_PARAMS,
         )
         assert 0 <= p["paramNumberToVary"] <= 12
