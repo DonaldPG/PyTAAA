@@ -1406,21 +1406,193 @@ def delta_rank_sharpe_weight_2D(
     Returns:
         2D NumPy array ``(n_stocks, n_dates)`` of portfolio weights.
     """
-    # AR-2 TODO: Replace this pass-through with the full algorithm.
-    return sharpeWeightedRank_2D(
-        json_fn, datearray, symbols, adjClose,
-        signal2D, signal2D_daily, LongPeriod, numberStocksTraded,
-        riskDownside_min, riskDownside_max, rankThresholdPct,
-        stddevThreshold=stddevThreshold,
-        makeQCPlots=makeQCPlots,
-        max_weight_factor=max_weight_factor,
-        min_weight_factor=min_weight_factor,
-        absolute_max_weight=absolute_max_weight,
-        apply_constraints=apply_constraints,
-        is_backtest=is_backtest,
-        verbose=verbose,
-        stockList=stockList,
+    try:
+        from bottleneck import rankdata as rd
+    except ImportError:
+        from scipy.stats import rankdata as rd
+    from functions.readSymbols import read_symbols_list_local
+
+    nStocks, nDates = adjClose.shape
+
+    print("\n\n ... inside delta_rank_sharpe_weight_2D ... ")
+
+    ########################################################################
+    # Step 1: Despike adjusted-close to remove extreme single-day outliers.
+    ########################################################################
+
+    adjClose_despike = despike_2D(
+        adjClose, LongPeriod, stddevThreshold=stddevThreshold
     )
+
+    ########################################################################
+    # Step 2: Copy and normalise signal2D to [0, 1].
+    #         Operating on a copy avoids mutating the caller's array.
+    ########################################################################
+
+    sig = signal2D.copy().astype(float)
+    sig_min = sig.min()
+    sig_range = sig.max() - sig_min
+    if sig_range > 0:
+        sig = (sig - sig_min) / sig_range
+
+    ########################################################################
+    # Step 3: Daily gain/loss with soft signal suppression.
+    #         Non-uptrending stocks get dailygainloss = 1.0 (flat).
+    ########################################################################
+
+    gainloss = np.ones((nStocks, nDates), dtype=float)
+    gainloss[:, 1:] = adjClose_despike[:, 1:] / adjClose_despike[:, :-1]
+    gainloss[isnan(gainloss)] = 1.0
+    gainloss = gainloss * sig
+    gainloss[gainloss == 0.0] = 1.0
+
+    ########################################################################
+    # Step 4: Period gain/loss (over LongPeriod days) with soft suppression.
+    #         Non-uptrending stocks get monthgainloss = 1.0 (neutral).
+    ########################################################################
+
+    monthgainloss = np.ones((nStocks, nDates), dtype=float)
+    monthgainloss[:, LongPeriod:] = (
+        adjClose_despike[:, LongPeriod:] / adjClose_despike[:, :-LongPeriod]
+    )
+    monthgainloss[isnan(monthgainloss)] = 1.0
+    monthgainloss = monthgainloss * sig
+    monthgainloss[monthgainloss == 0.0] = 1.0
+
+    ########################################################################
+    # Step 5: Cross-sectional rankdata — no look-ahead bias, no loop.
+    #         Rank 1 = worst gainer, rank nStocks = best gainer.
+    ########################################################################
+
+    monthgainlossRank = rd(monthgainloss, axis=0).astype(float)
+
+    # Build lagged monthgainloss (shifted LP columns forward).
+    monthgainlossPrev = np.ones((nStocks, nDates), dtype=float)
+    monthgainlossPrev[:, LongPeriod:] = monthgainloss[:, :-LongPeriod]
+    monthgainlossPreviousRank = rd(monthgainlossPrev, axis=0).astype(float)
+
+    ########################################################################
+    # Step 6: Delta (momentum of momentum) and band penalty.
+    #         Positive delta = rank is improving over the LongPeriod window.
+    ########################################################################
+
+    delta = (
+        (monthgainlossRank - monthgainlossPreviousRank)
+        / (monthgainlossRank + float(numberStocksTraded))
+    )
+
+    # Penalize stocks outside the acceptable performance band.
+    # NOTE: The comparison uses monthgainloss values (not rank values),
+    # matching the original master algorithm.  With typical gain ratios
+    # (~1.0) and rank-derived thresholds (~0.5 * nStocks), this condition
+    # is effectively always false and the loop is a no-op — preserved here
+    # for behavioural parity with the master and UnWeightedRank_2D.
+    rank_band_threshold = (1.0 - rankThresholdPct) * float(
+        monthgainlossRank.max() - monthgainlossRank.min()
+    )
+    delta[monthgainloss > rank_band_threshold] = -nStocks / 2.0
+
+    ########################################################################
+    # Step 7: Index-membership penalty and optional active_mask.
+    #         Ex-index stocks and infilled rows should not be selected.
+    ########################################################################
+
+    try:
+        currentSymbolList = read_symbols_list_local(json_fn)
+        for idx, sym in enumerate(symbols):
+            if sym != "CASH" and sym not in currentSymbolList:
+                delta[idx, :] = -nStocks / 2.0
+                if verbose:
+                    print(
+                        f"Setting delta low: {sym} not in "
+                        f"current symbol list"
+                    )
+    except Exception as exc:
+        # Skip if symbol list is unavailable (e.g. in unit tests).
+        print(
+            f" ... delta_rank_sharpe_weight_2D: "
+            f"symbol list unavailable ({exc}); skipping membership check"
+        )
+
+    active_mask = kwargs.get("active_mask", None)
+    if active_mask is not None:
+        # Infilled rows should receive lowest possible delta so they
+        # are never selected for the portfolio.
+        delta[~active_mask] = -nStocks / 2.0
+
+    ########################################################################
+    # Step 8: Rank delta cross-sectionally, then month carry-forward.
+    #         High deltaRank = fastest improving rank momentum.
+    ########################################################################
+
+    deltaRank = rd(delta, axis=0).astype(float)
+
+    # Zero-out all-equal columns before carry-forward
+    # (these have no discrimination and should not influence carry into the
+    # next month; carry-forward from a valid month will overwrite them).
+    pre_min = deltaRank.min(axis=0)
+    pre_max = deltaRank.max(axis=0)
+    pre_flat = pre_max == pre_min
+    deltaRank[:, pre_flat] = 0.0
+
+    # Month carry-forward: hold ranks constant within a calendar month so
+    # trading decisions don't change mid-month.
+    for ii in range(1, nDates):
+        if datearray[ii].month == datearray[ii - 1].month:
+            deltaRank[:, ii] = deltaRank[:, ii - 1]
+
+    # Re-detect flat columns AFTER carry-forward because carry can
+    # propagate zero-delta months into adjacent columns.
+    col_min = deltaRank.min(axis=0)
+    col_max = deltaRank.max(axis=0)
+    flat_cols = col_max == col_min
+
+    ########################################################################
+    # Step 9: Select top numberStocksTraded stocks at each date.
+    #         All stocks within N rank positions of the leader are selected.
+    ########################################################################
+
+    max_deltaRank = deltaRank.max(axis=0)
+    selected = (
+        deltaRank >= max_deltaRank - float(numberStocksTraded) + 0.5
+    ).astype(float)
+
+    # Exclude zero-discriminated dates from selection.
+    selected[:, flat_cols] = 0.0
+
+    ########################################################################
+    # Step 10: Inverse-Sharpe ratio weights; normalise per column.
+    #          Higher Sharpe ratio → lower riskDownside → more weight.
+    ########################################################################
+
+    riskDownside = 1.0 / move_sharpe_2D(adjClose, gainloss, LongPeriod)
+    riskDownside = np.clip(riskDownside, riskDownside_min, riskDownside_max)
+    # Replace NaN Sharpe (insufficient history) with the most conservative
+    # allowed value.
+    nan_mask = isnan(riskDownside)
+    riskDownside[nan_mask] = riskDownside_max
+
+    # Weight = 1/riskDownside for selected stocks, 0 otherwise.
+    raw_weights = np.where(selected > 0, 1.0 / riskDownside, 0.0)
+
+    col_sums = raw_weights.sum(axis=0)
+    col_sums = np.where(col_sums == 0.0, 1.0, col_sums)  # Guard /0.
+    monthgainlossweight = raw_weights / col_sums
+
+    # Zero tiny weights and re-normalise.
+    monthgainlossweight[monthgainlossweight < 1.0e-3] = 0.0
+    monthgainlossweight[isnan(monthgainlossweight)] = 0.0
+    col_sums2 = monthgainlossweight.sum(axis=0)
+    col_sums2 = np.where(col_sums2 == 0.0, 1.0, col_sums2)
+    monthgainlossweight = monthgainlossweight / col_sums2
+
+    print(
+        f" ... delta_rank_sharpe_weight_2D done: "
+        f"weight sum range [{monthgainlossweight.sum(axis=0).min():.3f}, "
+        f"{monthgainlossweight.sum(axis=0).max():.3f}]"
+    )
+
+    return monthgainlossweight
 
 
 def multiSharpe(
