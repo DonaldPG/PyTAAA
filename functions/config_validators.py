@@ -10,6 +10,9 @@ Functions:
         existing files.
     validate_required_keys: Assert all required keys are present in a
         config dict (raises ``KeyError`` with a clear message otherwise).
+    validate_stock_weight_method: Raise ``ValueError`` if the supplied
+        stock-weighting method name is not one of the three recognised
+        values.
 """
 
 import os
@@ -78,3 +81,48 @@ def validate_required_keys(
     missing = [k for k in required_keys if k not in config]
     if missing:
         raise KeyError(f"Missing keys in {context}: {missing}")
+
+
+#############
+# Stock-weighting method validation
+#############
+
+_VALID_STOCK_WEIGHT_METHODS = frozenset({
+    "delta_rank_sharpe_weight",
+    "equal_weight",
+    "abs_sharpe_weight",
+})
+
+
+def validate_stock_weight_method(method: str) -> None:
+    """Raise ``ValueError`` if *method* is not a recognised weighting method.
+
+    Three stock-weighting methods are supported:
+
+    ``"delta_rank_sharpe_weight"``
+        Momentum-of-momentum delta-rank with inverse-Sharpe ratio
+        weights and soft signal suppression (default; Method A).
+    ``"equal_weight"``
+        Delta-rank selection with equal allocation across selected
+        stocks (Method B).
+    ``"abs_sharpe_weight"``
+        Hard binary signal gate with absolute Sharpe ratio ranking
+        (Method C; the current worktree2 implementation).
+
+    Args:
+        method: Value of the ``stockWeightMethod`` config key.
+
+    Raises:
+        ValueError: If *method* is not one of the three valid strings.
+
+    Example:
+        >>> validate_stock_weight_method("equal_weight")  # OK
+        >>> validate_stock_weight_method("bogus")
+        ValueError: Invalid stockWeightMethod 'bogus'. ...
+    """
+    if method not in _VALID_STOCK_WEIGHT_METHODS:
+        valid = sorted(_VALID_STOCK_WEIGHT_METHODS)
+        raise ValueError(
+            f"Invalid stockWeightMethod {method!r}. "
+            f"Must be one of: {valid}"
+        )

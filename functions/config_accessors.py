@@ -129,6 +129,32 @@ def get_hdf_store(json_fn: str) -> Optional[str]:
     return valuation_section.get("hdf_store") or None
 
 
+def get_stock_weight_method(json_fn: str) -> str:
+    """Return the stock-weighting method name from the config.
+
+    Reads ``Valuation.stockWeightMethod`` from the JSON config.  When
+    the key is absent the default ``"delta_rank_sharpe_weight"`` is
+    returned so that existing JSON files without the key behave as if
+    Method A (the restored master algorithm) were selected.
+
+    Args:
+        json_fn: Path to the JSON configuration file.
+
+    Returns:
+        One of ``"delta_rank_sharpe_weight"``, ``"equal_weight"``, or
+        ``"abs_sharpe_weight"``.
+
+    Example:
+        >>> get_stock_weight_method("pytaaa_generic.json")
+        'delta_rank_sharpe_weight'
+    """
+    config = config_cache.get(json_fn)
+    valuation_section = config.get("Valuation", {})
+    return valuation_section.get(
+        "stockWeightMethod", "delta_rank_sharpe_weight"
+    )
+
+
 def get_webpage_store(json_fn: str) -> str:
     """Get the directory where updated webpage files are created.
 
@@ -434,6 +460,10 @@ def get_json_params(json_fn: str, verbose: bool = False) -> Dict:
             float(valuation_section["wideDays_max"]),
         ],
         "uptrendSignalMethod":  valuation_section["uptrendSignalMethod"],
+        "stockWeightMethod":     valuation_section.get(
+                                    "stockWeightMethod",
+                                    "delta_rank_sharpe_weight",
+                                ),
         "lowPct":               valuation_section["lowPct"],
         "hiPct":                valuation_section["hiPct"],
         "minperiod":            int(valuation_section.get("minperiod", 10)),

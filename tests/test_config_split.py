@@ -145,6 +145,36 @@ class TestConfigValidators:
                 context="Valuation",
             )
 
+    def test_validate_stock_weight_method_accepts_all_valid_values(self):
+        """validate_stock_weight_method() must accept the three valid names."""
+        from functions.config_validators import validate_stock_weight_method
+
+        # None of these should raise.
+        for method in (
+            "delta_rank_sharpe_weight",
+            "equal_weight",
+            "abs_sharpe_weight",
+        ):
+            validate_stock_weight_method(method)
+
+    def test_validate_stock_weight_method_rejects_unknown_name(self):
+        """validate_stock_weight_method() must raise ValueError for bad input."""
+        from functions.config_validators import validate_stock_weight_method
+
+        with pytest.raises(ValueError, match="bogus_method"):
+            validate_stock_weight_method("bogus_method")
+
+    def test_validate_stock_weight_method_error_lists_valid_choices(self):
+        """ValueError message should list the three acceptable method names."""
+        from functions.config_validators import validate_stock_weight_method
+
+        with pytest.raises(ValueError) as exc_info:
+            validate_stock_weight_method("bad")
+        msg = str(exc_info.value)
+        assert "delta_rank_sharpe_weight" in msg
+        assert "equal_weight" in msg
+        assert "abs_sharpe_weight" in msg
+
 
 # ---------------------------------------------------------------------------
 # config_accessors tests (use mocked config_cache)
@@ -244,6 +274,48 @@ class TestConfigAccessors:
         assert params["MA1"] == 20
         assert params["MA2offset"] == 50  # MA3 - MA2 = 100 - 50
 
+    def test_get_stock_weight_method_defaults_to_delta_rank(self):
+        """get_stock_weight_method() defaults to delta_rank_sharpe_weight."""
+        from functions.config_accessors import get_stock_weight_method
+
+        config = self._make_config()
+        # Key is absent from _make_config Valuation section.
+        with patch(
+            "functions.config_accessors.config_cache"
+        ) as mock_cache:
+            mock_cache.get.return_value = config
+            result = get_stock_weight_method("fake.json")
+
+        assert result == "delta_rank_sharpe_weight"
+
+    def test_get_stock_weight_method_reads_config_value(self):
+        """get_stock_weight_method() returns value when key is present."""
+        from functions.config_accessors import get_stock_weight_method
+
+        config = self._make_config()
+        config["Valuation"]["stockWeightMethod"] = "abs_sharpe_weight"
+        with patch(
+            "functions.config_accessors.config_cache"
+        ) as mock_cache:
+            mock_cache.get.return_value = config
+            result = get_stock_weight_method("fake.json")
+
+        assert result == "abs_sharpe_weight"
+
+    def test_get_json_params_exposes_stock_weight_method(self):
+        """get_json_params() must include stockWeightMethod in returned dict."""
+        from functions.config_accessors import get_json_params
+
+        config = self._make_config()
+        config["Valuation"]["stockWeightMethod"] = "equal_weight"
+        with patch(
+            "functions.config_accessors.config_cache"
+        ) as mock_cache:
+            mock_cache.get.return_value = config
+            params = get_json_params("fake.json")
+
+        assert params["stockWeightMethod"] == "equal_weight"
+
 
 # ---------------------------------------------------------------------------
 # GetParams shim tests
@@ -259,6 +331,8 @@ class TestGetParamsShim:
         "get_json_ftp_params",
         "get_symbols_file",
         "get_performance_store",
+        "get_hdf_store",
+        "get_stock_weight_method",
         "get_webpage_store",
         "get_web_output_dir",
         "get_central_std_values",

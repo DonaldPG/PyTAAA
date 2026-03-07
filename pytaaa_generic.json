@@ -26,6 +26,7 @@
         "symbols_file": "/Users/me/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt",
         "stockList": "Naz100",
         "uptrendSignalMethod": "HMAs",
+        "stockWeightMethod": "delta_rank_sharpe_weight",
         "numberStocksTraded": 7,
         "monthsToHold": 1,
         "LongPeriod": 600,
