@@ -1486,7 +1486,7 @@ def MAA_WeightedRank_2D(
     import matplotlib.gridspec as gridspec
     try:
         import bottleneck as bn
-        from bn import rankdata as rd
+        from bottleneck import rankdata as rd
     except ImportError:
         import scipy.stats.mstats as bn
 
@@ -1739,7 +1739,7 @@ def UnWeightedRank_2D(
     # import nose
     try:
         import bottleneck as bn
-        from bn import rankdata as rd
+        from bottleneck import rankdata as rd
     except ImportError:
         import scipy.stats.mstats as bn
 

@@ -104,6 +104,31 @@ def get_performance_store(json_fn: str) -> str:
     return valuation_section["performance_store"]
 
 
+def get_hdf_store(json_fn: str) -> Optional[str]:
+    """Return the explicit HDF5 file path from config, or None.
+
+    When the ``Valuation`` section of the JSON config contains an
+    ``hdf_store`` key, its value is returned as the absolute path to
+    the HDF5 quotes file.  Callers should fall back to the default
+    path-construction logic when this function returns ``None``.
+
+    Args:
+        json_fn: Path to the JSON configuration file.
+
+    Returns:
+        Absolute path to the HDF5 file if ``hdf_store`` is present in
+        the config, otherwise ``None``.
+
+    Example:
+        >>> path = get_hdf_store("config/pytaaa_naz100_pine_nans.json")
+        >>> print(path)
+        '/Users/user/pyTAAA_data/naz100_pine/data_store/Naz100_Symbols_nans.hdf5'
+    """
+    config = config_cache.get(json_fn)
+    valuation_section = config.get("Valuation", {})
+    return valuation_section.get("hdf_store") or None
+
+
 def get_webpage_store(json_fn: str) -> str:
     """Get the directory where updated webpage files are created.
 
