@@ -337,6 +337,7 @@ class TestGetParamsShim:
         "get_web_output_dir",
         "get_central_std_values",
         "get_holdings",
+        "write_ranks_params",
         "get_json_status",
         "get_status",
         "compute_long_hold_signal",
@@ -367,3 +368,125 @@ class TestGetParamsShim:
             f"{len(defs)} definition(s): "
             f"{[ast.dump(d)[:60] for d in defs]}"
         )
+
+
+# ---------------------------------------------------------------------------
+# write_ranks_params tests
+# ---------------------------------------------------------------------------
+
+class TestWriteRanksParams:
+    """Tests for write_ranks_params() in config_accessors."""
+
+    @pytest.fixture()
+    def mock_json_fn(self, tmp_path):
+        """Return a fake json_fn whose performance_store is tmp_path."""
+        return str(tmp_path / "fake.json")
+
+    @pytest.fixture()
+    def p_store(self, tmp_path):
+        return tmp_path
+
+    def _call(self, mock_json_fn, p_store, symbols, weights_2d, datearray):
+        """Invoke write_ranks_params with a mocked get_performance_store."""
+        from functions.config_accessors import write_ranks_params
+        with patch(
+            "functions.config_accessors.get_performance_store",
+            return_value=str(p_store),
+        ):
+            write_ranks_params(mock_json_fn, symbols, weights_2d, datearray)
+
+    def test_creates_ranks_file(self, mock_json_fn, p_store, tmp_path):
+        """write_ranks_params() creates PyTAAA_ranks.params if absent."""
+        import numpy as np
+        import datetime
+        syms = ["AAPL", "MSFT", "CASH"]
+        weights = np.array([[0.0, 0.6], [0.0, 0.4], [1.0, 0.0]])
+        dates = [datetime.date(2026, 1, 1), datetime.date(2026, 3, 1)]
+
+        self._call(mock_json_fn, p_store, syms, weights, dates)
+
+        ranks_file = p_store / "PyTAAA_ranks.params"
+        assert ranks_file.exists()
+
+    def test_section_header_written_once(self, mock_json_fn, p_store, tmp_path):
+        """[Ranks] section header appears exactly once even after two writes."""
+        import numpy as np
+        import datetime
+        syms = ["AAPL", "MSFT", "CASH"]
+        weights = np.array([[0.0, 0.6], [0.0, 0.4], [1.0, 0.0]])
+        dates = [datetime.date(2026, 1, 1), datetime.date(2026, 3, 1)]
+
+        self._call(mock_json_fn, p_store, syms, weights, dates)
+        self._call(mock_json_fn, p_store, syms, weights, dates)
+
+        content = (p_store / "PyTAAA_ranks.params").read_text()
+        assert content.count("[Ranks]") == 1
+
+    def test_rank_1_assigned_to_highest_weight(self, mock_json_fn, p_store):
+        """The symbol with the highest last-column weight receives rank 1."""
+        import numpy as np
+        import datetime
+        import configparser
+        syms = ["AAPL", "MSFT", "GOOG", "CASH"]
+        # Last column: MSFT = 0.6 (highest), GOOG = 0.4, AAPL = 0, CASH = 0.
+        weights = np.array([
+            [0.0, 0.0],
+            [0.0, 0.6],
+            [0.0, 0.4],
+            [1.0, 0.0],
+        ])
+        dates = [datetime.date(2026, 1, 1), datetime.date(2026, 3, 1)]
+
+        self._call(mock_json_fn, p_store, syms, weights, dates)
+
+        cfg = configparser.ConfigParser(strict=False)
+        cfg.read(str(p_store / "PyTAAA_ranks.params"))
+        stored_syms = cfg.get("Ranks", "symbols").split()
+        stored_ranks = cfg.get("Ranks", "ranks").split()
+        rank_dict = dict(zip(stored_syms, stored_ranks))
+        assert int(rank_dict["MSFT"]) == 1
+        assert int(rank_dict["GOOG"]) == 2
+
+    def test_latest_write_wins_on_read(self, mock_json_fn, p_store):
+        """After two writes, configparser returns the last-written ranks."""
+        import numpy as np
+        import datetime
+        import configparser
+        syms = ["AAPL", "MSFT"]
+        # First write: AAPL has more weight.
+        w1 = np.array([[0.0, 0.7], [0.0, 0.3]])
+        # Second write: MSFT has more weight.
+        w2 = np.array([[0.0, 0.2], [0.0, 0.8]])
+        dates = [datetime.date(2026, 1, 1), datetime.date(2026, 3, 1)]
+
+        self._call(mock_json_fn, p_store, syms, w1, dates)
+        self._call(mock_json_fn, p_store, syms, w2, dates)
+
+        cfg = configparser.ConfigParser(strict=False)
+        cfg.read(str(p_store / "PyTAAA_ranks.params"))
+        stored_syms = cfg.get("Ranks", "symbols").split()
+        stored_ranks = cfg.get("Ranks", "ranks").split()
+        rank_dict = dict(zip(stored_syms, stored_ranks))
+        # Second write gave MSFT rank 1.
+        assert int(rank_dict["MSFT"]) == 1
+        assert int(rank_dict["AAPL"]) == 2
+
+    def test_all_zero_weights_still_writes_valid_ranks(
+        self, mock_json_fn, p_store
+    ):
+        """When all weights are 0, ranks are still 1..N (stable sort order)."""
+        import numpy as np
+        import datetime
+        import configparser
+        syms = ["AAPL", "MSFT", "GOOG"]
+        weights = np.zeros((3, 2))
+        dates = [datetime.date(2026, 1, 1), datetime.date(2026, 3, 1)]
+
+        self._call(mock_json_fn, p_store, syms, weights, dates)
+
+        cfg = configparser.ConfigParser(strict=False)
+        cfg.read(str(p_store / "PyTAAA_ranks.params"))
+        stored_ranks = [
+            int(r) for r in cfg.get("Ranks", "ranks").split()
+        ]
+        assert sorted(stored_ranks) == [1, 2, 3]

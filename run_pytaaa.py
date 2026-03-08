@@ -9,7 +9,7 @@ from functions.SendEmail import SendEmail
 from functions.WriteWebPage_pi import writeWebPage
 from functions.GetParams import (
     get_json_params, get_symbols_file,
-    get_holdings, get_status, GetIP, GetEdition,
+    get_holdings, write_ranks_params, get_status, GetIP, GetEdition,
     put_status
 )
 from functions.UpdateSymbols_inHDF5 import UpdateHDF_yf
@@ -197,6 +197,21 @@ def run_pytaaa(json_fn):
     last_symbols_text = _cached_last_symbols_text
     last_symbols_weight = _cached_last_symbols_weight
     last_symbols_price = _cached_last_symbols_price
+
+    # Write fresh ranks to PyTAAA_ranks.params so the get_holdings()
+    # call below reads current rank integers (1 = best ranked) rather
+    # than stale or zero values from a previous run or the legacy Pi
+    # system that no longer writes this file.
+    if _cached_symbols is not None and _cached_monthgainlossweight is not None:
+        try:
+            write_ranks_params(
+                json_fn,
+                _cached_symbols,
+                _cached_monthgainlossweight,
+                _cached_datearray,
+            )
+        except Exception as _wr_exc:
+            print(f" Warning: write_ranks_params() failed: {_wr_exc}")
 
     # Get updated Holdings from file (ranks are updated)
     holdings = get_holdings(json_fn)

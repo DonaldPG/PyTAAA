@@ -16,6 +16,7 @@ Functions:
     get_web_output_dir: Resolve the web output directory
     get_central_std_values: Extract normalization central and std values
     get_holdings: Load portfolio holdings from ``.params`` files
+    write_ranks_params: Write current stock ranks to PyTAAA_ranks.params
     get_json_status: Read the last cumulative portfolio value
     get_status: Alias for get_json_status (deprecated)
     compute_long_hold_signal: Compute MA-channel signal on status history
@@ -325,6 +326,92 @@ def get_holdings(json_fn: str) -> Dict:
                 break
     holdings["ranks"] = holdings_ranks
     return holdings
+
+
+def write_ranks_params(
+    json_fn: str,
+    symbols: list,
+    monthgainlossweight: np.ndarray,
+    datearray,
+) -> None:
+    """Write current stock ranks to ``PyTAAA_ranks.params``.
+
+    Computes per-symbol integer ranks (1 = best ranked) from the last
+    column of *monthgainlossweight* and appends a new key block to
+    ``<performance_store>/PyTAAA_ranks.params``.
+
+    The file uses configparser INI format with ``strict=False``
+    semantics: all entries share the same ``[Ranks]`` section header
+    (written only on first creation) and duplicate keys are allowed.
+    The reader's ``config.get('Ranks', 'ranks')`` returns the LAST
+    written value — i.e. today's freshly computed ranks.
+
+    Args:
+        json_fn: Path to the JSON configuration file.
+        symbols: Ticker symbols corresponding to rows of
+            *monthgainlossweight*.
+        monthgainlossweight: Portfolio weight array
+            ``(n_stocks, n_days)``.
+        datearray: Date sequence; ``datearray[-1]`` labels the entry.
+
+    Returns:
+        None
+
+    Side Effects:
+        Appends to ``<p_store>/PyTAAA_ranks.params`` and prints a
+        confirmation message.
+    """
+    p_store = get_performance_store(json_fn)
+    ranks_fn = os.path.join(p_store, "PyTAAA_ranks.params")
+
+    n_stocks = len(symbols)
+    last_weights = monthgainlossweight[:, -1].copy()
+
+    # Assign integer ranks 1..n_stocks in descending-weight order.
+    # Stable sort preserves original symbol order for equal weights.
+    sort_order = np.argsort(-last_weights, kind="stable")
+    rank_array = np.zeros(n_stocks, dtype=int)
+    for rank_pos, stock_idx in enumerate(sort_order, 1):
+        rank_array[stock_idx] = rank_pos
+
+    # Build space-separated symbol and rank strings matching the
+    # legacy format written by the old sharpeWeightedRank_2D code.
+    symbols_str = "  ".join(f"{s:<5s}" for s in symbols)
+    ranks_str = "  ".join(f"{int(r):5d}" for r in rank_array)
+
+    # Resolve the last-date label.
+    try:
+        last_date = datearray[-1]
+        if hasattr(last_date, "strftime"):
+            date_str = last_date.strftime("%Y-%m-%d")
+        elif hasattr(last_date, "item"):  # numpy.datetime64
+            date_str = str(last_date.item())[:10]
+        else:
+            date_str = str(last_date)[:10]
+    except Exception:
+        date_str = datetime.date.today().isoformat()
+
+    # Write section header only when the file does not yet exist or
+    # is empty; subsequent runs append duplicate key blocks.
+    write_header = (
+        not os.path.exists(ranks_fn)
+        or os.path.getsize(ranks_fn) == 0
+    )
+
+    block = ""
+    if write_header:
+        block += "[Ranks]\n"
+    block += f"lastdate: {date_str}\n"
+    block += f"symbols: {symbols_str}\n"
+    block += f"ranks: {ranks_str}\n"
+
+    with open(ranks_fn, "a") as f:
+        f.write(block)
+
+    print(
+        f" write_ranks_params: wrote {n_stocks} ranks "
+        f"(lastdate={date_str}) to PyTAAA_ranks.params"
+    )
 
 
 def get_json_status(json_fn: str) -> str:
