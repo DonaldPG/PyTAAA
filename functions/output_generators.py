@@ -1291,7 +1291,10 @@ def compute_portfolio_metrics(
         if monthgainlossweight[ii, -1] > 0:
             last_symbols_text.append(symbols[ii])
             last_symbols_weight.append(float(round(monthgainlossweight[ii, -1], 4)))
-            last_symbols_price.append(float(round(adjClose_despike[ii, -1], 2)))
+            # Use raw adjClose for today's market price, not adjClose_despike.
+            # despike_2D can alter recent prices when a stock has had a sharp
+            # move, causing calculateTrades to compute wrong share counts.
+            last_symbols_price.append(float(round(adjClose[ii, -1], 2)))
     
     #############################################################################
     # Return all computed metrics
