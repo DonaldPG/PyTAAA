@@ -1237,11 +1237,14 @@ def sharpeWeightedRank_2D(
         if np.sum(monthgainlossweight[:, j]) == 0:
             monthgainlossweight[:, j] = monthgainlossweight[:, j - 1]
 
-    # Normalize weights to sum to 1.0 for each day.
-    for j in range(n_days):
-        daily_sum = monthgainlossweight[:, j].sum()
-        if daily_sum > 0:
-            monthgainlossweight[:, j] /= daily_sum
+    # Normalize weights to sum to 1.0 for each day using
+    # vectorized column-sum division (matches delta_rank_sharpe_weight_2D).
+    # Zero tiny weights and NaN before normalizing to avoid noise.
+    monthgainlossweight[monthgainlossweight < 1.0e-3] = 0.0
+    monthgainlossweight[np.isnan(monthgainlossweight)] = 0.0
+    col_sums = monthgainlossweight.sum(axis=0)
+    col_sums = np.where(col_sums == 0.0, 1.0, col_sums)  # Guard /0.
+    monthgainlossweight = monthgainlossweight / col_sums
 
     print(" ... Forward-filling and normalization complete.")
     #########################################################################
@@ -1412,6 +1415,7 @@ def delta_rank_sharpe_weight_2D(
     nStocks, nDates = adjClose.shape
 
     logger.debug("inside delta_rank_sharpe_weight_2D")
+    print(" ... inside delta_rank_sharpe_weight_2D (momentum-of-momentum delta-rank weights) ...")
 
     ########################################################################
     # Step 1: Despike adjusted-close to remove extreme single-day outliers.
@@ -2000,6 +2004,8 @@ def UnWeightedRank_2D(
         import scipy.stats.mstats as bn
 
 
+    print(" ... inside UnWeightedRank_2D (equal-weight rank-change scoring) ...")
+
     gainloss = np.ones((adjClose.shape[0],adjClose.shape[1]),dtype=float)
     gainloss[:,1:] = adjClose[:,1:] / adjClose[:,:-1]
     gainloss[isnan(gainloss)]=1.
@@ -2138,7 +2144,9 @@ def UnWeightedRank_2D(
 
     monthgainlossweight[isnan(monthgainlossweight)] = 0.  # changed result from 1 to 0
 
-    monthgainlossweight = monthgainlossweight / np.sum(monthgainlossweight,axis=0)
+    col_sums = np.sum(monthgainlossweight, axis=0)
+    col_sums = np.where(col_sums == 0.0, 1.0, col_sums)  # Guard /0.
+    monthgainlossweight = monthgainlossweight / col_sums
     monthgainlossweight[isnan(monthgainlossweight)] = 0.  # changed result from 1 to 0
 
     return monthgainlossweight
