@@ -16,6 +16,7 @@ from functions.TAfunctions import (
     sharpeWeightedRank_2D,
     delta_rank_sharpe_weight_2D,
     UnWeightedRank_2D,
+    despike_2D,
 )
 from functions.GetParams import get_json_params, get_performance_store
 from functions.CountNewHighsLows import newHighsAndLows
@@ -120,6 +121,10 @@ def computeDailyBacktest(
         uptrendSignalMethod: str = 'uptrendSignalMethod',
         verbose: bool = False,
         active_mask: np.ndarray = None,
+        stockWeightMethod: str = "delta_rank_sharpe_weight",
+        enable_rolling_filter: bool = True,
+        window_size: int = 50,
+        apply_sp500_pre2002_condition: bool = True,
 ) -> None:
     """Run a daily backtest and write portfolio value history to disk.
 
@@ -207,6 +212,7 @@ def computeDailyBacktest(
     params['hiPct'] = hiPct
     _params = get_json_params(json_fn)
     params['stockList'] = _params['stockList']
+    params['stockWeightMethod'] = stockWeightMethod
 
     print("\n\n\n ... inside dailyBacktest.py/computeDailyBacktest ...")
     print("\n   . params = " + str(params))
@@ -228,7 +234,14 @@ def computeDailyBacktest(
     activeCount = np.zeros(adjClose.shape[1],dtype=float)
 
     numberSharesCalc = np.zeros((adjClose.shape[0],adjClose.shape[1]),dtype=float)
-    gainloss[:,1:] = adjClose[:,1:] / adjClose[:,:-1]
+
+    # Apply despike filter to remove interpolated/anomalous prices before
+    # any computation, consistent with compute_portfolio_metrics.
+    adjClose_despike = despike_2D(
+        adjClose, LongPeriod, stddevThreshold=stddevThreshold
+    )
+
+    gainloss[:,1:] = adjClose_despike[:,1:] / adjClose_despike[:,:-1]
     gainloss[isnan(gainloss)]=1.
     value = 10000. * np.cumprod(gainloss,axis=1)
     # active_mask is bool (True = real price, False = infilled);
@@ -257,7 +270,7 @@ def computeDailyBacktest(
         activeCount[lastEmptyPriceIndex[ii]+1:] += 1
 
     monthgainloss = np.ones((adjClose.shape[0],adjClose.shape[1]),dtype=float)
-    monthgainloss[:,LongPeriod:] = adjClose[:,LongPeriod:] / adjClose[:,:-LongPeriod]
+    monthgainloss[:,LongPeriod:] = adjClose_despike[:,LongPeriod:] / adjClose_despike[:,:-LongPeriod]
     monthgainloss[isnan(monthgainloss)]=1.
 
     ####################################################################
@@ -271,18 +284,24 @@ def computeDailyBacktest(
 
 
     if params['uptrendSignalMethod'] == 'percentileChannels':
-        signal2D, lowChannel, hiChannel = computeSignal2D( adjClose, gainloss, params )
+        signal2D, lowChannel, hiChannel = computeSignal2D( adjClose_despike, gainloss, params )
     else:
-        signal2D = computeSignal2D( adjClose, gainloss, params )
+        signal2D = computeSignal2D( adjClose_despike, gainloss, params )
 
     signal2D_1 = signal2D.copy()
 
-    # Apply rolling window data quality filter if enabled (read from
-    # the JSON params object `_params` so CLI/json overrides work)
-    if _params.get('enable_rolling_filter', False):  # Default disabled for performance
+    # SP500 pre-2002 condition: force 100% CASH before 2002-01-01.
+    if apply_sp500_pre2002_condition and params.get('stockList') == 'SP500':
+        cutoff_date = datetime.date(2002, 1, 1)
+        for date_idx in range(len(datearray)):
+            if datearray[date_idx] < cutoff_date:
+                signal2D[:, date_idx] = 0.0
+
+    # Apply rolling window data quality filter if enabled.
+    if enable_rolling_filter:
         from functions.rolling_window_filter import apply_rolling_window_filter
         signal2D = apply_rolling_window_filter(
-            adjClose, signal2D, _params.get('window_size', 50),
+            adjClose_despike, signal2D, window_size,
             symbols=symbols, datearray=datearray
         )
 
@@ -368,20 +387,20 @@ def computeDailyBacktest(
     )
     if _stock_weight_method == "equal_weight":
         monthgainlossweight = UnWeightedRank_2D(
-            datearray, adjClose, signal2D,
+            datearray, adjClose_despike, signal2D,
             LongPeriod, numberStocksTraded,
             riskDownside_min, riskDownside_max, rankThresholdPct,
         )
     elif _stock_weight_method == "delta_rank_sharpe_weight":
         monthgainlossweight = delta_rank_sharpe_weight_2D(
-            json_fn, datearray, symbols, adjClose, signal2D, signal2D_daily,
+            json_fn, datearray, symbols, adjClose_despike, signal2D, signal2D_daily,
             LongPeriod, numberStocksTraded, riskDownside_min, riskDownside_max,
             rankThresholdPct, stddevThreshold=stddevThreshold,
             stockList=params.get("stockList", "SP500"),
         )
     elif _stock_weight_method == "abs_sharpe_weight":
         monthgainlossweight = sharpeWeightedRank_2D(
-            json_fn, datearray, symbols, adjClose, signal2D, signal2D_daily,
+            json_fn, datearray, symbols, adjClose_despike, signal2D, signal2D_daily,
             LongPeriod, numberStocksTraded, riskDownside_min, riskDownside_max,
             rankThresholdPct, stddevThreshold=stddevThreshold,
             stockList=params.get("stockList", "SP500"),
@@ -449,7 +468,7 @@ def computeDailyBacktest(
             for jj in range(value.shape[0]):
                 monthvalue[jj,ii] = monthvalue[jj,ii-1]*gainloss[jj,ii]
 
-    numberSharesCalc = monthvalue / adjClose    # for info only
+    numberSharesCalc = monthvalue / adjClose_despike    # for info only
 
     print("  \n\n\n")
 

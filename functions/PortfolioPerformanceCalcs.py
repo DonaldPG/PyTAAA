@@ -202,6 +202,12 @@ def _write_daily_backtest(
         hiPct=float(params['hiPct']),
         uptrendSignalMethod=params['uptrendSignalMethod'],
         active_mask=active_mask,
+        stockWeightMethod=params.get(
+            'stockWeightMethod', 'delta_rank_sharpe_weight'
+        ),
+        enable_rolling_filter=bool(params.get('enable_rolling_filter', True)),
+        window_size=int(params.get('window_size', 50)),
+        apply_sp500_pre2002_condition=True,
     )
 
     print("\n\n Successfully updated daily backtest at in 'pyTAAAweb_backtestPortfolioValue.params'.")
