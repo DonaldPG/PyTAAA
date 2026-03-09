@@ -13,6 +13,7 @@ import json
 import csv
 import click
 import os
+from pathlib import Path
 from typing import Dict, Any, Optional
 import logging
 
@@ -447,6 +448,26 @@ def update_json_config(
         metric_blending: Dictionary of metric blending parameters
         backup: Whether to create backup before modifying
     """
+    # Fail early with a helpful message if the target JSON is empty or missing.
+    # The script updates fields in an existing config; it cannot create a
+    # config from scratch. Copy an existing config file first, e.g.:
+    #   cp abacus_combined_PyTAAA_2026-2-6.json abacus_combined_PyTAAA_YYYYMMDD.json
+    json_path = Path(json_file)
+    if not json_path.exists():
+        raise FileNotFoundError(
+            f"JSON file not found: {json_file}\n"
+            "Create it by copying an existing config, e.g.:\n"
+            "  cp abacus_combined_PyTAAA_2026-2-6.json "
+            f"{json_file}"
+        )
+    if json_path.stat().st_size == 0:
+        raise ValueError(
+            f"JSON file is empty (0 bytes): {json_file}\n"
+            "Populate it by copying an existing config, e.g.:\n"
+            "  cp abacus_combined_PyTAAA_2026-2-6.json "
+            f"{json_file}"
+        )
+
     if backup:
         backup_file = f"{json_file}.backup"
         with open(json_file, 'r') as f:
@@ -454,7 +475,7 @@ def update_json_config(
         with open(backup_file, 'w') as f:
             f.write(backup_content)
         logger.info(f"Created backup at {backup_file}")
-    
+
     config = config_cache.get(json_file)
 
     # Update model_selection section
