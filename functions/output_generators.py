@@ -308,11 +308,17 @@ def write_rank_list_html(
         _abs_max_wt = float(
             _params_mo.get("absolute_max_weight", 0.9)
         )
+        _stock_weight_method_mo = str(
+            _params_mo.get(
+                "stockWeightMethod", "delta_rank_sharpe_weight"
+            )
+        )
     except Exception:
         _num_stocks_traded = 7
         _max_wt_factor = 3.0
         _min_wt_factor = 0.3
         _abs_max_wt = 0.9
+        _stock_weight_method_mo = "delta_rank_sharpe_weight"
 
     _today_signal_arr = signal2D_daily[:, -1]   # 0.0 or 1.0
 
@@ -349,22 +355,30 @@ def write_rank_list_html(
                 break
     if _selected_today:
         _sel_idx = np.array(_selected_today, dtype=int)
-        _sel_sharpe = np.nan_to_num(_sharpe_mo[_sel_idx], nan=0.0)
-        if _sel_sharpe.sum() == 0:
-            _raw_wt = np.ones(len(_sel_idx)) / len(_sel_idx)
-        else:
-            _raw_wt = _sel_sharpe / _sel_sharpe.sum()
-        # Apply weight constraints matching sharpeWeightedRank_2D.
-        _eq_wt = 1.0 / len(_sel_idx)
-        _cw = np.clip(
-            _raw_wt,
-            _min_wt_factor * _eq_wt,
-            min(_max_wt_factor * _eq_wt, _abs_max_wt),
-        )
-        if _cw.sum() > 0:
-            _cw /= _cw.sum()
-        else:
+        # Assign weights using the configured stockWeightMethod so
+        # that Wt (today) is consistent with Wt (mo start).
+        if _stock_weight_method_mo == "equal_weight":
             _cw = np.ones(len(_sel_idx)) / len(_sel_idx)
+        else:
+            # Sharpe-proportional with min/max clipping (matches
+            # sharpeWeightedRank_2D / abs_sharpe_weight behaviour).
+            _sel_sharpe = np.nan_to_num(
+                _sharpe_mo[_sel_idx], nan=0.0
+            )
+            if _sel_sharpe.sum() == 0:
+                _raw_wt = np.ones(len(_sel_idx)) / len(_sel_idx)
+            else:
+                _raw_wt = _sel_sharpe / _sel_sharpe.sum()
+            _eq_wt = 1.0 / len(_sel_idx)
+            _cw = np.clip(
+                _raw_wt,
+                _min_wt_factor * _eq_wt,
+                min(_max_wt_factor * _eq_wt, _abs_max_wt),
+            )
+            if _cw.sum() > 0:
+                _cw /= _cw.sum()
+            else:
+                _cw = np.ones(len(_sel_idx)) / len(_sel_idx)
         weights_today[_sel_idx] = _cw
 
     # Table display order for month-start: walk the global sort of
