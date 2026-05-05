@@ -111,6 +111,43 @@ def load_quotes_for_analysis(
         if verbose:
             print("   . Added CASH symbol (always active)")
 
+    # Cross-reference against the current index membership file.
+    #
+    # detect_infilled_from_df only catches symbols that were removed from the
+    # index AND stopped trading (their prices freeze into a trailing constant
+    # run).  A symbol can leave the index while continuing to trade freely on
+    # the open market (e.g. an acquisition target, a spinoff, or a company
+    # that was simply dropped from the index).  In that case its HDF5 prices
+    # remain real and non-infilled, so the infill detector leaves it marked
+    # active even though it is no longer an index constituent.
+    #
+    # To catch this case, load the current symbol list from the symbols_file
+    # (one ticker per line) and force the last date of active_mask to False
+    # for any symbol that is in the HDF5 but absent from the current file.
+    # This only affects the most recent recommendation (Phase 7 of
+    # output_generators), leaving all historical backtest signals intact.
+    try:
+        with open(symbols_file) as _sf:
+            current_index_symbols = {
+                line.strip() for line in _sf if line.strip()
+            }
+        _deactivated = []
+        for _idx, _sym in enumerate(symbols):
+            if _sym == "CASH":
+                continue
+            if _sym not in current_index_symbols and active_mask[_idx, -1]:
+                active_mask[_idx, -1] = False
+                _deactivated.append(_sym)
+        if _deactivated and verbose:
+            print(
+                f"   . active_mask: deactivated {len(_deactivated)} symbol(s) "
+                f"present in HDF5 but absent from current index file: "
+                f"{_deactivated}"
+            )
+    except OSError:
+        # If the symbols file is unreadable, fall back to infill-only detection.
+        pass
+
     # Guarantee that active_mask, adjClose, and (later) signal2D all share the
     # same first dimension so downstream boolean indexing cannot silently
     # broadcast to a wrong shape.

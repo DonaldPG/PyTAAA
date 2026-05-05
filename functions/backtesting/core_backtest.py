@@ -174,15 +174,26 @@ def create_temporary_json(base_json_fn, realization_params, iter_num, runnum=Non
             "Valuation": {}
         }
     
-    # Update with realization-specific parameters
+    # Update with realization-specific parameters.
+    # Use a deep copy of Valuation so we never mutate the base_params dict.
+    import copy
     updated_params = base_params.copy()
     
     # Ensure the Valuation section exists
     if "Valuation" not in updated_params:
         updated_params["Valuation"] = {}
     
+    updated_params["Valuation"] = copy.deepcopy(base_params["Valuation"])
+
     # Update Valuation section with our parameters
     updated_params["Valuation"].update(realization_params)
+
+    # Remove the legacy typo'd key "stockWeightMathod" (with 'a') that
+    # appears in some base JSON config files. The correctly-spelled key
+    # "stockWeightMethod" from realization_params is already present
+    # after the update above, so the typo'd copy would otherwise survive
+    # and produce a duplicate entry in the written JSON.
+    updated_params["Valuation"].pop("stockWeightMathod", None)
     
     # Create temporary file in pytaaa_backtest subdirectory
     # Extract performance_store to determine output location

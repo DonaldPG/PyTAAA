@@ -414,8 +414,17 @@ def generate_random_parameters(
             scenario selection.
     """
     usm = (params or {}).get("uptrendSignalMethod", "percentileChannels")
-    swm = (params or {}).get(
-        "stockWeightMethod", "delta_rank_sharpe_weight"
+    # Randomly select stockWeightMethod each trial so the Monte Carlo
+    # explores the full weight-method space.  Probabilities are set
+    # higher for the two Sharpe-based methods than for equal-weight.
+    _SWM_CHOICES = [
+        "delta_rank_sharpe_weight",
+        "equal_weight",
+        "abs_sharpe_weight",
+    ]
+    _SWM_PROBS = [0.425, 0.15, 0.425]
+    swm = str(
+        np.random.choice(_SWM_CHOICES, p=_SWM_PROBS)
     )
     ranges = _get_ranges(params or {})
     # Boundary between exploration (first 90 %) and JSON+one (last 10 %)

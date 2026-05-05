@@ -14,7 +14,7 @@ Configuration:
     Requires JSON file with 'Valuation' section containing:
     - symbols_file: Path to stock symbols
     - performance_store: Output directory base
-    - webpage: Model identifier extraction
+    - webpage: Model identifer extraction
     - backtest_monte_carlo_trials: Number of trials (default: 250)
 
 Options:

@@ -325,6 +325,21 @@ def computeDailyBacktest(
         # Set the month's signal to the last rebalance selection
         signal2D[:, jj] = last_month_signals
 
+    # Apply index-membership mask: zero signals for stocks that are no
+    # longer current index constituents.  active_mask[:, -1] = False for
+    # symbols removed from the index file but still present in the HDF5
+    # (e.g. a delisted stock whose prices were carried forward by
+    # combine_first).  Without this, a removed stock can score positive
+    # weight at the latest rebalance date and appear in stock selections.
+    if active_mask is not None:
+        n_masked = int(np.sum(~active_mask))
+        signal2D[~active_mask] = 0
+        signal2D_daily[~active_mask] = 0
+        print(
+            f"   . active_mask applied to signals: {n_masked} "
+            f"(symbol,date) cells forced to signal=0"
+        )
+
     numberStocks = np.sum(signal2D,axis = 0)
 
     print(" signal2D check: ",signal2D[isnan(signal2D)].shape)

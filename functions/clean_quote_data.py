@@ -81,8 +81,14 @@ def interpolate(self: np.ndarray, method: str = 'linear') -> np.ndarray:
     invalid[range(len(valid)) > lastIndex] = 1
 
     result = values.copy()
-    if len(invalid[invalid==1]) > 0:
-        result[invalid==1] = np.interp(inds[invalid==1], inds[valid==1],values[valid==1])
+    # Guard: only interpolate when there is at least one valid anchor
+    # point to interpolate from. If all values are NaN (e.g. after
+    # cleanspikes removes all data), return the all-NaN array as-is
+    # so downstream callers can handle it gracefully.
+    if len(invalid[invalid==1]) > 0 and len(valid[valid==1]) > 0:
+        result[invalid==1] = np.interp(
+            inds[invalid==1], inds[valid==1], values[valid==1]
+        )
 
     return result
 
@@ -153,8 +159,15 @@ def nans_at_beginning(self: np.ndarray) -> np.ndarray:
 
     Usage: infill NaN values at beginning with copy of first valid value
     """
+    # Guard: if the entire array is NaN (e.g. cleanspikes removed all
+    # data), there are no valid gains to locate — return as-is.
+    if np.all(np.isnan(self)):
+        return self.copy()
     gains = self[1:] / self[:-1]
-    first_nonnan_index = np.where((~np.isnan(gains)) & (gains != 1.))[0][0]
+    candidates = np.where((~np.isnan(gains)) & (gains != 1.))[0]
+    if len(candidates) == 0:
+        return self.copy()
+    first_nonnan_index = candidates[0]
     first_value = self[first_nonnan_index]
     first_valid_index = np.where(self != first_value)[0][0]
     if first_valid_index > 0:

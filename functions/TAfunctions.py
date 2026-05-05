@@ -2110,7 +2110,12 @@ def UnWeightedRank_2D(
         if activeCount[ii] > minrank[ii] and rankthresholdpercentequiv[ii] > 0:
             for jj in range(value.shape[0]):
                 test = deltaRank[jj,ii] <= rankthresholdpercentequiv[ii]
-                if test == True :
+                # Also require that the stock has an uptrending signal on
+                # this date.  Without this check, a stock whose signal was
+                # zeroed by the active_mask (e.g. a delisted stock still
+                # present in the HDF5) can still be selected because its
+                # historical delta-rank is favourable.
+                if test == True and signal_mask[jj, ii] > 0:
                     monthgainlossweight[jj,ii]  = 1./rankthresholdpercentequiv[ii]
                 else:
                     monthgainlossweight[jj,ii]  = 0.

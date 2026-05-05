@@ -958,6 +958,44 @@ def UpdateHDF_yf(
 
     updatedquotes['CASH'] = CASHadjClose / 100000.
 
+    ##########################################################################
+    # NaN-out fresh-period prices for symbols removed from the index file.
+    #
+    # When a symbol leaves the index (e.g. PARA after the Skydance merger),
+    # it is removed from SP500_Symbols.txt so it is no longer downloaded by
+    # _return_quotes_array.  However, combine_first(quote) carries its last
+    # stored price forward for any newly-added dates, and the cleaning loop
+    # above then fills trailing NaN with that same constant via interpolate().
+    # The result is that the HDF5 shows a plausible-looking price for the
+    # removed symbol on every fresh date, which may not build a trailing
+    # constant run long enough for detect_infilled_from_df to flag reliably.
+    #
+    # Fix: after cleaning, explicitly set ALL fresh-period dates (dates that
+    # were not already in the old HDF5) to NaN for any symbol in updatedquotes
+    # that is absent from the current index file.  On the next read, the raw
+    # quote DataFrame has NaN for those dates; NaN diffs compare <= CONST_TOL,
+    # so detect_infilled_from_df treats them as a trailing constant/infill run
+    # and marks the symbol inactive.  Crucially, the NaN persists across runs:
+    # combine_first finds NaN in the old HDF5 and NaN in quoteupdate (symbol
+    # absent), and interpolate() can only fill up to the last real value.
+    current_index_set = set(symbols_in_list)
+    removed_symbols = [
+        s for s in updatedquotes.columns
+        if s not in current_index_set and s != "CASH"
+    ]
+    if removed_symbols:
+        # Identify fresh dates: dates present in updatedquotes but absent from
+        # the original quote DataFrame (the pre-update HDF5 snapshot).
+        old_index_set = set(quote.index)
+        fresh_date_mask = ~updatedquotes.index.isin(old_index_set)
+        n_fresh = int(fresh_date_mask.sum())
+        if n_fresh > 0:
+            print(
+                f"\n ... UpdateHDF_yf: NaN-ing {n_fresh} fresh date(s) "
+                f"for {len(removed_symbols)} symbol(s) no longer in index: "
+                f"{removed_symbols}"
+            )
+            updatedquotes.loc[fresh_date_mask, removed_symbols] = np.nan
 
     # set up to write quotes to disk.
     # dirname = os.path.join( os.getcwd(), "symbols" )
