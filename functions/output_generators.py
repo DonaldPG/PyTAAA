@@ -918,13 +918,6 @@ def generate_portfolio_plots(
         - Spawns detached background process (async mode)
         - Prints progress messages to stdout
     """
-    today = datetime.datetime.now()
-    hourOfDay = today.hour
-    
-    # Only generate plots outside market hours to reduce load
-    if not (hourOfDay >= 1 or 11 < hourOfDay < 13):
-        return
-
     ##########################################################################
     # Async mode: fire-and-forget background process
     ##########################################################################

@@ -91,7 +91,13 @@ class TestGeneratePortfolioPlotsBackwardCompatibility:
             "functions.output_generators._generate_full_history_plots"
         ) as mock_full, patch(
             "functions.output_generators._generate_recent_plots"
-        ) as mock_recent:
+        ) as mock_recent, patch(
+            "functions.output_generators.datetime"
+        ) as mock_dt:
+            import datetime as _dt
+            mock_dt.datetime.now.return_value = _dt.datetime(2024, 6, 15, 14, 30)
+            mock_dt.timedelta = _dt.timedelta
+            mock_dt.date = _dt.date
             generate_portfolio_plots(
                 adjClose, ["AAPL", "MSFT"], datearray,
                 signal2D, signal2D, params, str(tmp_path),
@@ -131,41 +137,7 @@ class TestGeneratePortfolioPlotsBackwardCompatibility:
             _, kwargs = mock_spawn.call_args
             assert kwargs["max_workers"] == 3
 
-    @pytest.mark.agent_runnable
-    def test_early_return_outside_hours(self, tmp_path):
-        """generate_portfolio_plots returns early when outside allowed hours.
 
-        The allowed hours check is: ``hourOfDay >= 1 or 11 < hourOfDay < 13``.
-        Hour 0 (midnight) is the only hour that fails the check and causes
-        an early return.
-        """
-        from functions.output_generators import generate_portfolio_plots
-
-        n_days, n_symbols = 60, 2
-        adjClose = _make_adjclose(n_symbols, n_days)
-        datearray = _make_datearray(n_days)
-        signal2D = _make_signal2D(n_symbols, n_days)
-        params = _minimal_params()
-
-        # Hour=0 fails both conditions, triggering the early return.
-        fake_now = datetime.datetime(2024, 1, 2, 0, 0, 0)
-        with patch(
-            "functions.output_generators.datetime"
-        ) as mock_dt, patch(
-            "functions.output_generators._spawn_background_plot_generation"
-        ) as mock_spawn, patch(
-            "functions.output_generators._generate_full_history_plots"
-        ) as mock_full:
-            mock_dt.datetime.now.return_value = fake_now
-            mock_dt.timedelta = datetime.timedelta
-            generate_portfolio_plots(
-                adjClose, ["AAPL", "MSFT"], datearray,
-                signal2D, signal2D, params, str(tmp_path),
-                async_mode=True,
-            )
-            # Should return before spawning
-            mock_spawn.assert_not_called()
-            mock_full.assert_not_called()
 
 
 ##############################################################################
