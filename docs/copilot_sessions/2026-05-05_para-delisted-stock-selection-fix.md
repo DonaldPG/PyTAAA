@@ -104,6 +104,7 @@ Two additional minor fixes were made to support robustness:
 | `pytaaa_backtest_montecarlo.py` | Minor fix to import / call-site alignment |
 | `functions/output_generators.py` | **Fix H** — Remove broken time-of-day guard from `generate_portfolio_plots` |
 | `tests/test_output_generators_async.py` | **Fix H** — Mock `datetime.now()` in tests; delete `test_early_return_outside_hours` |
+| `functions/output_generators.py` | **Fix I** — `Wt (today)` column dispatches on `stockWeightMethod`; `equal_weight` now assigns `1/N` |
 
 ---
 
@@ -216,9 +217,34 @@ Files changed: `functions/output_generators.py`,
 
 ---
 
+## Fix I — `Wt (today)` column ignored `stockWeightMethod` config
+
+**Problem:** The `Wt (today)` column in the HTML rank table
+(`write_rank_list_html` in `output_generators.py`) always computed
+Sharpe-proportional weights, regardless of the model's configured
+`stockWeightMethod`.  For `sp500_hma` (which uses `equal_weight`) this
+caused a visible inconsistency: `Wt (mo start)` correctly showed 3
+stocks at 0.333 each while `Wt (today)` showed 9 stocks with varied
+Sharpe-proportional weights.
+
+**Fix (`functions/output_generators.py`, commit `5883edb`):**
+
+1. Read `_stock_weight_method_mo` from `_params_mo` alongside the
+   other params already loaded in the `try/except` block.
+2. Dispatch on the value when assigning `weights_today`:
+   - `equal_weight` → `1/N` for every selected stock.
+   - all other methods → existing Sharpe-proportional path with
+     min/max clipping (unchanged behaviour).
+
+The selection step (walk sort order, pick up to `numberStocksTraded`
+uptrending stocks) is unchanged — only the weight formula differs.
+
+---
+
 ## Testing
 
-Test suite status after all changes (commits `244eb74` and `b558eef`):
+Test suite status after all changes (commits `244eb74`, `b558eef`,
+`e0d2bc3`, `5883edb`):
 
 ```
 383 passed, 11 skipped
@@ -248,3 +274,7 @@ line 388 (`last_symbols_text`) despite PARA being absent from
 - **Tests**: No new unit tests were added this session.  A targeted test
   for `UnWeightedRank_2D` with a deliberately zeroed signal row would
   lock in Fix C permanently.
+- ~~**`Wt (today)` column consistency**~~: Fixed in this session
+  (Fix I, commit `5883edb`).
+  `Wt (today)` now uses `equal_weight` when the model is configured
+  for it, matching `Wt (mo start)`.
