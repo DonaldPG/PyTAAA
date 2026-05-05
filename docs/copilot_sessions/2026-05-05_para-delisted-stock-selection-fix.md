@@ -102,6 +102,8 @@ Two additional minor fixes were made to support robustness:
 | `functions/backtesting/core_backtest.py` | **Fix F** — Deep-copy `Valuation` dict; remove typo'd `stockWeightMathod` key |
 | `functions/backtesting/parameter_exploration.py` | **Fix G** — Random `stockWeightMethod` sampling in Monte Carlo |
 | `pytaaa_backtest_montecarlo.py` | Minor fix to import / call-site alignment |
+| `functions/output_generators.py` | **Fix H** — Remove broken time-of-day guard from `generate_portfolio_plots` |
+| `tests/test_output_generators_async.py` | **Fix H** — Mock `datetime.now()` in tests; delete `test_early_return_outside_hours` |
 
 ---
 
@@ -177,15 +179,55 @@ before `.update()`.  The legacy typo'd key `stockWeightMathod` (with
 
 ---
 
+## Fix H — Broken time-of-day guard in `generate_portfolio_plots`
+
+Running the full test suite after the main fixes revealed a pre-existing
+failure in `test_output_generators_async.py`:
+
+```
+FAILED tests/test_output_generators_async.py::
+    TestGeneratePortfolioPlotsBackwardCompatibility::test_sync_mode_does_not_call_spawn
+AssertionError: Expected '_generate_full_history_plots' to have been
+    called once. Called 0 times.
+```
+
+The guard at the top of `generate_portfolio_plots` was:
+
+```python
+if not (hourOfDay >= 1 or 11 < hourOfDay < 13):
+    return
+```
+
+`hourOfDay >= 1` is True for hours 1–23, so the function only returned
+early at midnight (hour 0) — almost certainly a logic typo for something
+like "skip during market hours."  The test had no `datetime` mock, so it
+passed at most hours but failed at midnight.
+
+**Fix**: removed the guard entirely from `generate_portfolio_plots`.
+Plot generation is not core to PyTAAA (it writes PNG files for the web
+dashboard, not signals or selections); time-based skipping belongs at
+the call site in `run_pytaaa.py` alongside the other `hourOfDay` checks
+already present there.  The test was updated to mock `datetime.now()`
+so it is fully time-independent, and the now-obsolete
+`test_early_return_outside_hours` test was deleted.
+
+Files changed: `functions/output_generators.py`,
+`tests/test_output_generators_async.py`.
+
+---
+
 ## Testing
 
-Test suite status after all changes:
+Test suite status after all changes (commits `244eb74` and `b558eef`):
 
 ```
-384 passed, 11 skipped
+383 passed, 11 skipped
 ```
 
-No regressions.  The bug was diagnosed from the live log output
+(One test fewer than the initial 384 because `test_early_return_outside_hours`
+was deleted along with the guard it was testing.)
+
+No regressions.  The PARA bug was diagnosed from the live log output
 showing `PARA` at line 303/380 ("Today's top ranking choices") and
 line 388 (`last_symbols_text`) despite PARA being absent from
 `SP500_Symbols.txt`.
