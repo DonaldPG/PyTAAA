@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HMA Rank-Table Mismatch Plan</title>
+  <style>
+    body { font-family: Georgia, "Times New Roman", serif; margin: 28px; color: #1b1f23; line-height: 1.4; }
+    h1, h2 { margin-bottom: 0.3rem; }
+    ul { margin-top: 0.3rem; }
+    code { background: #f6f8fa; padding: 0 4px; }
+    .box { border: 1px solid #d0d7de; border-radius: 8px; padding: 14px; margin: 12px 0; }
+  </style>
+</head>
+<body>
+  <h1>HMA Rank-Table Mismatch Plan</h1>
+
+  <div class="box">
+    <h2>Scope</h2>
+    <ul>
+      <li>Target HMA configs:</li>
+      <li>/Users/donaldpg/pyTAAA_data/sp500_hma/pytaaa_sp500_hma.json</li>
+      <li>/Users/donaldpg/pyTAAA_data/naz100_hma/pytaaa_naz100_hma.json</li>
+      <li>Do not change rank/weight computation engines.</li>
+      <li>Keep behavior unchanged for naz100_pine, naz100_pi, and sp500_pine JSON files.</li>
+    </ul>
+  </div>
+
+  <div class="box">
+    <h2>Diagnosis Summary</h2>
+    <ul>
+      <li>The table is generated in <code>functions/output_generators.py</code> by <code>write_rank_list_html</code>.</li>
+      <li><code>Wt (mo start)</code> comes from <code>monthgainlossweight[:, month_start_idx]</code>.</li>
+      <li><code>Wt (today)</code> and <code>Rank (today)</code> are recomputed with a Sharpe + daily-signal path in the HTML writer.</li>
+      <li>For SP500 HMA, upstream weighting uses <code>equal_weight</code> via <code>UnWeightedRank_2D</code>, not the Sharpe path.</li>
+      <li>For Naz100 HMA, upstream weighting is <code>abs_sharpe_weight</code>, but the table still recomputes "today" from a different path than the monthly-held weight matrix used for month-start.</li>
+      <li>Therefore, month-start columns and today columns are sourced from different selectors, which causes mismatch in HMA pages (including first trading day checks).</li>
+    </ul>
+  </div>
+
+  <div class="box">
+    <h2>Evidence</h2>
+    <ul>
+      <li>SP500 HMA HTML shows month-start weights of 0.333 for three symbols while today weights are 0.111 across a larger set.</li>
+      <li>Naz100 HMA HTML also shows rank/weight mismatches in the same table section.</li>
+      <li>Path-case is not the issue on this machine; uppercase/lowercase directory variants resolve to the same file content.</li>
+    </ul>
+  </div>
+
+  <div class="box">
+    <h2>Fix Strategy (Scoped)</h2>
+    <ul>
+      <li>Add a display-only branch in <code>write_rank_list_html</code>, activated when:</li>
+      <li><code>uptrendSignalMethod == HMAs</code> and <code>stockList</code> is SP500 or Naz100.</li>
+      <li>In that branch, source <code>Wt (today)</code> directly from <code>monthgainlossweight[:, -1]</code>.</li>
+      <li>Keep <code>Wt (mo start)</code> from <code>monthgainlossweight[:, month_start_idx]</code>.</li>
+      <li>Derive both rank columns from their corresponding weight vectors using one deterministic ordering rule.</li>
+      <li>If <code>month_start_idx == last_index</code> (first trading day), enforce equality by construction:</li>
+      <li><code>Rank (start of month) == Rank (today)</code> and <code>Wt (mo start) == Wt (today)</code>.</li>
+      <li>Leave existing display logic unchanged for non-HMA JSONs.</li>
+    </ul>
+  </div>
+
+  <div class="box">
+    <h2>Deterministic Display Ordering Rule</h2>
+    <ul>
+      <li>Primary key: positive weight first.</li>
+      <li>Secondary key: weight descending.</li>
+      <li>Tertiary key: symbol ascending (stable tie-break).</li>
+      <li>Exclude CASH from ranked positions, or place it at bottom with zero rank.</li>
+    </ul>
+  </div>
+
+  <div class="box">
+    <h2>Validation Plan</h2>
+    <ul>
+      <li>SP500 HMA and Naz100 HMA first-trading-day checks: confirm month_start_idx equals last index.</li>
+      <li>Confirm exact equality of rank and weight month-start vs today columns.</li>
+      <li>Regression checks: naz100_pine, naz100_pi, and sp500_pine remain unchanged.</li>
+      <li>Run static error checks and regenerate rank-list HTML for spot verification.</li>
+    </ul>
+  </div>
+
+  <div class="box">
+    <h2>Files To Change (Planned)</h2>
+    <ul>
+      <li><code>functions/output_generators.py</code> in <code>write_rank_list_html</code>.</li>
+    </ul>
+  </div>
+
+  <div class="box">
+    <h2>Non-Goals</h2>
+    <ul>
+      <li>No changes to <code>UnWeightedRank_2D</code>, <code>sharpeWeightedRank_2D</code>, or <code>delta_rank_sharpe_weight_2D</code>.</li>
+      <li>No changes to backtest/trade computation engines.</li>
+    </ul>
+  </div>
+</body>
+</html>

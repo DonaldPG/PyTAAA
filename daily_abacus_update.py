@@ -710,7 +710,8 @@ def verify_web_files_created(json_fn: str) -> None:
             "pyTAAAweb.html",
             "PyTAAA_stock-chart-blue.png", 
             "PyTAAA_backtest.png",
-            "PyTAAA_backtest_updated.png"
+            "PyTAAA_backtest_updated.png",
+            "PyTAAA_globalLiquidity.png",
         ]
         
         # Check which files exist

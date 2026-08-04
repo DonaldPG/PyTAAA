@@ -1,0 +1,17 @@
+{
+  "generated_at": "2026-07-21T13:47:02.592108",
+  "json_fn": "/Users/donaldpg/pyTAAA_data/naz100_pine/pytaaa_naz100_pine.json",
+  "iterations": 3000,
+  "min_sma": 4,
+  "max_sma": 60,
+  "min_factor": 0.95,
+  "max_factor": 1.0,
+  "seed": 42,
+  "sma_months": 4,
+  "sma_factor": 0.9618939177009738,
+  "rule": "above_sma_to_long",
+  "final_value": 5532338271.737971,
+  "base_final": 17859763951.89268,
+  "excess_vs_base": 0.3097654754362912,
+  "sharpe": 1.6458041525926694
+}

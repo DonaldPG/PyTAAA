@@ -152,10 +152,23 @@ def make_networkx_spanning_tree_plot(
         node_size=360, node_color="#F1F1F1",
         edgecolors="white", linewidths=0.5,
     )
-    nx.draw_networkx_labels(
-        G, pos, labels=node_labels, ax=ax,
-        font_size=8, font_color="#111111",
-    )
+    # if n > 200:
+    if n > 600:
+        # Keep large-universe plots readable: label held names and hubs.
+        hub_nodes = [node for node, deg in G.degree() if deg >= 3]
+        label_nodes = set(held_nodes).union(hub_nodes)
+        labels_to_draw = {
+            node: node_labels[node] for node in label_nodes if node in node_labels
+        }
+        nx.draw_networkx_labels(
+            G, pos, labels=labels_to_draw, ax=ax,
+            font_size=7, font_color="#111111",
+        )
+    else:
+        nx.draw_networkx_labels(
+            G, pos, labels=node_labels, ax=ax,
+            font_size=8, font_color="#111111",
+        )
 
     ax.set_title(
         "Stock Minimum Spanning Tree  (22-day return correlations)",

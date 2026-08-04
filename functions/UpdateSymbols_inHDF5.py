@@ -753,8 +753,10 @@ def UpdateHDF_yf(
         #yf.pdr_override() # <== that's all it takes :-)
         import yfinance as yf
 
-        # Adjust timeout to a longer period
-        yf.shared._EXCHANGE_TIMEOUT = 13  # in seconds
+        # yfinance>=1.x no longer exposes yf.shared; keep compatibility.
+        yf_shared = getattr(yf, "shared", None)
+        if yf_shared is not None and hasattr(yf_shared, "_EXCHANGE_TIMEOUT"):
+            yf_shared._EXCHANGE_TIMEOUT = 13  # in seconds
 
         # read symbols list
         # symbols = readSymbolList(filename, json_fn, verbose=True)

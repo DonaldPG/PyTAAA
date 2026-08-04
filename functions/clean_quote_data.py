@@ -414,10 +414,6 @@ def get_quote_corrections(symbols_text: str, start_date: str = '1900-01-01') -> 
         # use threads for mass downloading? (True/False/Integer)
         # (optional, default is True)
         threads = True,
-
-        # proxy URL scheme use use when downloading?
-        # (optional, default is None)
-        proxy = None
     )
     print("Begin download of Close value")
     data = yf.download(  # or pdr.get_data_yahoo(...
@@ -450,10 +446,6 @@ def get_quote_corrections(symbols_text: str, start_date: str = '1900-01-01') -> 
         # use threads for mass downloading? (True/False/Integer)
         # (optional, default is True)
         threads = True,
-
-        # proxy URL scheme use use when downloading?
-        # (optional, default is None)
-        proxy = None
     )
     print(" ... days in data: "+str(len(data['Close'].index)))
     print(" ... days in adj_data: "+str(len(adj_data['Close'].index)))
@@ -527,6 +519,11 @@ def fix_quotes(json_fn: str, _data_path: str, stockList: str = 'Naz100') -> None
         lines = f.read()
     symbols_text = lines.replace('\n',' ').replace(".","-")
 
+    # Use a finite history window so Yahoo does not reject renamed or newly
+    # listed symbols when `period="max"` is unavailable for a ticker.
+    download_end = datetime.date.today() + datetime.timedelta(days=1)
+    download_start = download_end - datetime.timedelta(days=366)
+
     data = yf.download(  # or pdr.get_data_yahoo(...
             # tickers list or string as well
             tickers = symbols_text,
@@ -534,7 +531,8 @@ def fix_quotes(json_fn: str, _data_path: str, stockList: str = 'Naz100') -> None
             # use "period" instead of start/end
             # valid periods: 1d,5d,1mo,3mo,6mo,1y,2y,5y,10y,ytd,max
             # (optional, default is '1mo')
-            period = "max",
+            start = download_start,
+            end = download_end,
 
             # fetch data by interval (including intraday if period < 60 days)
             # valid intervals: 1m,2m,5m,15m,30m,60m,90m,1h,1d,5d,1wk,1mo,3mo
@@ -556,10 +554,6 @@ def fix_quotes(json_fn: str, _data_path: str, stockList: str = 'Naz100') -> None
             # use threads for mass downloading? (True/False/Integer)
             # (optional, default is True)
             threads = True,
-
-            # proxy URL scheme use use when downloading?
-            # (optional, default is None)
-            proxy = None
         )
 
     quotes = data['Close'].to_numpy()
@@ -664,10 +658,45 @@ def fix_quotes(json_fn: str, _data_path: str, stockList: str = 'Naz100') -> None
     print(" ... first stored_dates = "+str(stored_dates[0]))
 
     # remove symbols that don't have valid quotes
+    # Known ticker rename mappings: new symbol -> predecessor symbol.
+    rename_predecessor_map = {
+        "ECHO": "SATS",
+    }
+    symbol_to_index = {
+        str(symbol): idx for idx, symbol in enumerate(stored_symbols)
+    }
+    fresh_symbol_set = set([str(symbol) for symbol in fresh_symbols])
+
     valid_indices = []
     for i in range(stored_adjClose.shape[0]):
         _data = stored_adjClose[i,:]*1.
-        if _data[~np.isnan(_data)].min() == _data[~np.isnan(_data)].max():
+        valid_data = _data[np.isfinite(_data)]
+        if valid_data.size == 0:
+            symbol = str(stored_symbols[i])
+            predecessor = rename_predecessor_map.get(symbol)
+            if predecessor and predecessor in symbol_to_index:
+                predecessor_idx = symbol_to_index[predecessor]
+                predecessor_data = stored_adjClose[predecessor_idx, :]
+                predecessor_valid = predecessor_data[np.isfinite(predecessor_data)]
+                if predecessor_valid.size > 0:
+                    stored_adjClose[i, :] = predecessor_data
+                    stored_Close[i, :] = stored_Close[predecessor_idx, :]
+                    valid_indices.append(i)
+                    print(
+                        "symbol quotes backfilled from predecessor "
+                        + str((i, symbol, predecessor))
+                    )
+                    continue
+
+            if symbol in fresh_symbol_set:
+                print("symbol has no valid quotes "+str((i, symbol)))
+            else:
+                print(
+                    "symbol has no valid quotes and is not in current "
+                    "index list " + str((i, symbol))
+                )
+            continue
+        if valid_data.min() == valid_data.max():
             print("symbol has no valid quotes "+str((i,stored_symbols[i])))
             continue
         valid_indices.append(i)
@@ -723,6 +752,15 @@ def fix_quotes(json_fn: str, _data_path: str, stockList: str = 'Naz100') -> None
     df_stored_and_fresh = df_stored_and_fresh.set_index('dates')
     df_stored_and_fresh = df_stored_and_fresh.sort_index()
     df_stored_and_fresh = df_stored_and_fresh[~df_stored_and_fresh.index.duplicated(keep='last')]
+
+    # Ticker rename continuity: if ECHO exists but has no usable history,
+    # seed from SATS so downstream cleaning and write-out preserve continuity.
+    if 'ECHO' in df_stored_and_fresh.columns and 'SATS' in df_stored_and_fresh.columns:
+        echo_values = df_stored_and_fresh['ECHO'].to_numpy()
+        if np.isfinite(echo_values).sum() == 0:
+            df_stored_and_fresh['ECHO'] = df_stored_and_fresh['SATS']
+            print(" ... ECHO quotes backfilled from SATS in merged dataframe")
+
     print(" ... df_stored_and_fresh = "+str(df_stored_and_fresh))
     print(" ... first date in (merged) df_stored_and_fresh = "+str(df_stored_and_fresh.index[0]))
 
@@ -737,7 +775,6 @@ def fix_quotes(json_fn: str, _data_path: str, stockList: str = 'Naz100') -> None
     # synchronize dates to match '_datearray'
     datearray_as_list = list(datearray)
     dates_as_list = list(dates)
-    quotes_synchronized = list()
     missing_dates = list()
     common_dates = list()
     keep_date_indices_list = list()
@@ -749,14 +786,9 @@ def fix_quotes(json_fn: str, _data_path: str, stockList: str = 'Naz100') -> None
         if date == datearray[-1]:
             common_dates.append(date)
             keep_date_indices_list.append(idate)
-            i = dates_as_list.index(date)
-            quotes_synchronized.append(quotes[i,:])
         elif date != datearray[idate+1]:
             common_dates.append(date)
             keep_date_indices_list.append(idate)
-            i = dates_as_list.index(date)
-            quotes_synchronized.append(quotes[i,:])
-    quotes_synchronized = np.array(quotes_synchronized).swapaxes(0,1)
 
     extra_dates = list()
     for idate, date in enumerate(dates_as_list):

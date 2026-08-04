@@ -2108,17 +2108,16 @@ def UnWeightedRank_2D(
     elsedate  = 0
     for ii in np.arange(1,monthgainloss.shape[1]) :
         if activeCount[ii] > minrank[ii] and rankthresholdpercentequiv[ii] > 0:
-            for jj in range(value.shape[0]):
-                test = deltaRank[jj,ii] <= rankthresholdpercentequiv[ii]
-                # Also require that the stock has an uptrending signal on
-                # this date.  Without this check, a stock whose signal was
-                # zeroed by the active_mask (e.g. a delisted stock still
-                # present in the HDF5) can still be selected because its
-                # historical delta-rank is favourable.
-                if test == True and signal_mask[jj, ii] > 0:
-                    monthgainlossweight[jj,ii]  = 1./rankthresholdpercentequiv[ii]
-                else:
-                    monthgainlossweight[jj,ii]  = 0.
+            active_signal_idx = np.where(signal_mask[:, ii] > 0)[0]
+            monthgainlossweight[:, ii] = 0.
+            if active_signal_idx.shape[0] > 0:
+                ordered_idx = active_signal_idx[
+                    np.argsort(deltaRank[active_signal_idx, ii], kind='stable')
+                ]
+                selected_count = min(rankthreshold, ordered_idx.shape[0])
+                if selected_count > 0:
+                    selected_idx = ordered_idx[:selected_count]
+                    monthgainlossweight[selected_idx, ii] = 1. / selected_count
         elif activeCount[ii] == 0 :
             monthgainlossweight[:,ii]  *= 0.
             monthgainlossweight[:,ii]  += 1./adjClose.shape[0]

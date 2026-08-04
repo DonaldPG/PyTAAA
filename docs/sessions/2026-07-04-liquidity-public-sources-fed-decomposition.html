@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Liquidity Public Sources And Fed Decomposition - 2026-07-04</title>
+  <style>
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      margin: 2rem auto;
+      max-width: 900px;
+      line-height: 1.5;
+      color: #1f2937;
+      background: #ffffff;
+      padding: 0 1rem;
+    }
+    h1, h2, h3 {
+      color: #111827;
+    }
+    code {
+      background: #f3f4f6;
+      padding: 0.1rem 0.25rem;
+      border-radius: 3px;
+      font-family: Menlo, Monaco, Consolas, monospace;
+    }
+    ul {
+      padding-left: 1.25rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Liquidity Public Sources And Fed Decomposition - 2026-07-04</h1>
+
+  <h2>Context And Goals</h2>
+  <p>
+    This session focused on replacing the placeholder liquidity proxy implementation with real public
+    central-bank balance-sheet data, extending the history far enough to inspect the 2008 recession
+    period, and improving the liquidity chart so the Federal Reserve contribution could be isolated
+    instead of visually dominating the combined series.
+  </p>
+  <p>The main goals were:</p>
+  <ul>
+    <li>replace the non-functional placeholder source in <code>macro/liquidity.py</code> with public data sources</li>
+    <li>convert all central-bank balance-sheet series into USD billions using same-date FX data</li>
+    <li>extend the combined liquidity history back far enough to include the 2008 recession</li>
+    <li>separate Fed-driven liquidity expansion from the aggregate visual so non-Fed variation is easier to see</li>
+    <li>correct charting issues in the final plot, including date labels, right-axis visibility, and left-axis scaling</li>
+  </ul>
+
+  <h2>What Was Done</h2>
+  <ul>
+    <li>Replaced placeholder liquidity sourcing with public loaders for the Fed, ECB, BOJ, BOE, SNB, and RBA.</li>
+    <li>Added optional support for a user-supplied PBOC series through environment variables.</li>
+    <li>Added unit conversion helpers so local-currency balance-sheet series are converted into USD billions using matching FX series.</li>
+    <li>Extended the combined liquidity timeline by using the union of available dates with forward-fill rather than requiring all banks to overlap on each date.</li>
+    <li>Stitched Bank of England history from current Bankstats data plus discontinued FRED history to improve coverage.</li>
+    <li>Fixed source-specific issues for SNB and RBA ingestion.</li>
+    <li>Added contributor counting to show how many central banks are active on each date.</li>
+    <li>Added a Fed-specific right-axis series to the plot.</li>
+    <li>Replaced the original constant Fed baseline idea with a dynamic pre-crisis trend baseline fitted on 2003-2007 data and expressed as a ratio.</li>
+    <li>Fixed x-axis date formatting, constrained the visible chart to start in 2003, and tightened the left y-axis to the displayed date window.</li>
+    <li>Added <code>xlrd</code> to support the Bank of England XLS source.</li>
+  </ul>
+
+  <h2>How Was It Done</h2>
+  <ul>
+    <li>Public FRED CSV endpoints were used for Fed, ECB, BOJ, FX series, and historical BOE coverage.</li>
+    <li>The SNB source was ingested from the SNB JSON/CSV endpoint with the required request parameters.</li>
+    <li>The RBA source was ingested from the public CSV table after skipping metadata rows.</li>
+    <li>The BOE source was assembled by downloading the Bankstats ZIP, extracting the relevant XLS table, parsing total assets, and stitching it to older FRED history.</li>
+    <li>Data normalization was handled through helper functions that convert local units or local millions into USD billions while respecting FX quote direction.</li>
+    <li>Aggregation moved from an intersection-style merge to a union-style merge with forward fill so history is preserved even when some banks start later than others.</li>
+    <li>The Fed decomposition was revised after visual review: instead of plotting a constant-baseline subtraction, an exponential pre-crisis trend was fit over 2003-2007 WALCL and the plotted series became <code>Fed / Pre-Crisis Trend</code>, which is suitable for log scaling and more realistic over longer horizons.</li>
+    <li>Plot rendering was updated to use explicit matplotlib date locators and formatters, a visible secondary Fed axis, and y-limits derived from the currently displayed window.</li>
+  </ul>
+
+  <h2>When Was It Done And By Whom</h2>
+  <ul>
+    <li>Date: 2026-07-04</li>
+    <li>Session type: GitHub Copilot coding session in VS Code</li>
+    <li>Implemented by: GitHub Copilot (GPT-5.4)</li>
+    <li>Requested and directed by: repository user / workspace operator</li>
+  </ul>
+
+  <h2>Basic Info</h2>
+  <h3>Relevant Commits</h3>
+  <p>No commit was created as part of this summary-only request.</p>
+
+  <h3>Files Involved</h3>
+  <ul>
+    <li><code>macro/liquidity.py</code></li>
+    <li><code>pyproject.toml</code></li>
+    <li><code>uv.lock</code></li>
+    <li><code>.github/session-summary-and-commit.prompt.md</code></li>
+  </ul>
+
+  <h3>Key Outputs And Validation</h3>
+  <ul>
+    <li>Combined liquidity coverage was extended to include the 2008 recession period.</li>
+    <li>Fed, ECB, BOJ, BOE, SNB, and RBA were validated as active public sources.</li>
+    <li><code>make_liquidity_plot('pytaaa_model_switching_params.json')</code> ran successfully.</li>
+    <li>The liquidity chart image was regenerated successfully at the configured webpage output path.</li>
+  </ul>
+
+  <h2>Next And Or Future Follow-Up Work Suggestions</h2>
+  <ul>
+    <li>Add an optional companion panel showing absolute Fed excess over trend in USD billions on a linear scale.</li>
+    <li>Consider adding a non-Fed aggregate series so the chart can directly compare <code>Global ex-Fed</code> versus <code>Fed / Trend</code>.</li>
+    <li>Review whether the BOE and SNB source logic should be cached to disk for faster repeated runs.</li>
+    <li>If PBOC data becomes available in a stable public format, integrate it as a first-class source rather than an optional user-supplied series.</li>
+    <li>Add targeted tests for source parsing and for the liquidity aggregation / plotting window logic.</li>
+  </ul>
+</body>
+</html>

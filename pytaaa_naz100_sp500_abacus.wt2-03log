@@ -1,0 +1,1672 @@
+2026-03-08 22:03:43 - __main__ - INFO - Loading configuration file...
+2026-03-08 22:03:43 - __main__ - INFO - Validating configuration structure...
+2026-03-08 22:03:43 - __main__ - DEBUG - Configuration structure validation passed
+2026-03-08 22:03:43 - __main__ - INFO - Ensuring required files exist...
+2026-03-08 22:03:43 - __main__ - DEBUG - Ensured directory exists: /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store
+2026-03-08 22:03:43 - __main__ - DEBUG - File already exists: PyTAAA_status.params
+2026-03-08 22:03:43 - __main__ - DEBUG - File already exists: PyTAAA_holdings.params
+2026-03-08 22:03:43 - __main__ - DEBUG - File already exists: PyTAAA_ranks.params
+2026-03-08 22:03:43 - __main__ - INFO - Detecting active trading model...
+2026-03-08 22:03:43 - __main__ - INFO - Detected active trading model: naz100_pine
+2026-03-08 22:03:43 - __main__ - INFO - Updating configuration with active model...
+2026-03-08 22:03:43 - __main__ - INFO - Trading model 'naz100_pine' maps to data source: naz100
+2026-03-08 22:03:43 - __main__ - INFO - Updated symbols_file to: /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols.txt
+2026-03-08 22:03:43 - __main__ - INFO - Updated stockList to: Naz100
+2026-03-08 22:03:43 - __main__ - INFO - Keeping performance_store as: /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store
+2026-03-08 22:03:43 - __main__ - INFO - Updated data_paths filename to: /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols.txt
+2026-03-08 22:03:43 - __main__ - INFO - Resolved active model path: /Users/donaldpg/pyTAAA_data/naz100_pine/data_store/PyTAAA_status.params
+2026-03-08 22:03:43 - __main__ - INFO - BEFORE update - abacus_webpage: /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web
+2026-03-08 22:03:43 - __main__ - INFO - BEFORE update - performance_store: /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store
+2026-03-08 22:03:43 - __main__ - INFO - AFTER update - Preserved webpage directory: /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web
+2026-03-08 22:03:43 - __main__ - INFO - AFTER update - performance_store: /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store
+2026-03-08 22:03:43 - __main__ - INFO - Loaded Valuation section from /Users/donaldpg/pyTAAA_data/naz100_pine/pytaaa_naz100_pine.json
+2026-03-08 22:03:43 - __main__ - INFO - Using uptrendSignalMethod: percentileChannels
+2026-03-08 22:03:43 - __main__ - DEBUG - Configuration updated for active model: naz100_pine
+2026-03-08 22:03:43 - __main__ - INFO - Trading model 'naz100_pine' maps to data source: naz100
+2026-03-08 22:03:43 - __main__ - INFO - Web content will be generated in: /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web
+2026-03-08 22:03:43 - __main__ - INFO - Checking if stock price update is needed...
+2026-03-08 22:03:43 - __main__ - DEBUG - Market status: ' Markets are closed'
+2026-03-08 22:03:43 - __main__ - INFO - Update not needed - Markets are closed
+2026-03-08 22:03:43 - __main__ - INFO - Creating runtime configuration file...
+2026-03-08 22:03:43 - __main__ - DEBUG - Created runtime config file: /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/daily_abacus_runtime.json
+2026-03-08 22:03:43 - __main__ - INFO - Running PyTAAA update process...
+=== Daily Abacus Portfolio Update ===
+Configuration file: /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pytaaa_naz100_sp500_abacus.json
+Timestamp: 2026-03-08 22:03:43
+
+Active trading model: naz100_pine
+Using data source: /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols.txt
+
+--- PyTAAA Update Process ---
+JSON config:
+{
+    "Email": {
+        "From": "donaldpg@gmail.com",
+        "To": "donpg1@yahoo.com",
+        "PW": "tRa-u2as3ube",
+        "IPaddress": "98.201.234.203"
+    },
+    "Text_from_email": {
+        "phoneEmail": "8322440788@tmomail.net",
+        "send_texts": false
+    },
+    "FTP": {
+        "hostname": "piDonaldPG",
+        "username": "pipyTAAA",
+        "password": "pyTAAA012345",
+        "remotepath": "/var/www/mysite/pyTAAA_naz100pi/",
+        "remoteIP": "192.168.1.10"
+    },
+    "stock_server": {
+        "quote_download_server": "Donalds-MacBook-Pro.local_NO"
+    },
+    "Setup": {
+        "runtime": "15 days",
+        "pausetime": "24 hours"
+    },
+    "Valuation": {
+        "symbols_file": "/Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt",
+        "performance_store": "/Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store",
+        "webpage": "/Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web",
+        "stockList": "Naz100",
+        "uptrendSignalMethod": "percentileChannels",
+        "stockWeightMethod": "abs_sharpe_weight",
+        "numberStocksTraded": 11,
+        "monthsToHold": 1,
+        "LongPeriod": 358,
+        "stddevThreshold": 11.718398352873153,
+        "MA1": 201,
+        "MA2": 24,
+        "MA3": 30,
+        "sma2factor": 1.738970741675361,
+        "rankThresholdPct": 0.2155034170492552,
+        "riskDownside_min": 0.7206407936701871,
+        "riskDownside_max": 10.262322773888553,
+        "longShort_mindays": 5,
+        "longShort_maxdays": 18,
+        "longShort_percent": 0.985,
+        "longShort_longinc": 15,
+        "narrowDays_min": 6.0,
+        "narrowDays_max": 40.2,
+        "mediumDays_min": 25.2,
+        "mediumDays_max": 38.3,
+        "wideDays_min": 75.2,
+        "wideDays_max": 512.3,
+        "lowPct": 28.76753116140156,
+        "hiPct": 82.65226040345595,
+        "trade_cost": 7.95,
+        "minperiod": 4,
+        "maxperiod": 12,
+        "incperiod": 3,
+        "numdaysinfit": 50,
+        "numdaysinfit2": 15,
+        "offset": 7,
+        "window_size": 50,
+        "enable_rolling_filter": true,
+        "async_plot_generation": true,
+        "plot_generation_workers": 2,
+        "async_montecarlo_backtest": true,
+        "recent_plot_start_date": "2022-01-01",
+        "MA2offset": 6,
+        "sma_filt_val": 0.022096371649909533,
+        "paramNumberToVary": -999,
+        "max_weight_factor": 3.288689922265722,
+        "min_weight_factor": 0.2415709103436163,
+        "absolute_max_weight": 0.8361291094968675,
+        "apply_constraints": true,
+        "trial": "random_algo-01_204"
+    },
+    "model_selection": {
+        "n_lookbacks": 3,
+        "performance_metrics": {
+            "sharpe_ratio_weight": 1.0,
+            "sortino_ratio_weight": 2.0,
+            "max_drawdown_weight": 1.0,
+            "avg_drawdown_weight": 1.0,
+            "annualized_return_weight": 5.0
+        },
+        "normalization": {
+            "central_values": {
+                "annual_return": 0.445,
+                "sharpe_ratio": 1.45,
+                "sortino_ratio": 1.3,
+                "max_drawdown": -0.56,
+                "avg_drawdown": -0.11
+            },
+            "std_values": {
+                "annual_return": 0.04,
+                "sharpe_ratio": 0.135,
+                "sortino_ratio": 0.16,
+                "max_drawdown": 0.315,
+                "avg_drawdown": 0.0855
+            },
+            "lookback_days": [
+                59,
+                165,
+                270
+            ]
+        }
+    },
+    "metric_blending": {
+        "enabled": true,
+        "full_period_weight": 0.2,
+        "focus_period_weight": 0.8,
+        "focus_period_start": "2020-01-01",
+        "focus_period_end": "2025-09-11",
+        "focus_period_1_weight": 0.5,
+        "focus_period_2_weight": 0.5,
+        "focus_period_1_start": "2010-01-01",
+        "focus_period_1_end": "2015-01-01",
+        "focus_period_2_start": "2019-01-01",
+        "focus_period_2_end": "2024-01-01"
+    },
+    "monte_carlo": {
+        "max_iterations": 1000,
+        "min_iterations_for_exploit": 500,
+        "trading_frequency": "monthly",
+        "use_daily_close_only": true,
+        "portfolio_rebalance_day": 1,
+        "min_lookback": 20,
+        "max_lookback": 300,
+        "data_format": "backtested",
+        "data_files": {
+            "actual": "PyTAAA_status.params",
+            "backtested": "pyTAAAweb_backtestPortfolioValue.params"
+        },
+        "initial_capital": 10000.0
+    },
+    "recommendation_mode": {
+        "default_lookbacks": [
+            59,
+            165,
+            270
+        ],
+        "output_format": "both",
+        "generate_plot": true,
+        "show_model_ranks": true
+    },
+    "web_output_dir": "/Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web",
+    "data_paths": {
+        "filename": "/Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols.txt",
+        "start_date": "2020-01-01",
+        "end_date": "2025-12-31"
+    },
+    "models": {
+        "base_folder": "/Users/donaldpg/pyTAAA_data",
+        "model_choices": {
+            "cash": "",
+            "naz100_pine": "{base_folder}/naz100_pine/data_store/{data_file}",
+            "naz100_hma": "{base_folder}/naz100_hma/data_store/{data_file}",
+            "naz100_pi": "{base_folder}/naz100_pi/data_store/{data_file}",
+            "sp500_hma": "{base_folder}/sp500_hma/data_store/{data_file}",
+            "sp500_pine": "{base_folder}/sp500_pine/data_store/{data_file}"
+        }
+    }
+}
+2026-03-08 22:03:43 - PyTAAA.functions.config_accessors - INFO - JSON config:
+{
+    "Email": {
+        "From": "donaldpg@gmail.com",
+        "To": "donpg1@yahoo.com",
+        "PW": "tRa-u2as3ube",
+        "IPaddress": "98.201.234.203"
+    },
+    "Text_from_email": {
+        "phoneEmail": "8322440788@tmomail.net",
+        "send_texts": false
+    },
+    "FTP": {
+        "hostname": "piDonaldPG",
+        "username": "pipyTAAA",
+        "password": "pyTAAA012345",
+        "remotepath": "/var/www/mysite/pyTAAA_naz100pi/",
+        "remoteIP": "192.168.1.10"
+    },
+    "stock_server": {
+        "quote_download_server": "Donalds-MacBook-Pro.local_NO"
+    },
+    "Setup": {
+        "runtime": "15 days",
+        "pausetime": "24 hours"
+    },
+    "Valuation": {
+        "symbols_file": "/Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt",
+        "performance_store": "/Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store",
+        "webpage": "/Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web",
+        "stockList": "Naz100",
+        "uptrendSignalMethod": "percentileChannels",
+        "stockWeightMethod": "abs_sharpe_weight",
+        "numberStocksTraded": 11,
+        "monthsToHold": 1,
+        "LongPeriod": 358,
+        "stddevThreshold": 11.718398352873153,
+        "MA1": 201,
+        "MA2": 24,
+        "MA3": 30,
+        "sma2factor": 1.738970741675361,
+        "rankThresholdPct": 0.2155034170492552,
+        "riskDownside_min": 0.7206407936701871,
+        "riskDownside_max": 10.262322773888553,
+        "longShort_mindays": 5,
+        "longShort_maxdays": 18,
+        "longShort_percent": 0.985,
+        "longShort_longinc": 15,
+        "narrowDays_min": 6.0,
+        "narrowDays_max": 40.2,
+        "mediumDays_min": 25.2,
+        "mediumDays_max": 38.3,
+        "wideDays_min": 75.2,
+        "wideDays_max": 512.3,
+        "lowPct": 28.76753116140156,
+        "hiPct": 82.65226040345595,
+        "trade_cost": 7.95,
+        "minperiod": 4,
+        "maxperiod": 12,
+        "incperiod": 3,
+        "numdaysinfit": 50,
+        "numdaysinfit2": 15,
+        "offset": 7,
+        "window_size": 50,
+        "enable_rolling_filter": true,
+        "async_plot_generation": true,
+        "plot_generation_workers": 2,
+        "async_montecarlo_backtest": true,
+        "recent_plot_start_date": "2022-01-01",
+        "MA2offset": 6,
+        "sma_filt_val": 0.022096371649909533,
+        "paramNumberToVary": -999,
+        "max_weight_factor": 3.288689922265722,
+        "min_weight_factor": 0.2415709103436163,
+        "absolute_max_weight": 0.8361291094968675,
+        "apply_constraints": true,
+        "trial": "random_algo-01_204"
+    },
+    "model_selection": {
+        "n_lookbacks": 3,
+        "performance_metrics": {
+            "sharpe_ratio_weight": 1.0,
+            "sortino_ratio_weight": 2.0,
+            "max_drawdown_weight": 1.0,
+            "avg_drawdown_weight": 1.0,
+            "annualized_return_weight": 5.0
+        },
+        "normalization": {
+            "central_values": {
+                "annual_return": 0.445,
+                "sharpe_ratio": 1.45,
+                "sortino_ratio": 1.3,
+                "max_drawdown": -0.56,
+                "avg_drawdown": -0.11
+            },
+            "std_values": {
+                "annual_return": 0.04,
+                "sharpe_ratio": 0.135,
+                "sortino_ratio": 0.16,
+                "max_drawdown": 0.315,
+                "avg_drawdown": 0.0855
+            },
+            "lookback_days": [
+                59,
+                165,
+                270
+            ]
+        }
+    },
+    "metric_blending": {
+        "enabled": true,
+        "full_period_weight": 0.2,
+        "focus_period_weight": 0.8,
+        "focus_period_start": "2020-01-01",
+        "focus_period_end": "2025-09-11",
+        "focus_period_1_weight": 0.5,
+        "focus_period_2_weight": 0.5,
+        "focus_period_1_start": "2010-01-01",
+        "focus_period_1_end": "2015-01-01",
+        "focus_period_2_start": "2019-01-01",
+        "focus_period_2_end": "2024-01-01"
+    },
+    "monte_carlo": {
+        "max_iterations": 1000,
+        "min_iterations_for_exploit": 500,
+        "trading_frequency": "monthly",
+        "use_daily_close_only": true,
+        "portfolio_rebalance_day": 1,
+        "min_lookback": 20,
+        "max_lookback": 300,
+        "data_format": "backtested",
+        "data_files": {
+            "actual": "PyTAAA_status.params",
+            "backtested": "pyTAAAweb_backtestPortfolioValue.params"
+        },
+        "initial_capital": 10000.0
+    },
+    "recommendation_mode": {
+        "default_lookbacks": [
+            59,
+            165,
+            270
+        ],
+        "output_format": "both",
+        "generate_plot": true,
+        "show_model_ranks": true
+    },
+    "web_output_dir": "/Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web",
+    "data_paths": {
+        "filename": "/Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols.txt",
+        "start_date": "2020-01-01",
+        "end_date": "2025-12-31"
+    },
+    "models": {
+        "base_folder": "/Users/donaldpg/pyTAAA_data",
+        "model_choices": {
+            "cash": "",
+            "naz100_pine": "{base_folder}/naz100_pine/data_store/{data_file}",
+            "naz100_hma": "{base_folder}/naz100_hma/data_store/{data_file}",
+            "naz100_pi": "{base_folder}/naz100_pi/data_store/{data_file}",
+            "sp500_hma": "{base_folder}/sp500_hma/data_store/{data_file}",
+            "sp500_pine": "{base_folder}/sp500_pine/data_store/{data_file}"
+        }
+    }
+}
+Current ip address is  170.203.113.12
+An email with updated analysis will be sent to  donpg1@yahoo.com  every  86400  seconds
+
+current Holdings :
+stocks:  ['MU', 'ROST', 'INTC', 'ASML', 'XEL', 'ARM', 'EXC', 'CASH']
+shares:  ['147', '145', '130', '33', '19', '314', '673', '23']
+buyprice:  ['414.88', '188.65', '46.47', '1423.00', '76.06', '105.36', '44.78', '1.00']
+current ranks:  ['141', '168', '106', '31', '6', '30', '8', '46']
+cumulativecashin:  10000
+
+file name for symbols =  _Naz100_symbols_
+file type for symbols =  .txt
+ ... inside loadQuotes_fromHDF
+   . json_fn = /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/daily_abacus_runtime.json
+
+
+symbol_directory =  /Users/donaldpg/pyTAAA_data/Naz100/symbols
+symbols_file =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt
+shortname, extension =  Naz100_symbols .txt
+hdf5filename =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols_.hdf5
+ ...inside loadQuotes_fromHDF ... top of 'try' block
+ ...inside loadQuotes_fromHDF ... 'try' block begin processing dates
+ ...date format =  <class 'str'> object
+ ...date[0] =  1991-01-02
+ ...date_newformat =  1991-01-02
+ ...dates format =  <class 'numpy.ndarray'> object
+ ...dates[0] =  1991-01-02
+ ...date[-1] =  2026-03-06  after format conversion:  <class 'datetime.date'>
+ ...inside loadQuotes_fromHDF ... 'try' block successful
+ ...inside loadQuotes_fromHDF ... which_block =  try
+detect_infilled_from_df: shape=(8859, 215) window=5
+2026-03-08 22:03:44 - PyTAAA.functions.detect_infilled - INFO - detect_infilled_from_df: shape=(8859, 215) window=5
+detect_infilled_from_df: 725,136 infilled cells detected across 215 symbols.
+Detection complete: 725136 infilled cells across 215 symbols.
+2026-03-08 22:03:44 - PyTAAA.functions.detect_infilled - INFO - Detection complete: 725136 infilled cells across 215 symbols.
+2026-03-08 22:03:44 - functions.stock_fundamentals_cache - INFO - Filtered to 7 symbols that are in valid universe
+2026-03-08 22:03:44 - functions.stock_fundamentals_cache - INFO - Updating cache for 7 active symbols
+2026-03-08 22:03:44 - functions.stock_fundamentals_cache - DEBUG - Cache hit for MU PE ratio: 35.199615
+2026-03-08 22:03:44 - functions.stock_fundamentals_cache - DEBUG - Cache hit for MU sector/industry: Technology/Semiconductors
+2026-03-08 22:03:44 - functions.stock_fundamentals_cache - DEBUG - Cache hit for ROST PE ratio: 32.181534
+2026-03-08 22:03:44 - functions.stock_fundamentals_cache - DEBUG - Cache hit for ROST sector/industry: Consumer Cyclical/Apparel Retail
+2026-03-08 22:03:44 - functions.stock_fundamentals_cache - DEBUG - Cache hit for INTC PE ratio: 43.80637
+2026-03-08 22:03:44 - functions.stock_fundamentals_cache - DEBUG - Cache hit for INTC sector/industry: Technology/Semiconductors
+2026-03-08 22:03:44 - functions.stock_fundamentals_cache - DEBUG - Cache hit for ASML PE ratio: 44.982605
+2026-03-08 22:03:44 - functions.stock_fundamentals_cache - DEBUG - Cache hit for ASML sector/industry: Technology/Semiconductor Equipment & Materials
+2026-03-08 22:03:44 - functions.stock_fundamentals_cache - DEBUG - Cache hit for XEL PE ratio: 24.128653
+2026-03-08 22:03:44 - functions.stock_fundamentals_cache - DEBUG - Cache hit for XEL sector/industry: Utilities/Utilities - Regulated Electric
+2026-03-08 22:03:44 - functions.stock_fundamentals_cache - DEBUG - Cache hit for ARM PE ratio: 152.50667
+2026-03-08 22:03:44 - functions.stock_fundamentals_cache - DEBUG - Cache hit for ARM sector/industry: Technology/Semiconductors
+2026-03-08 22:03:44 - functions.stock_fundamentals_cache - DEBUG - Cache hit for EXC PE ratio: 18.080585
+2026-03-08 22:03:44 - functions.stock_fundamentals_cache - DEBUG - Cache hit for EXC sector/industry: Utilities/Utilities - Regulated Electric
+2026-03-08 22:03:44 - functions.PortfolioPerformanceCalcs - INFO - Starting PortfolioPerformanceCalcs
+2026-03-08 22:03:44 - functions.PortfolioPerformanceCalcs - DEBUG - symbol_directory = /Users/donaldpg/pyTAAA_data/Naz100/symbols
+2026-03-08 22:03:44 - functions.PortfolioPerformanceCalcs - DEBUG - symbol_file = Naz100_symbols.txt
+2026-03-08 22:03:44 - functions.PortfolioPerformanceCalcs - DEBUG - json_dir = /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus
+2026-03-08 22:03:44 - functions.PortfolioPerformanceCalcs - DEBUG - filename for load_quotes_for_analysis = /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt
+   . active_mask: 102 symbols active on last date, 113 inactive (removed from index)
+Updated fundamentals cache for holdings validated against universe
+hourOfDay, daily_update_done = 22 False
+  ...platform:  Darwin arm64 Donalds-MacBook-Pro.local
+Could not place web files on server...
+Stock quote updating disabled due to _NO suffix in quote_server setting
+
+   . inside run_taaa: UpdateHDF_yf completed...
+  . inside run_taaa: symbol_dirctory/Users/donaldpg/pyTAAA_data/Naz100/symbols
+  . inside run_taaa: symbol_fileNaz100_symbols.txt
+   . Loading quotes from: /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt
+file name for symbols =  _Naz100_symbols_
+file type for symbols =  .txt
+ ... inside loadQuotes_fromHDF
+   . json_fn = /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/daily_abacus_runtime.json
+
+
+symbol_directory =  /Users/donaldpg/pyTAAA_data/Naz100/symbols
+symbols_file =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt
+shortname, extension =  Naz100_symbols .txt
+hdf5filename =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols_.hdf5
+ ...inside loadQuotes_fromHDF ... top of 'try' block
+ ...inside loadQuotes_fromHDF ... 'try' block begin processing dates
+ ...date format =  <class 'str'> object
+ ...date[0] =  1991-01-02
+ ...date_newformat =  1991-01-02
+ ...dates format =  <class 'numpy.ndarray'> object
+ ...dates[0] =  1991-01-02
+ ...date[-1] =  2026-03-06  after format conversion:  <class 'datetime.date'>
+ ...inside loadQuotes_fromHDF ... 'try' block successful
+ ...inside loadQuotes_fromHDF ... which_block =  try
+   . Loaded 215 symbols, 8859 days
+detect_infilled_from_df: shape=(8859, 215) window=5
+2026-03-08 22:03:44 - PyTAAA.functions.detect_infilled - INFO - detect_infilled_from_df: shape=(8859, 215) window=5
+detect_infilled_from_df: 725,136 infilled cells detected across 215 symbols.
+Detection complete: 725136 infilled cells across 215 symbols.
+2026-03-08 22:03:44 - PyTAAA.functions.detect_infilled - INFO - Detection complete: 725136 infilled cells across 215 symbols.
+2026-03-08 22:03:46 - functions.ta.signal_generation - DEBUG -  ... inside computeSignal2D ... 
+2026-03-08 22:03:46 - functions.ta.signal_generation - DEBUG -  params = {'fromaddr': 'donaldpg@gmail.com', 'toaddrs': 'donpg1@yahoo.com', 'toSMS': '8322440788@tmomail.net', 'send_texts': False, 'PW': 'tRa-u2as3ube', 'runtime': 1296000, 'pausetime': 86400, 'quote_server': 'Donalds-MacBook-Pro.local_NO', 'numberStocksTraded': 11, 'trade_cost': 7.95, 'monthsToHold': 1, 'LongPeriod': 358, 'stddevThreshold': 11.718398352873153, 'MA1': 201, 'MA2': 24, 'MA3': 30, 'rankThresholdPct': 0.2155034170492552, 'riskDownside_min': 0.7206407936701871, 'riskDownside_max': 10.262322773888553, 'narrowDays': [6.0, 40.2], 'mediumDays': [25.2, 38.3], 'wideDays': [75.2, 512.3], 'uptrendSignalMethod': 'percentileChannels', 'stockWeightMethod': 'abs_sharpe_weight', 'lowPct': 28.76753116140156, 'hiPct': 82.65226040345595, 'minperiod': 4, 'maxperiod': 12, 'incperiod': 3, 'numdaysinfit': 50, 'numdaysinfit2': 15, 'offset': 7, 'stockList': 'Naz100', 'symbols_file': '/Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt', 'enable_rolling_filter': True, 'window_size': 50, 'async_plot_generation': True, 'plot_generation_workers': 2, 'MA2offset': 6, 'MA2factor': 1.738970741675361, 'recent_plot_start_date': datetime.datetime(2022, 1, 1, 0, 0)}
+2026-03-08 22:03:46 - functions.ta.signal_generation - INFO - Calculating signal2D using 'percentileChannels' method
+2026-03-08 22:03:52 - functions.ta.signal_generation - DEBUG - Finished calculating signal2D... mean signal2D = 0.334358
+2026-03-08 22:04:54 - functions.PortfolioPerformanceCalcs - DEBUG - signal2D check: (0,)
+2026-03-08 22:04:54 - functions.PortfolioPerformanceCalcs - DEBUG - signal2D min=0.000000, mean=0.308433, max=1.000000
+2026-03-08 22:04:54 - functions.PortfolioPerformanceCalcs - DEBUG - numberStocks (uptrending) min=0.000000, mean=66.313128, max=171.000000
+2026-03-08 22:04:56 - functions.ta.signal_generation - DEBUG -  ... inside computeSignal2D ... 
+2026-03-08 22:04:56 - functions.ta.signal_generation - DEBUG -  params = {'numberStocksTraded': 11, 'monthsToHold': 1, 'LongPeriod': 358, 'stddevThreshold': 11.718398352873153, 'MA1': 201, 'MA2': 24, 'MA2offset': 6, 'sma2factor': 1.738970741675361, 'MA2factor': 1.738970741675361, 'rankThresholdPct': 0.2155034170492552, 'riskDownside_min': 0.7206407936701871, 'riskDownside_max': 10.262322773888553, 'narrowDays': [6.0, 40.2], 'mediumDays': [25.2, 38.3], 'wideDays': [75.2, 512.3], 'uptrendSignalMethod': 'percentileChannels', 'lowPct': 28.76753116140156, 'hiPct': 82.65226040345595, 'stockList': 'Naz100', 'stockWeightMethod': 'abs_sharpe_weight'}
+2026-03-08 22:04:56 - functions.ta.signal_generation - INFO - Calculating signal2D using 'percentileChannels' method
+2026-03-08 22:05:03 - functions.ta.signal_generation - DEBUG - Finished calculating signal2D... mean signal2D = 0.334358
+   . CASH already present in data (forced active)
+   . Cleaning data (interpolate, cleantobeginning, cleantoend)
+   . active_mask: 102 symbols active on last date, 113 inactive (removed from index)
+ ... inside percentileChannel_2D ...  x min,mean,max =  0.006475063713694231 52.236488039080164 4956.287218679197
+ minperiod,maxperiod,incperiod =  4 12 3
+ lowPct,hiPct =  28.76753116140156 82.65226040345595
+ x min,mean,max =  0.006475063713694231 52.236488039080164 4956.287218679197
+ divisor =  3
+
+   . DEBUG: output_generators: Completed SP500 pre-2002 condition (if applicable). number of changed signals in signal2D =  0
+DEBUG: About to check enable_rolling_filter, value = True
+ ... Applying rolling window data quality filter to detect interpolated data...
+RollingFilter: Total filtered entries = 727201
+ ... Rolling window filter complete
+
+   . DEBUG: output_generators: Completed rolling_window_filter application. number of changed signals in signal2D =  76935
+DEBUG ids post-fill: id(signal2D)=4626124304, id(signal2D_daily)=4626123344
+   . active_mask applied to signals: 725136 (symbol,date) cells forced to signal=0
+ ... inside sharpeWeightedRank_2D (Sharpe-based selection) ...
+ ... n_stocks=215, n_days=8859
+ ... LongPeriod=358
+ ... numberStocksTraded=11 (clamped to max 20)
+ ... is_backtest=False
+ ... max_weight_factor=3.0
+ ... min_weight_factor=0.3
+ ... stockList=Naz100
+ ... Computing rolling Sharpe ratios for all stocks...
+ ... Sharpe ratio calculation complete.
+ ... Selecting stocks and assigning weights...
+ ... Date 1991-01-02: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-03: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-04: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-07: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-08: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-09: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-10: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-11: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-14: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-15: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-16: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-17: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-18: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-21: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-22: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-23: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-24: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-25: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-28: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-29: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-30: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-31: All signals zero (non-early period), assigning 100% to CASH
+ ... Forward-filling weights...
+ ... Forward-filling and normalization complete.
+ ... sharpeWeightedRank_2D computation complete
+ ... Non-zero weights in output: 96702
+ ... Weights sum on day 0: 1.0000
+ ... Weights sum on day 8858: 1.0000
+
+   . DEBUG: output_generators: Completed abs_sharpe_weight. number of changed signals in signal2D =  0
+
+
+
+ ... inside dailyBacktest.py/computeDailyBacktest ...
+
+   . params = {'numberStocksTraded': 11, 'monthsToHold': 1, 'LongPeriod': 358, 'stddevThreshold': 11.718398352873153, 'MA1': 201, 'MA2': 24, 'MA2offset': 6, 'sma2factor': 1.738970741675361, 'MA2factor': 1.738970741675361, 'rankThresholdPct': 0.2155034170492552, 'riskDownside_min': 0.7206407936701871, 'riskDownside_max': 10.262322773888553, 'narrowDays': [6.0, 40.2], 'mediumDays': [25.2, 38.3], 'wideDays': [75.2, 512.3], 'uptrendSignalMethod': 'percentileChannels', 'lowPct': 28.76753116140156, 'hiPct': 82.65226040345595, 'stockList': 'Naz100', 'stockWeightMethod': 'abs_sharpe_weight'}
+
+   . _params = {'fromaddr': 'donaldpg@gmail.com', 'toaddrs': 'donpg1@yahoo.com', 'toSMS': '8322440788@tmomail.net', 'send_texts': False, 'PW': 'tRa-u2as3ube', 'runtime': 1296000, 'pausetime': 86400, 'quote_server': 'Donalds-MacBook-Pro.local_NO', 'numberStocksTraded': 11, 'trade_cost': 7.95, 'monthsToHold': 1, 'LongPeriod': 358, 'stddevThreshold': 11.718398352873153, 'MA1': 201, 'MA2': 24, 'MA3': 30, 'rankThresholdPct': 0.2155034170492552, 'riskDownside_min': 0.7206407936701871, 'riskDownside_max': 10.262322773888553, 'narrowDays': [6.0, 40.2], 'mediumDays': [25.2, 38.3], 'wideDays': [75.2, 512.3], 'uptrendSignalMethod': 'percentileChannels', 'stockWeightMethod': 'abs_sharpe_weight', 'lowPct': 28.76753116140156, 'hiPct': 82.65226040345595, 'minperiod': 4, 'maxperiod': 12, 'incperiod': 3, 'numdaysinfit': 50, 'numdaysinfit2': 15, 'offset': 7, 'stockList': 'Naz100', 'symbols_file': '/Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt', 'enable_rolling_filter': True, 'window_size': 50, 'async_plot_generation': True, 'plot_generation_workers': 2, 'MA2offset': 6, 'MA2factor': 1.738970741675361, 'recent_plot_start_date': datetime.datetime(2022, 1, 1, 0, 0)}
+
+   . params.get('stockList') = Naz100
+
+
+ ... inside dailyBacktest.py
+   . params = {'numberStocksTraded': 11, 'monthsToHold': 1, 'LongPeriod': 358, 'stddevThreshold': 11.718398352873153, 'MA1': 201, 'MA2': 24, 'MA2offset': 6, 'sma2factor': 1.738970741675361, 'MA2factor': 1.738970741675361, 'rankThresholdPct': 0.2155034170492552, 'riskDownside_min': 0.7206407936701871, 'riskDownside_max': 10.262322773888553, 'narrowDays': [6.0, 40.2], 'mediumDays': [25.2, 38.3], 'wideDays': [75.2, 512.3], 'uptrendSignalMethod': 'percentileChannels', 'lowPct': 28.76753116140156, 'hiPct': 82.65226040345595, 'stockList': 'Naz100', 'stockWeightMethod': 'abs_sharpe_weight'}
+ gainloss check:  (0,)
+ value check:  (0,)
+ ... inside percentileChannel_2D ...  x min,mean,max =  0.006475063713694231 52.236488039080164 4956.287218679197
+ minperiod,maxperiod,incperiod =  4 12 3
+ lowPct,hiPct =  28.76753116140156 82.65226040345595
+ x min,mean,max =  0.006475063713694231 52.236488039080164 4956.287218679197
+ divisor =  3
+RollingFilter: Total filtered entries = 727201
+ signal2D check:  (0,)
+ ... inside sharpeWeightedRank_2D (Sharpe-based selection) ...
+ ... n_stocks=215, n_days=8859
+ ... LongPeriod=358
+ ... numberStocksTraded=11 (clamped to max 20)
+ ... is_backtest=True
+ ... max_weight_factor=3.0
+ ... min_weight_factor=0.3
+ ... stockList=Naz100
+ ... Computing rolling Sharpe ratios for all stocks...
+ ... Sharpe ratio calculation complete.
+ ... Selecting stocks and assigning weights...
+ ... Date 1991-01-02: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-03: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-04: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-07: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-08: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-09: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-10: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-11: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-14: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-15: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-16: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-17: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-18: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-21: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-22: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-23: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-24: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-25: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-28: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-29: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-30: All signals zero (non-early period), assigning 100% to CASH
+ ... Date 1991-01-31: All signals zero (non-early period), assigning 100% to CASH
+ ... Forward-filling weights...
+ ... Forward-filling and normalization complete.
+ ... sharpeWeightedRank_2D computation complete
+ ... Non-zero weights in output: 96702
+ ... Weights sum on day 0: 1.0000
+ ... Weights sum on day 8858: 1.0000
+
+================================================================================
+STOCK SELECTIONS AT BEGINNING OF SELECTED YEARS 
+================================================================================
+
+1992-01-02: [AAPL:0.0909, MYL:0.0909, ODFL:0.0909, PCAR:0.0909, REGN:0.0909, SWKS:0.0909, TXN:0.0909, VOD:0.0909, WBA:0.0909, WDC:0.0909, WMT:0.0909] Sum=1.0000
+
+1993-01-04: [XRAY:0.1772, CERN:0.1690, BBBY:0.1090, MAT:0.0916, IDXX:0.0806, EXC:0.0797, SBUX:0.0705, MNST:0.0627, WBA:0.0544, FISV:0.0537, ODFL:0.0516] Sum=1.0000
+
+1994-01-03: [LRCX:0.1226, IDXX:0.1116, CA:0.1063, PAYX:0.1015, ALTR:0.0915, CERN:0.0868, LLTC:0.0849, FAST:0.0788, ORLY:0.0748, WFM:0.0710, XLNX:0.0702] Sum=1.0000
+
+1995-01-03: [WDC:0.2049, INTU:0.1476, ESRX:0.1330, SWKS:0.1185, CTAS:0.1092, VRTX:0.0854, WBA:0.0770, CPRT:0.0410, FISV:0.0283, AMD:0.0281, CMCSA:0.0268] Sum=1.0000
+
+1996-01-02: [CSCO:0.1032, AZN:0.1016, IDXX:0.1016, PEP:0.0942, ALTR:0.0930, FAST:0.0925, AEP:0.0912, MXIM:0.0884, WBA:0.0841, GILD:0.0790, INTC:0.0711] Sum=1.0000
+
+1997-01-02: [ROST:0.1821, INCY:0.1298, EXPD:0.1164, PAYX:0.1136, CTXS:0.0889, WFM:0.0731, BBBY:0.0711, MXIM:0.0586, FAST:0.0580, DISH:0.0543, FISV:0.0541] Sum=1.0000
+
+1998-01-02: [MSFT:0.1023, AZN:0.1019, CMCSA:0.1018, CMCSK:0.0999, EXPD:0.0990, ASML:0.0939, COST:0.0890, PCAR:0.0865, AMAT:0.0766, TXN:0.0750, INTC:0.0740] Sum=1.0000
+
+1999-01-04: [YHOO:0.1325, AMZN:0.1268, VOD:0.1090, ESRX:0.0939, NTAP:0.0869, CMCSK:0.0825, CMCSA:0.0822, CSCO:0.0787, SPLS:0.0759, MSFT:0.0683, CTAS:0.0634] Sum=1.0000
+
+2000-01-03: [QCOM:0.1288, YHOO:0.0974, BRCM:0.0970, NTAP:0.0961, CHKP:0.0951, SWKS:0.0870, XLNX:0.0840, CSCO:0.0814, AMGN:0.0795, FFIV:0.0769, TXN:0.0768] Sum=1.0000
+
+2001-01-02: [CELG:0.2691, AMD:0.1233, PEP:0.1042, WMT:0.0867, ANSS:0.0803, SYMC:0.0718, AMAT:0.0670, KLAC:0.0660, COST:0.0611, ADSK:0.0432, PCAR:0.0273] Sum=1.0000
+
+2002-01-02: [HSIC:0.1502, TSCO:0.1227, AXON:0.1091, AEP:0.1023, SIAL:0.0955, XEL:0.0938, CSX:0.0842, TTWO:0.0704, ODFL:0.0606, MDLZ:0.0584, MTCH:0.0528] Sum=1.0000
+
+2003-01-02: [TSCO:0.1512, WFM:0.0988, VIP:0.0975, ROST:0.0971, WLTW:0.0962, ODFL:0.0951, HOLX:0.0827, WDC:0.0736, CCEP:0.0733, SYMC:0.0713, GRMN:0.0632] Sum=1.0000
+
+2004-01-02: [NTES:0.1316, AXON:0.1315, ALGN:0.0992, VIP:0.0980, WYNN:0.0851, SNDK:0.0830, YHOO:0.0817, TSCO:0.0804, CELG:0.0726, CTSH:0.0697, FOXA:0.0673] Sum=1.0000
+
+2005-01-03: [MNST:0.1352, YHOO:0.1076, SYMC:0.1039, GOOG:0.0990, GOOGL:0.0990, EQIX:0.0851, ANSS:0.0792, FOXA:0.0772, WBA:0.0733, NTAP:0.0724, WLTW:0.0680] Sum=1.0000
+
+2006-01-03: [AAPL:0.1171, GOOG:0.1087, GOOGL:0.1087, MNST:0.1049, ESRX:0.0992, SBAC:0.0907, CELG:0.0771, MRVL:0.0747, VRTX:0.0740, WDC:0.0737, ILMN:0.0712] Sum=1.0000
+
+2007-01-03: [DTV:0.1094, CTRP:0.1048, TCOM:0.1048, AAL:0.0933, MNST:0.0923, HOLX:0.0890, CMCSK:0.0845, WYNN:0.0810, CSX:0.0809, XEL:0.0808, CMCSA:0.0791] Sum=1.0000
+
+2008-01-02: [PCLN:0.1365, BKNG:0.1220, AMZN:0.1082, BMRN:0.1056, ISRG:0.1024, ALXN:0.0970, TCOM:0.0821, CTRP:0.0821, MPWR:0.0747, ALNY:0.0624, BRCM:0.0270] Sum=1.0000
+
+2009-01-02: [NFLX:0.1364, GILD:0.1140, WMT:0.1015, NTES:0.1000, REGN:0.0913, GMCR:0.0853, BKNG:0.0807, PCLN:0.0800, ALXN:0.0789, CHRW:0.0674, ILMN:0.0645] Sum=1.0000
+
+2010-01-04: [CTRX:0.1590, GMCR:0.1275, CERN:0.0942, PCLN:0.0804, FFIV:0.0797, BKNG:0.0786, MU:0.0780, ULTA:0.0776, SNDK:0.0763, NTES:0.0761, ALGN:0.0725] Sum=1.0000
+
+2011-01-03: [LULU:0.0988, UAL:0.0977, CTSH:0.0975, FFIV:0.0968, PCLN:0.0924, AKAM:0.0894, NTAP:0.0876, BKNG:0.0858, AAPL:0.0852, CHKP:0.0851, CTRX:0.0837] Sum=1.0000
+
+2012-01-03: [BIIB:0.1142, COST:0.1029, PCLN:0.1010, BKNG:0.1010, AAPL:0.0946, REGN:0.0860, CERN:0.0844, BMRN:0.0806, CHKP:0.0796, ADP:0.0780, CHTR:0.0777] Sum=1.0000
+
+2013-01-02: [SBAC:0.1201, REGN:0.1077, AMGN:0.1058, LVNTA:0.1019, CMCSK:0.0839, CMCSA:0.0838, EQIX:0.0830, VRSK:0.0807, DISCK:0.0796, STX:0.0779, FOX:0.0756] Sum=1.0000
+
+2014-01-02: [WYNN:0.1134, GILD:0.1062, CELG:0.1021, MU:0.1021, INSM:0.0935, FOXA:0.0855, FOX:0.0849, LBTYK:0.0832, LBTYA:0.0819, SPLK:0.0771, TSCO:0.0703] Sum=1.0000
+
+2015-01-02: [SWKS:0.1391, SIAL:0.1184, AAL:0.1169, NXPI:0.1114, INCY:0.1079, UAL:0.0726, CELG:0.0684, FFIV:0.0678, ENPH:0.0672, MSTR:0.0663, GILD:0.0641] Sum=1.0000
+
+2016-01-04: [DLTR:0.2222, ROST:0.2222, BMRN:0.2214, LULU:0.1706, LBTYK:0.0264, LBTYA:0.0260, BKR:0.0222, EXC:0.0222, FANG:0.0222, MAT:0.0222, SBAC:0.0222] Sum=1.0000
+
+2017-01-03: [CPRT:0.1184, MPWR:0.1099, KLAC:0.0984, CTAS:0.0963, ADP:0.0908, ALGN:0.0894, ULTA:0.0873, NTES:0.0787, TMUS:0.0777, LRCX:0.0774, ADSK:0.0757] Sum=1.0000
+
+2018-01-02: [TTWO:0.1043, MU:0.0974, ODFL:0.0968, ROP:0.0915, ALGN:0.0898, AAPL:0.0888, MSFT:0.0878, LRCX:0.0876, NVDA:0.0868, CPRT:0.0850, ADBE:0.0842] Sum=1.0000
+
+2019-01-02: [ENPH:0.1209, OKTA:0.1133, LULU:0.1017, TEAM:0.1017, ROST:0.0838, TTD:0.0819, ILMN:0.0811, VRSN:0.0802, AZN:0.0801, INTU:0.0790, CSCO:0.0763] Sum=1.0000
+
+2020-01-02: [TRI:0.1292, SBUX:0.1107, ENPH:0.1092, TTD:0.0884, MTCH:0.0871, CHTR:0.0834, LULU:0.0833, CPRT:0.0789, MSFT:0.0775, OKTA:0.0771, SNPS:0.0751] Sum=1.0000
+
+2021-01-04: [TSLA:0.1456, MRNA:0.1204, NVDA:0.0932, ZM:0.0928, MSTR:0.0911, AMD:0.0863, NTES:0.0807, ASML:0.0807, MPWR:0.0736, LRCX:0.0698, LULU:0.0659] Sum=1.0000
+
+2022-01-03: [ON:0.1228, TSLA:0.1069, MRVL:0.0947, KLAC:0.0906, MSTR:0.0896, NXPI:0.0857, FANG:0.0848, SBUX:0.0836, XLNX:0.0834, AAPL:0.0809, MU:0.0771] Sum=1.0000
+
+2023-01-03: [SMCI:0.2175, AZN:0.1234, REGN:0.1084, AEP:0.0866, KHC:0.0795, TRI:0.0783, ALNY:0.0768, PDD:0.0681, SNPS:0.0635, KLAC:0.0625, WMT:0.0352] Sum=1.0000
+
+2024-01-02: [PDD:0.1270, GILD:0.1060, MSTR:0.1040, REGN:0.1021, VRTX:0.0958, ORLY:0.0953, WMT:0.0835, FANG:0.0747, VRSK:0.0737, AMGN:0.0716, MDLZ:0.0662] Sum=1.0000
+
+2025-01-02: [APP:0.1724, NVDA:0.1184, AVGO:0.1070, CEG:0.1054, META:0.0966, DASH:0.0905, INSM:0.0743, MRVL:0.0658, WDC:0.0578, SHOP:0.0568, MELI:0.0550] Sum=1.0000
+
+2026-01-02: [WDC:0.1302, STX:0.1131, WMT:0.1011, GOOGL:0.0997, MU:0.0966, INSM:0.0949, LRCX:0.0824, XEL:0.0757, CEG:0.0739, ALNY:0.0684, KLAC:0.0639] Sum=1.0000
+================================================================================
+
+ ... completed signal2D and monthgainlossweight calculations. Now computing portfolio values ... 
+
+  
+
+
+
+  
+
+
+
+15 year :  3780 8921678449.185394 19549025.034494918 2011-02-24
+
+
+Sharpe15Yr, BuyHoldSharpe15Yr =  2.0550274781547397 0.9518110486115787
+Sharpe10Yr, BuyHoldSharpe10Yr =  2.060878344770245 1.0043693555173405
+Sharpe5Yr, BuyHoldSharpe5Yr =    1.720237648189905 0.8538314597455771
+Sharpe3Yr, BuyHoldSharpe3Yr =    2.5514369103990293 1.6863569742341629
+Sharpe2Yr, BuyHoldSharpe2Yr =    2.10025682615951 1.1170861563551389
+Sharpe1Yr, BuyHoldSharpe1Yr =    3.386466792034091 1.7598009192663044
+Return15Yr, BuyHoldReturn15Yr =  1.5041394349913941 1.1947981090595883
+Return10Yr, BuyHoldReturn10Yr =  1.5515685522441178 1.22151763823897
+Return5Yr, BuyHoldReturn5Yr =    1.4666346946684072 1.2002962132061035
+Return3Yr, BuyHoldReturn3Yr =    1.6150498551172576 1.3436870653054171
+Return2Yr, BuyHoldReturn2Yr =    1.5297796437612354 1.2533781893708038
+Return1Yr, BuyHoldReturn1Yr =    1.9229831167082687 1.571827372859354
+Drawdown15Yr, BuyHoldDrawdown15Yr =  -0.04188228253720303 -0.049041206389109276
+Drawdown10Yr, BuyHoldDrawdown10Yr =  -0.05076389640124911 -0.054387830084121146
+Drawdown5Yr, BuyHoldDrawdown5Yr =    -0.0652337529141218 -0.07044002047538105
+Drawdown3Yr, BuyHoldDrawdown3Yr =    -0.0374203684990711 -0.03464681942068738
+Drawdown2Yr, BuyHoldDrawdown2Yr =    -0.04353106218614761 -0.02846408699280254
+Drawdown1Yr, BuyHoldDrawdown1Yr =    -0.044001410687564045 -0.026327902472112384
+found monte carlo trial that beats BuyHold (test2)...
+shape of numberStocksUpTrendingBeatBuyHold =  (8859,)
+mean of numberStocksUpTrendingBeatBuyHold values =  0.0
+
+ 
+The B&H portfolio final value is:  2,951,686
+ 
+Monthly re-balance based on  358 days of recent performance.
+The portfolio final value is:  8,921,678,449
+ 
+Today's top ranking choices are: 
+ ...inside readSymbolList... existing_company_names_fn =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_companyNames.txt
+2026-03-06  AEP     0.0923  ( 9.23%)  American Electric Power
+2026-03-06  CRWD    0.0635  ( 6.35%)  CrowdStrike         
+2026-03-06  CSCO    0.1008  (10.08%)  Cisco               
+2026-03-06  EXC     0.0776  ( 7.76%)  Exelon              
+2026-03-06  FAST    0.0696  ( 6.96%)  Fastenal            
+2026-03-06  GILD    0.1202  (12.02%)  Gilead Sciences     
+2026-03-06  KLAC    0.0806  ( 8.06%)  KLA Corporation     
+2026-03-06  PLTR    0.1389  (13.89%)  Palantir Technologies
+2026-03-06  TTWO    0.0664  ( 6.64%)  Take-Two Interactive
+2026-03-06  WMT     0.1066  (10.66%)  Walmart             
+2026-03-06  XEL     0.0836  ( 8.36%)  Xcel Energy         
+
+ ... Computing new highs and lows for backtest output...
+
+
+
+ ... inside functions/CountNewHighsAndLows/newHighsAndLows.py
+.  . stockList =  Naz100
+   . symbols_file =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt
+   . json_fn =  /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/daily_abacus_runtime.json
+   . loading quotes from HDF5 file
+file name for symbols =  _Naz100_symbols_
+file type for symbols =  .txt
+ ... inside loadQuotes_fromHDF
+   . json_fn = /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/daily_abacus_runtime.json
+
+
+symbol_directory =  /Users/donaldpg/pyTAAA_data/Naz100/symbols
+symbols_file =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt
+shortname, extension =  Naz100_symbols .txt
+hdf5filename =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols_.hdf5
+ ...inside loadQuotes_fromHDF ... top of 'try' block
+ ...inside loadQuotes_fromHDF ... 'try' block begin processing dates
+ ...date format =  <class 'str'> object
+ ...date[0] =  1991-01-02
+ ...date_newformat =  1991-01-02
+ ...dates format =  <class 'numpy.ndarray'> object
+ ...dates[0] =  1991-01-02
+ ...date[-1] =  2026-03-06  after format conversion:  <class 'datetime.date'>
+ ...inside loadQuotes_fromHDF ... 'try' block successful
+ ...inside loadQuotes_fromHDF ... which_block =  try
+
+ ... num_days_highlow = (73, 293)
+shape of newHighs_2D =  (215, 8859, 2)
+shape of sumNewHighs =  (8859, 2)
+shape of sumNewHighs =  (8859, 2)
+shape of sumNewHighs =  (8859,)
+working on TradedValue...
+ sharpe_traded =  0.89
+iterations done
+final value for portfolio  8,921,678,449.185394
+portfolio annualized gains :  1.476669891859751
+portfolio annualized StdDev :  0.2699819420607089
+portfolio sharpe ratio :  5.469513555568478
+
+
+start date for recent performance measures:  2008-01-01
+BuyHold annualized gains & sharpe from target date:    1.1487583285157077 0.7541605983551892
+portfolio annualized gains & sharpe from target date:  1.4314895701854065 1.6672072843980301
+
+
+ Successfully updated daily backtest at in 'pyTAAAweb_backtestPortfolioValue.params'.
+ Completed on Sunday, 08. March 2026 10:06PM
+
+ Successfully updated to pyTAAAweb_numberUptrendingStocks_status.params at Sunday, 08. March 2026 10:06PM
+
+ [async] Background plot generation started (max_workers=2). Log: /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web/plot_generation.log
+
+
+
+Currently up-trending symbols (2026-03-06):
+   0 AAL      11.57             9.51     9.51
+   0 AAPL    257.46           262.25   269.20
+   0 ABNB    133.23           126.01   128.88
+   1 ADBE    283.62 uptrend   263.57   279.20
+   1 ADI     315.81           337.11   351.21
+   2 ADP     226.24 uptrend   215.25   221.69
+   3 ADSK    260.99 uptrend   242.22   260.33
+   3 AEP     131.87           132.00   133.39
+   3 AKAM     47.43            33.47    33.47
+   3 ALGN    163.39           163.39   163.39
+   3 ALNY    320.66           171.91   176.05
+   3 ALTR     50.67            50.67    50.67
+   3 ALXN    182.50           180.03   180.03
+   3 AMAT    324.74           340.02   358.65
+   3 AMD     192.43           180.75   186.51
+   3 AMGN    369.53           374.80   383.78
+   3 AMZN    213.21           201.74   208.50
+   3 ANSS    374.30           318.50   318.50
+   4 APP     502.14 uptrend   400.43   458.40
+   4 ARM     114.38            95.87    99.92
+   4 ASML  1,292.80         1,078.31 1,138.53
+   4 ATVI     90.07            84.67    84.67
+   4 AVGO    330.48           301.85   314.31
+   5 AXON    574.01 uptrend   415.52   438.41
+   5 AZN      92.77            92.77    92.77
+   5 BATRA    15.01            15.01    15.01
+   5 BATRK    14.80            14.80    14.80
+   5 BBBY     47.09            47.09    47.09
+   5 BIDU    112.59           112.59   112.59
+   5 BIIB    179.89           178.70   178.70
+   6 BKNG  4,550.43 uptrend 3,568.25 3,822.28
+   6 BKR      59.81            61.08    64.32
+   6 BMRN     85.55            78.74    78.74
+   6 BRCM     51.64            46.43    46.43
+   6 CA       44.44            43.73    43.73
+   6 CASH      1.00             1.00     1.00
+   6 CCEP    100.22           103.93   107.57
+   6 CDNS    296.94           298.89   303.09
+   6 CDW     126.39           118.77   118.77
+   6 CEG     319.06           291.64   297.94
+   6 CELG    108.24           104.23   104.23
+   6 CERN     92.25            86.56    86.56
+   6 CHKP    116.25           116.22   116.22
+   6 CHRW     62.36            61.76    61.76
+   7 CHTR    232.24 uptrend   229.65   232.49
+   8 CMCSA    31.91 uptrend    30.97    31.84
+   8 CMCSK    58.00            58.00    58.00
+   9 COST    998.10 uptrend   993.42 1,007.21
+   9 CPRT     37.74            34.15    34.97
+  10 CRWD    428.99 uptrend   290.85   320.26
+  10 CSCO     78.64            78.86    79.92
+  10 CSGP     48.38            36.43    38.74
+  10 CSX      39.95            40.61    41.53
+  11 CTAS    203.61 uptrend   198.09   201.06
+  11 CTRP     34.17            31.02    31.02
+  11 CTRX     61.47            61.47    61.47
+  12 CTSH     66.26 uptrend    40.85    41.88
+  12 CTXS    131.35           119.41   119.41
+  12 DASH    179.17           170.66   174.52
+  13 DDOG    125.75 uptrend   111.85   121.43
+  13 DISCA    26.20            24.82    24.82
+  13 DISCK    25.53            24.21    24.21
+  13 DISH     30.79            30.78    30.78
+  13 DLTR     67.44            67.31    67.31
+  13 DOCU     56.27            52.06    52.06
+  13 DTV      93.55            91.94    91.94
+  13 DXCM     68.10            68.70    69.82
+  13 EA      198.00           200.70   201.45
+  13 EBAY     68.19            55.42    55.42
+  13 ENDP     17.63            17.63    17.63
+  13 ENPH     63.32            57.02    57.02
+  13 EQIX    231.34           203.17   203.17
+  13 ESRX     92.33            81.10    81.10
+  14 EXC      49.36 uptrend    48.34    48.89
+  14 EXPD     45.21            45.21    45.21
+  14 EXPE    123.83           115.50   115.50
+  15 FANG    180.54 uptrend   169.82   174.40
+  15 FAST     46.46            44.66    45.17
+  15 FB      196.64           196.64   196.64
+  15 FER      66.16            33.19    35.11
+  15 FFIV    132.97            87.22    87.22
+  15 FISV    113.90           113.90   113.90
+  15 FOX      34.62            34.62    34.62
+  15 FOXA     37.32            35.05    35.05
+  16 FTNT     83.67 uptrend    72.57    75.92
+  16 GEHC     74.27            73.76    77.90
+  16 GFS      42.20            30.05    30.05
+  16 GILD    143.93           123.07   125.85
+  16 GMCR     88.25            78.56    78.56
+  16 GOOG    298.30           259.95   265.30
+  16 GOOGL   298.52           259.47   265.04
+  16 GRMN     35.26            33.28    33.28
+  16 HAS      97.68            97.32    97.32
+  16 HOLX     38.41            38.41    38.41
+  16 HON     235.29           239.92   245.51
+  16 HSIC     73.71            64.68    64.68
+  16 IDXX    608.41           591.57   611.442026-03-08 22:06:17 - run_pytaaa - WARNING - Unexpected exception in getClusterForSymbolsList: ModuleNotFoundError: No module named 'pandas_datareader'
+2026-03-08 22:06:17 - functions.stock_fundamentals_cache - DEBUG - Cache hit for MU sector/industry: Technology/Semiconductors
+2026-03-08 22:06:17 - functions.stock_fundamentals_cache - DEBUG - Cache hit for ROST sector/industry: Consumer Cyclical/Apparel Retail
+2026-03-08 22:06:17 - functions.stock_fundamentals_cache - DEBUG - Cache hit for INTC sector/industry: Technology/Semiconductors
+2026-03-08 22:06:17 - functions.stock_fundamentals_cache - DEBUG - Cache hit for ASML sector/industry: Technology/Semiconductor Equipment & Materials
+2026-03-08 22:06:17 - functions.stock_fundamentals_cache - DEBUG - Cache hit for XEL sector/industry: Utilities/Utilities - Regulated Electric
+2026-03-08 22:06:17 - functions.stock_fundamentals_cache - DEBUG - Cache hit for ARM sector/industry: Technology/Semiconductors
+2026-03-08 22:06:17 - functions.stock_fundamentals_cache - DEBUG - Cache hit for EXC sector/industry: Utilities/Utilities - Regulated Electric
+
+  16 ILMN     85.97            85.37    85.37
+  16 INCY     73.98            52.36    52.36
+  16 INSM    140.13            50.25    52.45
+  16 INTC     43.42            44.13    45.56
+  17 INTU    481.17 uptrend   391.31   440.77
+  17 ISRG    490.16           355.43   360.15
+  17 JBHT    110.11           109.32   109.32
+  17 JD       40.64            30.88    30.88
+  17 KDP      28.25            24.39    25.39
+  18 KHC      24.54 uptrend    21.67    21.99
+  18 KLAC  1,344.55         1,447.94 1,517.72
+  18 KRFT     88.19            79.77    79.77
+  18 LBTYA    24.09            24.09    24.09
+  18 LBTYK    23.36            20.93    20.93
+  18 LCID      2.08             0.85     0.85
+  18 LILA     21.01            19.27    19.27
+  18 LILAK    20.50            13.15    13.15
+  18 LIN     484.74           494.09   504.87
+  18 LINTA    29.92            29.85    29.85
+  18 LLTC     60.15            60.15    60.15
+  18 LMCA     18.38            17.88    17.88
+  18 LMCK     18.09            17.73    17.73
+  18 LRCX    199.33           212.53   229.68
+  18 LULU    174.50           137.38   137.38
+  18 LVNTA    53.27            52.76    52.76
+  18 MAR     323.80           309.04   318.01
+  18 MAT      22.75            22.75    22.75
+  18 MCHP     64.77            68.75    73.37
+  18 MDB     218.26           218.26   218.26
+  18 MDLZ     58.40            58.63    60.09
+  19 MELI  1,787.86 uptrend 1,294.48 1,330.61
+  19 META    644.86           651.71   660.17
+  19 MNST     75.61            72.31    77.21
+  19 MPWR  1,023.16         1,001.78 1,076.04
+  19 MRNA     35.96            35.19    35.19
+  20 MRVL     89.57 uptrend    71.11    74.88
+  21 MSFT    408.96 uptrend   394.53   401.90
+  21 MSTR    133.53            90.41    95.17
+  21 MTCH     41.94            41.94    41.94
+  21 MU      370.30           393.24   414.08
+  21 MXIM    103.14           103.14   103.14
+  21 MYL      20.90            20.90    20.90
+  21 NCLH     50.07            43.58    43.58
+  22 NFLX     99.02 uptrend    86.32    92.72
+  22 NTAP     46.40            18.51    18.51
+  22 NTES     71.30            62.31    62.31
+  22 NVDA    177.82           159.37   164.33
+  22 NXPI    201.74           210.18   223.31
+  22 ODFL    193.97           176.79   185.33
+  22 OKTA     51.25            48.56    48.56
+  22 ON       59.89            58.80    58.80
+  22 ORLY     94.60            92.57    93.23
+  23 PANW    165.05 uptrend   136.01   145.47
+  24 PAYX    100.85 uptrend    93.70    97.81
+  24 PCAR    120.43           122.95   125.19
+  24 PCLN  1,857.45         1,790.60 1,790.60
+  25 PDD     101.97 uptrend    96.46    99.45
+  25 PEP     159.43           161.90   166.42
+  26 PLTR    157.16 uptrend   115.69   126.65
+  26 PTON     31.33            31.07    31.07
+  26 PYPL     46.97            44.34    45.46
+  26 QCOM    135.69           106.63   110.34
+  26 QRTEA    18.45            18.36    18.36
+  26 QVCA     23.67            23.61    23.61
+  26 REGN    759.86           701.33   719.70
+  26 RIVN     13.87             9.35     9.35
+  27 ROP     367.50 uptrend   314.47   326.90
+  27 ROST    211.75           198.30   208.65
+  27 SBAC    123.78           100.74   100.74
+  28 SBUX     98.99 uptrend    83.83    85.23
+  28 SGEN    228.74           228.73   228.73
+  28 SHOP    130.20            66.15    71.14
+  28 SHPG    170.03           151.28   151.28
+  28 SIAL    139.77           131.87   131.87
+  28 SIRI     24.39            22.33    22.33
+  28 SMCI     31.59            26.16    26.16
+  28 SNDK     76.57            49.81    49.81
+  28 SNPS    437.41           412.94   427.96
+  28 SPLK    156.90           146.97   146.97
+  28 SPLS      9.42             9.42     9.42
+  28 SRCL     77.12            69.60    69.60
+  28 STX     352.80           362.02   393.31
+  28 SWKS     93.01            93.01    93.01
+  28 SYMC     24.83            24.67    24.67
+  28 TCOM     23.57            21.40    21.40
+  29 TEAM     83.62 uptrend    52.46    56.88
+  29 TFCF     44.58            39.55    39.55
+  29 TFCFA    45.01            40.34    40.34
+  30 TMUS    221.57 uptrend   188.27   190.89
+  31 TRI     111.46 uptrend    97.42   105.58
+  31 TRIP     39.07            36.19    36.19
+  31 TSCO     54.82            16.19    16.19
+  31 TSLA    396.73           400.81   407.90
+  31 TTD      30.33            29.11    29.11
+  31 TTWO    211.50           153.89   157.49
+  31 TXN     193.23           201.22   210.94
+  31 UAL      34.45            32.75    32.75
+  31 ULTA    265.18           223.19   223.19
+  31 VIAB     35.05            33.41    33.41
+  31 VIP       3.26             2.85     2.85
+  31 VOD      19.35            19.20    19.20
+  31 VRSK    214.84           199.29   208.03
+  31 VRSN    200.65           200.65   200.65
+  31 VRTX    456.69           321.25   329.99
+  31 WBA      11.28            11.28    11.28
+  31 WBD      27.95            26.56    27.14
+  32 WDAY    151.04 uptrend   118.95   127.19
+  32 WDC     245.25           257.25   276.14
+  32 WFM      32.44            27.63    27.63
+  32 WLTW    188.23           183.33   183.33
+  32 WMT     123.80           124.36   127.86
+  32 WYNN    132.14           131.61   131.61
+  32 XEL      82.52            82.87    83.50
+  32 XLNX    194.92           194.92   194.92
+  32 XRAY     37.20            37.20    37.20
+  32 YHOO     50.56            50.32    50.32
+  32 ZM       73.47            64.62    64.62
+  33 ZS      164.06 uptrend   146.18   155.70
+
+
+
+
+ 
+The B&H portfolio final value is:  2,951,686
+ 
+Monthly re-balance based on  358 days of recent performance.
+The portfolio final value is:  13,698,396,133
+ 
+Today's top ranking choices are: 
+ ...inside readSymbolList... existing_company_names_fn =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_companyNames.txt
+2026-03-06  AEP     0.0923  ( 9.23%)  American Electric Power
+2026-03-06  CRWD    0.0635  ( 6.35%)  CrowdStrike         
+2026-03-06  CSCO    0.1008  (10.08%)  Cisco               
+2026-03-06  EXC     0.0776  ( 7.76%)  Exelon              
+2026-03-06  FAST    0.0696  ( 6.96%)  Fastenal            
+2026-03-06  GILD    0.1202  (12.02%)  Gilead Sciences     
+2026-03-06  KLAC    0.0806  ( 8.06%)  KLA Corporation     
+2026-03-06  PLTR    0.1389  (13.89%)  Palantir Technologies
+2026-03-06  TTWO    0.0664  ( 6.64%)  Take-Two Interactive
+2026-03-06  WMT     0.1066  (10.66%)  Walmart             
+2026-03-06  XEL     0.0836  ( 8.36%)  Xcel Energy         
+
+ ... inside portfolioPerformanceCalcs
+   . datearray[-1] = 2026-03-06
+   . last_symbols_text = ['AEP', 'CRWD', 'CSCO', 'EXC', 'FAST', 'GILD', 'KLAC', 'PLTR', 'TTWO', 'WMT', 'XEL']
+   . last_symbols_weight = [0.0923, 0.0635, 0.1008, 0.0776, 0.0696, 0.1202, 0.0806, 0.1389, 0.0664, 0.1066, 0.0836]
+   . last_symbols_price = [131.87, 428.99, 78.64, 49.36, 46.46, 143.93, 1344.55, 157.16, 211.5, 123.8, 82.52]
+ write_ranks_params: wrote 215 ranks (lastdate=2026-03-06) to PyTAAA_ranks.params
+
+current Holdings :
+stocks:  ['MU', 'ROST', 'INTC', 'ASML', 'XEL', 'ARM', 'EXC', 'CASH']
+shares:  ['147', '145', '130', '33', '19', '314', '673', '23']
+buyprice:  ['414.88', '188.65', '46.47', '1423.00', '76.06', '105.36', '44.78', '1.00']
+current ranks:  ['141', '168', '106', '31', '6', '30', '8', '46']
+cumulativecashin:  10000
+
+ ... inside LastQuotesForSymbolList_hdf
+ ... symbolList = ['MU', 'ROST', 'INTC', 'ASML', 'XEL', 'ARM', 'EXC', 'CASH']
+ ... symbols_file = Naz100_symbols.txt
+file name for symbols =  _Naz100_symbols_
+file type for symbols =  .txt
+ ... inside loadQuotes_fromHDF
+   . json_fn = /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/daily_abacus_runtime.json
+
+
+symbol_directory =  /Users/donaldpg/pyTAAA_data/Naz100/symbols
+symbols_file =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt
+shortname, extension =  Naz100_symbols .txt
+hdf5filename =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols_.hdf5
+ ...inside loadQuotes_fromHDF ... top of 'try' block
+ ...inside loadQuotes_fromHDF ... 'try' block begin processing dates
+ ...date format =  <class 'str'> object
+ ...date[0] =  1991-01-02
+ ...date_newformat =  1991-01-02
+ ...dates format =  <class 'numpy.ndarray'> object
+ ...dates[0] =  1991-01-02
+ ...date[-1] =  2026-03-06  after format conversion: 2026-03-08 22:06:17 - functions.report_builders - DEBUG - build_holdings_html_report: rendered 2880 bytes for 8 holding rows.
+ <class 'datetime.date'>
+ ...inside loadQuotes_fromHDF ... 'try' block successful
+ ...inside loadQuotes_fromHDF ... which_block =  try
+ ... inside LastQuotesForSymbolList_hdf
+holdings_symbols =  ['MU', 'ROST', 'INTC', 'ASML', 'XEL', 'ARM', 'EXC', 'CASH']
+holdings_shares =  [147. 145. 130.  33.  19. 314. 673.  23.]
+holdings_currentPrice =  [370.29998779296875, 211.75, 43.41999816894531, 1292.800048828125, 82.5199966430664, 114.37999725341797, 49.36000061035156, 1.0000885999999536]
+holdings['cumulativecashin'] =  10000
+Lifetime profit =  194170.33110121553
+holdings_shares =  [147. 145. 130.  33.  19. 314. 673.  23.]
+holdings_buyprice =  [ 414.88  188.65   46.47 1423.     76.06  105.36   44.78    1.  ]
+last_symbols_text =  ['AEP', 'CRWD', 'CSCO', 'EXC', 'FAST', 'GILD', 'KLAC', 'PLTR', 'TTWO', 'WMT', 'XEL']
+last_symbols_weight =  [0.0923, 0.0635, 0.1008, 0.0776, 0.0696, 0.1202, 0.0806, 0.1389, 0.0664, 0.1066, 0.0836]
+last_symbols_price =  [131.87, 428.99, 78.64, 49.36, 46.46, 143.93, 1344.55, 157.16, 211.5, 123.8, 82.52]
+holdings_ranks =  [141 168 106  31   6  30   8  46]
+
+
+
+0 MU    414.88    147 414.88 60987.36 60987.36 370.30 -10.75% 54434.10 54434.10 141 0 
+
+1 ROST  188.65    145 188.65 27354.25 88341.61 211.75 12.24% 30703.75 85137.85 168 0 
+
+2 INTC  46.47    130  46.47 6041.10 94382.71  43.42 -6.56% 5644.60 90782.45 106 0 
+
+3 ASML  1423.0     33 1423.00 46959.00 141341.71 1292.80 -9.15% 42662.40 133444.85  31 0 
+
+4 XEL   76.06     19  76.06 1445.14 142786.85  82.52  8.49% 1567.88 135012.73   6 0 
+
+5 ARM   105.36    314 105.36 33083.04 175869.89 114.38  8.56% 35915.32 170928.05  30 0 
+
+6 EXC   44.78    673  44.78 30136.94 206006.83  49.36 10.23% 33219.28 204147.33   8 0 
+
+7 CASH  1.0     23   1.00  23.00 206029.83   1.00  0.01%  23.00 204170.33  46 0 
+
+
+ ... inside calculateTrades/calculateTrades ...
+ ... inside LastQuotesForSymbolList_hdf
+ ... symbolList = ['MU', 'ROST', 'INTC', 'ASML', 'XEL', 'ARM', 'EXC', 'CASH']
+ ... symbols_file = /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt
+file name for symbols =  _Naz100_symbols_
+file type for symbols =  .txt
+ ... inside loadQuotes_fromHDF
+   . json_fn = /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/daily_abacus_runtime.json
+
+
+symbol_directory =  /Users/donaldpg/pyTAAA_data/Naz100/symbols
+symbols_file =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt
+shortname, extension =  Naz100_symbols .txt
+hdf5filename =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols_.hdf5
+ ...inside loadQuotes_fromHDF ... top of 'try' block
+ ...inside loadQuotes_fromHDF ... 'try' block begin processing dates
+ ...date format =  <class 'str'> object
+ ...date[0] =  1991-01-02
+ ...date_newformat =  1991-01-02
+ ...dates format =  <class 'numpy.ndarray'> object
+ ...dates[0] =  1991-01-02
+ ...date[-1] =  2026-03-06  after format conversion:  <class 'datetime.date'>
+ ...inside loadQuotes_fromHDF ... 'try' block successful
+ ...inside loadQuotes_fromHDF ... which_block =  try
+ ... inside LastQuotesForSymbolList_hdf
+ ... holdingsParams_currentPrice = [370.29998779296875, 211.75, 43.41999816894531, 1292.800048828125, 82.5199966430664, 114.37999725341797, 49.36000061035156, 1.0000885999999536]
+ holdings_symbols      =  ['MU', 'ROST', 'INTC', 'ASML', 'XEL', 'ARM', 'EXC', 'CASH']
+ holdings_shares       =  [147. 145. 130.  33.  19. 314. 673.  23.]
+ holdings_buyprice     =  [ 414.88  188.65   46.47 1423.     76.06  105.36   44.78    1.  ]
+ holdings_currentPrice =  [370.29998779296875, 211.75, 43.41999816894531, 1292.800048828125, 82.5199966430664, 114.37999725341797, 49.36000061035156, 1.0000885999999536]
+ ... i, holdings_symbols[i], holdings_shares[i], holdings_buyprice[i], holdings_currentPrice[i] =  0 MU 147.0 414.88 370.29998779296875
+ ... i, holdings_symbols[i], holdings_shares[i], holdings_buyprice[i], holdings_currentPrice[i] =  1 ROST 145.0 188.65 211.75
+ ... i, holdings_symbols[i], holdings_shares[i], holdings_buyprice[i], holdings_currentPrice[i] =  2 INTC 130.0 46.47 43.41999816894531
+ ... i, holdings_symbols[i], holdings_shares[i], holdings_buyprice[i], holdings_currentPrice[i] =  3 ASML 33.0 1423.0 1292.800048828125
+ ... i, holdings_symbols[i], holdings_shares[i], holdings_buyprice[i], holdings_currentPrice[i] =  4 XEL 19.0 76.06 82.5199966430664
+ ... i, holdings_symbols[i], holdings_shares[i], holdings_buyprice[i], holdings_currentPrice[i] =  5 ARM 314.0 105.36 114.37999725341797
+ ... i, holdings_symbols[i], holdings_shares[i], holdings_buyprice[i], holdings_currentPrice[i] =  6 EXC 673.0 44.78 49.36000061035156
+ ... i, holdings_symbols[i], holdings_shares[i], holdings_buyprice[i], holdings_currentPrice[i] =  7 CASH 23.0 1.0 1.0000885999999536
+ holdings profit =  -1859.4988987844758
+2026-03-08 22:06:17.514289
+currently held stocks:   ['MU', 'ROST', 'INTC', 'ASML', 'XEL', 'ARM', 'EXC', 'CASH']
+currently held shares:   [147. 145. 130.  33.  19. 314. 673.  23.]
+currently held buyprice: [ 414.88  188.65   46.47 1423.     76.06  105.36   44.78    1.  ]
+currently held nowprice: [ 370.3   211.75   43.42 1292.8    82.52  114.38   49.36    1.  ]
+new stock selection: ['AEP', 'CRWD', 'CSCO', 'EXC', 'FAST', 'GILD', 'KLAC', 'PLTR', 'TTWO', 'WMT', 'XEL']
+new stock weight:    [0.0923, 0.0635, 0.1008, 0.0776, 0.0696, 0.1202, 0.0806, 0.1389, 0.0664, 0.1066, 0.0836]
+new stock nowprice:  [131.87, 428.99, 78.64, 49.36, 46.46, 143.93, 1344.55, 157.16, 211.5, 123.8, 82.52]
+ matches (symbols) =      ['XEL', 'EXC']
+ DeltaValue =             [15500.76, -17375.66]
+ DeltaValueThresholded =  [15500.76, -17375.66]
+ cumuAbsDeltaValue =      32876.42
+ cumuAbsDeltaValueThresholded =  32876.42
+ symbol, numDeltaShares =  XEL 187.8424624333495
+ cumValueAfterExchanges parts =  187.0 19.0 82.52
+ symbol, numDeltaShares =  EXC -352.01904376012965
+ cumValueAfterExchanges parts =  -352.0 673.0 49.36
+
+holdings_symbols =  ['MU', 'ROST', 'INTC', 'ASML', 'XEL', 'ARM', 'EXC', 'CASH']
+holdings_shares =  [147. 145. 130.  33.  19. 314. 673.  23.]
+last_symbols_text =  ['AEP', 'CRWD', 'CSCO', 'EXC', 'FAST', 'GILD', 'KLAC', 'PLTR', 'TTWO', 'WMT', 'XEL']
+last_symbols_price =  [131.87, 428.99, 78.64, 49.36, 46.46, 143.93, 1344.55, 157.16, 211.5, 123.8, 82.52]
+   . returned from calculateTrades ...
+
+
+
+current Holdings :
+stocks:  ['MU', 'ROST', 'INTC', 'ASML', 'XEL', 'ARM', 'EXC', 'CASH']
+shares:  ['147', '145', '130', '33', '19', '314', '673', '23']
+buyprice:  ['414.88', '188.65', '46.47', '1423.00', '76.06', '105.36', '44.78', '1.00']
+current ranks:  ['141', '168', '106', '31', '6', '30', '8', '46']
+cumulativecashin:  10000
+
+ ... inside LastQuotesForSymbolList_hdf
+ ... symbolList = ['MU', 'ROST', 'INTC', 'ASML', 'XEL', 'ARM', 'EXC', 'CASH']
+ ... symbols_file = /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt
+file name for symbols =  _Naz100_symbols_
+file type for symbols =  .txt
+ ... inside loadQuotes_fromHDF
+   . json_fn = /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/daily_abacus_runtime.json
+
+
+symbol_directory =  /Users/donaldpg/pyTAAA_data/Naz100/symbols
+symbols_file =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt
+shortname, extension =  Naz100_symbols .txt
+hdf5filename =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols_.hdf5
+ ...inside loadQuotes_fromHDF ... top of 'try' block
+ ...inside loadQuotes_fromHDF ... 'try' block begin processing dates
+ ...date format =  <class 'str'> object
+ ...date[0] =  1991-01-02
+ ...date_newformat =  1991-01-02
+ ...dates format =  <class 'numpy.ndarray'> object
+ ...dates[0] =  1991-01-02
+ ...date[-1] =  2026-03-06  after format conversion:  <class 'datetime.date'>
+ ...inside loadQuotes_fromHDF ... 'try' block successful
+ ...inside loadQuotes_fromHDF ... which_block =  try
+ ... inside LastQuotesForSymbolList_hdf
+   . abs price_diff = 0     44.580017
+1     23.100006
+2      3.050003
+3    130.199951
+4      6.459999
+5      9.019997
+6      4.580002
+7      0.000089
+dtype: float64
+   . abs price_diff.sum() = 220.9900635755859
+ symbol, trades_df_price, trades_df_price = ('XEL', 187.0, 'increase', 82.52, 82.52)
+stocks:      XEL     AEP     CASH    CRWD    CSCO    EXC     FAST    GILD    KLAC    PLTR    TTWO    WMT     XEL     
+shares:      19      142     993     30      261     320     305     170     12      180     64      175     187     
+buyprice:    76.06   131.87  1.00    428.99  78.64   44.78   46.46   143.93  1344.55 157.16  211.50  123.80  82.52   
+
+
+TradeDate: 2026-03-08
+info:  Sell 2026-03-08 ARM      -314  114.38
+info:  Sell 2026-03-08 ASML      -33 1292.80
+info:  Sell 2026-03-08 INTC     -130   43.42
+info:  Sell 2026-03-08 MU       -147  370.30
+info:  Sell 2026-03-08 ROST     -145  211.75
+info:  Sell 2026-03-08 EXC      -353   49.36
+info:  Buy  2026-03-08 AEP       142  131.87
+info:  Buy  2026-03-08 CRWD       30  428.99
+info:  Buy  2026-03-08 CSCO      261   78.64
+info:  Buy  2026-03-08 FAST      305   46.46
+info:  Buy  2026-03-08 GILD      170  143.93
+info:  Buy  2026-03-08 KLAC       12 1344.55
+info:  Buy  2026-03-08 PLTR      180  157.16
+info:  Buy  2026-03-08 TTWO       64  211.50
+info:  Buy  2026-03-08 WMT       175  123.80
+info:  Buy  2026-03-08 XEL       187   82.52
+stocks:      XEL     AEP     CASH    CRWD    CSCO    EXC     FAST    GILD    KLAC    PLTR    TTWO    WMT     XEL     
+shares:      19      142     993     30      261     320     305     170     12      180     64      175     187     
+buyprice:    76.06   131.87  1.00    428.99  78.64   44.78   46.46   143.93  1344.55 157.16  211.50  123.80  82.52   
+ ...inside readSymbolList... existing_company_names_fn =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_companyNames.txt
+ Successfully wrote pyTAAAweb_RankList.txt at Sunday, 08. March 2026 10:06PM
+  Portfolio value (prior run)  :     204,170.33
+  Portfolio value (this run)   :     204,170.33  (changed=False)
+  trade_message changed        : True
+Error: unable to send email
+
+no display found. Using non-interactive Agg backend
+... writeWebPage: current valuation table added to message 
+ ... inside makeValuePlot. '.params' filepath = /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store/PyTAAA_status.params
+... writeWebPage: backtest plot added to message 
+... writeWebPage: backtest (updated) plot added to message 
+ ... rec_plot_abspath = /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web/recommendation_plot.png
+ ... webpage_dir = /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web
+ ... os.path.isfile(rec_plot_abspath) = True
+ ... add_abacus_plot = True
+... writeWebPage: abacus plot added 
+Error: unable to read updates from pyTAAAweb_multiSharpeIndicator_status.params: [Errno 2] No such file or directory: '/Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store/pyTAAAweb_multiSharpeIndicator_status.params'
+2026-03-08 22:06:19 - PyTAAA.functions.MakeValuePlot - WARNING - Error: unable to read updates from pyTAAAweb_multiSharpeIndicator_status.params: [Errno 2] No such file or directory: '/Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store/pyTAAAweb_multiSharpeIndicator_status.params'
+... writeWebPage: uptrending stocks status plot created 
+... writeWebPage: performance dispersion plot created 
+
+
+
+ ... inside functions/CountNewHighsAndLows/newHighsAndLows.py
+.  . stockList =  Naz100
+   . symbols_file =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt
+   . json_fn =  /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/daily_abacus_runtime.json
+   . loading quotes from HDF5 file
+file name for symbols =  _Naz100_symbols_
+file type for symbols =  .txt
+ ... inside loadQuotes_fromHDF
+   . json_fn = /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/daily_abacus_runtime.json
+
+
+symbol_directory =  /Users/donaldpg/pyTAAA_data/Naz100/symbols
+symbols_file =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt
+shortname, extension =  Naz100_symbols .txt
+hdf5filename =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols_.hdf5
+ ...inside loadQuotes_fromHDF ... top of 'try' block
+ ...inside loadQuotes_fromHDF ... 'try' block begin processing dates
+ ...date format =  <class 'str'> object
+ ...date[0] =  1991-01-02
+ ...date_newformat =  1991-01-02
+ ...dates format =  <class 'numpy.ndarray'> object
+ ...dates[0] =  1991-01-02
+ ...date[-1] =  2026-03-06  after format conversion:  <class 'datetime.date'>
+ ...inside loadQuotes_fromHDF ... 'try' block successful
+ ...inside loadQuotes_fromHDF ... which_block =  try
+
+ ... num_days_highlow = (73, 293)
+shape of newHighs_2D =  (215, 8859, 2)
+shape of sumNewHighs =  (8859, 2)
+shape of sumNewHighs =  (8859, 2)
+shape of sumNewHighs =  (8859,)
+working on TradedValue...
+ sharpe_traded =  0.89
+iterations done
+x,y for text =  1991-03-14 2032299.7189217033
+plotfilepath =  /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web/PyTAAA_newHighs_newLows_count__2026-03-08-10.06.33PM_Naz100.png
+... writeWebPage: new highs and lows plot created 
+   . json_fn = /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/daily_abacus_runtime.json
+file name for symbols =  _Naz100_symbols_
+file type for symbols =  .txt
+ ... inside loadQuotes_fromHDF
+   . json_fn = /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/daily_abacus_runtime.json
+
+
+symbol_directory =  /Users/donaldpg/pyTAAA_data/Naz100/symbols
+symbols_file =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt
+shortname, extension =  Naz100_symbols .txt
+hdf5filename =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols_.hdf5
+ ...inside loadQuotes_fromHDF ... top of 'try' block
+ ...inside loadQuotes_fromHDF ... 'try' block begin processing dates
+ ...date format =  <class 'str'> object
+ ...date[0] =  1991-01-02
+ ...date_newformat =  1991-01-02
+ ...dates format =  <class 'numpy.ndarray'> object
+ ...dates[0] =  1991-01-02
+ ...date[-1] =  2026-03-06  after format conversion:  <class 'datetime.date'>
+ ...inside loadQuotes_fromHDF ... 'try' block successful
+ ...inside loadQuotes_fromHDF ... which_block =  try
+Error: unable to read updates from pyTAAAweb_numberUptrendingStocks_status.params: [Errno 2] No such file or directory: '/Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store/pyTAAAweb_DailyChannelOffsetSignal_status.params'
+2026-03-08 22:06:34 - PyTAAA.functions.MakeValuePlot - WARNING - Error: unable to read updates from pyTAAAweb_numberUptrendingStocks_status.params: [Errno 2] No such file or directory: '/Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store/pyTAAAweb_DailyChannelOffsetSignal_status.params'
+   ...inside makeDailyChannelOffsetSignal... last_date =  2026-03-06 00:00:00
+ ... in MakeValuePlot.makeDailyChannelOffsetSignal: send_texts = False, type = <class 'bool'>
+minperiod,maxperiod,incperiod,numdaysinfit,offset =  4 12 3 50 7
+
+  ... inside makeDailyChannelOffsetSignal ...
+
+=== makeDailyChannelOffsetSignal Debug Info ===
+file4path (file just read): /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store/pyTAAAweb_DailyChannelOffsetSignal_status.params
+File exists: False
+_dates array length: 0
+avgPctChannel array length: 0
+numAboveBelowChannel array length: 0
+==================================================
+WARNING: avgPctChannel is empty! Cannot compute min/mean/max.
+This likely means the status file has no valid data.
+... writeWebPage: daily channel offset signal plot created 
+no display found. Using non-interactive Agg backend
+file name for symbols =  _Naz100_symbols_
+file type for symbols =  .txt
+ ... inside loadQuotes_fromHDF
+   . json_fn = /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/daily_abacus_runtime.json
+
+
+symbol_directory =  /Users/donaldpg/pyTAAA_data/Naz100/symbols
+symbols_file =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt
+shortname, extension =  Naz100_symbols .txt
+hdf5filename =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols_.hdf5
+ ...inside loadQuotes_fromHDF ... top of 'try' block
+ ...inside loadQuotes_fromHDF ... 'try' block begin processing dates
+ ...date format =  <class 'str'> object
+ ...date[0] =  1991-01-02
+ ...date_newformat =  1991-01-02
+ ...dates format =  <class 'numpy.ndarray'> object
+ ...dates[0] =  1991-01-02
+ ...date[-1] =  2026-03-06  after format conversion:  <class 'datetime.date'>
+ ...inside loadQuotes_fromHDF ... 'try' block successful
+ ...inside loadQuotes_fromHDF ... which_block =  try
+
+
+
+Backtest check:   last_modified_date (day) =  8  datearray[-1].day =  6
+Generating abacus backtest portfolio values for /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/daily_abacus_runtime.json
+2026-03-08 22:06:34 - PyTAAA.functions.abacus_backtest - INFO - Generating abacus backtest portfolio values for /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/daily_abacus_runtime.json
+
+Generating abacus backtest portfolio values...
+No saved state file found: monte_carlo_state.pkl
+2026-03-08 22:06:34 - PyTAAA.functions.abacus_recommend - WARNING - No saved state file found: monte_carlo_state.pkl
+2026-03-08 22:06:34 - functions.MonteCarloBacktest - INFO - Successfully loaded 8859 values for naz100_pine
+2026-03-08 22:06:34 - functions.MonteCarloBacktest - INFO - Successfully loaded 8859 values for naz100_hma
+2026-03-08 22:06:34 - functions.MonteCarloBacktest - INFO - Successfully loaded 8859 values for naz100_pi
+2026-03-08 22:06:34 - functions.MonteCarloBacktest - INFO - Successfully loaded 6594 values for sp500_hma
+2026-03-08 22:06:34 - functions.MonteCarloBacktest - INFO - Successfully loaded 6594 values for sp500_pine
+2026-03-08 22:06:34 - MonteCarloBacktest - INFO - Initialized MonteCarloBacktest with permutation-invariant tracking (search_mode: exploit)
+Warning: Could not load saved parameters, using config defaults
+Using lookback periods: [59, 165, 270]
+Initializing Monte Carlo backtest system...
+Focus period blending enabled with TWO focus periods:
+  Focus Period 1: 2010-01-01 to 2015-01-01
+  Focus Period 2: 2019-01-01 to 2024-01-01
+Blending weights: Full period 0.2, Focus periods 0.8
+Loading historical portfolio data...
+
+Processing naz100_pine data from /Users/donaldpg/pyTAAA_data/naz100_pine/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8859 data points for naz100_pine
+
+Processing naz100_hma data from /Users/donaldpg/pyTAAA_data/naz100_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8859 data points for naz100_hma
+
+Processing naz100_pi data from /Users/donaldpg/pyTAAA_data/naz100_pi/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8859 data points for naz100_pi
+
+Processing sp500_hma data from /Users/donaldpg/pyTAAA_data/sp500_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...
+Loaded 6593 data points for sp500_hma
+
+Processing sp500_pine data from /Users/donaldpg/pyTAAA_data/sp500_pine/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...
+Loaded 6593 data points for sp500_pine
+
+Total unique dates across all models: 8868
+Date range: 1991-01-02 to 2026-03-06
+
+Aligning data across models...
+Aligned naz100_pine data starting at $10000.00
+Aligned naz100_hma data starting at $10000.00
+Aligned naz100_pi data starting at $10000.00
+Aligned sp500_hma data starting at $10000.00
+Aligned sp500_pine data starting at $10000.00
+
+Data loading complete!
+Using date range from naz100_pine: 8868 dates from 1991-01-02 to 2026-03-06
+Applied JSON normalization values
+Calculating model-switching portfolio...
+Reading existing backtest file: /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store/pyTAAAweb_backtestPortfolioValue.params
+Calculating model-switching portfolio...
+Writing updated values to /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store/pyTAAAweb_backtestPortfolioValue.params
+Successfully updated file:
+  Padded: 8859 dates
+  Updated: 8859 dates with abacus values
+  Total: 8859 dates from 1991-01-02 to 2026-03-06
+Padded 8859 dates, updated 8859 dates in /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store/pyTAAAweb_backtestPortfolioValue.params
+2026-03-08 22:06:39 - PyTAAA.functions.abacus_backtest - INFO - Padded 8859 dates, updated 8859 dates in /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store/pyTAAAweb_backtestPortfolioValue.params
+Total dates: 8859
+2026-03-08 22:06:39 - PyTAAA.functions.abacus_backtest - INFO - Total dates: 8859
+2026-03-08 22:06:41 - __main__ - INFO - Updating abacus backtest portfolio values...
+
+Abacus Model-Switching Portfolio:
+  Final Value: $2,889,130,478
+  Annual Return: 0.4%
+  Sharpe Ratio: 1.60
+  Normalized Score: 0.541
+... writeWebPage: monte carlo backtest plot created 
+file name for symbols =  _Naz100_symbols_
+file type for symbols =  .txt
+ ... inside loadQuotes_fromHDF
+   . json_fn = /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/daily_abacus_runtime.json
+
+
+symbol_directory =  /Users/donaldpg/pyTAAA_data/Naz100/symbols
+symbols_file =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt
+shortname, extension =  Naz100_symbols .txt
+hdf5filename =  /Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_Symbols_.hdf5
+ ...inside loadQuotes_fromHDF ... top of 'try' block
+ ...inside loadQuotes_fromHDF ... 'try' block begin processing dates
+ ...date format =  <class 'str'> object
+ ...date[0] =  1991-01-02
+ ...date_newformat =  1991-01-02
+ ...dates format =  <class 'numpy.ndarray'> object
+ ...dates[0] =  1991-01-02
+ ...date[-1] =  2026-03-06  after format conversion:  <class 'datetime.date'>
+ ...inside loadQuotes_fromHDF ... 'try' block successful
+ ...inside loadQuotes_fromHDF ... which_block =  try
+   . DEBUG: dist.size in min spanning tree: 10404
+   . DEBUG: dist non-zero size: 5151
+   . DEBUG: mst non-zero size: 101
+   . DEBUG: symbols_file='/Users/donaldpg/pyTAAA_data/Naz100/symbols/Naz100_symbols.txt', symbols_lower='/users/donaldpg/pytaaa_data/naz100/symbols/naz100_symbols.txt'
+   . DEBUG: 'naz100' in symbols_lower: True
+   . DEBUG: 'sp500' in symbols_lower: False
+... writeWebPage: minimum spanning tree plot created 
+... writeWebPage: current rankings table added to message 
+istring = 2026-2-1 Add    ALNY
+istring = 2026-2-1 Add    FER
+istring = 2026-2-1 Add    INSM
+istring = 2026-2-1 Add    MPWR
+istring = 2026-2-1 Add    STX
+istring = 2026-2-1 Add    WDC
+istring = 2026-2-1 Add    WMT
+istring = 2026-2-1 Remove AZN
+istring = 2026-2-1 Remove BIIB
+istring = 2026-2-1 Remove CDW
+istring = 2026-2-1 Remove GFS
+istring = 2026-2-1 Remove LULU
+istring = 2026-2-1 Remove ON
+istring = 2026-2-1 Remove TTD
+istring = 2025-8-16 Add    SHOP
+istring = 2025-8-16 Add    TRI
+istring = 2025-8-16 Remove ANSS
+istring = 2025-8-16 Remove MDB
+istring = 2025-3-10 Add    JD
+istring = 2025-3-10 Add    MRNA
+istring = 2025-3-10 Add    SGEN
+istring = 2025-3-10 Add    ALGN
+istring = 2025-3-10 Add    ILMN
+istring = 2025-3-10 Add    DLTR
+istring = 2025-3-10 Add    EBAY
+istring = 2025-3-10 Add    ZM
+istring = 2025-3-10 Add    WBA
+istring = 2025-3-10 Add    ENPH
+istring = 2025-3-10 Add    SIRI
+istring = 2025-3-10 Add    LCID
+istring = 2025-3-10 Remove MSTR
+istring = 2025-3-10 Remove MDB
+istring = 2025-3-10 Remove ARM
+istring = 2025-3-10 Remove DASH
+istring = 2025-3-10 Remove TTWO
+istring = 2025-3-10 Remove ROP
+istring = 2025-3-10 Remove APP
+istring = 2025-3-10 Remove AXON
+istring = 2025-3-10 Remove LIN
+istring = 2025-3-10 Remove CCEP
+istring = 2025-3-10 Remove PLTR
+istring = 2025-3-10 Remove CDW
+istring = 2013-12-23 Remove XRAY
+istring = 2013-12-23 Remove FOSL
+istring = 2013-12-23 Remove MCHP
+istring = 2013-12-23 Remove NUAN
+istring = 2013-12-23 Remove SHLD
+istring = 2013-12-23 Add    DISH
+istring = 2013-12-23 Add    ILMN
+istring = 2013-12-23 Add    NXPI
+istring = 2013-12-23 Add    TSCO
+istring = 2013-12-23 Add    TRIP
+istring = 2013-10-31 Remove DELL
+istring = 2013-10-31 Add    VIP
+istring = 2013-08-15 Remove LIFE
+istring = 2013-08-15 Add    GMCR
+istring = 2013-07-25 Remove BMC
+istring = 2013-07-25 Add    CHTR
+istring = 2013-07-15 Remove ORCL
+istring = 2013-07-15 Add    TSLA
+istring = 2013-07-01 Remove FOXA
+istring = 2013-07-01 Add    NWSA
+istring = 2013-06-06 Remove PRGO
+istring = 2013-06-06 Add    NFLX
+istring = 2013-06-05 Remove VMED
+istring = 2013-06-05 Add    LMCA
+istring = 2013-03-18 Remove STRZA
+istring = 2013-03-18 Add    KRFT
+istring = 2013-01-15 Remove LMCA
+istring = 2013-01-15 Add    STRZA
+istring = 2012-12-24 Remove APOL
+istring = 2012-12-24 Remove EA
+istring = 2012-12-24 Remove FLEX
+istring = 2012-12-24 Reomve GMCR
+istring = 2012-12-24 Remove LRCX
+istring = 2012-12-24 Remove MRVL
+istring = 2012-12-24 Remove NFLX
+istring = 2012-12-24 Remove RIMM
+istring = 2012-12-24 Remove VRSN
+istring = 2012-12-24 Remove WCRX
+istring = 2012-12-24 Add    ADI
+istring = 2012-12-24 Add    CTRX
+istring = 2012-12-24 Add    DISCA
+istring = 2012-12-24 Add    EQIX
+istring = 2012-12-24 Add    LBTYA
+istring = 2012-12-24 Add    LMCA
+istring = 2012-12-24 Add    REGN
+istring = 2012-12-24 Add    SBAC
+istring = 2012-12-24 Add    VRSK
+istring = 2012-12-24 Add    WDC
+istring = 2012-12-12 Remove INFY
+istring = 2012-12-12 Add    FB
+istring = 2012-07-23 Remove CTRP
+istring = 2012-07-23 Add    MDLZ
+istring = 2012-05-30 Remove TEVA
+istring = 2012-05-30 Add    VIAB
+istring = 2012-04-23 Remove FSLR
+istring = 2012-04-23 Add    TXN
+istring = 2012-01-09 Remove HANS
+istring = 2012-01-09 Add    MNST
+... writeWebPage: current index exchanges table added to message 
+ Successfully wrote updates to pyTAAAweb html  Sunday, 08. March 2026 10:06PM
+
+
+
+ ... checking banner image is exists
+   . banner_fn = /Users/donaldpg/PyProjects/worktree2/PyTAAA/assets/PyTAAA_stock-chart-blue.png
+   . dest_fn = /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web/PyTAAA_stock-chart-blue.png
+
+
+ ... checking original backtest plots exist
+   . banner_fn = /Users/donaldpg/PyProjects/worktree2/PyTAAA/assets/PyTAAA_backtest.png
+   . dest_fn = /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web/PyTAAA_backtest.png
+   . banner_fn = /Users/donaldpg/PyProjects/worktree2/PyTAAA/assets/PyTAAA_backtest_updated.png
+   . dest_fn = /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pyTAAA_web/PyTAAA_backtest_updated.png
+  ...platform:  Darwin arm64 Donalds-MacBook-Pro.local
+Could not place web files on server...
+  Previous portfolio value        :     204,170.33
+  Updated portfolio value         :     204,170.33  [2026-03-08 22:06:41]
+ . finished at  2026-03-08 22:06:41.258249
+--- PyTAAA Update Complete ---
+
+
+--- Updating Abacus Backtest Values ---
+Generating abacus backtest portfolio values for /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pytaaa_naz100_sp500_abacus.json
+2026-03-08 22:06:41 - PyTAAA.functions.abacus_backtest - INFO - Generating abacus backtest portfolio values for /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/pytaaa_naz100_sp500_abacus.json
+
+Generating abacus backtest portfolio values...
+No saved state file found: monte_carlo_state.pkl
+2026-03-08 22:06:41 - PyTAAA.functions.abacus_recommend - WARNING - No saved state file found: monte_carlo_state.pkl
+2026-03-08 22:06:41 - functions.MonteCarloBacktest - INFO - Successfully loaded 8859 values for naz100_pine
+2026-03-08 22:06:41 - functions.MonteCarloBacktest - INFO - Successfully loaded 8859 values for naz100_hma
+2026-03-08 22:06:41 - functions.MonteCarloBacktest - INFO - Successfully loaded 8859 values for naz100_pi
+2026-03-08 22:06:41 - functions.MonteCarloBacktest - INFO - Successfully loaded 6594 values for sp500_hma
+2026-03-08 22:06:41 - functions.MonteCarloBacktest - INFO - Successfully loaded 6594 values for sp500_pine
+2026-03-08 22:06:41 - MonteCarloBacktest - INFO - Initialized MonteCarloBacktest with permutation-invariant tracking (search_mode: exploit)
+Warning: Could not load saved parameters, using config defaults
+Using lookback periods: [59, 165, 270]
+Initializing Monte Carlo backtest system...
+Focus period blending enabled with TWO focus periods:
+  Focus Period 1: 2010-01-01 to 2015-01-01
+  Focus Period 2: 2019-01-01 to 2024-01-01
+Blending weights: Full period 0.2, Focus periods 0.8
+Loading historical portfolio data...
+
+Processing naz100_pine data from /Users/donaldpg/pyTAAA_data/naz100_pine/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8859 data points for naz100_pine
+
+Processing naz100_hma data from /Users/donaldpg/pyTAAA_data/naz100_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8859 data points for naz100_hma
+
+Processing naz100_pi data from /Users/donaldpg/pyTAAA_data/naz100_pi/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...Processed 7000 lines...Processed 8000 lines...
+Loaded 8859 data points for naz100_pi
+
+Processing sp500_hma data from /Users/donaldpg/pyTAAA_data/sp500_hma/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...
+Loaded 6593 data points for sp500_hma
+
+Processing sp500_pine data from /Users/donaldpg/pyTAAA_data/sp500_pine/data_store/pyTAAAweb_backtestPortfolioValue.params
+Using backtested portfolio values
+Processed 1000 lines...Processed 2000 lines...Processed 3000 lines...Processed 4000 lines...Processed 5000 lines...Processed 6000 lines...
+Loaded 6593 data points for sp500_pine
+
+Total unique dates across all models: 8868
+Date range: 1991-01-02 to 2026-03-06
+
+Aligning data across models...
+Aligned naz100_pine data starting at $10000.00
+Aligned naz100_hma data starting at $10000.00
+Aligned naz100_pi data starting at $10000.00
+Aligned sp500_hma data starting at $10000.00
+Aligned sp500_pine data starting at $10000.00
+
+Data loading complete!
+Using date range from naz100_pine: 8868 dates from 1991-01-02 to 2026-03-06
+Applied JSON normalization values
+Calculating model-switching portfolio...
+Reading existing backtest file: /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store/pyTAAAweb_backtestPortfolioValue.params
+Calculating model-switching portfolio...
+Writing updated values to /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store/pyTAAAweb_backtestPortfolioValue.params
+Successfully updated file:
+  Updated: 8859 dates with abacus values
+  Total: 8859 dates from 1991-01-02 to 2026-03-06
+Padded 0 dates, updated 8859 dates in /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store/pyTAAAweb_backtestPortfolioValue.params
+2026-03-08 22:06:42 - PyTAAA.functions.abacus_backtest - INFO - Padded 0 dates, updated 8859 dates in /Users/donaldpg/pyTAAA_data/naz100_sp500_abacus/data_store/pyTAAAweb_backtestPortfolioValue.params
+Total dates: 8859
+2026-03-08 22:06:42 - PyTAAA.functions.abacus_backtest - INFO - Total dates: 8859
+2026-03-08 22:06:43 - __main__ - INFO - Abacus backtest portfolio values updated
+
+Abacus Model-Switching Portfolio:
+  Final Value: $2,889,130,478
+  Annual Return: 0.4%
+  Sharpe Ratio: 1.60
+  Normalized Score: 0.541
+✓ Abacus backtest portfolio values updated successfully
+--- Abacus Backtest Update Complete ---
+
+=== Daily Abacus Update Complete ===
+Completed at: 2026-03-08 22:06:43

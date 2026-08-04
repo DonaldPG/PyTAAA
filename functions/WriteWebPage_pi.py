@@ -102,6 +102,8 @@ def writeWebPage(
         makeDailyChannelOffsetSignal,
         makeDailyMonteCarloBacktest,
     )
+    from macro.liquidity import make_liquidity_plot
+    from macro.margin_debt import make_margin_debt_plot
 
     from functions.GetParams import get_json_params, get_symbols_file, get_web_output_dir
 
@@ -271,6 +273,22 @@ def writeWebPage(
 
 
     ##########################################
+    # make margin debt and portfolio overlay plot
+    ##########################################
+
+    margin_debt_htmlText = make_margin_debt_plot(json_fn)
+    print("... writeWebPage: margin debt plot created ")
+
+
+    ##########################################
+    # make liquidity proxy plot and regime summary
+    ##########################################
+
+    liquidity_htmlText = make_liquidity_plot(json_fn)
+    print("... writeWebPage: liquidity proxy plot created ")
+
+
+    ##########################################
     # compute stock value compared to offset trend and make plot
     ##########################################
 
@@ -390,6 +408,8 @@ def writeWebPage(
             # Only write plots that weren't added to message
             f.write(figure5_htmlText)
             f.write(figure5aa_htmlText)
+            f.write(margin_debt_htmlText)
+            f.write(liquidity_htmlText)
             f.write(figure5a_htmlText)
             f.write(figure5b_htmlText)
             f.write(figure6_htmlText)

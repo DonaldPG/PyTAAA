@@ -224,10 +224,12 @@ def write_rank_list_html(
     # assigned those weights.
     ############################################################
     from math import sqrt as _sqrt
+    _params_mo = {}
     try:
         _params_mo = get_json_params(json_fn)
         _long_period_mo = int(_params_mo.get("LongPeriod", 65))
     except Exception:
+        _params_mo = {}
         _long_period_mo = 65
 
     _n_stocks_mo = adjClose.shape[0]
@@ -283,6 +285,25 @@ def write_rank_list_html(
     _sharpe_mo[~_in_index_mask & ~_cash_mask] = -np.inf
     _sharpe_mo_start[~_in_index_mask & ~_cash_mask] = -np.inf
 
+    def _rank_from_weights(weight_vec: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """Build deterministic in-index ranks from a weight vector."""
+        _eligible = [
+            ji for ji in range(_n_stocks_mo)
+            if _in_index_mask[ji] and (not _cash_mask[ji])
+        ]
+        _sorted = sorted(
+            _eligible,
+            key=lambda ji: (
+                float(weight_vec[ji]) <= 0.0,
+                -float(weight_vec[ji]),
+                symbols[ji].strip(),
+            ),
+        )
+        _rank = np.zeros(_n_stocks_mo, dtype=int)
+        for _r, _ji in enumerate(_sorted, 1):
+            _rank[_ji] = _r
+        return _rank, np.array(_sorted, dtype=int)
+
     ############################################################
     # Compute "Rank (today)" and "Wt (today)" from a single shared
     # sort order so they are definitionally consistent:
@@ -320,85 +341,103 @@ def write_rank_list_html(
         _abs_max_wt = 0.9
         _stock_weight_method_mo = "delta_rank_sharpe_weight"
 
-    _today_signal_arr = signal2D_daily[:, -1]   # 0.0 or 1.0
-
-    # Build a score for every stock; only in-index non-CASH get real
-    # values. ex-index and CASH go to -inf so they tail the ranking.
-    _active_for_rank = _in_index_mask & ~_cash_mask
-    _rank_score_today = np.full(_n_stocks_mo, -np.inf)
-    _rank_score_today[_active_for_rank] = (
-        _today_signal_arr[_active_for_rank] * 1000.0
-        + _sharpe_mo[_active_for_rank]
+    _is_hma_table_mode = (
+        str(_params_mo.get("uptrendSignalMethod", "")) == "HMAs"
+        and str(_params_mo.get("stockList", "")) in ("SP500", "Naz100")
     )
 
-    # Single shared sort order — used for BOTH rank and weight.
-    _today_sort_order = np.argsort(-_rank_score_today, kind="stable")
+    if _is_hma_table_mode:
+        # HMA tables must reflect the exact backtest-held weights so
+        # month-start and today columns are internally consistent.
+        weights_today = last_weights.copy()
+        rank_today, _today_sort_order = _rank_from_weights(weights_today)
+        rank_month_start, sort_order = _rank_from_weights(weights_month_start)
 
-    # Rank (today): 1-based position within in-index stocks only,
-    # matching the same ordering used to select Wt (today) stocks.
-    # ex-index stocks are excluded from the count (rank stays 0).
-    rank_today = np.zeros(_n_stocks_mo, dtype=int)
-    _today_rank_ctr = 0
-    for _ji in _today_sort_order:
-        if _in_index_mask[_ji]:
-            _today_rank_ctr += 1
-            rank_today[_ji] = _today_rank_ctr
+        # On the first trading day, month start is today by definition.
+        if _month_start_idx == (_n_days_all - 1):
+            weights_month_start = weights_today.copy()
+            rank_month_start = rank_today.copy()
+            sort_order = _today_sort_order
+    else:
+        _today_signal_arr = signal2D_daily[:, -1]   # 0.0 or 1.0
 
-    # Wt (today): walk the same sort order, collect only uptrending
-    # in-index stocks until we have numberStocksTraded selected.
-    weights_today = np.zeros(_n_stocks_mo, dtype=float)
-    _selected_today = []
-    for _ji in _today_sort_order:
-        if (_today_signal_arr[_ji] > 0) and _active_for_rank[_ji]:
-            _selected_today.append(_ji)
-            if len(_selected_today) == _num_stocks_traded:
-                break
-    if _selected_today:
-        _sel_idx = np.array(_selected_today, dtype=int)
-        # Assign weights using the configured stockWeightMethod so
-        # that Wt (today) is consistent with Wt (mo start).
-        if _stock_weight_method_mo == "equal_weight":
-            _cw = np.ones(len(_sel_idx)) / len(_sel_idx)
-        else:
-            # Sharpe-proportional with min/max clipping (matches
-            # sharpeWeightedRank_2D / abs_sharpe_weight behaviour).
-            _sel_sharpe = np.nan_to_num(
-                _sharpe_mo[_sel_idx], nan=0.0
-            )
-            if _sel_sharpe.sum() == 0:
-                _raw_wt = np.ones(len(_sel_idx)) / len(_sel_idx)
-            else:
-                _raw_wt = _sel_sharpe / _sel_sharpe.sum()
-            _eq_wt = 1.0 / len(_sel_idx)
-            _cw = np.clip(
-                _raw_wt,
-                _min_wt_factor * _eq_wt,
-                min(_max_wt_factor * _eq_wt, _abs_max_wt),
-            )
-            if _cw.sum() > 0:
-                _cw /= _cw.sum()
-            else:
+        # Build a score for every stock; only in-index non-CASH get real
+        # values. ex-index and CASH go to -inf so they tail the ranking.
+        _active_for_rank = _in_index_mask & ~_cash_mask
+        _rank_score_today = np.full(_n_stocks_mo, -np.inf)
+        _rank_score_today[_active_for_rank] = (
+            _today_signal_arr[_active_for_rank] * 1000.0
+            + _sharpe_mo[_active_for_rank]
+        )
+
+        # Single shared sort order — used for BOTH rank and weight.
+        _today_sort_order = np.argsort(-_rank_score_today, kind="stable")
+
+        # Rank (today): 1-based position within in-index stocks only,
+        # matching the same ordering used to select Wt (today) stocks.
+        # ex-index stocks are excluded from the count (rank stays 0).
+        rank_today = np.zeros(_n_stocks_mo, dtype=int)
+        _today_rank_ctr = 0
+        for _ji in _today_sort_order:
+            if _in_index_mask[_ji]:
+                _today_rank_ctr += 1
+                rank_today[_ji] = _today_rank_ctr
+
+        # Wt (today): walk the same sort order, collect only uptrending
+        # in-index stocks until we have numberStocksTraded selected.
+        weights_today = np.zeros(_n_stocks_mo, dtype=float)
+        _selected_today = []
+        for _ji in _today_sort_order:
+            if (_today_signal_arr[_ji] > 0) and _active_for_rank[_ji]:
+                _selected_today.append(_ji)
+                if len(_selected_today) == _num_stocks_traded:
+                    break
+        if _selected_today:
+            _sel_idx = np.array(_selected_today, dtype=int)
+            # Assign weights using the configured stockWeightMethod so
+            # that Wt (today) is consistent with Wt (mo start).
+            if _stock_weight_method_mo == "equal_weight":
                 _cw = np.ones(len(_sel_idx)) / len(_sel_idx)
-        weights_today[_sel_idx] = _cw
+            else:
+                # Sharpe-proportional with min/max clipping (matches
+                # sharpeWeightedRank_2D / abs_sharpe_weight behaviour).
+                _sel_sharpe = np.nan_to_num(
+                    _sharpe_mo[_sel_idx], nan=0.0
+                )
+                if _sel_sharpe.sum() == 0:
+                    _raw_wt = np.ones(len(_sel_idx)) / len(_sel_idx)
+                else:
+                    _raw_wt = _sel_sharpe / _sel_sharpe.sum()
+                _eq_wt = 1.0 / len(_sel_idx)
+                _cw = np.clip(
+                    _raw_wt,
+                    _min_wt_factor * _eq_wt,
+                    min(_max_wt_factor * _eq_wt, _abs_max_wt),
+                )
+                if _cw.sum() > 0:
+                    _cw /= _cw.sum()
+                else:
+                    _cw = np.ones(len(_sel_idx)) / len(_sel_idx)
+            weights_today[_sel_idx] = _cw
 
-    # Table display order for month-start: walk the global sort of
-    # _rank_score_mo, keeping only in-index stocks.
-    _active_for_mo = _in_index_mask & ~_cash_mask
-    _rank_score_mo = np.full(_n_stocks_mo, -np.inf)
-    _rank_score_mo[_active_for_mo] = (
-        (weights_month_start[_active_for_mo] > 0).astype(float) * 1000.0
-        + _sharpe_mo_start[_active_for_mo]
-    )
-    # sort_order: in-index stocks in descending _rank_score_mo order.
-    sort_order = np.array(
-        [j for j in np.argsort(-_rank_score_mo, kind="stable")
-         if _in_index_mask[j]]
-    )
-    # Rank (start of month): 1-based position within the displayed
-    # in-index set. Stocks with weight = 0 are ranked beyond Wt-holders.
-    rank_month_start = np.zeros(_n_stocks_mo, dtype=int)
-    for _r, _ji in enumerate(sort_order, 1):
-        rank_month_start[_ji] = _r
+        # Table display order for month-start: walk the global sort of
+        # _rank_score_mo, keeping only in-index stocks.
+        _active_for_mo = _in_index_mask & ~_cash_mask
+        _rank_score_mo = np.full(_n_stocks_mo, -np.inf)
+        _rank_score_mo[_active_for_mo] = (
+            (weights_month_start[_active_for_mo] > 0).astype(float) * 1000.0
+            + _sharpe_mo_start[_active_for_mo]
+        )
+        # sort_order: in-index stocks in descending _rank_score_mo order.
+        sort_order = np.array(
+            [j for j in np.argsort(-_rank_score_mo, kind="stable")
+             if _in_index_mask[j]]
+        )
+        # Rank (start of month): 1-based position within the displayed
+        # in-index set. Stocks with weight = 0 are ranked beyond Wt-holders.
+        rank_month_start = np.zeros(_n_stocks_mo, dtype=int)
+        for _r, _ji in enumerate(sort_order, 1):
+            rank_month_start[_ji] = _r
 
     # Column header widths (px).  Text wrapping is allowed inside cells.
     _COL_RANK_MO   = 60
