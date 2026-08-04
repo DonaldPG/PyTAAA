@@ -36,7 +36,7 @@
 
 ## When Was It Done and By Whom
 - Date: 2026-08-04
-- Performed by: Donald P. Gregory with GitHub Copilot (GPT-5.3-Codex)
+- Performed by: Donald P. Griffith with GitHub Copilot (GPT-5.3-Codex)
 
 ## Basic Info (Relevant Commits, Files Involved)
 - Branch at time of work: orchestration-refactor
