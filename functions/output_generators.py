@@ -285,18 +285,40 @@ def write_rank_list_html(
     _sharpe_mo[~_in_index_mask & ~_cash_mask] = -np.inf
     _sharpe_mo_start[~_in_index_mask & ~_cash_mask] = -np.inf
 
+    def _ma1_sharpe_tie_break() -> np.ndarray:
+        """Return MA1-window Sharpe values for deterministic HMA tie-breaks."""
+        _ma1_days = int(_params_mo.get("MA1", max(20, _lookback_mo)))
+        _ma1_days = max(1, min(_ma1_days, max(1, _n_days_mo - 1)))
+        _start_ma1 = max(0, _n_days_mo - _ma1_days - 1)
+        _returns_ma1 = _daily_gl[:, _start_ma1:-1] - 1.0
+        _mean_ma1 = np.nanmean(_returns_ma1, axis=1)
+        _std_ma1 = np.nanstd(_returns_ma1, axis=1, ddof=1)
+        _std_ma1[_std_ma1 == 0.0] = np.nan
+        _sharpe_ma1 = np.nan_to_num(
+            _mean_ma1 / _std_ma1 * _sqrt(252), nan=0.0
+        )
+        _sharpe_ma1[_cash_mask] = -np.inf
+        _sharpe_ma1[~_in_index_mask & ~_cash_mask] = -np.inf
+        return _sharpe_ma1
+
     def _rank_from_weights(weight_vec: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        """Build deterministic in-index ranks from a weight vector."""
+        """Build deterministic in-index ranks from a weight vector.
+
+        For HMA tables, equal weight or equal rank values are resolved by the
+        MA1-window Sharpe ratio rather than by ticker-name alphabetization.
+        """
         _eligible = [
             ji for ji in range(_n_stocks_mo)
             if _in_index_mask[ji] and (not _cash_mask[ji])
         ]
+        _ma1_tie_break = _ma1_sharpe_tie_break()
         _sorted = sorted(
             _eligible,
             key=lambda ji: (
                 float(weight_vec[ji]) <= 0.0,
                 -float(weight_vec[ji]),
-                symbols[ji].strip(),
+                -float(_ma1_tie_break[ji]),
+                ji,
             ),
         )
         _rank = np.zeros(_n_stocks_mo, dtype=int)

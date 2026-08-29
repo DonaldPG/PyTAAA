@@ -51,6 +51,68 @@ def _minimal_params() -> dict:
     }
 
 
+@pytest.mark.agent_runnable
+def test_hma_tie_break_uses_ma1_sharpe_not_symbol(tmp_path, monkeypatch):
+    """Equal HMA weights should sort by MA1 Sharpe instead of ticker name."""
+    import functions.GetParams as getparams
+    import functions.readSymbols as readsymbols
+    from functions.output_generators import write_rank_list_html
+
+    p_store = tmp_path / "performance"
+    web_dir = tmp_path / "web"
+    p_store.mkdir()
+    web_dir.mkdir()
+
+    monkeypatch.setattr(
+        getparams,
+        "get_performance_store",
+        lambda _json_fn: str(p_store),
+    )
+    monkeypatch.setattr(
+        getparams,
+        "get_webpage_store",
+        lambda _json_fn: str(web_dir),
+    )
+    monkeypatch.setattr(
+        "functions.output_generators.get_json_params",
+        lambda _json_fn: {
+            "LongPeriod": 10,
+            "MA1": 5,
+            "stockList": "Naz100",
+            "uptrendSignalMethod": "HMAs",
+        },
+    )
+    monkeypatch.setattr(
+        readsymbols,
+        "read_company_names_local",
+        lambda *_args, **_kwargs: (["ALPHA", "BETA"], ["Alpha", "Beta"]),
+    )
+
+    dates = _make_datearray(30)
+    alpha = 100.0 + np.linspace(0.0, 0.5, 30)
+    beta = 100.0 + np.linspace(0.0, 0.1, 30)
+    adjClose = np.vstack([alpha, beta])
+    signal2D = np.ones((2, 30), dtype=float)
+    monthgainlossweight = np.array([
+        [0.5] * 30,
+        [0.5] * 30,
+    ], dtype=float)
+
+    write_rank_list_html(
+        str(tmp_path / "config.json"),
+        ["ALPHA", "BETA"],
+        adjClose,
+        signal2D,
+        monthgainlossweight,
+        dates,
+    )
+
+    output = (web_dir / "pyTAAAweb_RankList.txt").read_text()
+    alpha_idx = output.index(">ALPHA</td>")
+    beta_idx = output.index(">BETA</td>")
+    assert beta_idx < alpha_idx
+
+
 ##############################################################################
 # Tests: generate_portfolio_plots – backward compatibility
 ##############################################################################

@@ -6,7 +6,7 @@ import pandas as pd
 #import nose
 import os
 import numpy as np
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, cast
 
 #from scipy.stats import gmean
 
@@ -450,12 +450,12 @@ def compareHDF_and_newquotes(
             hdf_index = symbols_hdf.index(isymbol)
             firstindexup_hdf = np.argmax(np.clip(x_hdf[hdf_index,:]/x_hdf[hdf_index,0],1.,1.+1.e-5))
             firstindexdown_hdf = np.argmin(np.clip(x_hdf[hdf_index,:]/x_hdf[hdf_index,0],1.-1.e-5,1.))
-            firstindex_hdf = max(firstindexup_hdf,firstindexdown_hdf)
+            firstindex_hdf = int(max(firstindexup_hdf, firstindexdown_hdf))
 
             net_index = symbols_net.index(isymbol)
             firstindexup_net = np.argmax(np.clip(x_net[net_index,:]/x_net[net_index,0],1.,1.+1.e-5))
             firstindexdown_net = np.argmin(np.clip(x_net[net_index,:]/x_net[net_index,0],1.-1.e-5,1.))
-            firstindex_net = max(firstindexup_net,firstindexdown_net)
+            firstindex_net = int(max(firstindexup_net, firstindexdown_net))
             firstDate = max( date_net[firstindex_net], date_hdf[firstindex_hdf] )
             lastDate = min( date_net[-1], date_hdf[-1] )
 
@@ -553,9 +553,9 @@ def getLastDateFromHDF5(
     print(" ... inside UpdateSymbols_inHDF5 ... begin_full_update_hour = ", begin_full_update_hour)
     print(" ... inside UpdateSymbols_inHDF5 ... end_full_update_hour = ", end_full_update_hour)
     print(" ... inside UpdateSymbols_inHDF5 ... hourOfDay = ", hourOfDay, hourOfDay >= begin_full_update_hour or hourOfDay <= end_full_update_hour)
-    #if  hourOfDay >= 22 :
-    return yesterday
-    if  hourOfDay >= begin_full_update_hour or hourOfDay <= end_full_update_hour:
+    # During the full-update window, refresh from the oldest stored date
+    # so splits/dividends are fully re-applied across history.
+    if hourOfDay >= begin_full_update_hour or hourOfDay <= end_full_update_hour:
         return datearray[0]
     else:
         return yesterday
@@ -737,9 +737,9 @@ def UpdateHDF_yf(
 
     def _return_quotes_array(
             filename: str, json_fn: str,
-            start_date: str = "2018-01-01",
-            end_date: Optional[str] = None
-    ) -> Tuple[np.ndarray, list, list]:
+            start_date: Any = "2018-01-01",
+            end_date: Optional[Any] = None
+    ) -> Tuple[np.ndarray, list[str], list[str]]:
         ###
         ### get quotes from yahoo_fix. return quotes, symbols, dates
         ### as numpy arrays
@@ -771,14 +771,18 @@ def UpdateHDF_yf(
             symbols, start=start_date, end=end_date, auto_adjust=False,
             repair=True, timeout=20
         )
+        if data is None:
+            raise RuntimeError("yfinance download returned None")
+
+        adj_close = data['Adj Close']
         try:
             # for multiple symbols
-            symbolList = data['Adj Close'].columns
+            symbolList = adj_close.columns
         except Exception:
             # for single symbol
             symbolList = symbols
-        datearray = data['Adj Close'].index
-        x = data['Adj Close'].values
+        datearray = adj_close.index
+        x = np.asarray(adj_close.values)
         newdates = []
         for i in range(datearray.shape[0]):
             newdates.append(str(datearray[i]).split(' ')[0])
@@ -791,7 +795,7 @@ def UpdateHDF_yf(
         symbolList = [str(s) for s in symbolList]
         newdates = [str(s) for s in newdates]
 
-        return x, symbolList, newdates
+        return cast(np.ndarray, x), symbolList, newdates
 
     # get last date in hdf5 archive
     #from datetime import datetime
@@ -823,6 +827,8 @@ def UpdateHDF_yf(
     print("\n ... symbols_in_HDF5 = "+str(symbols_in_HDF5))
     new_symbols = [str(x) for x in symbols_in_list if str(x) not in symbols_in_HDF5]
     print(" ... new_symbols = "+str(new_symbols))
+
+    quotes_NewSymbols: Optional[pd.DataFrame] = None
 
     # write new symbols to temporary file
     if len(new_symbols) > 0:
@@ -943,7 +949,7 @@ def UpdateHDF_yf(
         updatedquotes[isymbolupdate] = xupdate
     ###################
 
-    if len(new_symbols) > 0:
+    if len(new_symbols) > 0 and quotes_NewSymbols is not None:
         print("\n\n\n...quotes_NewSymbols = ", quotes_NewSymbols.info())
         print("\n\n\n...updatedquotes = ", updatedquotes.info())
         for isymbol in new_symbols:

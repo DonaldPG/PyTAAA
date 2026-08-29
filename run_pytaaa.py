@@ -235,6 +235,20 @@ def run_pytaaa(json_fn):
     holdings_currentPrice = LastQuotesForSymbolList_hdf(
         holdings_symbols, symbol_file, json_fn
     )
+    holdings_currentPrice = np.array(holdings_currentPrice, dtype=float)
+    invalid_price_mask = ~np.isfinite(holdings_currentPrice)
+    if invalid_price_mask.any():
+        bad_symbols = np.array(holdings_symbols, dtype=object)[
+            invalid_price_mask
+        ].tolist()
+        print(
+            " Warning: Non-finite holding prices for symbols "
+            f"{bad_symbols}. Using buyprice as fallback for valuation."
+        )
+        holdings_currentPrice[invalid_price_mask] = holdings_buyprice[
+            invalid_price_mask
+        ]
+    holdings_currentPrice = holdings_currentPrice.tolist()
     print("holdings_symbols = ", holdings_symbols)
     print("holdings_shares = ", holdings_shares)
     print("holdings_currentPrice = ", holdings_currentPrice)

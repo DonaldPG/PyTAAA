@@ -88,6 +88,24 @@ def calculateTrades(
         holdingsParams_symbols, symbols_file, json_fn
     )
 
+    # Guard against missing quotes (NaN/inf) so valuation and share
+    # deltas do not propagate NaN into integer conversions.
+    holdingsParams_currentPrice = np.array(
+        holdingsParams_currentPrice, dtype=float
+    )
+    invalid_price_mask = ~np.isfinite(holdingsParams_currentPrice)
+    if invalid_price_mask.any():
+        bad_symbols = np.array(holdingsParams_symbols, dtype=object)[
+            invalid_price_mask
+        ].tolist()
+        print(
+            " Warning: Non-finite current prices for symbols "
+            f"{bad_symbols}. Using buyprice as fallback for trade math."
+        )
+        holdingsParams_currentPrice[invalid_price_mask] = (
+            holdingsParams_buyprice[invalid_price_mask]
+        )
+
     print(" ... holdingsParams_currentPrice = " + str(holdingsParams_currentPrice))
 
     # skip combining...

@@ -279,116 +279,115 @@ def read_symbols_list_web(json_fn: str, verbose: bool = True) -> Tuple[list, lis
         companyNamesList = []
         data=[]
 
+        base_url = 'https://en.wikipedia.org/wiki/List_of_NASDAQ-100_companies'
+
         try:
+            # Wikipedia is the primary source for Naz100 constituents.
+            req = urllib.request.Request(
+                base_url,
+                headers={
+                    'User-Agent': (
+                        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+                        'AppleWebKit/537.36 (KHTML, like Gecko) '
+                        'Chrome/91.0.4472.124 Safari/537.36'
+                    )
+                }
+            )
+            soup = BeautifulSoup(
+                urllib.request.urlopen(req, timeout=15).read(),
+                "lxml"
+            )
+            t = soup.find("table", {"id": "constituents"})
 
-            '''
-            base_url ='https://en.wikipedia.org/wiki/NASDAQ-100#Components'
-            soup = BeautifulSoup( urllib.request.urlopen(base_url).read(), "lxml" )
-            t = soup.find("table", {"id": "constituents"}) # 2024-10-05
-
-            print("... got web content")
+            print("... got web content from Wikipedia")
             print("... ran beautiful soup on web content")
 
-            symbolList = [] # store all of the records in this list
-            companyNamesList = []
-            data=[]
+            if t is None:
+                raise ValueError("Could not find Wikipedia constituents table")
+
+            rows = []
             for row in t.find_all('tr'):
-                if str(row)==[]:
+                cols = [ele.text.strip() for ele in row.find_all('td')]
+                if len(cols) < 2:
                     continue
-                if str(row)=="\n":
-                    continue
-                if "<th>" in str(row):
-                    continue
-                col = row.find_all('td')
-                cols = row.find_all('td')
-                cols = [ele.text.strip() for ele in cols]
-                data.append([ele for ele in cols if ele])
-                if col==[]:
-                    continue
-                company_name = data[-1][0].encode("utf8")
-                if company_name[:3]=='MON':
-                    break
 
-                company_name = strip_accents(data[-1][0])
-                symbol_name = data[-1][1]
+                # Wikipedia column order can vary; detect ticker column.
+                col0 = cols[0].strip().upper().replace('.', '-')
+                col1 = cols[1].strip().upper().replace('.', '-')
+                is_ticker0 = (
+                    col0
+                    and col0[0].isalpha()
+                    and all(ch.isalnum() or ch == '-' for ch in col0)
+                    and len(col0) <= 10
+                )
+                is_ticker1 = (
+                    col1
+                    and col1[0].isalpha()
+                    and all(ch.isalnum() or ch == '-' for ch in col1)
+                    and len(col1) <= 10
+                )
 
-                if verbose:
-                    print(
-                        " ...symbol_name="+'{0: <5}'.format(symbol_name) + \
-                        " ...company_name=" + company_name
-                    )
-                companyNamesList.append(company_name)
-                symbolList.append(symbol_name)
-            '''
-            import pandas as pd
+                if is_ticker0 and not is_ticker1:
+                    symbol_name = col0
+                    company_name = strip_accents(cols[1])
+                elif is_ticker1 and not is_ticker0:
+                    symbol_name = col1
+                    company_name = strip_accents(cols[0])
+                elif is_ticker0 and is_ticker1:
+                    # Prefer the first column when both look like symbols.
+                    symbol_name = col0
+                    company_name = strip_accents(cols[1])
+                else:
+                    # Skip non-data rows.
+                    continue
 
-            url = "https://yfiua.github.io/index-constituents/constituents-nasdaq100.csv"
-            df = pd.read_csv(url)
-            # Sort by 'Age' in descending order
-            df = df.sort_values(by='Symbol', ascending=True)
-            symbolList = df["Symbol"].values
-            companyNamesList = df["Name"].values
+                rows.append((symbol_name, company_name))
+
+            rows.sort(key=lambda x: x[0])
+            symbolList = [sym for sym, _ in rows]
+            companyNamesList = [name for _, name in rows]
 
             if verbose:
                 for _symbol, _company in zip(symbolList, companyNamesList):
-                       print(
-                           " ...symbol_name="+'{0: <5}'.format(_symbol) + \
-                           " ...company_name=" + _company
-                       )
+                    print(
+                        " ...symbol_name=" + '{0: <5}'.format(_symbol)
+                        + " ...company_name=" + _company
+                    )
 
-            print(f"... retrieved {symbolList.size} Naz100 companies lists from internet")
+            print(
+                f"... retrieved {len(symbolList)} Naz100 companies lists "
+                "from Wikipedia"
+            )
             print("\nsymbolList = ", symbolList)
 
-            symbolList = list(symbolList)
-            companyNamesList = list(companyNamesList)
+        except (OSError, urllib.error.URLError, ValueError, Exception) as exc:
+            # CSV is fallback-only when Wikipedia retrieval/parsing fails.
+            print(f"... WARNING: Wikipedia Naz100 fetch failed: {exc}")
+            print("... falling back to CSV constituents source")
 
-        except (OSError, urllib.error.URLError, Exception):
-            # Add User-Agent header to avoid 403 Forbidden errors from Wikipedia
-            req = urllib.request.Request(
-                base_url,
-                headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
+            import pandas as pd
+
+            url = (
+                "https://yfiua.github.io/index-constituents/"
+                "constituents-nasdaq100.csv"
             )
-            soup = BeautifulSoup( urllib.request.urlopen(req, timeout=10).read(), "lxml" )
-            t = soup.find("table", {"id": "constituents"}) # 2024-10-05
+            df = pd.read_csv(url)
+            df = df.sort_values(by='Symbol', ascending=True)
+            symbolList = list(df["Symbol"].astype(str).str.upper())
+            companyNamesList = list(df["Name"].astype(str))
 
-            print("... got web content")
-            print("... ran beautiful soup on web content")
+            if verbose:
+                for _symbol, _company in zip(symbolList, companyNamesList):
+                    print(
+                        " ...symbol_name=" + '{0: <5}'.format(_symbol)
+                        + " ...company_name=" + _company
+                    )
 
-            symbolList = [] # store all of the records in this list
-            companyNamesList = []
-            data=[]
-            
-            # Check if table was found before attempting to parse
-            if t is not None:
-                for row in t.find_all('tr'):
-                    if str(row)==[]:
-                        continue
-                    if str(row)=="\n":
-                        continue
-                    if "<th>" in str(row):
-                        continue
-                    col = row.find_all('td')
-                    cols = row.find_all('td')
-                    cols = [ele.text.strip() for ele in cols]
-                    data.append([ele for ele in cols if ele])
-                    if col==[]:
-                        continue
-                    company_name = data[-1][0].encode("utf8")
-                    if company_name[:3]=='MON':
-                        break
-
-                    company_name = strip_accents(data[-1][0])
-                    symbol_name = data[-1][1]
-
-                    if verbose:
-                        print(
-                            " ...symbol_name="+'{0: <5}'.format(symbol_name) + \
-                            " ...company_name=" + company_name
-                        )
-                    companyNamesList.append(company_name)
-                    symbolList.append(symbol_name)
-            else:
-                print("... WARNING: Could not find Nasdaq-100 table on Wikipedia. Will use empty list.")
+            print(
+                f"... retrieved {len(symbolList)} Naz100 companies lists "
+                "from CSV fallback"
+            )
+            print("\nsymbolList = ", symbolList)
 
 
 
@@ -519,7 +518,7 @@ def read_symbols_list_web(json_fn: str, verbose: bool = True) -> Tuple[list, lis
             print("! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ")
             print(" Nasdaq sysmbols list did not get updated from web.")
             print(" ... check quotes_for_list_adjCloseVol.py in function 'get_Naz100List' ")
-            print(" ... also check web at https://en.wikipedia.org/wiki/NASDAQ-100#Components")
+            print(" ... also check web at https://en.wikipedia.org/wiki/List_of_NASDAQ-100_companies")
             print("! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ")
             print("\n\n\n")
 
@@ -782,8 +781,11 @@ def get_symbols_changes(json_fn: str, verbose: bool = False) -> Tuple[list, list
         symbol_change_file = "SP500_symbolsChanges.txt"
         stock_index = "SP500"
     symbols_changes_file = os.path.join( symbol_folder, symbol_change_file )
-    with open(symbols_changes_file, "r+") as f:
-        old_symbol_changesList = f.readlines()
+    if os.path.exists(symbols_changes_file):
+        with open(symbols_changes_file, "r+") as f:
+            old_symbol_changesList = f.readlines()
+    else:
+        old_symbol_changesList = []
     old_symbol_changesListText = ''
     for i in range( len(old_symbol_changesList) ):
         old_symbol_changesListText = old_symbol_changesListText + old_symbol_changesList[i]
@@ -797,10 +799,9 @@ def get_symbols_changes(json_fn: str, verbose: bool = False) -> Tuple[list, list
     # compare lists to check for tickers removed from the index
     # - printing will be suppressed if "verbose = False"
     removedTickers = []
+    removedTickersText = ''
     print("")
     for i, ticker in enumerate( l_symbolList ):
-        if i == 0:
-            removedTickersText = ''
         if ticker not in w_symbolList:
             removedTickers.append( ticker )
             if verbose:
@@ -810,10 +811,9 @@ def get_symbols_changes(json_fn: str, verbose: bool = False) -> Tuple[list, list
     # compare lists to check for tickers added to the index
     # - printing will be suppressed if "verbose = False"
     addedTickers = []
+    addedTickersText = ''
     print("")
     for i, ticker in enumerate( w_symbolList ):
-        if i == 0:
-            addedTickersText = ''
         if ticker not in l_symbolList:
             addedTickers.append( ticker )
             if verbose:
@@ -870,7 +870,7 @@ def get_symbols_changes(json_fn: str, verbose: bool = False) -> Tuple[list, list
         #     print("! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ")
         #     print(" Nasdaq sysmbols list did not get updated from web.")
         #     print(" ... check quotes_for_list_adjCloseVol.py in function 'get_Naz100List' ")
-        #     print(" ... also check web at https://en.wikipedia.org/wiki/NASDAQ-100#Components")
+        #     print(" ... also check web at https://en.wikipedia.org/wiki/List_of_NASDAQ-100_companies")
         #     print("! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ")
         #     print("\n\n\n")
 
