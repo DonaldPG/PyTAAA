@@ -39,12 +39,6 @@ from functions.config_loader import _write_status_line
 logger = get_logger(__name__, log_file="GetParams.log")
 
 
-def _get_required_valuation(json_fn: str) -> Dict:
-    """Return the required ``Valuation`` configuration section."""
-    config = config_cache.get(json_fn)
-    return config["Valuation"]
-
-
 # ---------------------------------------------------------------------------
 # Path accessors
 # ---------------------------------------------------------------------------
@@ -106,7 +100,8 @@ def get_performance_store(json_fn: str) -> str:
         >>> print(store)
         '/Users/user/pyTAAA_data_static/sp500_pine/data_store'
     """
-    valuation_section = _get_required_valuation(json_fn)
+    config = config_cache.get(json_fn)
+    valuation_section = config.get("Valuation")
     return valuation_section["performance_store"]
 
 
@@ -180,7 +175,8 @@ def get_webpage_store(json_fn: str) -> str:
         >>> print(webpage)
         '/Users/user/pyTAAA_data_static/naz100_hma/webpage'
     """
-    valuation_section = _get_required_valuation(json_fn)
+    config = config_cache.get(json_fn)
+    valuation_section = config.get("Valuation")
     return valuation_section["webpage"]
 
 
