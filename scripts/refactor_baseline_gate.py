@@ -23,6 +23,7 @@ GATE_ENVIRONMENT = {
     "NUMEXPR_NUM_THREADS": "1",
     "OMP_NUM_THREADS": "1",
     "OPENBLAS_NUM_THREADS": "1",
+    "PYTAAA_GATE_MANAGED_BACKTEST": "1",
     "PYTAAA_SKIP_PLOTS": "1",
     "VECLIB_MAXIMUM_THREADS": "1",
 }
@@ -75,30 +76,41 @@ def _run_command(command: list[str], log_path: Path) -> None:
         )
 
 
-def run_production_commands(after_dir: Path) -> None:
-    """Execute at most two independent production workflows concurrently."""
-    model_jobs = []
-    for config in MODEL_CONFIGS:
-        model_jobs.append(
-            (
-                [
-                    "uv",
-                    "run",
-                    "python",
-                    "pytaaa_main.py",
-                    "--json",
-                    str(config),
-                ],
-                after_dir / f"{config.stem}.log",
-            )
-        )
+def _run_model_after_test(config: Path, after_dir: Path) -> None:
+    """Run one model workflow and await its production backtest."""
+    _run_command(
+        [
+            "uv",
+            "run",
+            "python",
+            "pytaaa_main.py",
+            "--json",
+            str(config),
+        ],
+        after_dir / f"{config.stem}.log",
+    )
+    _run_command(
+        [
+            "uv",
+            "run",
+            "python",
+            "-m",
+            "functions.background_montecarlo_runner",
+            "--json-file",
+            str(config),
+        ],
+        after_dir / f"{config.stem}_backtest.log",
+    )
 
+
+def run_production_commands(after_dir: Path) -> None:
+    """Execute at most two model workflows and their backtests at once."""
     with ThreadPoolExecutor(
         max_workers=MAX_CONCURRENT_AFTER_TESTS
     ) as executor:
         futures = [
-            executor.submit(_run_command, command, log_path)
-            for command, log_path in model_jobs
+            executor.submit(_run_model_after_test, config, after_dir)
+            for config in MODEL_CONFIGS
         ]
         for future in futures:
             future.result()

@@ -204,6 +204,35 @@ class TestAsyncVsSyncDispatch:
         mock_backtest.assert_not_called()
 
     @pytest.mark.agent_runnable
+    def test_gate_managed_backtest_skips_detached_spawn(
+        self, tmp_path, monkeypatch
+    ):
+        """The gate runs and awaits backtests separately from webpage work."""
+        from functions.MakeValuePlot import makeDailyMonteCarloBacktest
+
+        monkeypatch.setenv("PYTAAA_GATE_MANAGED_BACKTEST", "1")
+        datearray = self._make_mock_datearray()
+
+        with patch(
+            "functions.MakeValuePlot.get_webpage_store",
+            return_value=str(tmp_path),
+        ), patch(
+            "functions.MakeValuePlot.get_symbols_file",
+            return_value="symbols.txt",
+        ), patch(
+            "functions.UpdateSymbols_inHDF5.loadQuotes_fromHDF",
+            return_value=(None, None, datearray, None, None),
+        ), patch(
+            "functions.dailyBacktest_pctLong.dailyBacktest_pctLong"
+        ) as mock_backtest, patch(
+            "functions.MakeValuePlot._spawn_background_montecarlo"
+        ) as mock_spawn:
+            makeDailyMonteCarloBacktest("config.json", async_mode=True)
+
+        mock_spawn.assert_not_called()
+        mock_backtest.assert_not_called()
+
+    @pytest.mark.agent_runnable
     def test_fresh_plot_skips_both(self, tmp_path):
         """When plot is fresh (<20 hours), neither mode runs computation."""
         from functions.MakeValuePlot import makeDailyMonteCarloBacktest
