@@ -39,15 +39,20 @@ from functions.config_loader import _write_status_line
 logger = get_logger(__name__, log_file="GetParams.log")
 
 
+def _get_json_config(json_fn: str) -> Dict:
+    """Return the cached configuration for ``json_fn``."""
+    return config_cache.get(json_fn)
+
+
 def _get_required_valuation(json_fn: str) -> Dict:
     """Return the required ``Valuation`` configuration section."""
-    config = config_cache.get(json_fn)
+    config = _get_json_config(json_fn)
     return config["Valuation"]
 
 
 def _get_optional_valuation(json_fn: str) -> Dict:
     """Return the ``Valuation`` section or an empty mapping."""
-    config = config_cache.get(json_fn)
+    config = _get_json_config(json_fn)
     return config.get("Valuation", {})
 
 
@@ -202,7 +207,7 @@ def get_web_output_dir(json_fn: str) -> str:
         KeyError: If ``web_output_dir`` key is missing.
         json.JSONDecodeError: If the JSON file is malformed.
     """
-    config = config_cache.get(json_fn)
+    config = _get_json_config(json_fn)
     if "web_output_dir" not in config:
         raise KeyError(
             "'web_output_dir' key not found in JSON configuration"
@@ -229,7 +234,7 @@ def get_central_std_values(json_fn: str) -> Dict[str, Dict[str, float]]:
         KeyError: If required normalization keys are missing.
         json.JSONDecodeError: If the JSON file is malformed.
     """
-    config = config_cache.get(json_fn)
+    config = _get_json_config(json_fn)
 
     model_selection = config.get("model_selection")
     if model_selection is None:
@@ -271,7 +276,7 @@ def get_json_ftp_params(
         Dict with keys ``ftpHostname``, ``ftpUsername``, ``ftpPassword``,
         ``remotepath``, ``remoteIP``.
     """
-    config = config_cache.get(json_fn)
+    config = _get_json_config(json_fn)
     ftp_section = config.get("FTP")
 
     if verbose:
@@ -486,7 +491,7 @@ def get_json_params(json_fn: str, verbose: bool = False) -> Dict:
         ``MA1``, ``MA2``, ``MA3``, ``rankThresholdPct``,
         ``uptrendSignalMethod``, ``stockList``, ``symbols_file``.
     """
-    config = config_cache.get(json_fn)
+    config = _get_json_config(json_fn)
 
     if verbose:
         logger.info("JSON config:\n%s", json.dumps(config, indent=4))
