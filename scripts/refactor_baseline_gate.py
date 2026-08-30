@@ -25,8 +25,12 @@ ABACUS_CONFIG = (
     / "naz100_sp500_abacus/pytaaa_naz100_sp500_abacus.json"
 )
 TIMESTAMP_PATTERN = re.compile(
-    r"\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}"
+    r"\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?"
 )
+LATEST_RECORD_LINES = {
+    "PyTAAA_diagnostic.params": 8,
+    "PyTAAA_ranks.params": 3,
+}
 
 
 def _run_command(command: list[str], log_path: Path) -> None:
@@ -111,8 +115,17 @@ def _normalized_lines(path: Path) -> list[str]:
     return [TIMESTAMP_PATTERN.sub("TIMESTAMP", line) for line in lines]
 
 
+def _comparable_lines(path: Path) -> list[str]:
+    """Return stable content for exact or append-only params files."""
+    lines = _normalized_lines(path)
+    record_length = LATEST_RECORD_LINES.get(path.name)
+    if record_length is None:
+        return lines
+    return lines[-record_length:]
+
+
 def compare_artifacts(before_dir: Path, after_dir: Path) -> list[str]:
-    """Compare baseline params content while ignoring timestamps."""
+    """Compare stable params content and latest append-only records."""
     mismatches: list[str] = []
     before_params = before_dir / "params_files"
     after_params = after_dir / "params_files"
@@ -121,7 +134,7 @@ def compare_artifacts(before_dir: Path, after_dir: Path) -> list[str]:
         after_path = after_params / before_path.name
         if not after_path.exists():
             mismatches.append(f"missing_after: params_files/{before_path.name}")
-        elif _normalized_lines(before_path) != _normalized_lines(after_path):
+        elif _comparable_lines(before_path) != _comparable_lines(after_path):
             mismatches.append(f"content_mismatch: {before_path.name}")
 
     return mismatches
