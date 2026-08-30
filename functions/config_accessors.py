@@ -56,6 +56,18 @@ def _get_optional_valuation(json_fn: str) -> Dict:
     return config.get("Valuation", {})
 
 
+def _time_factor(unit: str) -> float:
+    """Return seconds per configured time unit, defaulting to days."""
+    return {
+        "seconds": 1,
+        "minutes": 60,
+        "hours": 3_600,
+        "days": 86_400,
+        "months": 86_400 * 30.4,
+        "years": 86_400 * 365.25,
+    }.get(unit, 86_400)
+
+
 # ---------------------------------------------------------------------------
 # Path accessors
 # ---------------------------------------------------------------------------
@@ -496,16 +508,6 @@ def get_json_params(json_fn: str, verbose: bool = False) -> Dict:
         runtime.join("days")
     if len(pausetime) == 1:
         pausetime.join("hours")
-
-    def _time_factor(unit: str) -> float:
-        return {
-            "seconds": 1,
-            "minutes": 60,
-            "hours": 3_600,
-            "days": 86_400,
-            "months": 86_400 * 30.4,
-            "years": 86_400 * 365.25,
-        }.get(unit, 86_400)  # Default: days.
 
     rt_parts = runtime.split(" ")
     max_uptime = int(rt_parts[0]) * _time_factor(rt_parts[1])

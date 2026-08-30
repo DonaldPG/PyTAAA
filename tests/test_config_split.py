@@ -289,6 +289,24 @@ class TestConfigAccessors:
         assert params["MA1"] == 20
         assert params["MA2offset"] == 50  # MA3 - MA2 = 100 - 50
 
+    def test_get_json_params_unknown_time_unit_defaults_to_days(self):
+        """Unknown time units should retain the legacy day default."""
+        from functions.config_accessors import get_json_params
+
+        config = self._make_config()
+        config["Setup"] = {
+            "runtime": "2 fortnights",
+            "pausetime": "3 intervals",
+        }
+        with patch(
+            "functions.config_accessors.config_cache"
+        ) as mock_cache:
+            mock_cache.get.return_value = config
+            params = get_json_params("fake.json")
+
+        assert params["runtime"] == 2 * 86_400
+        assert params["pausetime"] == 3 * 86_400
+
     def test_get_stock_weight_method_defaults_to_delta_rank(self):
         """get_stock_weight_method() defaults to delta_rank_sharpe_weight."""
         from functions.config_accessors import get_stock_weight_method
