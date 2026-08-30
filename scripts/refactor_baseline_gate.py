@@ -4,15 +4,28 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import hashlib
+import os
 import re
 import shutil
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 STATIC_DATA_ROOT = Path("/Users/donaldpg/pyTAAA_data_static")
+GATE_LOCK = REPO_ROOT / ".refactor_baseline" / "production_gate.lock"
+MAX_CONCURRENT_AFTER_TESTS = 2
+GATE_ENVIRONMENT = {
+    "MKL_NUM_THREADS": "1",
+    "NUMEXPR_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "PYTAAA_SKIP_PLOTS": "1",
+    "VECLIB_MAXIMUM_THREADS": "1",
+}
 MODEL_CONFIGS = (
     STATIC_DATA_ROOT / "naz100_pine/pytaaa_naz100_pine.json",
     STATIC_DATA_ROOT / "naz100_hma/pytaaa_naz100_hma.json",
@@ -33,15 +46,27 @@ LATEST_RECORD_LINES = {
 }
 
 
+def _resource_limited_command(command: list[str]) -> list[str]:
+    """Apply background QoS on macOS when ``taskpolicy`` is available."""
+    taskpolicy = shutil.which("taskpolicy")
+    if taskpolicy is None:
+        return command
+    return [taskpolicy, "-b", *command]
+
+
 def _run_command(command: list[str], log_path: Path) -> None:
     """Run one production command and save its combined output."""
+    environment = os.environ.copy()
+    environment.update(GATE_ENVIRONMENT)
     with log_path.open("w") as log_file:
         completed = subprocess.run(
-            command,
+            _resource_limited_command(command),
             cwd=REPO_ROOT,
+            env=environment,
             stdout=log_file,
             stderr=subprocess.STDOUT,
             text=True,
+            preexec_fn=lambda: os.nice(15),
         )
     if completed.returncode != 0:
         raise RuntimeError(
@@ -51,13 +76,34 @@ def _run_command(command: list[str], log_path: Path) -> None:
 
 
 def run_production_commands(after_dir: Path) -> None:
-    """Execute the production model and Abacus workflows."""
+    """Execute at most two independent production workflows concurrently."""
+    model_jobs = []
     for config in MODEL_CONFIGS:
-        _run_command(
-            ["uv", "run", "python", "pytaaa_main.py", "--json", str(config)],
-            after_dir / f"{config.stem}.log",
+        model_jobs.append(
+            (
+                [
+                    "uv",
+                    "run",
+                    "python",
+                    "pytaaa_main.py",
+                    "--json",
+                    str(config),
+                ],
+                after_dir / f"{config.stem}.log",
+            )
         )
 
+    with ThreadPoolExecutor(
+        max_workers=MAX_CONCURRENT_AFTER_TESTS
+    ) as executor:
+        futures = [
+            executor.submit(_run_command, command, log_path)
+            for command, log_path in model_jobs
+        ]
+        for future in futures:
+            future.result()
+
+    # These commands share the Abacus data store and must remain sequential.
     _run_command(
         [
             "uv",
@@ -153,12 +199,18 @@ def main() -> int:
 
     args.after.mkdir(parents=True, exist_ok=True)
     if args.run:
-        try:
-            run_production_commands(args.after)
-            capture_params(args.after)
-        except Exception as error:
-            print(f"BASELINE GATE: FAIL - production command failed: {error}")
-            return 1
+        GATE_LOCK.parent.mkdir(parents=True, exist_ok=True)
+        with GATE_LOCK.open("w") as lock_file:
+            fcntl.flock(lock_file, fcntl.LOCK_EX)
+            try:
+                run_production_commands(args.after)
+                capture_params(args.after)
+            except Exception as error:
+                print(
+                    "BASELINE GATE: FAIL - production command failed: "
+                    f"{error}"
+                )
+                return 1
 
     mismatches = compare_artifacts(args.before, args.after)
     if mismatches:

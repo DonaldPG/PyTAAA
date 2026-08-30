@@ -993,6 +993,10 @@ def generate_portfolio_plots(
         - Spawns detached background process (async mode)
         - Prints progress messages to stdout
     """
+    if os.environ.get("PYTAAA_SKIP_PLOTS") == "1":
+        print(" [gate] Portfolio plot generation skipped")
+        return
+
     ##########################################################################
     # Async mode: fire-and-forget background process
     ##########################################################################

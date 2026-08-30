@@ -136,6 +136,13 @@ For every loop iteration, the controller must do the following automatically:
 - revert that exact candidate with `git revert` when the verdict is FAIL
 - never use a stale verdict to revert another commit
 - never use `git reset HEAD~1` or force-push as an automatic failure action
+- run exactly two independent model after-tests concurrently
+- keep the recommendation and daily Abacus tests sequential because they share
+	the same data store
+- use an exclusive gate lock to prevent overlapping production gates
+- cap native math libraries at one thread and run gate children at low priority
+- skip plot generation during after-tests because PNG files are not acceptance
+	artifacts; normal production runs continue to generate plots
 - stop only when the state is resolved or the wait limit is reached
 
 ### Autonomous verification checklist

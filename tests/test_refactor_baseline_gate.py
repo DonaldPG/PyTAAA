@@ -1,8 +1,15 @@
 """Tests for semantic production-baseline artifact comparison."""
 
+import threading
 from pathlib import Path
 
-from scripts.refactor_baseline_gate import compare_artifacts
+import scripts.refactor_baseline_gate as baseline_gate
+from scripts.refactor_baseline_gate import (
+    GATE_ENVIRONMENT,
+    MAX_CONCURRENT_AFTER_TESTS,
+    _resource_limited_command,
+    compare_artifacts,
+)
 
 
 def _write_params(root: Path, name: str, content: str) -> None:
@@ -54,3 +61,53 @@ def test_latest_rank_record_detects_selection_change(tmp_path):
     assert compare_artifacts(before, after) == [
         "content_mismatch: PyTAAA_ranks.params"
     ]
+
+
+def test_after_tests_use_quiet_resource_limits():
+    assert MAX_CONCURRENT_AFTER_TESTS == 2
+    assert GATE_ENVIRONMENT["PYTAAA_SKIP_PLOTS"] == "1"
+    assert GATE_ENVIRONMENT["OMP_NUM_THREADS"] == "1"
+    assert GATE_ENVIRONMENT["OPENBLAS_NUM_THREADS"] == "1"
+
+
+def test_after_tests_use_background_qos_when_available(monkeypatch):
+    monkeypatch.setattr(
+        "scripts.refactor_baseline_gate.shutil.which",
+        lambda _name: "/usr/sbin/taskpolicy",
+    )
+
+    assert _resource_limited_command(["uv", "run", "python"]) == [
+        "/usr/sbin/taskpolicy",
+        "-b",
+        "uv",
+        "run",
+        "python",
+    ]
+
+
+def test_production_model_tests_peak_at_two(tmp_path, monkeypatch):
+    active = 0
+    peak = 0
+    lock = threading.Lock()
+    model_barrier = threading.Barrier(2)
+
+    def fake_run(command, _log_path):
+        nonlocal active, peak
+        with lock:
+            active += 1
+            peak = max(peak, active)
+        if "pytaaa_main.py" in command:
+            model_barrier.wait(timeout=1)
+        with lock:
+            active -= 1
+
+    monkeypatch.setattr(
+        baseline_gate,
+        "MODEL_CONFIGS",
+        (Path("model_one.json"), Path("model_two.json")),
+    )
+    monkeypatch.setattr(baseline_gate, "_run_command", fake_run)
+
+    baseline_gate.run_production_commands(tmp_path)
+
+    assert peak == 2

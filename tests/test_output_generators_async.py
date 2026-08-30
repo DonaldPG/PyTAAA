@@ -199,6 +199,40 @@ class TestGeneratePortfolioPlotsBackwardCompatibility:
             _, kwargs = mock_spawn.call_args
             assert kwargs["max_workers"] == 3
 
+    @pytest.mark.agent_runnable
+    def test_gate_mode_skips_plot_workers(self, tmp_path, monkeypatch):
+        """Gate mode should not start plot generation or worker processes."""
+        from functions.output_generators import generate_portfolio_plots
+
+        monkeypatch.setenv("PYTAAA_SKIP_PLOTS", "1")
+        n_days, n_symbols = 60, 2
+        adjClose = _make_adjclose(n_symbols, n_days)
+        datearray = _make_datearray(n_days)
+        signal2D = _make_signal2D(n_symbols, n_days)
+
+        with patch(
+            "functions.output_generators._spawn_background_plot_generation"
+        ) as mock_spawn, patch(
+            "functions.output_generators._generate_full_history_plots"
+        ) as mock_full, patch(
+            "functions.output_generators._generate_recent_plots"
+        ) as mock_recent:
+            generate_portfolio_plots(
+                adjClose,
+                ["AAPL", "MSFT"],
+                datearray,
+                signal2D,
+                signal2D,
+                _minimal_params(),
+                str(tmp_path),
+                async_mode=True,
+                max_workers=2,
+            )
+
+        mock_spawn.assert_not_called()
+        mock_full.assert_not_called()
+        mock_recent.assert_not_called()
+
 
 
 
