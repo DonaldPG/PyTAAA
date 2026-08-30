@@ -244,6 +244,21 @@ class TestConfigAccessors:
 
         assert result == "/data/perf_store"
 
+    def test_get_status_matches_canonical_reader(self, tmp_path):
+        """The deprecated status accessor should preserve canonical behavior."""
+        from functions.config_accessors import get_json_status, get_status
+
+        status_file = tmp_path / "PyTAAA_status.params"
+        status_file.write_text(
+            "[Status]\n"
+            "cumu_value: 2026-08-30 10:00:00 12345.67 1 12400.00\n"
+        )
+        with patch(
+            "functions.config_accessors.get_performance_store",
+            return_value=str(tmp_path),
+        ):
+            assert get_status("fake.json") == get_json_status("fake.json")
+
     def test_get_symbols_file_uses_symbols_file_key(self):
         """get_symbols_file() should prefer 'symbols_file' if set in params."""
         from functions.config_accessors import get_symbols_file

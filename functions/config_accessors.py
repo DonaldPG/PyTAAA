@@ -458,14 +458,7 @@ def get_status(json_fn: str) -> str:
     Returns:
         Most-recent cumulative portfolio value as a string.
     """
-    p_store = get_performance_store(json_fn)
-    status_filename = os.path.join(p_store, "PyTAAA_status.params")
-
-    config = configparser.ConfigParser(strict=False)
-    with open(status_filename, "r") as configfile:
-        config.read_file(configfile)
-
-    return config.get("Status", "cumu_value").split()[-3]
+    return get_json_status(json_fn)
 
 
 # ---------------------------------------------------------------------------
