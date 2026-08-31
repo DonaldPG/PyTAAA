@@ -136,13 +136,17 @@ For every loop iteration, the controller must do the following automatically:
 - revert that exact candidate with `git revert` when the verdict is FAIL
 - never use a stale verdict to revert another commit
 - never use `git reset HEAD~1` or force-push as an automatic failure action
-- run exactly two independent model after-tests concurrently
+- run exactly two independent model after-tests concurrently; each model test
+	must include `pytaaa_main.py` followed by a completed production Monte Carlo
+	backtest for the same configuration
+- do not count background or child processes within a model workflow against
+	the two-model concurrency limit
 - keep the recommendation and daily Abacus tests sequential because they share
 	the same data store
 - use an exclusive gate lock to prevent overlapping production gates
 - cap native math libraries at one thread and run gate children at low priority
-- skip plot generation during after-tests because PNG files are not acceptance
-	artifacts; normal production runs continue to generate plots
+- suppress presentation-only plot workers during after-tests because PNG files
+	are not acceptance artifacts; do not suppress backtest computation workers
 - stop only when the state is resolved or the wait limit is reached
 
 ### Autonomous verification checklist
@@ -150,6 +154,8 @@ For every loop iteration, the controller must do the following automatically:
 For every loop iteration, validate:
 
 - `pytaaa_main.py` still runs for the five JSON configs
+- the production Monte Carlo backtest completes for each of the five model
+	configs before its model after-test is considered complete
 - `recommend_model.py` still runs for the abacus config
 - `daily_abacus_update.py` still runs for the abacus config
 - `run_pytaaa_daily.sh` still produces the same stock universe and weights for the recent 3 months

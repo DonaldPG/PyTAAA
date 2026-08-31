@@ -65,6 +65,7 @@ def test_latest_rank_record_detects_selection_change(tmp_path):
 
 def test_after_tests_use_quiet_resource_limits():
     assert MAX_CONCURRENT_AFTER_TESTS == 2
+    assert GATE_ENVIRONMENT["PYTAAA_GATE_MANAGED_BACKTEST"] == "1"
     assert GATE_ENVIRONMENT["PYTAAA_SKIP_PLOTS"] == "1"
     assert GATE_ENVIRONMENT["OMP_NUM_THREADS"] == "1"
     assert GATE_ENVIRONMENT["OPENBLAS_NUM_THREADS"] == "1"
@@ -111,3 +112,23 @@ def test_production_model_tests_peak_at_two(tmp_path, monkeypatch):
     baseline_gate.run_production_commands(tmp_path)
 
     assert peak == 2
+
+
+def test_each_model_after_test_awaits_backtest(tmp_path, monkeypatch):
+    commands = []
+
+    def fake_run(command, log_path):
+        commands.append((command, log_path))
+
+    config = Path("model_one.json")
+    monkeypatch.setattr(baseline_gate, "_run_command", fake_run)
+
+    baseline_gate._run_model_after_test(config, tmp_path)
+
+    assert commands[0][0][3] == "pytaaa_main.py"
+    assert commands[1][0][3:6] == [
+        "-m",
+        "functions.background_montecarlo_runner",
+        "--json-file",
+    ]
+    assert commands[1][1] == tmp_path / "model_one_backtest.log"
