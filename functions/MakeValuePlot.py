@@ -664,10 +664,7 @@ def makeDailyMonteCarloBacktest(
         modified_time.days * 24 + modified_time.seconds / 3600
     )
 
-    gate_manages_backtest = (
-        os.environ.get("PYTAAA_GATE_MANAGED_BACKTEST") == "1"
-    )
-    if modified_hours > 20.0 and not gate_manages_backtest:
+    if modified_hours > 20.0:
         if async_mode:
             # Fire-and-forget: spawn detached background process.
             _spawn_background_montecarlo(json_fn, webpage_dir)
