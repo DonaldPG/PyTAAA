@@ -64,6 +64,23 @@ def test_latest_rank_record_detects_selection_change(tmp_path):
     ]
 
 
+def test_latest_rank_record_ignores_whitespace_padding(tmp_path):
+    before = tmp_path / "before"
+    after = tmp_path / "after"
+    _write_params(
+        before,
+        "pyTAAA_ranks.params",
+        "lastdate: 2026-08-30\nsymbols: ABC   DEF\nranks: 1   2\n",
+    )
+    _write_params(
+        after,
+        "pyTAAA_ranks.params",
+        "lastdate:  2026-08-30\nsymbols: ABC DEF\nranks: 1 2\n",
+    )
+
+    assert compare_artifacts(before, after) == []
+
+
 def test_after_tests_use_quiet_resource_limits():
     assert MAX_CONCURRENT_AFTER_TESTS == 2
     assert GATE_ENVIRONMENT["PYTAAA_GATE_MANAGED_BACKTEST"] == "1"

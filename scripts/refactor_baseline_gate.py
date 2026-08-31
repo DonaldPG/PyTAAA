@@ -42,8 +42,8 @@ TIMESTAMP_PATTERN = re.compile(
     r"\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?"
 )
 LATEST_RECORD_LINES = {
-    "PyTAAA_diagnostic.params": 8,
-    "PyTAAA_ranks.params": 3,
+    "pytaaa_diagnostic.params": 8,
+    "pytaaa_ranks.params": 3,
 }
 
 
@@ -179,10 +179,14 @@ def _normalized_lines(path: Path) -> list[str]:
 def _comparable_lines(path: Path) -> list[str]:
     """Return stable content for exact or append-only params files."""
     lines = _normalized_lines(path)
-    record_length = LATEST_RECORD_LINES.get(path.name)
+    normalized_name = path.name.casefold()
+    record_length = LATEST_RECORD_LINES.get(normalized_name)
     if record_length is None:
         return lines
-    return lines[-record_length:]
+    latest_record = lines[-record_length:]
+    if normalized_name == "pytaaa_ranks.params":
+        return [" ".join(line.split()) for line in latest_record]
+    return latest_record
 
 
 def compare_artifacts(before_dir: Path, after_dir: Path) -> list[str]:
