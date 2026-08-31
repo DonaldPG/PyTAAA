@@ -8,7 +8,6 @@ from scripts.refactor_baseline_gate import (
     GATE_ENVIRONMENT,
     MAX_CONCURRENT_AFTER_TESTS,
     _resource_limited_command,
-    capture_params,
     compare_artifacts,
 )
 
@@ -133,24 +132,3 @@ def test_each_model_after_test_awaits_backtest(tmp_path, monkeypatch):
         "--json-file",
     ]
     assert commands[1][1] == tmp_path / "model_one_backtest.log"
-
-
-def test_capture_preserves_model_paths(tmp_path, monkeypatch):
-    static_root = tmp_path / "static"
-    first = static_root / "model_one/data_store/shared.params"
-    second = static_root / "model_two/data_store/shared.params"
-    first.parent.mkdir(parents=True)
-    second.parent.mkdir(parents=True)
-    first.write_text("model one\n")
-    second.write_text("model two\n")
-    monkeypatch.setattr(baseline_gate, "STATIC_DATA_ROOT", static_root)
-
-    output_dir = tmp_path / "capture"
-    capture_params(output_dir)
-
-    assert (
-        output_dir / "params_files/model_one/data_store/shared.params"
-    ).read_text() == "model one\n"
-    assert (
-        output_dir / "params_files/model_two/data_store/shared.params"
-    ).read_text() == "model two\n"

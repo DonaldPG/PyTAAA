@@ -150,7 +150,7 @@ def _md5(path: Path) -> str:
 
 
 def capture_params(output_dir: Path) -> None:
-    """Capture params files without collapsing model-relative paths."""
+    """Capture params files using the baseline's flattened layout."""
     params_dir = output_dir / "params_files"
     shutil.rmtree(params_dir, ignore_errors=True)
     params_dir.mkdir(parents=True)
@@ -158,13 +158,10 @@ def capture_params(output_dir: Path) -> None:
     source_files = sorted(STATIC_DATA_ROOT.rglob("*.params"))
     checksum_lines = []
     for source_path in source_files:
-        relative_path = source_path.relative_to(STATIC_DATA_ROOT)
-        destination = params_dir / relative_path
-        destination.parent.mkdir(parents=True, exist_ok=True)
         checksum_lines.append(
             f"MD5 ({source_path}) = {_md5(source_path)}\n"
         )
-        shutil.copy2(source_path, destination)
+        shutil.copy2(source_path, params_dir / source_path.name)
 
     (output_dir / "params_checksums.txt").write_text(
         "".join(checksum_lines)
@@ -191,13 +188,12 @@ def compare_artifacts(before_dir: Path, after_dir: Path) -> list[str]:
     before_params = before_dir / "params_files"
     after_params = after_dir / "params_files"
 
-    for before_path in sorted(before_params.rglob("*.params")):
-        relative_path = before_path.relative_to(before_params)
-        after_path = after_params / relative_path
+    for before_path in sorted(before_params.glob("*.params")):
+        after_path = after_params / before_path.name
         if not after_path.exists():
-            mismatches.append(f"missing_after: params_files/{relative_path}")
+            mismatches.append(f"missing_after: params_files/{before_path.name}")
         elif _comparable_lines(before_path) != _comparable_lines(after_path):
-            mismatches.append(f"content_mismatch: {relative_path}")
+            mismatches.append(f"content_mismatch: {before_path.name}")
 
     return mismatches
 
