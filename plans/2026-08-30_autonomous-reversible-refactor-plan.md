@@ -147,6 +147,8 @@ For every loop iteration, the controller must do the following automatically:
 - cap native math libraries at one thread and run gate children at low priority
 - suppress presentation-only plot workers during after-tests because PNG files
 	are not acceptance artifacts; do not suppress backtest computation workers
+- retain paths relative to the static-data root when capturing `.params`
+	artifacts so same-named outputs from different models are compared separately
 - stop only when the state is resolved or the wait limit is reached
 
 ### Autonomous verification checklist
