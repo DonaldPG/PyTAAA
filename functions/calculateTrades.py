@@ -424,6 +424,26 @@ def trade_today(json_fn: str, symbols_today: list, weight_today: np.ndarray, pri
     holdings_symbols = holdings['stocks']
     holdings_shares = np.array(holdings['shares']).astype("float32").astype("int")
     holdings_buyprice = np.array(holdings['buyprice']).astype("float32")
+
+    # A single held stock with a stale/missing HDF5 quote returns a
+    # non-finite price which would poison currentHoldingsValue (below)
+    # and raise "cannot convert float NaN to integer".  Fall back to the
+    # buyprice for those symbols, matching run_pytaaa.py's guard.
+    holdings_currentPrice = np.array(holdings_currentPrice, dtype=float)
+    invalid_price_mask = ~np.isfinite(holdings_currentPrice)
+    if invalid_price_mask.any():
+        bad_symbols = np.array(holdings_symbols, dtype=object)[
+            invalid_price_mask
+        ].tolist()
+        print(
+            " Warning: Non-finite holding prices for symbols "
+            f"{bad_symbols}. Using buyprice as fallback for valuation."
+        )
+        holdings_currentPrice[invalid_price_mask] = holdings_buyprice[
+            invalid_price_mask
+        ]
+    holdings_currentPrice = holdings_currentPrice.tolist()
+
     current_holdings_dict = {
         "symbols": holdings_symbols,
         "shares": holdings_shares,
@@ -455,9 +475,14 @@ def trade_today(json_fn: str, symbols_today: list, weight_today: np.ndarray, pri
     new_buy_price = []
     cumu_new_value = 0.0
     for i, _weight in enumerate(weight_today):
-        new_shares.append(
-            int(currentHoldingsValue * _weight / price_today[i])
-        )
+        _price = float(price_today[i])
+        if not np.isfinite(_price) or _price <= 0.0:
+            # Skip a target with a bad quote rather than raise; its
+            # weight falls through to the CASH residual below.
+            _target_shares = 0
+        else:
+            _target_shares = int(currentHoldingsValue * _weight / _price)
+        new_shares.append(_target_shares)
         new_buy_price.append(price_today[i])
         cumu_new_value += new_shares[-1] * price_today[i]
     cash_value = int(currentHoldingsValue - cumu_new_value + 0.5)
